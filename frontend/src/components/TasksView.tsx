@@ -7,6 +7,9 @@ import { mockTasks, isElectronAPIavailable } from '../lib/mockData';
 export default function TasksView() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showAddTaskForm, setShowAddTaskForm] = useState(false);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [isAddingTask, setIsAddingTask] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -35,17 +38,36 @@ export default function TasksView() {
     await window.electronAPI.updateTasks(updatedTasks);
   };
 
-  const handleAddTask = async () => {
-    const text = window.prompt('Enter new task:');
-    if (!text) return;
-    const newTask = {
-      id: Date.now().toString() + Math.random().toString(36).slice(2),
-      completed: false,
-      text,
-    };
-    const updatedTasks = [...tasks, newTask];
-    setTasks(updatedTasks);
-    await window.electronAPI.updateTasks(updatedTasks);
+  const handleAddTask = () => {
+    setShowAddTaskForm(true);
+  };
+
+  const handleSubmitTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTaskText.trim()) return;
+
+    setIsAddingTask(true);
+    try {
+      const newTask = {
+        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        completed: false,
+        text: newTaskText.trim(),
+      };
+      const updatedTasks = [...tasks, newTask];
+      setTasks(updatedTasks);
+      await window.electronAPI.updateTasks(updatedTasks);
+      setNewTaskText('');
+      setShowAddTaskForm(false);
+    } catch (error) {
+      console.error('Error adding task:', error);
+    } finally {
+      setIsAddingTask(false);
+    }
+  };
+
+  const handleCancelTask = () => {
+    setNewTaskText('');
+    setShowAddTaskForm(false);
   };
 
   if (loading) {
@@ -84,9 +106,37 @@ export default function TasksView() {
           </div>
         </div>
         <div className="header-actions">
-          <button className="btn btn-primary" onClick={handleAddTask}>
-            + Add task
-          </button>
+          {showAddTaskForm ? (
+            <form onSubmit={handleSubmitTask} className="add-task-inline">
+              <input
+                type="text"
+                placeholder="Enter new task..."
+                value={newTaskText}
+                onChange={(e) => setNewTaskText(e.target.value)}
+                disabled={isAddingTask}
+                autoFocus
+              />
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm"
+                disabled={isAddingTask || !newTaskText.trim()}
+              >
+                {isAddingTask ? 'Adding...' : 'Add'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={handleCancelTask}
+                disabled={isAddingTask}
+              >
+                Cancel
+              </button>
+            </form>
+          ) : (
+            <button className="btn btn-primary" onClick={handleAddTask}>
+              + Add task
+            </button>
+          )}
         </div>
       </div>
       <div className="tasks-list">

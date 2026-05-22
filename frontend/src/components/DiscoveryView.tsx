@@ -56,6 +56,10 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('fit');
   const [category, setCategory] = useState<CategoryFilter>('All');
+  const [showAddSourceForm, setShowAddSourceForm] = useState(false);
+  const [newSourceName, setNewSourceName] = useState('');
+  const [newSourceUrl, setNewSourceUrl] = useState('');
+  const [isAddingSource, setIsAddingSource] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -114,12 +118,50 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
   };
 
   const handleAddSource = () => {
-    const name = window.prompt('Enter grant source name:');
-    if (!name) return;
-    const url = window.prompt('Enter source URL:');
-    if (url) {
-      console.warn('Adding source - backend not yet implemented:', { name, url });
+    setShowAddSourceForm(true);
+  };
+
+  const handleSubmitSource = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newSourceName.trim() || !newSourceUrl.trim()) return;
+
+    setIsAddingSource(true);
+    try {
+      const source = {
+        id: `source-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        name: newSourceName.trim(),
+        url: newSourceUrl.trim(),
+        type: 'website' as const,
+        createdAt: new Date().toISOString(),
+        isActive: true,
+      };
+
+      if (isElectronAPIavailable()) {
+        await window.electronAPI.addSource(source);
+        // Trigger research after adding source
+        await fetch('/api/research', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+        });
+        // Refresh grants
+        const updatedGrants = await window.electronAPI.getGrants();
+        setGrants(updatedGrants);
+      }
+
+      setNewSourceName('');
+      setNewSourceUrl('');
+      setShowAddSourceForm(false);
+    } catch (error) {
+      console.error('Error adding source:', error);
+    } finally {
+      setIsAddingSource(false);
     }
+  };
+
+  const handleCancelSource = () => {
+    setNewSourceName('');
+    setNewSourceUrl('');
+    setShowAddSourceForm(false);
   };
 
   // Filter grants
@@ -170,9 +212,46 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
           <button className="btn btn-ghost btn-sm" onClick={handleExportCsv}>
             Export CSV
           </button>
-          <button className="btn btn-primary" onClick={handleAddSource}>
-            + Add source
-          </button>
+          {showAddSourceForm ? (
+            <span className="add-source-form">
+              <form onSubmit={handleSubmitSource} className="add-source-inline">
+                <input
+                  type="text"
+                  placeholder="Source name"
+                  value={newSourceName}
+                  onChange={(e) => setNewSourceName(e.target.value)}
+                  disabled={isAddingSource}
+                  autoFocus
+                />
+                <input
+                  type="url"
+                  placeholder="https://..."
+                  value={newSourceUrl}
+                  onChange={(e) => setNewSourceUrl(e.target.value)}
+                  disabled={isAddingSource}
+                />
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-sm"
+                  disabled={isAddingSource || !newSourceName.trim() || !newSourceUrl.trim()}
+                >
+                  {isAddingSource ? 'Adding...' : 'Add'}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={handleCancelSource}
+                  disabled={isAddingSource}
+                >
+                  Cancel
+                </button>
+              </form>
+            </span>
+          ) : (
+            <button className="btn btn-primary" onClick={handleAddSource}>
+              + Add source
+            </button>
+          )}
         </div>
       </div>
 

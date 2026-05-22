@@ -50,6 +50,31 @@ export default function AppShell() {
       window.electronAPI.getOrgProfile().then((p) => p && setProfile(p));
       window.electronAPI.getCrawlStatus().then(setCrawlStatus);
       window.electronAPI.getNotifications().then(setNotifications);
+
+      // Listen for tray "Refresh Crawl" action
+      window.electronAPI.onRefreshCrawl(async () => {
+        console.warn('Refresh crawl triggered from tray');
+        try {
+          // Call the research API to trigger a crawl
+          const response = await fetch('/api/research', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          });
+          if (response.ok) {
+            // Refresh grants and crawl status after research completes
+            const updatedGrants = await window.electronAPI.getGrants();
+            setGrants(updatedGrants);
+            const updatedStatus = await window.electronAPI.getCrawlStatus();
+            setCrawlStatus(updatedStatus);
+            window.electronAPI.showNotification(
+              'Crawl Complete',
+              'Grant database has been updated.',
+            );
+          }
+        } catch (error) {
+          console.error('Error triggering research:', error);
+        }
+      });
     }
   }, []);
 

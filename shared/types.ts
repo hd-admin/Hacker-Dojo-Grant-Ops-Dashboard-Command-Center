@@ -240,6 +240,7 @@ export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   quitApp: () => Promise<void>;
   onUpdateStatus: (callback: (status: string) => void) => void;
+  onRefreshCrawl: (callback: () => void) => void;
   // Crawl
   getCrawlStatus: () => Promise<CrawlStatus>;
   triggerCrawl: () => Promise<boolean>;

@@ -14,6 +14,9 @@ const electronAPI: ElectronAPI = {
   onUpdateStatus: (callback: (status: string) => void) => {
     ipcRenderer.on('update-status', (_, status) => callback(status));
   },
+  onRefreshCrawl: (callback: () => void) => {
+    ipcRenderer.on('refresh-crawl', () => callback());
+  },
   // Crawl
   getCrawlStatus: () => ipcRenderer.invoke('crawl:getStatus'),
   triggerCrawl: () => ipcRenderer.invoke('crawl:trigger'),
