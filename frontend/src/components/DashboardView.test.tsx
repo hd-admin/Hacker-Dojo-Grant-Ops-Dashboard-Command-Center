@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Grant, OrganizationProfile } from '../../../shared/types';
 
-// Mock window.electronAPI
 const mockGrants: Grant[] = [
   {
     id: 'grant-1',

@@ -1,7 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { Notification } from '../../../shared/types';
 
-// Mock window.electronAPI
 const mockNotifications: Notification[] = [
   {
     id: 'notif-1',
@@ -23,44 +22,8 @@ const mockNotifications: Notification[] = [
   },
 ];
 
-const mockElectronAPI = {
-  getNotifications: vi.fn().mockResolvedValue(mockNotifications),
-  getTasks: vi.fn().mockResolvedValue([]),
-  getGrants: vi.fn().mockResolvedValue([]),
-  getOrgProfile: vi.fn().mockResolvedValue(null),
-  getCrawlStatus: vi.fn().mockResolvedValue({ online: true, lastSync: new Date().toISOString() }),
-  getRecentActivity: vi.fn().mockResolvedValue([]),
-  updateGrantStatus: vi.fn().mockResolvedValue(true),
-  updateOrgProfile: vi.fn().mockResolvedValue(true),
-  triggerCrawl: vi.fn().mockResolvedValue(true),
-  uploadDocument: vi.fn().mockResolvedValue(null),
-  getDocuments: vi.fn().mockResolvedValue([]),
-  addTheme: vi.fn().mockResolvedValue(true),
-  removeTheme: vi.fn().mockResolvedValue(true),
-  showNotification: vi.fn().mockResolvedValue(true),
-  getAppVersion: vi.fn().mockResolvedValue('0.1.0'),
-  quitApp: vi.fn().mockResolvedValue(true),
-  onUpdateStatus: vi.fn(),
-};
-
-vi.stubGlobal('window', {
-  electronAPI: mockElectronAPI,
-});
-
 describe('NotificationsView', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe('Notification data', () => {
-    it('should load notifications from electronAPI on mount', async () => {
-      const notifications = await mockElectronAPI.getNotifications();
-      expect(notifications).toHaveLength(3);
-      expect(notifications[0]?.dot).toBe('success');
-      expect(notifications[1]?.dot).toBe('warning');
-      expect(notifications[2]?.dot).toBe('info');
-    });
-
     it('should have correct notification dot colors', () => {
       const dots = mockNotifications.map((n) => n.dot);
       expect(dots).toContain('success');

@@ -33,11 +33,9 @@ export default [
     ignores: [
       'node_modules/**',
       '.next/**',
-      'dist-electron/**',
       'frontend/.next/**',
       '**/*.js',
       'shared/*.js',
-      'electron/*.js',
     ],
   },
 ];

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Grant } from '../../../shared/types';
 
-// Mock window.electronAPI
 const mockGrant: Grant = {
   id: 'nsf-tech',
   title: 'NSF Technology Access Grant',
