@@ -2,47 +2,31 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import log from 'electron-log';
-import { Grant, GrantStatus, OrganizationProfile, ActivityEvent } from '../shared/types';
+import {
+  Grant,
+  OrganizationProfile,
+  ActivityEvent,
+  CrawlStatus,
+  Notification,
+  Task,
+  DocumentMetadata,
+  Source,
+  CrawlRun,
+  DraftArtifact,
+  RevisionRequest,
+  ApprovalRecord,
+  SubmissionRecord,
+  FollowUp,
+  OpencodeSettings,
+  StoreData,
+} from '../shared/types';
 
-interface CrawlStatus {
-  online: boolean;
-  lastSync: string;
-}
-
-interface Notification {
-  id: string;
-  text: string;
-  time: string;
-  dot: string;
-}
-
-interface Task {
-  id: string;
-  text: string;
-  completed: boolean;
-}
-
-interface DocumentMetadata {
-  id: string;
-  name: string;
-  type: string;
-  lastUsed?: string;
-  version?: string;
-  audited?: boolean;
-}
-
-interface StoreData {
-  grants: Grant[];
-  profile: OrganizationProfile;
-  crawlStatus: CrawlStatus;
-  notifications: Notification[];
-  tasks: Task[];
-  documents: DocumentMetadata[];
-  activity: ActivityEvent[];
-}
-
-// GAP-06 FIX: matchedAt dates relative to TODAY constant
-const TODAY = '2026-05-21';
+const defaultOpencodeSettings: OpencodeSettings = {
+  binaryPath: '',
+  workingDirectory: '',
+  timeoutMs: 60000,
+  isConfigured: false,
+};
 
 const defaultProfile: OrganizationProfile = {
   legalName: 'Hacker Dojo, a California nonprofit corporation',
@@ -1156,6 +1140,14 @@ class Store {
           tasks: parsed.tasks || [],
           documents: parsed.documents || [],
           activity: parsed.activity || [],
+          sources: parsed.sources || [],
+          crawlRuns: parsed.crawlRuns || [],
+          draftArtifacts: parsed.draftArtifacts || [],
+          revisionRequests: parsed.revisionRequests || [],
+          approvalRecords: parsed.approvalRecords || [],
+          submissionRecords: parsed.submissionRecords || [],
+          followUps: parsed.followUps || [],
+          opencodeSettings: parsed.opencodeSettings || defaultOpencodeSettings,
         };
       }
     } catch (error) {
@@ -1189,6 +1181,14 @@ class Store {
       tasks: [],
       documents: [],
       activity: [],
+      sources: [],
+      crawlRuns: [],
+      draftArtifacts: [],
+      revisionRequests: [],
+      approvalRecords: [],
+      submissionRecords: [],
+      followUps: [],
+      opencodeSettings: defaultOpencodeSettings,
     };
   }
 
@@ -1293,6 +1293,106 @@ class Store {
 
   getRecentActivity(count: number): ActivityEvent[] {
     return this.data.activity.slice(-count);
+  }
+
+  // Sources methods
+  getSources(): Source[] {
+    return this.data.sources;
+  }
+
+  addSource(source: Source): void {
+    this.data.sources.push(source);
+    this.saveStore();
+  }
+
+  removeSource(id: string): void {
+    this.data.sources = this.data.sources.filter((s) => s.id !== id);
+    this.saveStore();
+  }
+
+  // CrawlRun methods
+  getCrawlRuns(): CrawlRun[] {
+    return this.data.crawlRuns;
+  }
+
+  getLatestCrawlRun(): CrawlRun | null {
+    if (this.data.crawlRuns.length === 0) return null;
+    return this.data.crawlRuns[this.data.crawlRuns.length - 1];
+  }
+
+  addCrawlRun(run: CrawlRun): void {
+    this.data.crawlRuns.push(run);
+    this.saveStore();
+  }
+
+  // DraftArtifact methods
+  getDraftArtifacts(grantId: string): DraftArtifact[] {
+    return this.data.draftArtifacts.filter((d) => d.grantId === grantId);
+  }
+
+  addDraftArtifact(artifact: DraftArtifact): void {
+    this.data.draftArtifacts.push(artifact);
+    this.saveStore();
+  }
+
+  // RevisionRequest methods
+  getRevisionRequests(grantId: string): RevisionRequest[] {
+    return this.data.revisionRequests.filter((r) => r.grantId === grantId);
+  }
+
+  addRevisionRequest(request: RevisionRequest): void {
+    this.data.revisionRequests.push(request);
+    this.saveStore();
+  }
+
+  // ApprovalRecord methods
+  getApprovalRecord(grantId: string): ApprovalRecord | null {
+    return this.data.approvalRecords.find((r) => r.grantId === grantId) || null;
+  }
+
+  addApprovalRecord(record: ApprovalRecord): void {
+    // Remove any existing approval record for this grant
+    this.data.approvalRecords = this.data.approvalRecords.filter((r) => r.grantId !== record.grantId);
+    this.data.approvalRecords.push(record);
+    this.saveStore();
+  }
+
+  // SubmissionRecord methods
+  getSubmissionRecord(grantId: string): SubmissionRecord | null {
+    return this.data.submissionRecords.find((r) => r.grantId === grantId) || null;
+  }
+
+  addSubmissionRecord(record: SubmissionRecord): void {
+    this.data.submissionRecords.push(record);
+    this.saveStore();
+  }
+
+  // FollowUp methods
+  getFollowUps(): FollowUp[] {
+    return this.data.followUps;
+  }
+
+  addFollowUp(followUp: FollowUp): void {
+    this.data.followUps.push(followUp);
+    this.saveStore();
+  }
+
+  updateFollowUp(followUp: FollowUp): void {
+    const index = this.data.followUps.findIndex((f) => f.id === followUp.id);
+    if (index !== -1) {
+      this.data.followUps[index] = followUp;
+      this.saveStore();
+    }
+  }
+
+  // OpencodeSettings methods
+  getOpencodeSettings(): OpencodeSettings {
+    return this.data.opencodeSettings;
+  }
+
+  updateOpencodeSettings(settings: OpencodeSettings): void {
+    this.data.opencodeSettings = settings;
+    this.saveStore();
   }
 }
 

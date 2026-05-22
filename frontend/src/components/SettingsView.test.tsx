@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { OrganizationProfile, DocumentMetadata } from '../../../shared/types';
 
 const mockProfile: OrganizationProfile = {
@@ -129,7 +129,7 @@ describe('SettingsView', () => {
     });
 
     it('should add theme on Enter key press', () => {
-      const newTheme = 'Enter Theme';
+      const _newTheme = 'Enter Theme';
       const keyPress = 'Enter';
       const shouldAdd = keyPress === 'Enter';
       expect(shouldAdd).toBe(true);

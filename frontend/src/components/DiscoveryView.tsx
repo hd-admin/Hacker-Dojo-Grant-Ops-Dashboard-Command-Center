@@ -118,7 +118,7 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
     if (!name) return;
     const url = window.prompt('Enter source URL:');
     if (url) {
-      console.log('Adding source:', { name, url });
+      console.warn('Adding source - backend not yet implemented:', { name, url });
     }
   };
 

@@ -8,7 +8,7 @@
     "dev": "concurrently \"cd frontend && next dev\" \"wait-on http://localhost:3000 && cross-env ELECTRON_START_URL=http://localhost:3000 tsx electron/main.ts\"",
     "build": "cd frontend && next build && tsc -p ../electron/tsconfig.json",
     "start": "electron .",
-    "lint": "cd frontend && next lint",
+    "lint": "eslint . --ext .ts,.tsx",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -16,7 +16,10 @@
     "test:e2e": "playwright test",
     "test:ui": "vitest --ui",
     "electron:build": "electron-builder --config electron-builder.yml",
-    "typecheck": "cd frontend && tsc --noEmit"
+    "typecheck": "tsc --noEmit -p frontend/tsconfig.json && tsc --noEmit -p electron/tsconfig.json",
+    "typecheck:frontend": "tsc --noEmit -p frontend/tsconfig.json",
+    "typecheck:electron": "tsc --noEmit -p electron/tsconfig.json",
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "dependencies": {
     "concurrently": "^9.1.2",

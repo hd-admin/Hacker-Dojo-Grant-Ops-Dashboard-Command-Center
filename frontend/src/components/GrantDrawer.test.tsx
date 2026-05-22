@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { Grant } from '../../../shared/types';
 
 // Mock window.electronAPI
@@ -36,7 +36,7 @@ describe('GrantDrawer', () => {
   describe('Grant Data Loading', () => {
     it('should load grant data when grantId prop changes', async () => {
       // When grantId changes from null to a grant ID, the drawer should load that grant
-      const prevGrantId: string | null = null;
+      const _prevGrantId: string | null = null;
       const nextGrantId = 'nsf-tech';
 
       // Simulate the effect: when grantId is set, load the grant
@@ -45,7 +45,7 @@ describe('GrantDrawer', () => {
     });
 
     it('should clear grant data when grantId becomes null', () => {
-      const grantId: string | null = 'nsf-tech';
+      const _grantId: string | null = 'nsf-tech';
       const nextGrantId: string | null = null;
 
       const shouldClear = nextGrantId === null;

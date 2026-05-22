@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { OrganizationProfile, DocumentMetadata } from '../../../shared/types';
+import type { OrganizationProfile, DocumentMetadata, OpencodeSettings } from '../../../shared/types';
 import { mockProfile, isElectronAPIavailable } from '../lib/mockData';
 
 export default function SettingsView() {
@@ -11,22 +11,28 @@ export default function SettingsView() {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<OrganizationProfile>>({});
   const [newTheme, setNewTheme] = useState('');
+  const [opencodeSettings, setOpencodeSettings] = useState<OpencodeSettings | null>(null);
+  const [isEditingOpencode, setIsEditingOpencode] = useState(false);
+  const [opencodeForm, setOpencodeForm] = useState<Partial<OpencodeSettings>>({});
 
   useEffect(() => {
     async function load() {
       try {
         if (isElectronAPIavailable()) {
-          const [profileData, docsData] = await Promise.all([
+          const [profileData, docsData, opencodeData] = await Promise.all([
             window.electronAPI.getOrgProfile(),
             window.electronAPI.getDocuments(),
+            window.electronAPI.getOpencodeSettings(),
           ]);
           setProfile(profileData);
           setEditForm(profileData);
           setDocuments(docsData);
+          setOpencodeSettings(opencodeData);
         } else {
           setProfile(mockProfile);
           setEditForm(mockProfile);
           setDocuments([]);
+          setOpencodeSettings(null);
         }
       } catch (error) {
         console.error('Error loading profile:', error);
@@ -121,6 +127,35 @@ export default function SettingsView() {
     if (e.key === 'Enter') {
       handleAddTheme();
     }
+  };
+
+  const handleEditOpencode = () => {
+    setOpencodeForm(opencodeSettings || {
+      binaryPath: '',
+      workingDirectory: '',
+      timeoutMs: 60000,
+      isConfigured: false,
+    });
+    setIsEditingOpencode(true);
+  };
+
+  const handleCancelOpencode = () => {
+    setIsEditingOpencode(false);
+  };
+
+  const handleSaveOpencode = async () => {
+    try {
+      await window.electronAPI.updateOpencodeSettings(opencodeForm as OpencodeSettings);
+      const updated = await window.electronAPI.getOpencodeSettings();
+      setOpencodeSettings(updated);
+      setIsEditingOpencode(false);
+    } catch (error) {
+      console.error('Error saving Opencode settings:', error);
+    }
+  };
+
+  const handleOpencodeChange = (field: keyof OpencodeSettings, value: string | number | boolean) => {
+    setOpencodeForm((prev) => ({ ...prev, [field]: value }));
   };
 
   if (loading) {
@@ -399,6 +434,132 @@ export default function SettingsView() {
                   <div>
                     <div className="setting-label">Voice &amp; tone</div>
                     <div className="setting-value">{profile.agentBehavior.voiceAndTone}</div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Opencode Settings Card */}
+        <div className="setting-card">
+          <div className="setting-card-header">
+            <div className="setting-card-title">Opencode Agent</div>
+            <div className="setting-card-actions">
+              {!isEditingOpencode && opencodeSettings && (
+                <button className="btn btn-sm" onClick={handleEditOpencode}>
+                  Configure
+                </button>
+              )}
+            </div>
+          </div>
+          <div className="setting-card-body">
+            {opencodeSettings?.isConfigured ? (
+              <div className="setting-row">
+                <div>
+                  <div className="setting-label">Status</div>
+                  <div className="setting-value">
+                    <span className="status-dot" style={{ color: '#22c55e' }}>●</span>{' '}
+                    Configured
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="setting-row">
+                <div>
+                  <div className="setting-label">Status</div>
+                  <div className="setting-value" style={{ color: '#f59e0b' }}>
+                    <span className="status-dot">●</span> Not configured
+                  </div>
+                </div>
+              </div>
+            )}
+            {isEditingOpencode ? (
+              <>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Binary path</div>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="/usr/local/bin/opencode"
+                      value={opencodeForm.binaryPath || ''}
+                      onChange={(e) => handleOpencodeChange('binaryPath', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Working directory</div>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="/path/to/workspace"
+                      value={opencodeForm.workingDirectory || ''}
+                      onChange={(e) => handleOpencodeChange('workingDirectory', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Timeout (ms)</div>
+                    <input
+                      type="number"
+                      className="form-input"
+                      value={opencodeForm.timeoutMs ?? 60000}
+                      onChange={(e) => handleOpencodeChange('timeoutMs', parseInt(e.target.value) || 60000)}
+                    />
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Profile</div>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="default"
+                      value={opencodeForm.profile || ''}
+                      onChange={(e) => handleOpencodeChange('profile', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                  <button className="btn btn-primary btn-sm" onClick={handleSaveOpencode}>
+                    Save
+                  </button>
+                  <button className="btn btn-sm" onClick={handleCancelOpencode}>
+                    Cancel
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Binary path</div>
+                    <div className="setting-value mono">{opencodeSettings?.binaryPath || 'Not set'}</div>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Working directory</div>
+                    <div className="setting-value mono">
+                      {opencodeSettings?.workingDirectory || 'Not set'}
+                    </div>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Timeout</div>
+                    <div className="setting-value">
+                      {opencodeSettings?.timeoutMs ? `${opencodeSettings.timeoutMs / 1000}s` : 'Default'}
+                    </div>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Profile</div>
+                    <div className="setting-value">{opencodeSettings?.profile || 'default'}</div>
                   </div>
                 </div>
               </>

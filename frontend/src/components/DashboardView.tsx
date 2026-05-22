@@ -14,7 +14,7 @@ interface DashboardViewProps {
 function formatDate(dateStr: string): { day: string; month: string } {
   if (dateStr === 'Rolling') return { day: '—', month: '' };
   const parts = dateStr.split('-');
-  const year = parts[0] ?? '';
+  const _year = parts[0] ?? '';
   const month = parts[1] ?? '';
   const day = parts[2] ?? '';
   const months = [

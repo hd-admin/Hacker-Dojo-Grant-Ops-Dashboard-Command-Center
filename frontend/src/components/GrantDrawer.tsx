@@ -81,7 +81,7 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
   };
 
   const handleConfirmRevision = () => {
-    console.log('Revision note:', revisionNote);
+    console.warn('Revision note - backend not yet implemented:', revisionNote);
     setShowRevision(false);
     setRevisionNote('');
   };

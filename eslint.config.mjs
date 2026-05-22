@@ -1,4 +1,6 @@
 import nextPlugin from '@next/eslint-plugin-next';
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsparser from '@typescript-eslint/parser';
 
 export default [
   {
@@ -10,6 +12,32 @@ export default [
     },
   },
   {
-    ignores: ['node_modules/**', '.next/**', 'dist-electron/**'],
+    files: ['**/*.ts', '**/*.tsx'],
+    plugins: {
+      '@typescript-eslint': tseslint,
+    },
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-console': ['warn', { allow: ['warn', 'error'] }],
+    },
+  },
+  {
+    ignores: [
+      'node_modules/**',
+      '.next/**',
+      'dist-electron/**',
+      'frontend/.next/**',
+      '**/*.js',
+      'shared/*.js',
+      'electron/*.js',
+    ],
   },
 ];

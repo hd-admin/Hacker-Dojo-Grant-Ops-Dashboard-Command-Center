@@ -1,7 +1,7 @@
 import { ipcMain, app, dialog, Notification } from 'electron';
 import log from 'electron-log';
 import { store } from './store';
-import { GrantStatus, ActivityEvent } from '../shared/types';
+import { GrantStatus } from '../shared/types';
 import fs from 'fs';
 import path from 'path';
 
@@ -246,6 +246,185 @@ export const registerIpcHandlers = () => {
     } catch (error) {
       log.error('Error getting recent activity:', error);
       return [];
+    }
+  });
+
+  // Source handlers
+  ipcMain.handle('sources:getAll', async () => {
+    try {
+      return store.getSources();
+    } catch (error) {
+      log.error('Error getting sources:', error);
+      return [];
+    }
+  });
+
+  ipcMain.handle('sources:add', async (_, source) => {
+    try {
+      store.addSource(source);
+      return true;
+    } catch (error) {
+      log.error('Error adding source:', error);
+      return false;
+    }
+  });
+
+  ipcMain.handle('sources:remove', async (_, id: string) => {
+    try {
+      store.removeSource(id);
+      return true;
+    } catch (error) {
+      log.error('Error removing source:', error);
+      return false;
+    }
+  });
+
+  // CrawlRun handlers
+  ipcMain.handle('crawlRuns:getAll', async () => {
+    try {
+      return store.getCrawlRuns();
+    } catch (error) {
+      log.error('Error getting crawl runs:', error);
+      return [];
+    }
+  });
+
+  ipcMain.handle('crawlRuns:getLatest', async () => {
+    try {
+      return store.getLatestCrawlRun();
+    } catch (error) {
+      log.error('Error getting latest crawl run:', error);
+      return null;
+    }
+  });
+
+  // DraftArtifact handlers
+  ipcMain.handle('drafts:get', async (_, grantId: string) => {
+    try {
+      return store.getDraftArtifacts(grantId);
+    } catch (error) {
+      log.error('Error getting draft artifacts:', error);
+      return [];
+    }
+  });
+
+  ipcMain.handle('drafts:create', async (_, artifact) => {
+    try {
+      store.addDraftArtifact(artifact);
+      return true;
+    } catch (error) {
+      log.error('Error creating draft artifact:', error);
+      return false;
+    }
+  });
+
+  // RevisionRequest handlers
+  ipcMain.handle('revisions:get', async (_, grantId: string) => {
+    try {
+      return store.getRevisionRequests(grantId);
+    } catch (error) {
+      log.error('Error getting revision requests:', error);
+      return [];
+    }
+  });
+
+  ipcMain.handle('revisions:create', async (_, request) => {
+    try {
+      store.addRevisionRequest(request);
+      return true;
+    } catch (error) {
+      log.error('Error creating revision request:', error);
+      return false;
+    }
+  });
+
+  // ApprovalRecord handlers
+  ipcMain.handle('approvals:get', async (_, grantId: string) => {
+    try {
+      return store.getApprovalRecord(grantId);
+    } catch (error) {
+      log.error('Error getting approval record:', error);
+      return null;
+    }
+  });
+
+  ipcMain.handle('approvals:create', async (_, record) => {
+    try {
+      store.addApprovalRecord(record);
+      return true;
+    } catch (error) {
+      log.error('Error creating approval record:', error);
+      return false;
+    }
+  });
+
+  // SubmissionRecord handlers
+  ipcMain.handle('submissions:get', async (_, grantId: string) => {
+    try {
+      return store.getSubmissionRecord(grantId);
+    } catch (error) {
+      log.error('Error getting submission record:', error);
+      return null;
+    }
+  });
+
+  ipcMain.handle('submissions:create', async (_, record) => {
+    try {
+      store.addSubmissionRecord(record);
+      return true;
+    } catch (error) {
+      log.error('Error creating submission record:', error);
+      return false;
+    }
+  });
+
+  // FollowUp handlers
+  ipcMain.handle('followUps:getAll', async () => {
+    try {
+      return store.getFollowUps();
+    } catch (error) {
+      log.error('Error getting follow-ups:', error);
+      return [];
+    }
+  });
+
+  ipcMain.handle('followUps:create', async (_, followUp) => {
+    try {
+      store.addFollowUp(followUp);
+      return true;
+    } catch (error) {
+      log.error('Error creating follow-up:', error);
+      return false;
+    }
+  });
+
+  ipcMain.handle('followUps:update', async (_, followUp) => {
+    try {
+      store.updateFollowUp(followUp);
+      return true;
+    } catch (error) {
+      log.error('Error updating follow-up:', error);
+      return false;
+    }
+  });
+
+  // OpencodeSettings handlers
+  ipcMain.handle('opencode:getSettings', async () => {
+    try {
+      return store.getOpencodeSettings();
+    } catch (error) {
+      log.error('Error getting opencode settings:', error);
+      return null;
+    }
+  });
+
+  ipcMain.handle('opencode:updateSettings', async (_, settings) => {
+    try {
+      store.updateOpencodeSettings(settings);
+      return true;
+    } catch (error) {
+      log.error('Error updating opencode settings:', error);
+      return false;
     }
   });
 

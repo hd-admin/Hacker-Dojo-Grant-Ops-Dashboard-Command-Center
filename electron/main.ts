@@ -1,8 +1,9 @@
-import { app, BrowserWindow, nativeImage, Menu } from 'electron';
+import { app, BrowserWindow, Menu } from 'electron';
 import path from 'path';
 import { initTray } from './tray';
 import { initAutoUpdater } from './updater';
 import { registerIpcHandlers } from './ipc-handlers';
+import { startNextServer, stopNextServer } from './next-server';
 import log from 'electron-log';
 import Store from 'electron-store';
 
@@ -14,7 +15,7 @@ const store = new Store<{ windowState?: { x: number; y: number; width: number; h
   name: 'window-state',
 });
 
-const createWindow = () => {
+const createWindow = (startUrl: string) => {
   log.info('Creating main window...');
 
   // Restore window state
@@ -43,7 +44,6 @@ const createWindow = () => {
     }
   });
 
-  const startUrl = process.env.ELECTRON_START_URL || 'http://localhost:3000';
   log.info(`Loading URL: ${startUrl}`);
   mainWindow.loadURL(startUrl);
 
@@ -80,10 +80,14 @@ export const showWindow = () => {
   }
 };
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   log.info('App ready, initializing...');
   registerIpcHandlers();
-  createWindow();
+
+  const startUrl = process.env.ELECTRON_START_URL ?? await startNextServer();
+  log.info(`Next.js server URL: ${startUrl}`);
+
+  createWindow(startUrl);
   initTray();
   initAutoUpdater();
 
@@ -99,7 +103,7 @@ app.whenReady().then(() => {
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      createWindow(startUrl);
     } else {
       showWindow();
     }
@@ -108,6 +112,7 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   isQuitting = true;
+  stopNextServer();
   log.info('App quitting...');
 });
 

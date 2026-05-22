@@ -89,14 +89,9 @@ describe('DiscoveryView', () => {
     });
 
     it('should return all grants when search is empty', () => {
-      const filtered = mockGrants.filter((g) => {
+      const filtered = mockGrants.filter(() => {
         const searchLower = '';
-        return (
-          !searchLower ||
-          g.title.toLowerCase().includes(searchLower) ||
-          g.funder.toLowerCase().includes(searchLower) ||
-          g.tags.some((t) => t.toLowerCase().includes(searchLower))
-        );
+        return !searchLower;
       });
       expect(filtered.length).toBe(mockGrants.length);
     });
@@ -118,7 +113,7 @@ describe('DiscoveryView', () => {
     });
 
     it('should return all for "All" category', () => {
-      const filtered = mockGrants.filter((g) => true);
+      const filtered = mockGrants.filter(() => true);
       expect(filtered.length).toBe(4);
     });
   });

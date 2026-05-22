@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { Grant, OrganizationProfile } from '../../../shared/types';
 
 // Mock window.electronAPI
@@ -65,7 +65,7 @@ const mockGrants: Grant[] = [
   },
 ];
 
-const mockProfile: OrganizationProfile = {
+const _mockProfile: OrganizationProfile = {
   legalName: 'Hacker Dojo',
   ein: '26-3375350',
   samUEI: 'XK7N4HQ2P3M9',

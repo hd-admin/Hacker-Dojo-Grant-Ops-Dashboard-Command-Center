@@ -1,9 +1,6 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { GrantStatus, ElectronAPI } from '../shared/types';
 
-// showNotification is implemented as a simple wrapper around ipcRenderer.invoke
-// because the Notification API is called from the main process.
-
 const electronAPI: ElectronAPI = {
   getGrants: () => ipcRenderer.invoke('grants:getAll'),
   getGrantById: (id: string) => ipcRenderer.invoke('grants:getById', id),
@@ -37,6 +34,32 @@ const electronAPI: ElectronAPI = {
   // Desktop notifications
   showNotification: (title: string, body: string) =>
     ipcRenderer.invoke('notifications:show', title, body),
+  // Sources (new)
+  getSources: () => ipcRenderer.invoke('sources:getAll'),
+  addSource: (source) => ipcRenderer.invoke('sources:add', source),
+  removeSource: (id: string) => ipcRenderer.invoke('sources:remove', id),
+  // Draft operations (new)
+  getDraftArtifacts: (grantId: string) => ipcRenderer.invoke('drafts:get', grantId),
+  createDraftArtifact: (artifact) => ipcRenderer.invoke('drafts:create', artifact),
+  // Revision requests (new)
+  getRevisionRequests: (grantId: string) => ipcRenderer.invoke('revisions:get', grantId),
+  createRevisionRequest: (request) => ipcRenderer.invoke('revisions:create', request),
+  // Approval records (new)
+  getApprovalRecord: (grantId: string) => ipcRenderer.invoke('approvals:get', grantId),
+  createApprovalRecord: (record) => ipcRenderer.invoke('approvals:create', record),
+  // Submission records (new)
+  getSubmissionRecord: (grantId: string) => ipcRenderer.invoke('submissions:get', grantId),
+  createSubmissionRecord: (record) => ipcRenderer.invoke('submissions:create', record),
+  // Follow-ups (new)
+  getFollowUps: () => ipcRenderer.invoke('followUps:getAll'),
+  createFollowUp: (followUp) => ipcRenderer.invoke('followUps:create', followUp),
+  updateFollowUp: (followUp) => ipcRenderer.invoke('followUps:update', followUp),
+  // Opencode settings (new)
+  getOpencodeSettings: () => ipcRenderer.invoke('opencode:getSettings'),
+  updateOpencodeSettings: (settings) => ipcRenderer.invoke('opencode:updateSettings', settings),
+  // Research/Crawl runs (new)
+  getCrawlRuns: () => ipcRenderer.invoke('crawlRuns:getAll'),
+  getLatestCrawlRun: () => ipcRenderer.invoke('crawlRuns:getLatest'),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);
