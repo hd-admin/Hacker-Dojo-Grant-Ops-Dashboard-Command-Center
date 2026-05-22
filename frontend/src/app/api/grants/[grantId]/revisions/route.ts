@@ -44,7 +44,7 @@ export async function POST(
     const draftVersion = latestDraft ? latestDraft.version + 1 : 1;
 
     const revision: RevisionRequest = {
-      id: `revision-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      id: `revision-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
       grantId,
       draftVersion,
       notes: body.notes || '',

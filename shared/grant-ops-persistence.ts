@@ -55,11 +55,7 @@ export async function _ensureDataDir(dataPath: string): Promise<void> {
   const fs = await import('fs/promises');
   const path = await import('path');
   const dir = path.dirname(dataPath);
-  try {
-    await fs.mkdir(dir, { recursive: true });
-  } catch {
-    // Directory may already exist
-  }
+  await fs.mkdir(dir, { recursive: true });
 }
 
 export async function loadPersistedData(baseDir?: string): Promise<PersistedData> {
@@ -131,14 +127,15 @@ export async function loadGrants(baseDir?: string): Promise<Grant[]> {
 
 export async function saveGrants(grants: Grant[], baseDir?: string): Promise<void> {
   const cwd = baseDir ?? process.cwd();
+  const fs = await import('fs/promises');
+  const path = await import('path');
+  const dataPath = path.join(cwd, DATA_DIR, 'grants.json');
+  await _ensureDataDir(dataPath);
   try {
-    const fs = await import('fs/promises');
-    const path = await import('path');
-    const dataPath = path.join(cwd, DATA_DIR, 'grants.json');
-    await _ensureDataDir(dataPath);
     await fs.writeFile(dataPath, JSON.stringify(grants, null, 2), 'utf-8');
   } catch (error) {
     console.error('[grant-ops-persistence] Failed to save grants:', error);
+    throw error; // Propagate to caller so they know the save failed
   }
 }
 

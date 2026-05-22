@@ -59,7 +59,7 @@ describe('TasksView', () => {
 
     it('should create new task with unique id', () => {
       const newTask = {
-        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        id: `task-test-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
         completed: false,
         text: 'New task text',
       };
@@ -70,7 +70,7 @@ describe('TasksView', () => {
 
     it('should add new task to existing tasks', async () => {
       const newTask = {
-        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        id: `task-test-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
         completed: false,
         text: 'New task text',
       };

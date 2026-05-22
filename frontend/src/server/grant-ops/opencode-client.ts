@@ -72,7 +72,7 @@ class FakeOpencodeProvider implements OpencodeAdapter {
     const mockResearch = {
       grants: [
         {
-          id: `mock-${Date.now()}`,
+          id: `mock-grant-001`,
           title: `${request.searchThemes[0] || 'Technology'} Community Grant`,
           funder: 'Mock Foundation',
           funderShort: 'Mock',
@@ -80,7 +80,7 @@ class FakeOpencodeProvider implements OpencodeAdapter {
           awardSort: 50000,
           deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           daysOut: 30,
-          fit: 75 + Math.floor(Math.random() * 20),
+          fit: 82,
           tags: ['Community', 'Technology'],
           status: 'matched' as const,
           statusLabel: 'Matched',
@@ -158,7 +158,6 @@ class CliOpencodeProvider implements OpencodeAdapter {
       const proc = spawn(binaryPath, args, {
         cwd: this.settings.workingDirectory || process.cwd(),
         timeout: this.settings.timeoutMs || 60000,
-        shell: true,
       });
 
       let stdout = '';

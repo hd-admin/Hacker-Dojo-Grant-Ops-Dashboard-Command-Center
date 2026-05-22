@@ -96,7 +96,7 @@ export async function runResearch(
             researchData = {
               grants: [
                 {
-                  id: `found-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+                  id: `found-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
                   title: `Grant from ${source.name}`,
                   funder: 'Researched Funder',
                   funderShort: 'RF',
@@ -126,7 +126,7 @@ export async function runResearch(
 
             if (!existing) {
               const newGrant: Grant = {
-                id: grantData.id || `grant-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+                id: grantData.id || `grant-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
                 title: grantData.title,
                 funder: grantData.funder,
                 funderShort: grantData.funderShort || grantData.funder.substring(0, 10),

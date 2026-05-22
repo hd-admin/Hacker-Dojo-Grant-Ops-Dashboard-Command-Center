@@ -135,7 +135,7 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
     try {
       if (isElectronAPIavailable()) {
         const revisionRequest: RevisionRequest = {
-          id: `revision-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          id: `revision-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
           grantId: grant.id,
           draftVersion: 1,
           notes: revisionNote,

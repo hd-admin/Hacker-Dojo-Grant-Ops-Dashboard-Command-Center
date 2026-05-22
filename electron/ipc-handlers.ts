@@ -189,7 +189,7 @@ export const registerIpcHandlers = () => {
       fs.copyFileSync(sourcePath, finalDest);
 
       const doc = {
-        id: `doc-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        id: `doc-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
         name: fileName,
         type: docType,
         lastUsed: new Date().toISOString(),

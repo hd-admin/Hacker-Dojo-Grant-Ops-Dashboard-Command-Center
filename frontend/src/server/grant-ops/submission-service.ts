@@ -91,7 +91,7 @@ export async function approveGrant(input: ApprovalInput): Promise<ApprovalResult
 
     // Create approval record
     const approvalRecord: ApprovalRecord = {
-      id: `approval-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      id: `approval-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
       grantId: grant.id,
       draftVersion: latestVersion,
       approvedAt: new Date().toISOString(),
@@ -134,7 +134,7 @@ export async function recordSubmission(input: SubmissionInput): Promise<Submissi
 
     // Create submission record
     const submissionRecord: SubmissionRecord = {
-      id: `submission-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      id: `submission-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
       grantId: grant.id,
       submittedAt: new Date().toISOString(),
       method,
@@ -180,7 +180,7 @@ async function generateFollowUps(
   // Follow-up: Check on status (30 days before deadline if applicable)
   if (grant.daysOut > 60) {
     const followUp: FollowUp = {
-      id: `followup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      id: `followup-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
       grantId: grant.id,
       submissionId: submission.id,
       type: 'progress_check',
@@ -200,7 +200,7 @@ async function generateFollowUps(
     const reportDueDate = new Date(dueDate.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days after deadline
 
     const reportFollowUp: FollowUp = {
-      id: `followup-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+      id: `followup-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
       grantId: grant.id,
       submissionId: submission.id,
       type: 'report_due',

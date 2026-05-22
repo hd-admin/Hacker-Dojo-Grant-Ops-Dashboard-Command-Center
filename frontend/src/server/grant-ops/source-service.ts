@@ -28,7 +28,7 @@ export async function getAllSources(): Promise<Source[]> {
 
 export async function addSource(input: AddSourceInput): Promise<Source> {
   const source: Source = {
-    id: `source-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    id: `source-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
     name: input.name,
     url: input.url,
     type: input.type,

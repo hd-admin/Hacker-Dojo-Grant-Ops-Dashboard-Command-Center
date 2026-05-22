@@ -131,7 +131,7 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
     try {
       if (isElectronAPIavailable()) {
         const source = {
-          id: `source-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          id: `source-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
           name: newSourceName.trim(),
           url: newSourceUrl.trim(),
           type: 'website' as const,

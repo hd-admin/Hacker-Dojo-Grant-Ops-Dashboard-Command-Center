@@ -9,7 +9,7 @@
  * to the same .grant-ops-data/ files."
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   DATA_DIR,
   loadGrants,
@@ -21,6 +21,24 @@ import {
 } from './grant-ops-persistence';
 
 describe('Shared Persistence Integrity', () => {
+  // Backup original grants for test isolation
+  let originalGrants: ReturnType<typeof loadGrants> extends Promise<infer T> ? T : never;
+
+  beforeEach(async () => {
+    // Save original state before each test that writes
+    originalGrants = await loadGrants();
+  });
+
+  afterEach(async () => {
+    // Restore original state after each test to prevent cross-test contamination
+    try {
+      await saveGrants(originalGrants);
+    } catch {
+      // If save fails during cleanup, log but don't fail the test
+      console.error('Failed to restore original grants during cleanup');
+    }
+  });
+
   describe('DATA_DIR constant', () => {
     it('exports DATA_DIR as ".grant-ops-data"', () => {
       expect(DATA_DIR).toBe('.grant-ops-data');
@@ -51,9 +69,6 @@ describe('Shared Persistence Integrity', () => {
       // Verify we can read back what we wrote (same DATA_DIR)
       const loaded = await loadGrants();
       expect(loaded.some(g => g.id === 'test-grant')).toBe(true);
-
-      // Clean up
-      await saveGrants([]);
     });
   });
 
@@ -92,9 +107,6 @@ describe('Shared Persistence Integrity', () => {
 
       expect(found).toBeDefined();
       expect(found?.title).toBe('Consistency Test');
-
-      // Clean up
-      await saveGrants([]);
     });
 
     it('loadProfile reads from same path as saveProfile writes to', async () => {

@@ -68,7 +68,7 @@ export async function generateDraft(
 
   // Create draft artifact
   const draftArtifact: DraftArtifact = {
-    id: `draft-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    id: `draft-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
     grantId: grant.id,
     version: latestVersion + 1,
     content: draftContent,
@@ -101,7 +101,7 @@ export async function createRevisionRequest(
     : 0;
 
   const revisionRequest: RevisionRequest = {
-    id: `revision-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+    id: `revision-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
     grantId: grant.id,
     draftVersion: latestVersion,
     notes,

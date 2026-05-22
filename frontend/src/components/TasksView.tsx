@@ -49,7 +49,7 @@ export default function TasksView() {
     setIsAddingTask(true);
     try {
       const newTask = {
-        id: Date.now().toString() + Math.random().toString(36).slice(2),
+        id: `task-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
         completed: false,
         text: newTaskText.trim(),
       };
