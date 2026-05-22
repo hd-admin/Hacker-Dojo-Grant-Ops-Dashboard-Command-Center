@@ -13,7 +13,6 @@ import type {
   SubmissionMethod,
   FollowUp,
   Grant,
-  GrantStatus,
 } from '../../../../shared/types';
 import * as repository from './repository';
 
@@ -102,11 +101,9 @@ export async function approveGrant(input: ApprovalInput): Promise<ApprovalResult
 
     await repository.addApprovalRecord(approvalRecord);
 
-    // Update grant status to approved
-    await repository.updateGrant(grant.id, {
-      status: 'approved' as GrantStatus,
-      statusLabel: 'Approved',
-    });
+    // Note: Grant status remains 'review' (or current board status) until actual submission.
+    // Approval creates an ApprovalRecord which gates submission, but does not change
+    // the board column. This matches the prototype pipeline which has no 'approved' column.
 
     return {
       success: true,

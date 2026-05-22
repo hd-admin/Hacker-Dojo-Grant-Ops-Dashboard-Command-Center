@@ -66,9 +66,9 @@ test.describe('Grant Operations Center', () => {
     await expect(draftPreview).toBeVisible();
   });
 
-  test('settings-renders: Settings shows 4 cards', async ({ page }) => {
+  test('settings-renders: Settings shows 5 cards', async ({ page }) => {
     await page.click('[data-view="settings"]');
-    await expect(page.locator('.setting-card')).toHaveCount(4);
+    await expect(page.locator('.setting-card')).toHaveCount(5);
   });
 
   test('settings-edit-mode: Edit profile enables form fields', async ({ page }) => {
