@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { mockGrants, isElectronAPIavailable } from '../lib/mockData';
-import type { Grant } from '../../../shared/types';
+import type { Grant, RevisionRequest, SubmissionMethod } from '../../../shared/types';
 
 interface GrantDrawerProps {
   grantId: string | null;
@@ -37,6 +37,11 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
   const [loading, setLoading] = useState(false);
   const [showRevision, setShowRevision] = useState(false);
   const [revisionNote, setRevisionNote] = useState('');
+  const [showSubmitForm, setShowSubmitForm] = useState(false);
+  const [submitMethod, setSubmitMethod] = useState<SubmissionMethod['type']>('portal');
+  const [confirmationId, setConfirmationId] = useState('');
+  const [portalUrl, setPortalUrl] = useState('');
+  const [submitNotes, setSubmitNotes] = useState('');
 
   useEffect(() => {
     if (grantId) {
@@ -69,10 +74,54 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
   const handleApproveAndLock = async () => {
     if (!grant) return;
     try {
-      await window.electronAPI.updateGrantStatus(grant.id, 'submitted');
-      onClose();
+      // Call the approval API endpoint to lock the draft
+      const response = await fetch(`/api/grants/${grant.id}/approval`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ approvedBy: 'human' }),
+      });
+      if (response.ok) {
+        // Refresh grant data
+        if (isElectronAPIavailable()) {
+          const updatedGrant = await window.electronAPI.getGrantById(grant.id);
+          if (updatedGrant) setGrant(updatedGrant);
+        }
+      } else {
+        const error = await response.json();
+        console.error('Error approving grant:', error);
+      }
     } catch (error) {
-      console.error('Error updating grant status:', error);
+      console.error('Error approving grant:', error);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!grant) return;
+    try {
+      const method: SubmissionMethod = {
+        type: submitMethod,
+        submittedBy: 'human',
+      };
+      if (submitMethod === 'portal' && portalUrl) {
+        method.portalUrl = portalUrl;
+      }
+      if (confirmationId) {
+        method.confirmationId = confirmationId;
+      }
+      const response = await fetch(`/api/grants/${grant.id}/submit`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ method, notes: submitNotes }),
+      });
+      if (response.ok) {
+        setShowSubmitForm(false);
+        onClose();
+      } else {
+        const error = await response.json();
+        console.error('Error submitting grant:', error);
+      }
+    } catch (error) {
+      console.error('Error submitting grant:', error);
     }
   };
 
@@ -80,10 +129,26 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
     setShowRevision(true);
   };
 
-  const handleConfirmRevision = () => {
-    console.warn('Revision note - backend not yet implemented:', revisionNote);
-    setShowRevision(false);
-    setRevisionNote('');
+  const handleConfirmRevision = async () => {
+    if (!grant || !revisionNote.trim()) return;
+    try {
+      const revisionRequest: RevisionRequest = {
+        id: `revision-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+        grantId: grant.id,
+        draftVersion: 1, // Will be determined by backend
+        notes: revisionNote,
+        requestedAt: new Date().toISOString(),
+        requestedBy: 'human',
+        status: 'pending',
+      };
+      if (isElectronAPIavailable()) {
+        await window.electronAPI.createRevisionRequest(revisionRequest);
+      }
+      setShowRevision(false);
+      setRevisionNote('');
+    } catch (error) {
+      console.error('Error creating revision request:', error);
+    }
   };
 
   const handleCancelRevision = () => {
@@ -269,10 +334,68 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
                 </div>
               </div>
 
+              {/* Submit Form */}
+              {showSubmitForm && (
+                <div className="submit-form">
+                  <h3>Record Submission</h3>
+                  <div className="form-group">
+                    <label>Submission Method</label>
+                    <select
+                      value={submitMethod}
+                      onChange={(e) => setSubmitMethod(e.target.value as SubmissionMethod['type'])}
+                    >
+                      <option value="portal">Online Portal</option>
+                      <option value="email">Email</option>
+                      <option value="mail">Mail</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  {submitMethod === 'portal' && (
+                    <div className="form-group">
+                      <label>Portal URL</label>
+                      <input
+                        type="url"
+                        placeholder="https://..."
+                        value={portalUrl}
+                        onChange={(e) => setPortalUrl(e.target.value)}
+                      />
+                    </div>
+                  )}
+                  <div className="form-group">
+                    <label>Confirmation ID</label>
+                    <input
+                      type="text"
+                      placeholder="e.g., WFF-2026-0341"
+                      value={confirmationId}
+                      onChange={(e) => setConfirmationId(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Notes</label>
+                    <textarea
+                      placeholder="Any additional notes..."
+                      value={submitNotes}
+                      onChange={(e) => setSubmitNotes(e.target.value)}
+                    />
+                  </div>
+                  <div className="form-actions">
+                    <button className="btn btn-primary" onClick={handleSubmit}>
+                      Confirm Submission
+                    </button>
+                    <button className="btn" onClick={() => setShowSubmitForm(false)}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Footer Buttons */}
               <div className="drawer-footer">
                 <button className="btn btn-primary" onClick={handleApproveAndLock}>
                   Approve &amp; lock draft
+                </button>
+                <button className="btn" onClick={() => setShowSubmitForm(true)}>
+                  Submit
                 </button>
                 <button className="btn" onClick={handleRequestRevision}>
                   Request revision

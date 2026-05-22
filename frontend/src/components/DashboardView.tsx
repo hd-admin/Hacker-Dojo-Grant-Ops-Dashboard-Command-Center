@@ -113,8 +113,20 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
   }, []);
 
   const handleRefreshCrawl = async () => {
-    if (window.electronAPI) {
-      await window.electronAPI.triggerCrawl();
+    try {
+      const response = await fetch('/api/research', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (response.ok) {
+        // Refresh grants after research completes
+        if (isElectronAPIavailable()) {
+          const grantsData = await window.electronAPI.getGrants();
+          setGrants(grantsData);
+        }
+      }
+    } catch (error) {
+      console.error('Error triggering research:', error);
     }
   };
 
