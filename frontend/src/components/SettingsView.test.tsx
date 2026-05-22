@@ -116,9 +116,7 @@ describe('SettingsView', () => {
   describe('Theme Tag Add/Remove', () => {
     it('should call themes:remove IPC when X button is clicked', () => {
       const themeToRemove = 'AI literacy';
-      const remainingThemes = mockProfile.searchThemes.filter(
-        (t) => t !== themeToRemove
-      );
+      const remainingThemes = mockProfile.searchThemes.filter((t) => t !== themeToRemove);
       expect(remainingThemes).not.toContain(themeToRemove);
       expect(remainingThemes.length).toBe(2);
     });

@@ -17,7 +17,20 @@ function formatDate(dateStr: string): { day: string; month: string } {
   const year = parts[0] ?? '';
   const month = parts[1] ?? '';
   const day = parts[2] ?? '';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return { day, month: months[parseInt(month, 10) - 1] ?? '' };
 }
 
@@ -33,11 +46,31 @@ function formatCurrency(amount: number): string {
 
 function getDefaultActivity(): ActivityEvent[] {
   return [
-    { dot: 'success', text: '<strong>3 new grants</strong> matched from Candid weekly crawl', time: '2h ago' },
-    { dot: 'accent', text: 'Draft completed for <strong>SVCF Community Innovation Fund</strong> · awaiting review', time: '4h ago' },
-    { dot: 'info', text: 'Crawled 47 sources · 12 federal, 28 foundation, 7 corporate', time: '6h ago' },
-    { dot: 'warning', text: 'NSF TechAccess LOI deadline in <strong>26 days</strong> — checklist 4/7 complete', time: 'yesterday' },
-    { dot: 'success', text: 'Submitted: <strong>Wiener Family Foundation</strong> · confirmation #WFF-2026-0341', time: '2d ago' },
+    {
+      dot: 'success',
+      text: '<strong>3 new grants</strong> matched from Candid weekly crawl',
+      time: '2h ago',
+    },
+    {
+      dot: 'accent',
+      text: 'Draft completed for <strong>SVCF Community Innovation Fund</strong> · awaiting review',
+      time: '4h ago',
+    },
+    {
+      dot: 'info',
+      text: 'Crawled 47 sources · 12 federal, 28 foundation, 7 corporate',
+      time: '6h ago',
+    },
+    {
+      dot: 'warning',
+      text: 'NSF TechAccess LOI deadline in <strong>26 days</strong> — checklist 4/7 complete',
+      time: 'yesterday',
+    },
+    {
+      dot: 'success',
+      text: 'Submitted: <strong>Wiener Family Foundation</strong> · confirmation #WFF-2026-0341',
+      time: '2d ago',
+    },
     { dot: 'accent', text: 'Org profile updated · Impact Report v2.1 indexed', time: '3d ago' },
   ];
 }
@@ -141,20 +174,34 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
 
   // Header sub text
   const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const dateStr = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
   return (
     <>
       <div className="header">
         <div>
           <h1 className="header-title">
-            {greeting}, <span className="accent">Qi</span>.
+            {greeting},{' '}
+            <span className="accent">
+              {profile?.agentBehavior.notifyEmail.split('@')[0] ?? 'there'}
+            </span>
+            .
           </h1>
-          <div className="header-sub">{dayName} · {dateStr} · {activeGrants.length} grants in pipeline</div>
+          <div className="header-sub">
+            {dayName} · {dateStr} · {activeGrants.length} grants in pipeline
+          </div>
         </div>
         <div className="header-actions">
-          <button className="btn btn-ghost btn-sm" onClick={handleRefreshCrawl}>↻ Refresh crawl</button>
-          <button className="btn btn-primary" onClick={handleNewSearch}>+ New search</button>
+          <button className="btn btn-ghost btn-sm" onClick={handleRefreshCrawl}>
+            ↻ Refresh crawl
+          </button>
+          <button className="btn btn-primary" onClick={handleNewSearch}>
+            + New search
+          </button>
         </div>
       </div>
 
@@ -163,13 +210,14 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
         <div className="kpi-card">
           <div className="kpi-label">Active Pipeline</div>
           <div className="kpi-value">{formatCurrency(activePipeline)}</div>
-          <div className="kpi-meta">{activeGrants.length} applications · <span className="delta-up">+{grantsThisMonth} this month</span></div>
+          <div className="kpi-meta">
+            {activeGrants.length} applications ·{' '}
+            <span className="delta-up">+{grantsThisMonth} this month</span>
+          </div>
         </div>
         <div className="kpi-card warning">
           <div className="kpi-label">Next Deadline</div>
-          <div className="kpi-value">
-            {deadlinesGrant ? `${deadlinesGrant.daysOut}d` : '—'}
-          </div>
+          <div className="kpi-value">{deadlinesGrant ? `${deadlinesGrant.daysOut}d` : '—'}</div>
           <div className="kpi-meta">
             {deadlinesGrant?.title.substring(0, 30) || 'No upcoming deadline'}
             {deadlinesGrant && deadlinesGrant.title.length > 30 ? '...' : ''}
@@ -193,7 +241,13 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
         <div className="panel">
           <div className="panel-header">
             <div className="panel-title">Upcoming Deadlines</div>
-            <div className="panel-action" data-view-link="pipeline" onClick={() => onNavigate?.('pipeline')}>View all</div>
+            <div
+              className="panel-action"
+              data-view-link="pipeline"
+              onClick={() => onNavigate?.('pipeline')}
+            >
+              View all
+            </div>
           </div>
           <div className="deadline-list">
             {upcomingDeadlines.map((grant) => {
@@ -233,10 +287,7 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
               <div key={idx} className="activity-item">
                 <div className={`activity-dot ${item.dot}`} />
                 <div>
-                  <div
-                    className="activity-text"
-                    dangerouslySetInnerHTML={{ __html: item.text }}
-                  />
+                  <div className="activity-text" dangerouslySetInnerHTML={{ __html: item.text }} />
                   <div className="activity-time">{item.time}</div>
                 </div>
               </div>
@@ -250,16 +301,18 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
         <div className="panel">
           <div className="panel-header">
             <div className="panel-title">Awaiting Review</div>
-            <div className="panel-action" data-view-link="pipeline" onClick={() => onNavigate?.('pipeline')}>{reviewQueue.length} drafts</div>
+            <div
+              className="panel-action"
+              data-view-link="pipeline"
+              onClick={() => onNavigate?.('pipeline')}
+            >
+              {reviewQueue.length} drafts
+            </div>
           </div>
           {reviewQueue.map((grant) => {
             const { day, month } = formatDate(grant.deadline);
             return (
-              <div
-                key={grant.id}
-                className="deadline-item"
-                onClick={() => onGrantSelect(grant.id)}
-              >
+              <div key={grant.id} className="deadline-item" onClick={() => onGrantSelect(grant.id)}>
                 <div className="deadline-date">
                   <div className="deadline-day">{day}</div>
                   <div className="deadline-month">{month}</div>

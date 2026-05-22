@@ -2,12 +2,90 @@ import { describe, it, expect } from 'vitest';
 import type { Grant, GrantStatus } from '../../../shared/types';
 
 const mockGrants: Grant[] = [
-  { id: 'grant-1', title: 'Matched Grant 1', funder: 'Funder 1', funderShort: 'F1', award: '$100K', awardSort: 100000, deadline: '2026-06-15', daysOut: 25, fit: 88, tags: ['EdTech'], status: 'matched' as GrantStatus, statusLabel: 'Matched' },
-  { id: 'grant-2', title: 'Matched Grant 2', funder: 'Funder 2', funderShort: 'F2', award: '$200K', awardSort: 200000, deadline: '2026-07-01', daysOut: 41, fit: 76, tags: ['Community'], status: 'matched' as GrantStatus, statusLabel: 'Matched' },
-  { id: 'grant-3', title: 'Draft Grant', funder: 'Funder 3', funderShort: 'F3', award: '$50K', awardSort: 50000, deadline: '2026-06-01', daysOut: 11, fit: 84, tags: ['Federal'], status: 'draft' as GrantStatus, statusLabel: 'Drafting' },
-  { id: 'grant-4', title: 'Review Grant', funder: 'Funder 4', funderShort: 'F4', award: '$75K', awardSort: 75000, deadline: '2026-06-10', daysOut: 20, fit: 81, tags: ['Foundation'], status: 'review' as GrantStatus, statusLabel: 'Review' },
-  { id: 'grant-5', title: 'Submitted Grant', funder: 'Funder 5', funderShort: 'F5', award: '$150K', awardSort: 150000, deadline: '2026-05-15', daysOut: -6, fit: 86, tags: ['Corporate'], status: 'submitted' as GrantStatus, statusLabel: 'Submitted' },
-  { id: 'grant-6', title: 'Awarded Grant', funder: 'Funder 6', funderShort: 'F6', award: '$30K', awardSort: 30000, deadline: '2025-12-01', daysOut: -171, fit: 45, tags: ['Federal'], status: 'awarded' as GrantStatus, statusLabel: 'Awarded' },
+  {
+    id: 'grant-1',
+    title: 'Matched Grant 1',
+    funder: 'Funder 1',
+    funderShort: 'F1',
+    award: '$100K',
+    awardSort: 100000,
+    deadline: '2026-06-15',
+    daysOut: 25,
+    fit: 88,
+    tags: ['EdTech'],
+    status: 'matched' as GrantStatus,
+    statusLabel: 'Matched',
+  },
+  {
+    id: 'grant-2',
+    title: 'Matched Grant 2',
+    funder: 'Funder 2',
+    funderShort: 'F2',
+    award: '$200K',
+    awardSort: 200000,
+    deadline: '2026-07-01',
+    daysOut: 41,
+    fit: 76,
+    tags: ['Community'],
+    status: 'matched' as GrantStatus,
+    statusLabel: 'Matched',
+  },
+  {
+    id: 'grant-3',
+    title: 'Draft Grant',
+    funder: 'Funder 3',
+    funderShort: 'F3',
+    award: '$50K',
+    awardSort: 50000,
+    deadline: '2026-06-01',
+    daysOut: 11,
+    fit: 84,
+    tags: ['Federal'],
+    status: 'draft' as GrantStatus,
+    statusLabel: 'Drafting',
+  },
+  {
+    id: 'grant-4',
+    title: 'Review Grant',
+    funder: 'Funder 4',
+    funderShort: 'F4',
+    award: '$75K',
+    awardSort: 75000,
+    deadline: '2026-06-10',
+    daysOut: 20,
+    fit: 81,
+    tags: ['Foundation'],
+    status: 'review' as GrantStatus,
+    statusLabel: 'Review',
+  },
+  {
+    id: 'grant-5',
+    title: 'Submitted Grant',
+    funder: 'Funder 5',
+    funderShort: 'F5',
+    award: '$150K',
+    awardSort: 150000,
+    deadline: '2026-05-15',
+    daysOut: -6,
+    fit: 86,
+    tags: ['Corporate'],
+    status: 'submitted' as GrantStatus,
+    statusLabel: 'Submitted',
+  },
+  {
+    id: 'grant-6',
+    title: 'Awarded Grant',
+    funder: 'Funder 6',
+    funderShort: 'F6',
+    award: '$30K',
+    awardSort: 30000,
+    deadline: '2025-12-01',
+    daysOut: -171,
+    fit: 45,
+    tags: ['Federal'],
+    status: 'awarded' as GrantStatus,
+    statusLabel: 'Awarded',
+  },
 ];
 
 describe('PipelineView', () => {
@@ -48,9 +126,7 @@ describe('PipelineView', () => {
       const grants = [...mockGrants];
       const grantId = 'grant-1';
       const newStatus: GrantStatus = 'draft';
-      const updated = grants.map((g) =>
-        g.id === grantId ? { ...g, status: newStatus } : g
-      );
+      const updated = grants.map((g) => (g.id === grantId ? { ...g, status: newStatus } : g));
       const updatedGrant = updated.find((g) => g.id === grantId);
       expect(updatedGrant?.status).toBe('draft');
     });
@@ -59,9 +135,7 @@ describe('PipelineView', () => {
       const grants = [...mockGrants];
       const grantId = 'grant-1';
       const newStatus: GrantStatus = 'draft';
-      const updated = grants.map((g) =>
-        g.id === grantId ? { ...g, status: newStatus } : g
-      );
+      const updated = grants.map((g) => (g.id === grantId ? { ...g, status: newStatus } : g));
       const otherGrants = updated.filter((g) => g.id !== grantId);
       otherGrants.forEach((g) => {
         const original = mockGrants.find((mg) => mg.id === g.id);

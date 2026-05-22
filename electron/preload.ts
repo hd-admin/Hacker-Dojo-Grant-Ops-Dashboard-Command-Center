@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import { GrantStatus, ElectronAPI } from '../shared/types';
 
+// showNotification is implemented as a simple wrapper around ipcRenderer.invoke
+// because the Notification API is called from the main process.
+
 const electronAPI: ElectronAPI = {
   getGrants: () => ipcRenderer.invoke('grants:getAll'),
   getGrantById: (id: string) => ipcRenderer.invoke('grants:getById', id),
@@ -31,6 +34,9 @@ const electronAPI: ElectronAPI = {
   removeTheme: (theme: string) => ipcRenderer.invoke('themes:remove', theme),
   // Activity
   getRecentActivity: (count: number) => ipcRenderer.invoke('activity:getRecent', count),
+  // Desktop notifications
+  showNotification: (title: string, body: string) =>
+    ipcRenderer.invoke('notifications:show', title, body),
 };
 
 contextBridge.exposeInMainWorld('electronAPI', electronAPI);

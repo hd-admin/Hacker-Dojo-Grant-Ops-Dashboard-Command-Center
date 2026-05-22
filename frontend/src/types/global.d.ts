@@ -1,4 +1,12 @@
-import type { GrantStatus, OrganizationProfile, CrawlStatus, Notification, Task, DocumentMetadata, ActivityEvent } from '../../shared/types';
+import type {
+  GrantStatus,
+  OrganizationProfile,
+  CrawlStatus,
+  Notification,
+  Task,
+  DocumentMetadata,
+  ActivityEvent,
+} from '../../shared/types';
 
 export interface ElectronAPI {
   getGrants: () => Promise<Grant[]>;
@@ -27,6 +35,8 @@ export interface ElectronAPI {
   removeTheme: (theme: string) => Promise<boolean>;
   // Activity
   getRecentActivity: (count: number) => Promise<ActivityEvent[]>;
+  // Desktop notifications
+  showNotification: (title: string, body: string) => Promise<boolean>;
 }
 
 interface Grant {

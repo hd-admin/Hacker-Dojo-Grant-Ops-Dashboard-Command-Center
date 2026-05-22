@@ -68,18 +68,14 @@ describe('DiscoveryView', () => {
   describe('Search Filtering', () => {
     it('should filter grants by title (case-insensitive)', () => {
       const searchLower = 'nsf';
-      const filtered = mockGrants.filter((g) =>
-        g.title.toLowerCase().includes(searchLower)
-      );
+      const filtered = mockGrants.filter((g) => g.title.toLowerCase().includes(searchLower));
       expect(filtered.length).toBe(1);
       expect(filtered[0]?.id).toBe('nsf-tech');
     });
 
     it('should filter grants by funder', () => {
       const searchLower = 'dell';
-      const filtered = mockGrants.filter((g) =>
-        g.funder.toLowerCase().includes(searchLower)
-      );
+      const filtered = mockGrants.filter((g) => g.funder.toLowerCase().includes(searchLower));
       expect(filtered.length).toBe(1);
       expect(filtered[0]?.id).toBe('dell-equality');
     });
@@ -87,7 +83,7 @@ describe('DiscoveryView', () => {
     it('should filter grants by tags', () => {
       const searchLower = 'edtech';
       const filtered = mockGrants.filter((g) =>
-        g.tags.some((t) => t.toLowerCase().includes(searchLower))
+        g.tags.some((t) => t.toLowerCase().includes(searchLower)),
       );
       expect(filtered.length).toBe(3);
     });
@@ -109,14 +105,14 @@ describe('DiscoveryView', () => {
   describe('Category Filtering', () => {
     it('should filter by EdTech category', () => {
       const filtered = mockGrants.filter((g) =>
-        g.tags.some((t) => t === 'EdTech' || t.includes('EdTech'))
+        g.tags.some((t) => t === 'EdTech' || t.includes('EdTech')),
       );
       expect(filtered.length).toBe(3);
     });
 
     it('should filter by Federal category', () => {
       const filtered = mockGrants.filter((g) =>
-        g.tags.some((t) => t === 'Federal' || t.includes('Federal'))
+        g.tags.some((t) => t === 'Federal' || t.includes('Federal')),
       );
       expect(filtered.length).toBe(1);
     });
@@ -152,7 +148,7 @@ describe('DiscoveryView', () => {
 
     it('should sort by recently added (matchedAt descending)', () => {
       const sorted = [...mockGrants].sort((a, b) =>
-        (b.matchedAt || '').localeCompare(a.matchedAt || '')
+        (b.matchedAt || '').localeCompare(a.matchedAt || ''),
       );
       expect(sorted[0]?.matchedAt).toBe('2026-05-20');
       expect(sorted[sorted.length - 1]?.matchedAt).toBe('2026-05-17');

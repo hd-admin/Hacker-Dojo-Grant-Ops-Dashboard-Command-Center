@@ -119,4 +119,6 @@ export interface ElectronAPI {
   removeTheme: (theme: string) => Promise<boolean>;
   // Activity
   getRecentActivity: (count: number) => Promise<ActivityEvent[]>;
+  // Desktop notifications
+  showNotification: (title: string, body: string) => Promise<boolean>;
 }

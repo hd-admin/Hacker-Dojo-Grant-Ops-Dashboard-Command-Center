@@ -9,16 +9,44 @@ interface DiscoveryViewProps {
 }
 
 type SortOption = 'fit' | 'deadline' | 'award' | 'recently-added';
-type CategoryFilter = 'All' | 'EdTech' | 'Community' | 'Science & Tech' | 'Federal' | 'Foundation' | 'Corporate';
+type CategoryFilter =
+  | 'All'
+  | 'EdTech'
+  | 'Community'
+  | 'Science & Tech'
+  | 'Federal'
+  | 'Foundation'
+  | 'Corporate';
 
-const categoryFilters: CategoryFilter[] = ['All', 'EdTech', 'Community', 'Science & Tech', 'Federal', 'Foundation', 'Corporate'];
+const categoryFilters: CategoryFilter[] = [
+  'All',
+  'EdTech',
+  'Community',
+  'Science & Tech',
+  'Federal',
+  'Foundation',
+  'Corporate',
+];
 
 function formatDate(dateStr: string): string {
   if (dateStr === 'Rolling') return 'Rolling';
   const parts = dateStr.split('-');
   const month = parts[1] ?? '';
   const day = parts[2] ?? '';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}`;
 }
 
@@ -35,6 +63,15 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
         if (isElectronAPIavailable()) {
           const data = await window.electronAPI.getGrants();
           setGrants(data);
+          // Notify for high-fit matched grants
+          const highFitGrants = data.filter((g) => g.fit >= 70 && g.status === 'matched');
+          if (highFitGrants.length > 0) {
+            const top = highFitGrants.sort((a, b) => b.fit - a.fit)[0]!;
+            window.electronAPI.showNotification(
+              'New High-Fit Grant',
+              `${top.title} — ${top.fit}% fit`,
+            );
+          }
         } else {
           // Use mock data for browser/E2E testing
           setGrants(mockGrants);
@@ -130,8 +167,12 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
           <div className="header-sub">{filtered.length} grants</div>
         </div>
         <div className="header-actions">
-          <button className="btn btn-ghost btn-sm" onClick={handleExportCsv}>Export CSV</button>
-          <button className="btn btn-primary" onClick={handleAddSource}>+ Add source</button>
+          <button className="btn btn-ghost btn-sm" onClick={handleExportCsv}>
+            Export CSV
+          </button>
+          <button className="btn btn-primary" onClick={handleAddSource}>
+            + Add source
+          </button>
         </div>
       </div>
 
@@ -143,19 +184,17 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        <select
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value as SortOption)}
-        >
+        <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)}>
           <option value="fit">Best fit</option>
           <option value="deadline">Deadline</option>
           <option value="award">Award size</option>
           <option value="recently-added">Recently added</option>
         </select>
         {categoryFilters.map((cat) => {
-          const count = cat === 'All'
-            ? grants.length
-            : grants.filter(g => g.tags.some(t => t === cat || t.includes(cat))).length;
+          const count =
+            cat === 'All'
+              ? grants.length
+              : grants.filter((g) => g.tags.some((t) => t === cat || t.includes(cat))).length;
           return (
             <button
               key={cat}
@@ -179,14 +218,9 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
         </div>
         {filtered.map((grant) => {
           const fitClass = grant.fit >= 85 ? 'high' : grant.fit >= 70 ? 'med' : 'low';
-          const dayClass =
-            grant.daysOut < 30 ? 'urgent' : grant.daysOut < 60 ? 'soon' : '';
+          const dayClass = grant.daysOut < 30 ? 'urgent' : grant.daysOut < 60 ? 'soon' : '';
           return (
-            <div
-              key={grant.id}
-              className="grants-row"
-              onClick={() => onGrantSelect(grant.id)}
-            >
+            <div key={grant.id} className="grants-row" onClick={() => onGrantSelect(grant.id)}>
               <div>
                 <div className="grant-title">{grant.title}</div>
                 <div className="grant-tags">

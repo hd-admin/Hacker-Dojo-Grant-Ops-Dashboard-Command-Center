@@ -31,7 +31,20 @@ function formatDate(dateStr: string): string {
   const parts = dateStr.split('-');
   const month = parts[1] ?? '';
   const day = parts[2] ?? '';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}`;
 }
 
@@ -69,12 +82,12 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
     if (statusFilter !== 'All') {
       // When filtered, only show grants matching the filter in their respective column
       const filterStatusMap: Record<StatusFilter, GrantStatus | 'awarded'> = {
-        'All': 'matched',
-        'Matched': 'matched',
-        'Drafting': 'draft',
-        'Review': 'review',
-        'Submitted': 'submitted',
-        'Awarded': 'awarded',
+        All: 'matched',
+        Matched: 'matched',
+        Drafting: 'draft',
+        Review: 'review',
+        Submitted: 'submitted',
+        Awarded: 'awarded',
       };
       const targetStatus = filterStatusMap[statusFilter];
       if (status !== targetStatus) {
@@ -105,9 +118,19 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
     e.preventDefault();
     setDragOverCol(null);
     if (draggingGrantId) {
+      const grant = grants.find((g) => g.id === draggingGrantId);
       try {
         await window.electronAPI.updateGrantStatus(draggingGrantId, colKey as GrantStatus);
-        setGrants(prev => prev.map(g => g.id === draggingGrantId ? {...g, status: colKey as GrantStatus} : g));
+        setGrants((prev) =>
+          prev.map((g) => (g.id === draggingGrantId ? { ...g, status: colKey as GrantStatus } : g)),
+        );
+        // Notify for high-fit grants moved to matched
+        if (colKey === 'matched' && grant && grant.fit >= 70) {
+          window.electronAPI.showNotification(
+            'New High-Fit Grant',
+            `${grant.title} — ${grant.fit}% fit`,
+          );
+        }
       } catch (error) {
         console.error('Error updating grant status:', error);
       }
@@ -144,7 +167,9 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
             <option value="Submitted">Submitted</option>
             <option value="Awarded">Awarded</option>
           </select>
-          <button className="btn btn-primary" onClick={() => onNavigate?.('discovery')}>+ Add to pipeline</button>
+          <button className="btn btn-primary" onClick={() => onNavigate?.('discovery')}>
+            + Add to pipeline
+          </button>
         </div>
       </div>
 

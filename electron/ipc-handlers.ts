@@ -1,4 +1,4 @@
-import { ipcMain, app, dialog } from 'electron';
+import { ipcMain, app, dialog, Notification } from 'electron';
 import log from 'electron-log';
 import { store } from './store';
 import { GrantStatus, ActivityEvent } from '../shared/types';
@@ -87,7 +87,31 @@ export const registerIpcHandlers = () => {
     log.info('Crawl trigger requested');
     // Update lastSync to now
     store.updateCrawlStatus({ online: true, lastSync: new Date().toISOString() });
+    // Show desktop notification
+    if (Notification.isSupported()) {
+      const notification = new Notification({
+        title: 'Crawl Complete',
+        body: 'Grant database has been updated.',
+        silent: false,
+      });
+      notification.show();
+    }
     return true;
+  });
+
+  // Desktop notification handler
+  ipcMain.handle('notifications:show', async (_, title: string, body: string) => {
+    try {
+      if (Notification.isSupported()) {
+        const notification = new Notification({ title, body, silent: false });
+        notification.show();
+        return true;
+      }
+      return false;
+    } catch (error) {
+      log.error('Error showing notification:', error);
+      return false;
+    }
   });
 
   // Notification handlers
@@ -135,9 +159,7 @@ export const registerIpcHandlers = () => {
     try {
       const result = await dialog.showOpenDialog({
         properties: ['openFile'],
-        filters: [
-          { name: 'Documents', extensions: ['pdf', 'xls', 'xlsx', 'doc', 'docx'] },
-        ],
+        filters: [{ name: 'Documents', extensions: ['pdf', 'xls', 'xlsx', 'doc', 'docx'] }],
       });
 
       if (result.canceled || result.filePaths.length === 0) {

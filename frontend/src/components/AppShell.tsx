@@ -37,7 +37,10 @@ export default function AppShell() {
   const [appVersion, setAppVersion] = useState('0.1.0');
   const [grants, setGrants] = useState<Grant[]>([]);
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
-  const [crawlStatus, setCrawlStatus] = useState<CrawlStatus>({ online: true, lastSync: new Date().toISOString() });
+  const [crawlStatus, setCrawlStatus] = useState<CrawlStatus>({
+    online: true,
+    lastSync: new Date().toISOString(),
+  });
   const [notifications, setNotifications] = useState<{ id: string }[]>([]);
 
   useEffect(() => {
@@ -82,11 +85,12 @@ export default function AppShell() {
         <div className="nav-section">
           <div className="nav-label">Workspace</div>
           {workspaceNav.map((item) => {
-            const matchedCount = item.view === 'discovery'
-              ? grants.filter(g => g.status === 'matched').length
-              : item.view === 'pipeline'
-              ? grants.filter(g => g.status !== 'awarded').length
-              : 0;
+            const matchedCount =
+              item.view === 'discovery'
+                ? grants.filter((g) => g.status === 'matched').length
+                : item.view === 'pipeline'
+                  ? grants.filter((g) => g.status !== 'awarded').length
+                  : 0;
             return (
               <div
                 key={item.label}
@@ -96,9 +100,7 @@ export default function AppShell() {
               >
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}
-                {matchedCount > 0 && item.view && (
-                  <span className="nav-count">{matchedCount}</span>
-                )}
+                {matchedCount > 0 && item.view && <span className="nav-count">{matchedCount}</span>}
               </div>
             );
           })}
@@ -124,11 +126,16 @@ export default function AppShell() {
 
         <div className="sidebar-footer">
           <span className={`status-dot ${crawlStatus.online ? '' : 'offline'}`} />
-          Crawler {crawlStatus.online ? 'online' : 'offline'}<br/>
-          Last sync: {getRelativeTime(crawlStatus.lastSync)}<br/>
-          <br/>
-          Logged in as<br/>
-          <strong style={{color:'var(--text-dim)'}}>{profile?.agentBehavior.notifyEmail || 'ed@hackerdojo.com'}</strong>
+          Crawler {crawlStatus.online ? 'online' : 'offline'}
+          <br />
+          Last sync: {getRelativeTime(crawlStatus.lastSync)}
+          <br />
+          <br />
+          Logged in as
+          <br />
+          <strong style={{ color: 'var(--text-dim)' }}>
+            {profile?.agentBehavior.notifyEmail || 'ed@hackerdojo.com'}
+          </strong>
         </div>
       </aside>
 
@@ -146,7 +153,10 @@ export default function AppShell() {
         <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`}>
           <SettingsView />
         </div>
-        <div id="view-notifications" className={`view ${activeView === 'notifications' ? 'active' : ''}`}>
+        <div
+          id="view-notifications"
+          className={`view ${activeView === 'notifications' ? 'active' : ''}`}
+        >
           <NotificationsView />
         </div>
         <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`}>

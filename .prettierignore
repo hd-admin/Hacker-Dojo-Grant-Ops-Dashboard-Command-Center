@@ -1,0 +1,7 @@
+.next/
+dist-electron/
+node_modules/
+release/
+playwright-report/
+test-results/
+.git/

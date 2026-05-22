@@ -1,8 +1,8 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  output: "standalone",
-  serverExternalPackages: ["electron"],
+  output: 'standalone',
+  serverExternalPackages: ['electron'],
   eslint: {
     ignoreDuringBuilds: true,
   },

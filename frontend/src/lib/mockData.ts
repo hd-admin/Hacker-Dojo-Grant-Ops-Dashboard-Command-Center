@@ -1,4 +1,11 @@
-import type { Grant, OrganizationProfile, CrawlStatus, Notification, Task, ActivityEvent } from '../../../shared/types';
+import type {
+  Grant,
+  OrganizationProfile,
+  CrawlStatus,
+  Notification,
+  Task,
+  ActivityEvent,
+} from '../../../shared/types';
 
 // Mock data for E2E testing and standalone browser usage
 export const mockGrants: Grant[] = [
@@ -26,7 +33,11 @@ export const mockGrants: Grant[] = [
     checklist: [
       { label: '501(c)(3) verification + EIN', done: true, source: 'From profile' },
       { label: 'SAM.gov registration active', done: true, source: 'Verified Apr 12' },
-      { label: 'Letter of Intent (3 pages, agent-drafted)', done: true, source: 'Ready for review' },
+      {
+        label: 'Letter of Intent (3 pages, agent-drafted)',
+        done: true,
+        source: 'Ready for review',
+      },
       { label: 'Project summary & specific aims', done: true, source: 'Drafted' },
       { label: '3 letters of partnership', done: false, source: 'Outreach drafted' },
       { label: 'Logic model + evaluation plan', done: false, source: 'In progress' },
@@ -63,7 +74,8 @@ export const mockGrants: Grant[] = [
       { label: 'Board roster + bios', done: true, source: 'On file' },
       { label: 'Audit financials', done: false, source: 'Requested from CPA' },
     ],
-    draftContent: 'Hacker Dojo\'s Innovation Fund proposal focuses on expanding our AI literacy programming...',
+    draftContent:
+      "Hacker Dojo's Innovation Fund proposal focuses on expanding our AI literacy programming...",
   },
   {
     id: 'dell-equality',
@@ -92,7 +104,8 @@ export const mockGrants: Grant[] = [
       { label: 'Dell volunteer MOU', done: false, source: 'Pending legal review' },
       { label: 'Impact metrics one-pager', done: true, source: 'Complete' },
     ],
-    draftContent: 'Dell Technologies\' commitment to digital equity aligns perfectly with Hacker Dojo\'s mission...',
+    draftContent:
+      "Dell Technologies' commitment to digital equity aligns perfectly with Hacker Dojo's mission...",
   },
   {
     id: 'google-cs-first',
@@ -121,7 +134,8 @@ export const mockGrants: Grant[] = [
       { label: 'Google nonprofit status confirmed', done: true, source: 'Confirmed' },
       { label: 'Teacher recruitment plan', done: false, source: 'Drafting' },
     ],
-    draftContent: 'Google CS First has been a valued partner in our after-school computing program...',
+    draftContent:
+      'Google CS First has been a valued partner in our after-school computing program...',
   },
   {
     id: 'kresge-space',
@@ -150,7 +164,8 @@ export const mockGrants: Grant[] = [
       { label: 'Space renovation plans', done: false, source: 'Pending architect' },
       { label: 'Community input documentation', done: true, source: 'Complete' },
     ],
-    draftContent: 'This proposal focuses on transforming Hacker Dojo\'s main space in Mountain View...',
+    draftContent:
+      "This proposal focuses on transforming Hacker Dojo's main space in Mountain View...",
   },
 ];
 
@@ -158,9 +173,16 @@ export const mockProfile: OrganizationProfile = {
   legalName: 'Hacker Dojo, a California nonprofit corporation',
   ein: '26-3375350',
   samUEI: 'XK7N4HQ2P3M9',
-  mission: 'Hacker Dojo is a nonprofit that provides free or low-cost technology education, mentorship, and community infrastructure to underserved youth and adults in the Bay Area.',
+  mission:
+    'Hacker Dojo is a nonprofit that provides free or low-cost technology education, mentorship, and community infrastructure to underserved youth and adults in the Bay Area.',
   docTypes: ['PDF', 'XLS', 'DOC'],
-  searchThemes: ['Makerspaces', 'AI literacy', 'Community innovation', 'Workforce development', 'STEM equity'],
+  searchThemes: [
+    'Makerspaces',
+    'AI literacy',
+    'Community innovation',
+    'Workforce development',
+    'STEM equity',
+  ],
   agentBehavior: {
     autoDraftThreshold: 75,
     submissionPolicy: 'Human approval required',
@@ -175,9 +197,24 @@ export const mockCrawlStatus: CrawlStatus = {
 };
 
 export const mockNotifications: Notification[] = [
-  { id: '1', text: '3 new grants matched from Candid weekly crawl', time: '2h ago', dot: 'success' },
-  { id: '2', text: 'Draft completed for SVCF Community Innovation Fund', time: '4h ago', dot: 'accent' },
-  { id: '3', text: 'Crawled 47 sources - 12 federal, 28 foundation, 7 corporate', time: '6h ago', dot: 'info' },
+  {
+    id: '1',
+    text: '3 new grants matched from Candid weekly crawl',
+    time: '2h ago',
+    dot: 'success',
+  },
+  {
+    id: '2',
+    text: 'Draft completed for SVCF Community Innovation Fund',
+    time: '4h ago',
+    dot: 'accent',
+  },
+  {
+    id: '3',
+    text: 'Crawled 47 sources - 12 federal, 28 foundation, 7 corporate',
+    time: '6h ago',
+    dot: 'info',
+  },
 ];
 
 export const mockTasks: Task[] = [
@@ -187,9 +224,21 @@ export const mockTasks: Task[] = [
 ];
 
 export const mockActivity: ActivityEvent[] = [
-  { dot: 'success', text: '<strong>3 new grants</strong> matched from Candid weekly crawl', time: '2h ago' },
-  { dot: 'accent', text: 'Draft completed for <strong>SVCF Community Innovation Fund</strong> - awaiting review', time: '4h ago' },
-  { dot: 'info', text: 'Crawled 47 sources - 12 federal, 28 foundation, 7 corporate', time: '6h ago' },
+  {
+    dot: 'success',
+    text: '<strong>3 new grants</strong> matched from Candid weekly crawl',
+    time: '2h ago',
+  },
+  {
+    dot: 'accent',
+    text: 'Draft completed for <strong>SVCF Community Innovation Fund</strong> - awaiting review',
+    time: '4h ago',
+  },
+  {
+    dot: 'info',
+    text: 'Crawled 47 sources - 12 federal, 28 foundation, 7 corporate',
+    time: '6h ago',
+  },
 ];
 
 // Type guard to check if electronAPI is available

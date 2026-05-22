@@ -71,6 +71,16 @@ export default function SettingsView() {
     setEditForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleAgentBehaviorChange = (
+    field: keyof OrganizationProfile['agentBehavior'],
+    value: string | number,
+  ) => {
+    setEditForm((prev) => ({
+      ...prev,
+      agentBehavior: { ...prev.agentBehavior!, [field]: value },
+    }));
+  };
+
   const handleUploadDocument = async () => {
     try {
       const doc = await window.electronAPI.uploadDocument();
@@ -304,32 +314,95 @@ export default function SettingsView() {
             <div className="setting-card-title">Agent Behavior</div>
           </div>
           <div className="setting-card-body">
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Auto-draft threshold</div>
-                <div className="setting-value">
-                  Fit score ≥ {profile.agentBehavior.autoDraftThreshold}
+            {isEditing ? (
+              <>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Auto-draft threshold</div>
+                    <input
+                      type="range"
+                      className="form-input"
+                      min={0}
+                      max={100}
+                      value={editForm.agentBehavior?.autoDraftThreshold ?? 75}
+                      onChange={(e) =>
+                        handleAgentBehaviorChange('autoDraftThreshold', parseInt(e.target.value))
+                      }
+                    />
+                    <div className="setting-hint">
+                      Fit score ≥ {editForm.agentBehavior?.autoDraftThreshold ?? 75}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Submission policy</div>
-                <div className="setting-value">{profile.agentBehavior.submissionPolicy}</div>
-              </div>
-            </div>
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Notify</div>
-                <div className="setting-value">{profile.agentBehavior.notifyEmail}</div>
-              </div>
-            </div>
-            <div className="setting-row">
-              <div>
-                <div className="setting-label">Voice &amp; tone</div>
-                <div className="setting-value">{profile.agentBehavior.voiceAndTone}</div>
-              </div>
-            </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Submission policy</div>
+                    <select
+                      className="form-input"
+                      value={editForm.agentBehavior?.submissionPolicy ?? 'Human approval required'}
+                      onChange={(e) =>
+                        handleAgentBehaviorChange('submissionPolicy', e.target.value)
+                      }
+                    >
+                      <option value="Always submit">Always submit</option>
+                      <option value="Human approval required">Human approval required</option>
+                      <option value="Review only high-fit">Review only high-fit</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Notify email</div>
+                    <input
+                      type="email"
+                      className="form-input"
+                      value={editForm.agentBehavior?.notifyEmail ?? ''}
+                      onChange={(e) => handleAgentBehaviorChange('notifyEmail', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Voice &amp; tone</div>
+                    <textarea
+                      className="form-input"
+                      rows={3}
+                      value={editForm.agentBehavior?.voiceAndTone ?? ''}
+                      onChange={(e) => handleAgentBehaviorChange('voiceAndTone', e.target.value)}
+                    />
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Auto-draft threshold</div>
+                    <div className="setting-value">
+                      Fit score ≥ {profile.agentBehavior.autoDraftThreshold}
+                    </div>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Submission policy</div>
+                    <div className="setting-value">{profile.agentBehavior.submissionPolicy}</div>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Notify</div>
+                    <div className="setting-value">{profile.agentBehavior.notifyEmail}</div>
+                  </div>
+                </div>
+                <div className="setting-row">
+                  <div>
+                    <div className="setting-label">Voice &amp; tone</div>
+                    <div className="setting-value">{profile.agentBehavior.voiceAndTone}</div>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

@@ -109,9 +109,7 @@ describe('shared/schemas', () => {
           budgetCapacity: 75,
           partnershipReadiness: 70,
         },
-        checklist: [
-          { label: 'Test', done: false, source: 'Test' },
-        ],
+        checklist: [{ label: 'Test', done: false, source: 'Test' }],
         draftContent: 'Draft content here',
         externalUrl: 'https://example.com',
       };

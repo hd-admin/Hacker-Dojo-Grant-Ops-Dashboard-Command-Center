@@ -15,7 +15,20 @@ function formatDate(dateStr: string): string {
   const year = parts[0] ?? '';
   const month = parts[1] ?? '';
   const day = parts[2] ?? '';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}, ${year}`;
 }
 
@@ -41,7 +54,7 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
           });
       } else {
         // Use mock data for browser/E2E testing
-        const mockGrant = mockGrants.find(g => g.id === grantId) || null;
+        const mockGrant = mockGrants.find((g) => g.id === grantId) || null;
         setGrant(mockGrant);
         setLoading(false);
       }
@@ -88,9 +101,7 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
 
   const handleViewOnGrantsGov = () => {
     if (grant) {
-      window.open(
-        `https://www.grants.gov/search?keyword=${encodeURIComponent(grant.title)}`
-      );
+      window.open(`https://www.grants.gov/search?keyword=${encodeURIComponent(grant.title)}`);
     }
   };
 
@@ -99,10 +110,7 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
   return (
     <>
       {/* Overlay */}
-      <div
-        className={`drawer-overlay ${isOpen ? 'open' : ''}`}
-        onClick={onClose}
-      />
+      <div className={`drawer-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
 
       {/* Drawer */}
       <aside className={`drawer ${isOpen ? 'open' : ''}`}>
@@ -138,8 +146,8 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
                         grant.fit >= 85
                           ? 'var(--success)'
                           : grant.fit >= 70
-                          ? 'var(--accent)'
-                          : 'var(--text)',
+                            ? 'var(--accent)'
+                            : 'var(--text)',
                     }}
                   >
                     {grant.fit}
@@ -230,11 +238,7 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
                   <div className="draft-preview">
                     {grant.draftContent.split('\n\n').map((para, idx) => {
                       if (para.startsWith('**') && para.endsWith('**')) {
-                        return (
-                          <h4 key={idx}>
-                            {para.replace(/\*\*/g, '')}
-                          </h4>
-                        );
+                        return <h4 key={idx}>{para.replace(/\*\*/g, '')}</h4>;
                       }
                       return <p key={idx}>{para}</p>;
                     })}

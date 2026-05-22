@@ -23,8 +23,8 @@ export const initTray = () => {
       icon = nativeImage.createFromBuffer(
         Buffer.from(
           'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABpSURBVFhH7c0xDQAgCARA+t3zHiwJNhgk2i5wBfZxdHMBEhYiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIi8ncF7sKlH1l5xCUAAAAASUVORK5CYII=',
-          'base64'
-        )
+          'base64',
+        ),
       );
     }
   } catch {
@@ -32,8 +32,8 @@ export const initTray = () => {
     icon = nativeImage.createFromBuffer(
       Buffer.from(
         'iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAABpSURBVFhH7c0xDQAgCARA+t3zHiwJNhgk2i5wBfZxdHMBEhYiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIi8ncF7sKlH1l5xCUAAAAASUVORK5CYII=',
-        'base64'
-      )
+        'base64',
+      ),
     );
   }
 

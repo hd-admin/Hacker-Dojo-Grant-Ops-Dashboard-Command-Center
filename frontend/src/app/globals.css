@@ -23,9 +23,14 @@
   --radius-lg: 8px;
 }
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
 
-html, body {
+html,
+body {
   background: var(--bg);
   color: var(--text);
   font-family: var(--sans);
@@ -170,8 +175,13 @@ body {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 /* === MAIN === */
@@ -263,12 +273,23 @@ body {
 }
 
 /* === VIEW SWITCHER === */
-.view { display: none; animation: fadeIn 0.3s ease; }
-.view.active { display: block; }
+.view {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+.view.active {
+  display: block;
+}
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* === DASHBOARD === */
@@ -291,16 +312,23 @@ body {
 .kpi-card::before {
   content: '';
   position: absolute;
-  top: 0; left: 0;
+  top: 0;
+  left: 0;
   width: 3px;
   height: 100%;
   background: var(--accent);
   opacity: 0.6;
 }
 
-.kpi-card.success::before { background: var(--success); }
-.kpi-card.warning::before { background: var(--warning); }
-.kpi-card.info::before { background: var(--info); }
+.kpi-card.success::before {
+  background: var(--success);
+}
+.kpi-card.warning::before {
+  background: var(--warning);
+}
+.kpi-card.info::before {
+  background: var(--info);
+}
 
 .kpi-label {
   font-family: var(--mono);
@@ -325,8 +353,12 @@ body {
   margin-top: 8px;
 }
 
-.kpi-meta .delta-up { color: var(--success); }
-.kpi-meta .delta-down { color: var(--danger); }
+.kpi-meta .delta-up {
+  color: var(--success);
+}
+.kpi-meta .delta-down {
+  color: var(--danger);
+}
 
 /* === PANELS === */
 .panel-grid {
@@ -367,7 +399,9 @@ body {
   cursor: pointer;
 }
 
-.panel-action:hover { color: var(--accent); }
+.panel-action:hover {
+  color: var(--accent);
+}
 
 /* === DEADLINE LIST === */
 .deadline-item {
@@ -381,8 +415,12 @@ body {
   transition: background 0.15s;
 }
 
-.deadline-item:last-child { border-bottom: none; }
-.deadline-item:hover { background: var(--surface-2); }
+.deadline-item:last-child {
+  border-bottom: none;
+}
+.deadline-item:hover {
+  background: var(--surface-2);
+}
 
 .deadline-date {
   text-align: center;
@@ -457,7 +495,9 @@ body {
   align-items: flex-start;
 }
 
-.activity-item:last-child { border-bottom: none; }
+.activity-item:last-child {
+  border-bottom: none;
+}
 
 .activity-dot {
   width: 8px;
@@ -468,17 +508,28 @@ body {
   flex-shrink: 0;
 }
 
-.activity-dot.success { background: var(--success); }
-.activity-dot.info { background: var(--info); }
-.activity-dot.warning { background: var(--warning); }
+.activity-dot.success {
+  background: var(--success);
+}
+.activity-dot.info {
+  background: var(--info);
+}
+.activity-dot.warning {
+  background: var(--warning);
+}
 
 .activity-text {
   font-size: 13px;
   line-height: 1.5;
 }
 
-.activity-text strong { color: var(--text); font-weight: 600; }
-.activity-text { color: var(--text-dim); }
+.activity-text strong {
+  color: var(--text);
+  font-weight: 600;
+}
+.activity-text {
+  color: var(--text-dim);
+}
 
 .activity-time {
   font-family: var(--mono);
@@ -513,7 +564,9 @@ body {
   border-color: var(--accent);
 }
 
-.filter-bar input { min-width: 260px; }
+.filter-bar input {
+  min-width: 260px;
+}
 
 .filter-pill {
   font-family: var(--mono);
@@ -565,7 +618,9 @@ body {
   background: var(--surface-2);
 }
 
-.grants-row:last-child { border-bottom: none; }
+.grants-row:last-child {
+  border-bottom: none;
+}
 
 .grant-title {
   font-weight: 600;
@@ -618,9 +673,15 @@ body {
   border-radius: 2px;
 }
 
-.fit-fill.high { background: var(--success); }
-.fit-fill.med { background: var(--accent); }
-.fit-fill.low { background: var(--text-muted); }
+.fit-fill.high {
+  background: var(--success);
+}
+.fit-fill.med {
+  background: var(--accent);
+}
+.fit-fill.low {
+  background: var(--text-muted);
+}
 
 .fit-num {
   font-family: var(--mono);
@@ -649,8 +710,12 @@ body {
   margin-top: 2px;
 }
 
-.deadline-cell .days.urgent { color: var(--danger); }
-.deadline-cell .days.soon { color: var(--warning); }
+.deadline-cell .days.urgent {
+  color: var(--danger);
+}
+.deadline-cell .days.soon {
+  color: var(--warning);
+}
 
 /* === DRAWER === */
 .drawer-overlay {
@@ -671,7 +736,8 @@ body {
 
 .drawer {
   position: fixed;
-  top: 0; right: 0;
+  top: 0;
+  right: 0;
   width: 640px;
   max-width: 95vw;
   height: 100vh;
@@ -684,7 +750,9 @@ body {
   box-shadow: -20px 0 60px rgba(0, 0, 0, 0.4);
 }
 
-.drawer.open { transform: translateX(0); }
+.drawer.open {
+  transform: translateX(0);
+}
 
 .drawer-header {
   padding: 24px 28px 20px;
@@ -795,7 +863,9 @@ body {
   font-size: 12.5px;
 }
 
-.fit-row-label { color: var(--text-dim); }
+.fit-row-label {
+  color: var(--text-dim);
+}
 
 .fit-row-bar {
   height: 6px;
@@ -851,7 +921,9 @@ body {
   border-color: var(--success);
 }
 
-.check-item.done .check-box::after { content: '\2713'; }
+.check-item.done .check-box::after {
+  content: '\2713';
+}
 
 .check-item.done .check-label {
   color: var(--text-muted);
@@ -890,9 +962,13 @@ body {
   margin: 14px 0 8px;
 }
 
-.draft-preview h4:first-child { margin-top: 0; }
+.draft-preview h4:first-child {
+  margin-top: 0;
+}
 
-.draft-preview p { margin-bottom: 10px; }
+.draft-preview p {
+  margin-bottom: 10px;
+}
 
 .draft-meta {
   display: flex;
@@ -1069,7 +1145,9 @@ body {
   border-bottom: 1px solid var(--border);
 }
 
-.setting-row:last-child { border-bottom: none; }
+.setting-row:last-child {
+  border-bottom: none;
+}
 
 .setting-label {
   font-family: var(--mono);
@@ -1107,7 +1185,9 @@ body {
   transition: background 0.15s;
 }
 
-.doc-item:hover { background: var(--border); }
+.doc-item:hover {
+  background: var(--border);
+}
 
 .doc-icon {
   width: 28px;
@@ -1121,9 +1201,18 @@ body {
   border-radius: 3px;
 }
 
-.doc-icon.pdf { background: #c66b5a; color: white; }
-.doc-icon.xls { background: #8aab6f; color: var(--bg); }
-.doc-icon.doc { background: #7ba3b8; color: var(--bg); }
+.doc-icon.pdf {
+  background: #c66b5a;
+  color: white;
+}
+.doc-icon.xls {
+  background: #8aab6f;
+  color: var(--bg);
+}
+.doc-icon.doc {
+  background: #7ba3b8;
+  color: var(--bg);
+}
 
 .doc-info {
   flex: 1;

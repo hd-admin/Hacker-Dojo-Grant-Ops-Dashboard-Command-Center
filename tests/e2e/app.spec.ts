@@ -74,7 +74,9 @@ test.describe('Grant Operations Center', () => {
   test('settings-edit-mode: Edit profile enables form fields', async ({ page }) => {
     await page.click('[data-view="settings"]');
     await page.click('button:has-text("Edit profile")');
-    const inputs = page.locator('.setting-card-body input.form-input, .setting-card-body textarea.form-input');
+    const inputs = page.locator(
+      '.setting-card-body input.form-input, .setting-card-body textarea.form-input',
+    );
     await expect(inputs.first()).toBeEnabled();
   });
 
@@ -96,7 +98,9 @@ test.describe('Grant Operations Center', () => {
     await expect(page.locator('#view-settings')).toHaveClass(/active/);
   });
 
-  test('nav-notifications-switch: Notifications nav switches to notifications view', async ({ page }) => {
+  test('nav-notifications-switch: Notifications nav switches to notifications view', async ({
+    page,
+  }) => {
     await page.click('.nav-item:has-text("Notifications")');
     await expect(page.locator('#view-notifications')).toHaveClass(/active/);
   });
@@ -171,7 +175,7 @@ test.describe('Grant Operations Center', () => {
     const count = await checklistItems.count();
     expect(count).toBeGreaterThan(0);
     const doneItem = checklistItems.first();
-    const isDone = await doneItem.evaluate(el => el.classList.contains('done'));
+    const isDone = await doneItem.evaluate((el) => el.classList.contains('done'));
     expect(typeof isDone).toBe('boolean');
   });
 
@@ -190,7 +194,7 @@ test.describe('Grant Operations Center', () => {
   test('pipeline-drag-over: Pipeline columns show drag-over state', async ({ page }) => {
     await page.click('[data-view="pipeline"]');
     const matchedCards = page.locator('.board-col').first().locator('.board-card');
-    if (await matchedCards.count() > 0) {
+    if ((await matchedCards.count()) > 0) {
       const firstCard = matchedCards.first();
       const targetCol = page.locator('.board-col').nth(1);
       await firstCard.dragTo(targetCol);
@@ -226,7 +230,9 @@ test.describe('Grant Operations Center', () => {
     await expect(filterSelect).toBeVisible();
   });
 
-  test('pipeline-add-to-pipeline-button: + Add to pipeline button exists in header', async ({ page }) => {
+  test('pipeline-add-to-pipeline-button: + Add to pipeline button exists in header', async ({
+    page,
+  }) => {
     await page.click('[data-view="pipeline"]');
     const addBtn = page.locator('button:has-text("+ Add to pipeline")');
     await expect(addBtn).toBeVisible();
@@ -281,7 +287,9 @@ test.describe('Grant Operations Center', () => {
     expect(footerText).toContain('Logged in as');
   });
 
-  test('discovery-filter-Community: Community filter shows only Community grants', async ({ page }) => {
+  test('discovery-filter-Community: Community filter shows only Community grants', async ({
+    page,
+  }) => {
     await page.click('[data-view="discovery"]');
     await page.click('.filter-pill:has-text("Community")');
     await page.waitForTimeout(300);
@@ -290,7 +298,9 @@ test.describe('Grant Operations Center', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('discovery-filter-ScienceTech: Science & Tech filter shows only Science & Tech grants', async ({ page }) => {
+  test('discovery-filter-ScienceTech: Science & Tech filter shows only Science & Tech grants', async ({
+    page,
+  }) => {
     await page.click('[data-view="discovery"]');
     await page.click('.filter-pill:has-text("Science & Tech")');
     await page.waitForTimeout(300);
@@ -308,7 +318,9 @@ test.describe('Grant Operations Center', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('discovery-filter-Foundation: Foundation filter shows only Foundation grants', async ({ page }) => {
+  test('discovery-filter-Foundation: Foundation filter shows only Foundation grants', async ({
+    page,
+  }) => {
     await page.click('[data-view="discovery"]');
     await page.click('.filter-pill:has-text("Foundation")');
     await page.waitForTimeout(300);
@@ -317,7 +329,9 @@ test.describe('Grant Operations Center', () => {
     expect(count).toBeGreaterThan(0);
   });
 
-  test('discovery-filter-Corporate: Corporate filter shows only Corporate grants', async ({ page }) => {
+  test('discovery-filter-Corporate: Corporate filter shows only Corporate grants', async ({
+    page,
+  }) => {
     await page.click('[data-view="discovery"]');
     await page.click('.filter-pill:has-text("Corporate")');
     await page.waitForTimeout(300);
@@ -354,7 +368,9 @@ test.describe('Grant Operations Center', () => {
     expect(funderText?.length).toBeGreaterThan(0);
   });
 
-  test('notifications-list-renders: Notifications view shows list of notifications', async ({ page }) => {
+  test('notifications-list-renders: Notifications view shows list of notifications', async ({
+    page,
+  }) => {
     await page.click('.nav-item:has-text("Notifications")');
     await page.waitForSelector('.notification-item', { timeout: 5000 });
     const items = page.locator('.notification-item');

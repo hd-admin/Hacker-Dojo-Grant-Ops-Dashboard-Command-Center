@@ -146,7 +146,7 @@ describe('DashboardView', () => {
 
     it('should exclude rolling deadlines from upcoming', () => {
       const withRolling = mockGrants.filter(
-        (g) => g.daysOut < 90 && g.daysOut > 0 && g.deadline !== 'Rolling'
+        (g) => g.daysOut < 90 && g.daysOut > 0 && g.deadline !== 'Rolling',
       );
       const rolling = mockGrants.filter((g) => g.deadline === 'Rolling');
       expect(rolling.length).toBe(1);

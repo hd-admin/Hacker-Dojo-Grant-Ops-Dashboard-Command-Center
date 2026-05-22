@@ -29,8 +29,21 @@ export default function TasksView() {
 
   const handleToggleTask = async (taskId: string) => {
     const updatedTasks = tasks.map((t) =>
-      t.id === taskId ? { ...t, completed: !t.completed } : t
+      t.id === taskId ? { ...t, completed: !t.completed } : t,
     );
+    setTasks(updatedTasks);
+    await window.electronAPI.updateTasks(updatedTasks);
+  };
+
+  const handleAddTask = async () => {
+    const text = window.prompt('Enter new task:');
+    if (!text) return;
+    const newTask = {
+      id: Date.now().toString() + Math.random().toString(36).slice(2),
+      completed: false,
+      text,
+    };
+    const updatedTasks = [...tasks, newTask];
     setTasks(updatedTasks);
     await window.electronAPI.updateTasks(updatedTasks);
   };
@@ -69,6 +82,11 @@ export default function TasksView() {
           <div className="header-sub">
             {completedCount} of {tasks.length} completed
           </div>
+        </div>
+        <div className="header-actions">
+          <button className="btn btn-primary" onClick={handleAddTask}>
+            + Add task
+          </button>
         </div>
       </div>
       <div className="tasks-list">

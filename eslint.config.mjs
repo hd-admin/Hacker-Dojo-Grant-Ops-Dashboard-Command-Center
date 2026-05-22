@@ -1,15 +1,15 @@
-import nextPlugin from "@next/eslint-plugin-next";
+import nextPlugin from '@next/eslint-plugin-next';
 
 export default [
   {
     plugins: {
-      "@next/next": nextPlugin,
+      '@next/next': nextPlugin,
     },
     rules: {
-      "@next/next/no-html-link-for-pages": "off",
+      '@next/next/no-html-link-for-pages': 'off',
     },
   },
   {
-    ignores: ["node_modules/**", ".next/**", "dist-electron/**"],
+    ignores: ['node_modules/**', '.next/**', 'dist-electron/**'],
   },
 ];
