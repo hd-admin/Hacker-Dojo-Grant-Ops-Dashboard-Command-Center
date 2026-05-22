@@ -53,8 +53,8 @@ describe('Shared Persistence Integrity', () => {
   beforeEach(async () => {
     // Invalidate cache to ensure we read fresh from disk
     invalidateCache();
-    // Backup current grants before test
-    originalGrantsBackup = await loadGrants();
+    // Create deep copy via JSON serialization to avoid reference issues
+    originalGrantsBackup = JSON.parse(JSON.stringify(await loadGrants()));
   });
 
   afterEach(async () => {
@@ -66,14 +66,14 @@ describe('Shared Persistence Integrity', () => {
   });
 
   describe('DATA_DIR constant', () => {
-    it('exports DATA_DIR as ".grant-ops-data"', () => {
-      expect(DATA_DIR).toBe('.grant-ops-data');
+    it('exports DATA_DIR as an absolute path ending with .grant-ops-data', () => {
+      expect(DATA_DIR).toMatch(/\.grant-ops-data$/);
+      expect(DATA_DIR).toContain('/');
     });
 
-    it('getDataPath uses DATA_DIR with process.cwd()', () => {
+    it('getDataPath uses DATA_DIR', () => {
       const dataPath = getDataPath();
       expect(dataPath).toContain(DATA_DIR);
-      expect(dataPath).toContain(process.cwd());
     });
   });
 

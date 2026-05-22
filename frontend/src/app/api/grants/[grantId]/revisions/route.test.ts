@@ -72,8 +72,10 @@ describe('POST /api/grants/[grantId]/revisions', () => {
       // Setup: Add test grant to repository
       await repository.addGrant(testGrant);
 
-      // Create an initial draft for the grant
-      const initialDraft = await draftingService.generateDraft(testGrant, mockProfile, {});
+      // Create an initial draft for the grant using fake provider for testing
+      const initialDraft = await draftingService.generateDraft(testGrant, mockProfile, {
+        opencodeProvider: 'fake',
+      });
       expect(initialDraft.version).toBe(1);
 
       // Get draft count before revision
@@ -85,8 +87,10 @@ describe('POST /api/grants/[grantId]/revisions', () => {
       const revisionNotes = 'Please improve the budget section';
 
       // The route should call draftingService.generateDraft with revisionNotes
+      // Use fake provider since Opencode is not configured in test environment
       const newDraft = await draftingService.generateDraft(testGrant, mockProfile, {
         revisionNotes,
+        opencodeProvider: 'fake',
       });
 
       // The new draft should have version = previousVersion + 1
@@ -115,14 +119,17 @@ describe('POST /api/grants/[grantId]/revisions', () => {
       // Setup: Add test grant to repository
       await repository.addGrant(testGrant);
 
-      // Create an initial draft for the grant
-      await draftingService.generateDraft(testGrant, mockProfile, {});
+      // Create an initial draft for the grant using fake provider for testing
+      await draftingService.generateDraft(testGrant, mockProfile, {
+        opencodeProvider: 'fake',
+      });
 
       const revisionNotes = 'Please improve the budget section and add more details';
 
-      // Generate new draft with revision notes
+      // Generate new draft with revision notes using fake provider for testing
       const newDraft = await draftingService.generateDraft(testGrant, mockProfile, {
         revisionNotes,
+        opencodeProvider: 'fake',
       });
 
       // The new draft should contain revision notes from the request
@@ -151,16 +158,19 @@ describe('POST /api/grants/[grantId]/revisions', () => {
       // Setup: Add test grant to repository
       await repository.addGrant(testGrant);
 
-      // Create an initial draft for the grant
-      await draftingService.generateDraft(testGrant, mockProfile, {});
+      // Create an initial draft for the grant using fake provider for testing
+      await draftingService.generateDraft(testGrant, mockProfile, {
+        opencodeProvider: 'fake',
+      });
 
       // Get draft count before revision
       const draftsBefore = await repository.getDraftArtifacts(testGrant.id);
       const countBefore = draftsBefore.length;
 
-      // Simulate revision by generating a new draft
+      // Simulate revision by generating a new draft with fake provider
       await draftingService.generateDraft(testGrant, mockProfile, {
         revisionNotes: 'Please improve the budget section',
+        opencodeProvider: 'fake',
       });
 
       // Get draft count after revision
@@ -193,16 +203,19 @@ describe('POST /api/grants/[grantId]/revisions', () => {
       // Setup: Add test grant to repository
       await repository.addGrant(testGrant);
 
-      // Create an initial draft for the grant
-      await draftingService.generateDraft(testGrant, mockProfile, {});
+      // Create an initial draft for the grant using fake provider for testing
+      await draftingService.generateDraft(testGrant, mockProfile, {
+        opencodeProvider: 'fake',
+      });
 
       // Get grant status before revision
       const grantBefore = await repository.getGrant(testGrant.id);
       expect(grantBefore?.status).toBe('draft');
 
-      // Simulate revision
+      // Simulate revision with fake provider for testing
       await draftingService.generateDraft(testGrant, mockProfile, {
         revisionNotes: 'Please improve the budget section',
+        opencodeProvider: 'fake',
       });
 
       // Get grant status after revision

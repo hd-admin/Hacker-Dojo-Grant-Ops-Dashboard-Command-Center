@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as repository from '@/server/grant-ops/repository';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { DocumentMetadata } from '../../../../../shared/types';
 
 // GET: List all documents
 export async function GET() {
   try {
-    const documents = await repository.getDocuments();
+    const deps = getDependencies();
+    const documents = await deps.repository.getDocuments();
     return NextResponse.json(documents);
   } catch (error) {
     console.error('Error getting documents:', error);
@@ -17,17 +18,20 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const deps = getDependencies();
+    const clock = deps.clock;
+    const idGenerator = deps.idGenerator;
 
     const doc: DocumentMetadata = {
-      id: body.id || `doc-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+      id: body.id || idGenerator.generateId('doc'),
       name: body.name,
       type: body.type,
-      lastUsed: body.lastUsed || new Date().toISOString(),
+      lastUsed: body.lastUsed || clock.now().toISOString(),
       version: body.version,
       audited: body.audited || false,
     };
 
-    await repository.addDocument(doc);
+    await deps.repository.addDocument(doc);
     return NextResponse.json(doc, { status: 201 });
   } catch (error) {
     console.error('Error adding document:', error);
@@ -39,6 +43,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
+    const deps = getDependencies();
 
     if (!body.id) {
       return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
@@ -51,7 +56,7 @@ export async function PATCH(request: NextRequest) {
     if (body.version !== undefined) updates.version = body.version;
     if (body.audited !== undefined) updates.audited = body.audited;
 
-    await repository.updateDocument(body.id, updates);
+    await deps.repository.updateDocument(body.id, updates);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating document:', error);

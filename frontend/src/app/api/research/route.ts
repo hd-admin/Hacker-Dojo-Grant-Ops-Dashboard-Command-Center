@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as researchService from '@/server/grant-ops/research-service';
-import * as repository from '@/server/grant-ops/repository';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export async function POST(_request: NextRequest) {
   try {
+    const deps = getDependencies();
+
     // Get organization profile
-    const profile = await repository.getOrgProfile();
+    const profile = await deps.repository.getOrgProfile();
 
     if (!profile) {
       return NextResponse.json(
@@ -14,22 +16,26 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    // Check if Opencode is configured
-    const settings = await repository.getOpencodeSettings();
-    const useOpencode = settings?.isConfigured ?? false;
-    const provider = useOpencode ? 'cli' : 'fake';
+    // Check if Opencode is configured - runResearch will fail explicitly if not configured
+    const settings = await deps.repository.getOpencodeSettings();
+    if (!settings?.isConfigured) {
+      return NextResponse.json(
+        { error: 'Opencode is not configured. Please set up Opencode settings in the application before running research.' },
+        { status: 400 },
+      );
+    }
 
-    // Run research
+    // Run research - will fail explicitly if Opencode is not properly configured
     const result = await researchService.runResearch(profile, {
-      useOpencode,
-      opencodeProvider: provider,
+      opencodeProvider: 'cli',
     });
 
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error running research:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to run research';
     return NextResponse.json(
-      { error: 'Failed to run research' },
+      { error: errorMessage },
       { status: 500 },
     );
   }

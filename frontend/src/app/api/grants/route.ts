@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import * as repository from '@/server/grant-ops/repository';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export async function GET() {
   try {
-    const grants = await repository.getGrants();
+    const deps = getDependencies();
+    const grants = await deps.repository.getGrants();
     return NextResponse.json(grants);
   } catch (error) {
     console.error('Error getting grants:', error);

@@ -1,0 +1,126 @@
+/**
+ * Opencode Client Tests
+ *
+ * Tests the Opencode adapter contract:
+ * - CLI provider requires configured settings
+ * - Unconfigured settings fail explicitly
+ * - Fake provider works without configuration
+ * - Research and draft generation work correctly
+ */
+
+import { describe, it, expect } from 'vitest';
+import type { OpencodeSettings } from '../../../../shared/types';
+import { createOpencodeAdapter } from './opencode-client';
+
+const defaultSettings: OpencodeSettings = {
+  binaryPath: '/usr/local/bin/opencode',
+  workingDirectory: '/Users/test/opencode',
+  timeoutMs: 60000,
+  profile: 'grant-research',
+  isConfigured: false,
+};
+
+describe('OpencodeClient', () => {
+  describe('CLI provider', () => {
+    it('isConfigured returns false when binaryPath is empty', () => {
+      const settings: OpencodeSettings = {
+        ...defaultSettings,
+        binaryPath: '',
+        isConfigured: false,
+      };
+      const adapter = createOpencodeAdapter(settings, 'cli');
+      expect(adapter.isConfigured()).toBe(false);
+    });
+
+    it('isConfigured returns true when binaryPath is set and isConfigured is true', () => {
+      const settings: OpencodeSettings = {
+        ...defaultSettings,
+        binaryPath: '/usr/local/bin/opencode',
+        isConfigured: true,
+      };
+      const adapter = createOpencodeAdapter(settings, 'cli');
+      expect(adapter.isConfigured()).toBe(true);
+    });
+
+    it('executeResearch fails explicitly when not configured', async () => {
+      const settings: OpencodeSettings = {
+        ...defaultSettings,
+        binaryPath: '',
+        isConfigured: false,
+      };
+      const adapter = createOpencodeAdapter(settings, 'cli');
+      const result = await adapter.executeResearch({
+        organizationProfile: 'Test Org',
+        searchThemes: ['EdTech'],
+      });
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not configured');
+    });
+
+    it('generateDraft fails explicitly when not configured', async () => {
+      const settings: OpencodeSettings = {
+        ...defaultSettings,
+        binaryPath: '',
+        isConfigured: false,
+      };
+      const adapter = createOpencodeAdapter(settings, 'cli');
+      const result = await adapter.generateDraft({
+        grantTitle: 'Test Grant',
+        grantFunder: 'Test Funder',
+        organizationProfile: 'Test Org',
+        missionStatement: 'Test mission',
+      });
+      expect(result.success).toBe(false);
+      expect(result.error).toContain('not configured');
+    });
+  });
+
+  describe('Fake provider', () => {
+    it('isConfigured returns true for fake provider', () => {
+      const adapter = createOpencodeAdapter(defaultSettings, 'fake');
+      expect(adapter.isConfigured()).toBe(true);
+    });
+
+    it('executeResearch returns mock data', async () => {
+      const adapter = createOpencodeAdapter(defaultSettings, 'fake');
+      const result = await adapter.executeResearch({
+        organizationProfile: 'Test Org',
+        searchThemes: ['EdTech', 'Community'],
+      });
+      expect(result.success).toBe(true);
+      expect(result.content).toBeDefined();
+      const data = JSON.parse(result.content!);
+      expect(data.grants).toBeDefined();
+      expect(Array.isArray(data.grants)).toBe(true);
+    });
+
+    it('generateDraft returns mock draft content', async () => {
+      const adapter = createOpencodeAdapter(defaultSettings, 'fake');
+      const result = await adapter.generateDraft({
+        grantTitle: 'Test Grant',
+        grantFunder: 'Test Funder',
+        organizationProfile: 'Test Org',
+        missionStatement: 'Test mission',
+      });
+      expect(result.success).toBe(true);
+      expect(result.content).toBeDefined();
+      expect(result.content).toContain('Test Grant');
+    });
+  });
+
+  describe('Provider selection', () => {
+    it('uses fake provider when specified', () => {
+      const adapter = createOpencodeAdapter(defaultSettings, 'fake');
+      expect(adapter.isConfigured()).toBe(true);
+    });
+
+    it('uses cli provider when specified', () => {
+      const settings: OpencodeSettings = {
+        ...defaultSettings,
+        isConfigured: true,
+      };
+      const adapter = createOpencodeAdapter(settings, 'cli');
+      expect(adapter.isConfigured()).toBe(true);
+    });
+  });
+});

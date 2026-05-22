@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as submissionService from '@/server/grant-ops/submission-service';
-import * as repository from '@/server/grant-ops/repository';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export async function GET(
   request: NextRequest,
@@ -23,8 +23,9 @@ export async function POST(
   try {
     const { grantId } = await params;
     const body = await request.json();
+    const deps = getDependencies();
 
-    const grant = await repository.getGrant(grantId);
+    const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
       return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
     }

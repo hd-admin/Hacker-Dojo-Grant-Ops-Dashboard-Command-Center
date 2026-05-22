@@ -34,8 +34,6 @@ export default [
       'node_modules/**',
       '.next/**',
       'frontend/.next/**',
-      '**/*.js',
-      'shared/*.js',
     ],
   },
 ];

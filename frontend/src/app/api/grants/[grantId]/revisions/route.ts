@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as repository from '@/server/grant-ops/repository';
 import * as draftingService from '@/server/grant-ops/drafting-service';
-import type { RevisionRequest } from '../../../../../../../shared/types';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export async function GET(
   request: NextRequest,
@@ -9,7 +8,8 @@ export async function GET(
 ) {
   try {
     const { grantId } = await params;
-    const revisions = await repository.getRevisionRequests(grantId);
+    const deps = getDependencies();
+    const revisions = await deps.repository.getRevisionRequests(grantId);
     return NextResponse.json(revisions);
   } catch (error) {
     console.error('Error getting revisions:', error);
@@ -24,14 +24,15 @@ export async function POST(
   try {
     const { grantId } = await params;
     const body = await request.json();
+    const deps = getDependencies();
 
-    const grant = await repository.getGrant(grantId);
+    const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
       return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
     }
 
     // Get organization profile for draft generation
-    const profile = await repository.getOrgProfile();
+    const profile = await deps.repository.getOrgProfile();
     if (!profile) {
       return NextResponse.json(
         { error: 'Organization profile not configured. Please set up your profile in Settings.' },
@@ -39,31 +40,22 @@ export async function POST(
       );
     }
 
-    // Get the latest draft version for this grant
-    const latestDraft = await repository.getLatestDraftArtifact(grantId);
-    const draftVersion = latestDraft ? latestDraft.version + 1 : 1;
+    // Check if Opencode is configured for CLI mode
+    const settings = await deps.repository.getOpencodeSettings();
+    const useCliProvider = settings?.isConfigured && body.useOpencode !== false;
 
-    const revision: RevisionRequest = {
-      id: `revision-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
-      grantId,
-      draftVersion,
-      notes: body.notes || '',
-      requestedAt: new Date().toISOString(),
-      requestedBy: body.requestedBy || 'human',
-      status: 'pending',
-    };
+    // Create revision request using the draftingService
+    const revision = await draftingService.createRevisionRequest(
+      grant,
+      body.notes || '',
+      body.requestedBy || 'human',
+    );
 
-    await repository.addRevisionRequest(revision);
-
-    // Generate a new draft version with revision notes (GAP-WF-08 fix)
+    // Generate a new draft version with revision notes
+    // Use fake provider if Opencode is not configured, or if explicitly requested
     const newDraft = await draftingService.generateDraft(grant, profile, {
       revisionNotes: body.notes || '',
-    });
-
-    // Move grant back to draft status for revision (does not change board column)
-    await repository.updateGrant(grantId, {
-      status: 'draft',
-      statusLabel: 'Drafting',
+      opencodeProvider: useCliProvider ? 'cli' : 'fake',
     });
 
     return NextResponse.json(
@@ -72,6 +64,7 @@ export async function POST(
     );
   } catch (error) {
     console.error('Error creating revision:', error);
-    return NextResponse.json({ error: 'Failed to create revision' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create revision';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

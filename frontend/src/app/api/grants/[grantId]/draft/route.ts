@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as draftingService from '@/server/grant-ops/drafting-service';
-import * as repository from '@/server/grant-ops/repository';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export async function GET(
   request: NextRequest,
@@ -23,16 +23,26 @@ export async function POST(
   try {
     const { grantId } = await params;
     const body = await request.json();
+    const deps = getDependencies();
 
-    const grant = await repository.getGrant(grantId);
+    const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
       return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
     }
 
-    const profile = await repository.getOrgProfile();
+    const profile = await deps.repository.getOrgProfile();
     if (!profile) {
       return NextResponse.json(
         { error: 'Organization profile not configured' },
+        { status: 400 },
+      );
+    }
+
+    // Check if Opencode is configured - draftingService.generateDraft will fail explicitly if not
+    const settings = await deps.repository.getOpencodeSettings();
+    if (!settings?.isConfigured) {
+      return NextResponse.json(
+        { error: 'Opencode is not configured. Please set up Opencode settings before generating drafts.' },
         { status: 400 },
       );
     }
@@ -45,6 +55,7 @@ export async function POST(
     return NextResponse.json(draft);
   } catch (error) {
     console.error('Error generating draft:', error);
-    return NextResponse.json({ error: 'Failed to generate draft' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to generate draft';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as repository from '@/server/grant-ops/repository';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,8 @@ export async function GET(
 ) {
   try {
     const { grantId } = await params;
-    const grant = await repository.getGrant(grantId);
+    const deps = getDependencies();
+    const grant = await deps.repository.getGrant(grantId);
 
     if (!grant) {
       return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
@@ -27,10 +28,11 @@ export async function PATCH(
   try {
     const { grantId } = await params;
     const body = await request.json();
+    const deps = getDependencies();
 
-    await repository.updateGrant(grantId, body);
+    await deps.repository.updateGrant(grantId, body);
 
-    const updatedGrant = await repository.getGrant(grantId);
+    const updatedGrant = await deps.repository.getGrant(grantId);
     return NextResponse.json(updatedGrant);
   } catch (error) {
     console.error('Error updating grant:', error);

@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as repository from '@/server/grant-ops/repository';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export async function GET() {
   try {
-    const settings = await repository.getOpencodeSettings();
+    const deps = getDependencies();
+    const settings = await deps.repository.getOpencodeSettings();
     if (!settings) {
       return NextResponse.json({ error: 'Opencode settings not found' }, { status: 404 });
     }
@@ -17,7 +18,8 @@ export async function GET() {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    await repository.updateOpencodeSettings(body);
+    const deps = getDependencies();
+    await deps.repository.updateOpencodeSettings(body);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating opencode settings:', error);

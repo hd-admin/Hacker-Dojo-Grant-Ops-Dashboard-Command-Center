@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as repository from '@/server/grant-ops/repository';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Task } from '../../../../../shared/types';
 
 // GET: Get all tasks
 export async function GET() {
   try {
-    const tasks = await repository.getTasks();
+    const deps = getDependencies();
+    const tasks = await deps.repository.getTasks();
     return NextResponse.json(tasks);
   } catch (error) {
     console.error('Error getting tasks:', error);
@@ -17,17 +18,19 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const deps = getDependencies();
+    const idGenerator = deps.idGenerator;
 
-    const tasks = await repository.getTasks();
+    const tasks = await deps.repository.getTasks();
 
     const newTask: Task = {
-      id: body.id || `task-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+      id: body.id || idGenerator.generateId('task'),
       text: body.text,
       completed: body.completed || false,
     };
 
     tasks.push(newTask);
-    await repository.updateTasks(tasks);
+    await deps.repository.updateTasks(tasks);
 
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
@@ -40,12 +43,13 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
+    const deps = getDependencies();
 
     if (!Array.isArray(body.tasks)) {
       return NextResponse.json({ error: 'Tasks array is required' }, { status: 400 });
     }
 
-    await repository.updateTasks(body.tasks as Task[]);
+    await deps.repository.updateTasks(body.tasks as Task[]);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating tasks:', error);

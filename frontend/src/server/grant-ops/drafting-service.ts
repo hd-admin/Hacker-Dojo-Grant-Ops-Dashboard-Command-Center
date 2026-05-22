@@ -2,6 +2,10 @@
  * Drafting Service
  *
  * Handles proposal draft generation and revision management.
+ *
+ * This service uses the DI boundary from dependencies.ts for all external dependencies.
+ * Production behavior: when using 'cli' provider, requires configured Opencode settings.
+ * When 'fake' provider is explicitly requested, works without Opencode configuration (for testing).
  */
 
 import type {
@@ -10,11 +14,9 @@ import type {
   RevisionRequest,
   OrganizationProfile,
 } from '../../../../shared/types';
-import { getOpencodeAdapter } from './opencode-client';
-import * as repository from './repository';
+import { getDependencies } from './dependencies';
 
 export interface GenerateDraftOptions {
-  useOpencode?: boolean;
   opencodeProvider?: 'cli' | 'fake';
   revisionNotes?: string;
 }
@@ -24,29 +26,88 @@ export async function generateDraft(
   profile: OrganizationProfile,
   options: GenerateDraftOptions = {},
 ): Promise<DraftArtifact> {
+  const deps = getDependencies();
+  const clock = deps.clock;
+  const idGenerator = deps.idGenerator;
+
   // Get existing drafts to determine version number
-  const existingDrafts = await repository.getDraftArtifacts(grant.id);
+  const existingDrafts = await deps.repository.getDraftArtifacts(grant.id);
   const latestVersion = existingDrafts.length > 0
     ? Math.max(...existingDrafts.map((d) => d.version))
     : 0;
 
-  const settings = await repository.getOpencodeSettings();
-  const adapter = getOpencodeAdapter(
-    settings || {
-      binaryPath: '',
-      workingDirectory: '',
-      timeoutMs: 60000,
-      isConfigured: false,
-    },
-    options.opencodeProvider || (settings?.isConfigured ? 'cli' : 'fake'),
+  // Determine provider type - explicit option overrides default
+  const providerType = options.opencodeProvider || 'cli';
+
+  // For CLI provider, require configured settings
+  if (providerType === 'cli') {
+    const settings = await deps.repository.getOpencodeSettings();
+    if (!settings?.isConfigured) {
+      throw new Error(
+        'Opencode is not configured. Please set up Opencode settings in the application before generating drafts.',
+      );
+    }
+
+    // Create Opencode adapter using DI
+    const adapter = deps.createOpencodeAdapter(settings, 'cli');
+
+    // Get previous draft if exists
+    const previousDraft = await deps.repository.getLatestDraftArtifact(grant.id);
+    const previousContent = previousDraft?.content;
+
+    // Generate new draft
+    const response = await adapter.generateDraft({
+      grantTitle: grant.title,
+      grantFunder: grant.funder,
+      grantAmount: grant.award,
+      grantDeadline: grant.deadline,
+      organizationProfile: `${profile.legalName}\n\nEIN: ${profile.ein}\nSAM UEI: ${profile.samUEI}`,
+      missionStatement: profile.mission,
+      previousDraft: previousContent || '',
+      revisionNotes: options.revisionNotes || '',
+    });
+
+    if (!response.success || !response.content) {
+      throw new Error(
+        `Draft generation failed: ${response.error || 'Unknown error from Opencode'}`,
+      );
+    }
+
+    // Create draft artifact
+    const draftArtifact: DraftArtifact = {
+      id: idGenerator.generateId('draft'),
+      grantId: grant.id,
+      version: latestVersion + 1,
+      content: response.content,
+      createdAt: clock.now().toISOString(),
+      createdBy: 'agent',
+      revisionNotes: options.revisionNotes || '',
+    };
+
+    await deps.repository.addDraftArtifact(draftArtifact);
+
+    // Update grant status to drafting
+    await deps.repository.updateGrant(grant.id, {
+      status: 'draft',
+      statusLabel: 'Drafting',
+      draftContent: response.content,
+    });
+
+    return draftArtifact;
+  }
+
+  // For 'fake' provider, create adapter without requiring Opencode configuration
+  const fakeAdapter = deps.createOpencodeAdapter(
+    { isConfigured: true, binaryPath: '', workingDirectory: '', timeoutMs: 60000 },
+    'fake',
   );
 
   // Get previous draft if exists
-  const previousDraft = await repository.getLatestDraftArtifact(grant.id);
+  const previousDraft = await deps.repository.getLatestDraftArtifact(grant.id);
   const previousContent = previousDraft?.content;
 
-  // Generate new draft
-  const response = await adapter.generateDraft({
+  // Generate draft using fake provider
+  const response = await fakeAdapter.generateDraft({
     grantTitle: grant.title,
     grantFunder: grant.funder,
     grantAmount: grant.award,
@@ -57,33 +118,30 @@ export async function generateDraft(
     revisionNotes: options.revisionNotes || '',
   });
 
-  let draftContent: string;
-
-  if (response.success && response.content) {
-    draftContent = response.content;
-  } else {
-    // Fallback draft content if Opencode fails
-    draftContent = generateFallbackDraft(grant, profile, options.revisionNotes);
+  if (!response.success || !response.content) {
+    throw new Error(
+      `Draft generation failed with fake provider: ${response.error || 'Unknown error'}`,
+    );
   }
 
   // Create draft artifact
   const draftArtifact: DraftArtifact = {
-    id: `draft-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+    id: idGenerator.generateId('draft'),
     grantId: grant.id,
     version: latestVersion + 1,
-    content: draftContent,
-    createdAt: new Date().toISOString(),
+    content: response.content,
+    createdAt: clock.now().toISOString(),
     createdBy: 'agent',
     revisionNotes: options.revisionNotes || '',
   };
 
-  await repository.addDraftArtifact(draftArtifact);
+  await deps.repository.addDraftArtifact(draftArtifact);
 
   // Update grant status to drafting
-  await repository.updateGrant(grant.id, {
+  await deps.repository.updateGrant(grant.id, {
     status: 'draft',
     statusLabel: 'Drafting',
-    draftContent,
+    draftContent: response.content,
   });
 
   return draftArtifact;
@@ -94,14 +152,17 @@ export async function createRevisionRequest(
   notes: string,
   requestedBy: string,
 ): Promise<RevisionRequest> {
+  const deps = getDependencies();
+  const idGenerator = deps.idGenerator;
+
   // Get latest draft version
-  const drafts = await repository.getDraftArtifacts(grant.id);
+  const drafts = await deps.repository.getDraftArtifacts(grant.id);
   const latestVersion = drafts.length > 0
     ? Math.max(...drafts.map((d) => d.version))
     : 0;
 
   const revisionRequest: RevisionRequest = {
-    id: `revision-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+    id: idGenerator.generateId('revision'),
     grantId: grant.id,
     draftVersion: latestVersion,
     notes,
@@ -110,10 +171,10 @@ export async function createRevisionRequest(
     status: 'pending',
   };
 
-  await repository.addRevisionRequest(revisionRequest);
+  await deps.repository.addRevisionRequest(revisionRequest);
 
   // Update grant status - revision_requested keeps it in drafting state
-  await repository.updateGrant(grant.id, {
+  await deps.repository.updateGrant(grant.id, {
     status: 'draft',
     statusLabel: 'Drafting',
   });
@@ -122,45 +183,11 @@ export async function createRevisionRequest(
 }
 
 export async function getDraftArtifacts(grantId: string): Promise<DraftArtifact[]> {
-  return repository.getDraftArtifacts(grantId);
+  const deps = getDependencies();
+  return deps.repository.getDraftArtifacts(grantId);
 }
 
 export async function getRevisionRequests(grantId: string): Promise<RevisionRequest[]> {
-  return repository.getRevisionRequests(grantId);
-}
-
-function generateFallbackDraft(
-  grant: Grant,
-  profile: OrganizationProfile,
-  revisionNotes?: string,
-): string {
-  let draft = `## ${grant.title}
-
-### Executive Summary
-
-${profile.legalName} is seeking funding to support our mission of ${profile.mission}.
-
-### Organizational Background
-
-${profile.legalName} has been serving the community since our founding. Our programs focus on delivering impactful services to our target populations.
-
-### Program Description
-
-This proposal outlines a comprehensive approach to addressing community needs through innovative programs.
-
-### Budget
-
-Award Amount: ${grant.award}
-Proposed Use: [To be detailed based on grant requirements]
-
-### Conclusion
-
-We believe this partnership will create lasting positive impact.
-`;
-
-  if (revisionNotes) {
-    draft += `\n\n### Revision Notes\n${revisionNotes}\n`;
-  }
-
-  return draft;
+  const deps = getDependencies();
+  return deps.repository.getRevisionRequests(grantId);
 }

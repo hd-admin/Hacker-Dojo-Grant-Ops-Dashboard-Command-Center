@@ -5,6 +5,8 @@
  * - Approval locking (separate from submission)
  * - Submission recording (human-assisted external submission)
  * - Follow-up task generation
+ *
+ * This service uses the DI boundary from dependencies.ts for all external dependencies.
  */
 
 import type {
@@ -13,8 +15,10 @@ import type {
   SubmissionMethod,
   FollowUp,
   Grant,
+  Notification,
+  Task,
 } from '../../../../shared/types';
-import * as repository from './repository';
+import { getDependencies } from './dependencies';
 
 export interface ApprovalInput {
   grant: Grant;
@@ -45,7 +49,8 @@ export interface ApprovalResult {
 
 // Check if grant can be submitted (requires approval)
 export async function canSubmit(grantId: string): Promise<{ canSubmit: boolean; reason?: string }> {
-  const grant = await repository.getGrant(grantId);
+  const deps = getDependencies();
+  const grant = await deps.repository.getGrant(grantId);
 
   if (!grant) {
     return { canSubmit: false, reason: 'Grant not found' };
@@ -62,7 +67,7 @@ export async function canSubmit(grantId: string): Promise<{ canSubmit: boolean; 
   }
 
   // Check if there's an approval record
-  const approval = await repository.getApprovalRecord(grantId);
+  const approval = await deps.repository.getApprovalRecord(grantId);
   if (!approval) {
     return { canSubmit: false, reason: 'Grant must be approved before submission' };
   }
@@ -81,25 +86,29 @@ export async function canSubmit(grantId: string): Promise<{ canSubmit: boolean; 
 // Approve and lock a grant draft
 export async function approveGrant(input: ApprovalInput): Promise<ApprovalResult> {
   try {
+    const deps = getDependencies();
+    const idGenerator = deps.idGenerator;
+    const clock = deps.clock;
+
     const { grant, approvedBy, lockedUntil } = input;
 
     // Get latest draft
-    const drafts = await repository.getDraftArtifacts(grant.id);
+    const drafts = await deps.repository.getDraftArtifacts(grant.id);
     const latestVersion = drafts.length > 0
       ? Math.max(...drafts.map((d) => d.version))
       : 1;
 
     // Create approval record
     const approvalRecord: ApprovalRecord = {
-      id: `approval-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+      id: idGenerator.generateId('approval'),
       grantId: grant.id,
       draftVersion: latestVersion,
-      approvedAt: new Date().toISOString(),
+      approvedAt: clock.now().toISOString(),
       approvedBy,
       lockedUntil: lockedUntil || '',
     };
 
-    await repository.addApprovalRecord(approvalRecord);
+    await deps.repository.addApprovalRecord(approvalRecord);
 
     // Note: Grant status remains 'review' (or current board status) until actual submission.
     // Approval creates an ApprovalRecord which gates submission, but does not change
@@ -121,6 +130,10 @@ export async function approveGrant(input: ApprovalInput): Promise<ApprovalResult
 // Record a submission (human-assisted external submission)
 export async function recordSubmission(input: SubmissionInput): Promise<SubmissionResult> {
   try {
+    const deps = getDependencies();
+    const clock = deps.clock;
+    const idGenerator = deps.idGenerator;
+
     const { grant, method, notes, submittedBy } = input;
 
     // Check if can submit
@@ -134,27 +147,32 @@ export async function recordSubmission(input: SubmissionInput): Promise<Submissi
 
     // Create submission record
     const submissionRecord: SubmissionRecord = {
-      id: `submission-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+      id: idGenerator.generateId('submission'),
       grantId: grant.id,
-      submittedAt: new Date().toISOString(),
+      submittedAt: clock.now().toISOString(),
       method,
       notes: notes || '',
       followUpsCreated: [],
     };
 
-    await repository.addSubmissionRecord(submissionRecord);
+    await deps.repository.addSubmissionRecord(submissionRecord);
 
     // Update grant status to submitted
-    await repository.updateGrant(grant.id, {
+    await deps.repository.updateGrant(grant.id, {
       status: 'submitted',
       statusLabel: 'Submitted',
     });
 
     // Generate follow-up tasks
-    const followUps = await generateFollowUps(grant, submissionRecord, submittedBy);
+    const followUps = await generateFollowUps(grant, submissionRecord, submittedBy, deps);
 
     // Update submission record with follow-up IDs
     submissionRecord.followUpsCreated = followUps.map((f) => f.id);
+
+    // Email submission: create notification and task for human follow-up
+    if (method.type === 'email') {
+      await createEmailSubmissionArtifacts(grant, submissionRecord, method.confirmationId, deps);
+    }
 
     return {
       success: true,
@@ -174,23 +192,26 @@ async function generateFollowUps(
   grant: Grant,
   submission: SubmissionRecord,
   _createdBy: string,
+  deps: ReturnType<typeof getDependencies>,
 ): Promise<FollowUp[]> {
   const followUps: FollowUp[] = [];
+  const idGenerator = deps.idGenerator;
+  const clock = deps.clock;
 
   // Follow-up: Check on status (30 days before deadline if applicable)
   if (grant.daysOut > 60) {
     const followUp: FollowUp = {
-      id: `followup-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+      id: idGenerator.generateId('followup'),
       grantId: grant.id,
       submissionId: submission.id,
       type: 'progress_check',
       title: `Follow up on ${grant.title}`,
       description: `Check status of application to ${grant.funder}. Confirmation: ${submission.method.confirmationId || 'N/A'}`,
-      dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days from now
+      dueDate: new Date(clock.now().getTime() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days from now
       status: 'pending',
-      createdAt: new Date().toISOString(),
+      createdAt: clock.now().toISOString(),
     };
-    await repository.addFollowUp(followUp);
+    await deps.repository.addFollowUp(followUp);
     followUps.push(followUp);
   }
 
@@ -200,7 +221,7 @@ async function generateFollowUps(
     const reportDueDate = new Date(dueDate.getTime() + 90 * 24 * 60 * 60 * 1000); // 90 days after deadline
 
     const reportFollowUp: FollowUp = {
-      id: `followup-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+      id: idGenerator.generateId('followup'),
       grantId: grant.id,
       submissionId: submission.id,
       type: 'report_due',
@@ -208,32 +229,85 @@ async function generateFollowUps(
       description: `Submit progress report to ${grant.funder}`,
       dueDate: reportDueDate.toISOString(),
       status: 'pending',
-      createdAt: new Date().toISOString(),
+      createdAt: clock.now().toISOString(),
     };
-    await repository.addFollowUp(reportFollowUp);
+    await deps.repository.addFollowUp(reportFollowUp);
     followUps.push(reportFollowUp);
   }
 
   return followUps;
 }
 
+/**
+ * Create notification and task artifacts for email submission.
+ * This implements the 'notify human for any needed follow-ups, email, data, etc.' requirement.
+ */
+async function createEmailSubmissionArtifacts(
+  grant: Grant,
+  submission: SubmissionRecord,
+  confirmationId: string | undefined,
+  deps: ReturnType<typeof getDependencies>,
+): Promise<void> {
+  const clock = deps.clock;
+  const idGenerator = deps.idGenerator;
+
+  // Get organization profile to access notifyEmail
+  const profile = await deps.repository.getOrgProfile();
+  const notifyEmail = profile?.agentBehavior?.notifyEmail;
+
+  if (!notifyEmail) {
+    // No email configured, skip notification creation
+    return;
+  }
+
+  // Create notification for the submission
+  const notification: Notification = {
+    id: idGenerator.generateId('notification'),
+    text: `Email submission sent to ${grant.funder} for "${grant.title}". Confirmation: ${confirmationId || 'N/A'}. Sent to: ${notifyEmail}`,
+    time: clock.now().toISOString(),
+    dot: 'blue',
+  };
+
+  // Get existing notifications and add the new one
+  const notifications = await deps.repository.getNotifications();
+  notifications.unshift(notification); // Add to beginning
+  await deps.repository.updateNotifications(notifications);
+
+  // Create task for human follow-up
+  const task: Task = {
+    id: idGenerator.generateId('task'),
+    text: `Follow up on email submission to ${grant.funder} - ${grant.title} (Confirmation: ${confirmationId || 'N/A'})`,
+    completed: false,
+  };
+
+  // Get existing tasks and add the new one
+  const tasks = await deps.repository.getTasks();
+  tasks.push(task);
+  await deps.repository.updateTasks(tasks);
+}
+
 export async function getApprovalRecord(grantId: string): Promise<ApprovalRecord | null> {
-  return repository.getApprovalRecord(grantId);
+  const deps = getDependencies();
+  return deps.repository.getApprovalRecord(grantId);
 }
 
 export async function getSubmissionRecord(grantId: string): Promise<SubmissionRecord | null> {
-  return repository.getSubmissionRecord(grantId);
+  const deps = getDependencies();
+  return deps.repository.getSubmissionRecord(grantId);
 }
 
 export async function getFollowUps(): Promise<FollowUp[]> {
-  return repository.getFollowUps();
+  const deps = getDependencies();
+  return deps.repository.getFollowUps();
 }
 
 export async function createFollowUp(followUp: FollowUp): Promise<FollowUp> {
-  await repository.addFollowUp(followUp);
+  const deps = getDependencies();
+  await deps.repository.addFollowUp(followUp);
   return followUp;
 }
 
 export async function updateFollowUp(followUp: FollowUp): Promise<void> {
-  await repository.updateFollowUp(followUp);
+  const deps = getDependencies();
+  await deps.repository.updateFollowUp(followUp);
 }

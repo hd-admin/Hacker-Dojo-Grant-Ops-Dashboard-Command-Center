@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import * as repository from '@/server/grant-ops/repository';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Notification } from '../../../../../shared/types';
 
 // GET: Get all notifications
 export async function GET() {
   try {
-    const notifications = await repository.getNotifications();
+    const deps = getDependencies();
+    const notifications = await deps.repository.getNotifications();
     return NextResponse.json(notifications);
   } catch (error) {
     console.error('Error getting notifications:', error);
@@ -17,18 +18,21 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    const deps = getDependencies();
+    const clock = deps.clock;
+    const idGenerator = deps.idGenerator;
 
-    const notifications = await repository.getNotifications();
+    const notifications = await deps.repository.getNotifications();
 
     const newNotification: Notification = {
-      id: body.id || `notif-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+      id: body.id || idGenerator.generateId('notif'),
       text: body.text,
-      time: body.time || 'now',
+      time: body.time || clock.now().toISOString(),
       dot: body.dot || 'info',
     };
 
     notifications.push(newNotification);
-    await repository.updateNotifications(notifications);
+    await deps.repository.updateNotifications(notifications);
 
     return NextResponse.json(newNotification, { status: 201 });
   } catch (error) {
@@ -41,12 +45,13 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   try {
     const body = await request.json();
+    const deps = getDependencies();
 
     if (!Array.isArray(body.notifications)) {
       return NextResponse.json({ error: 'Notifications array is required' }, { status: 400 });
     }
 
-    await repository.updateNotifications(body.notifications as Notification[]);
+    await deps.repository.updateNotifications(body.notifications as Notification[]);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating notifications:', error);

@@ -2,10 +2,12 @@
  * Source Service
  *
  * Manages grant source CRUD operations and source-related business logic.
+ *
+ * This service uses the DI boundary from dependencies.ts for all external dependencies.
  */
 
 import { Source } from '../../../../shared/types';
-import * as repository from './repository';
+import { getDependencies } from './dependencies';
 
 export interface AddSourceInput {
   name: string;
@@ -23,68 +25,79 @@ export interface SourceService {
 }
 
 export async function getAllSources(): Promise<Source[]> {
-  return repository.getSources();
+  const deps = getDependencies();
+  return deps.repository.getSources();
 }
 
 export async function addSource(input: AddSourceInput): Promise<Source> {
+  const deps = getDependencies();
+  const clock = deps.clock;
+  const idGenerator = deps.idGenerator;
+
   const source: Source = {
-    id: `source-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+    id: idGenerator.generateId('source'),
     name: input.name,
     url: input.url,
     type: input.type,
-    createdAt: new Date().toISOString(),
+    createdAt: clock.now().toISOString(),
     isActive: true,
   };
 
-  await repository.addSource(source);
+  await deps.repository.addSource(source);
   return source;
 }
 
 export async function removeSource(id: string): Promise<boolean> {
-  await repository.removeSource(id);
+  const deps = getDependencies();
+  await deps.repository.removeSource(id);
   return true;
 }
 
 export async function activateSource(id: string): Promise<boolean> {
-  const sources = await repository.getSources();
+  const deps = getDependencies();
+  const sources = await deps.repository.getSources();
   const source = sources.find((s) => s.id === id);
   if (!source) {
     return false;
   }
 
   source.isActive = true;
-  await repository.removeSource(id);
-  await repository.addSource(source);
+  await deps.repository.removeSource(id);
+  await deps.repository.addSource(source);
   return true;
 }
 
 export async function deactivateSource(id: string): Promise<boolean> {
-  const sources = await repository.getSources();
+  const deps = getDependencies();
+  const sources = await deps.repository.getSources();
   const source = sources.find((s) => s.id === id);
   if (!source) {
     return false;
   }
 
   source.isActive = false;
-  await repository.removeSource(id);
-  await repository.addSource(source);
+  await deps.repository.removeSource(id);
+  await deps.repository.addSource(source);
   return true;
 }
 
 export async function getActiveSources(): Promise<Source[]> {
-  const sources = await repository.getSources();
+  const deps = getDependencies();
+  const sources = await deps.repository.getSources();
   return sources.filter((s) => s.isActive);
 }
 
 export async function updateSourceLastCrawled(id: string): Promise<boolean> {
-  const sources = await repository.getSources();
+  const deps = getDependencies();
+  const clock = deps.clock;
+  const sources = await deps.repository.getSources();
   const source = sources.find((s) => s.id === id);
   if (!source) {
     return false;
   }
 
-  source.lastCrawledAt = new Date().toISOString();
-  await repository.removeSource(id);
-  await repository.addSource(source);
+  source.lastCrawledAt = clock.now().toISOString();
+  await deps.repository.removeSource(id);
+  await deps.repository.addSource(source);
   return true;
 }
