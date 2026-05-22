@@ -30,7 +30,7 @@ import type {
   DocumentMetadata,
 } from './types';
 
-import { defaultProfile, defaultOpencodeSettings, seedGrants } from './seed-data';
+import { defaultProfile, defaultOpencodeSettings, seedGrants, seedNotifications, seedTasks } from './seed-data';
 
 export const DATA_DIR = '.grant-ops-data';
 
@@ -89,8 +89,8 @@ export async function loadPersistedData(baseDir?: string): Promise<PersistedData
       submissionRecords: [],
       followUps: [],
       opencodeSettings: defaultOpencodeSettings,
-      notifications: [],
-      tasks: [],
+      notifications: [...seedNotifications],
+      tasks: [...seedTasks],
       documents: [],
       lastSync: new Date().toISOString(),
     };

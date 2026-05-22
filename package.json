@@ -19,7 +19,7 @@
     "typecheck": "tsc --noEmit -p frontend/tsconfig.json && tsc --noEmit -p electron/tsconfig.json",
     "typecheck:frontend": "tsc --noEmit -p frontend/tsconfig.json",
     "typecheck:electron": "tsc --noEmit -p electron/tsconfig.json",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e"
   },
   "dependencies": {
     "concurrently": "^9.1.2",

@@ -12,6 +12,8 @@ import type {
   OrganizationProfile,
   OpencodeSettings,
   Grant,
+  Notification,
+  Task,
 } from './types';
 
 export const defaultOpencodeSettings: OpencodeSettings = {
@@ -434,5 +436,46 @@ export const seedGrants: Grant[] = [
       { label: 'Final report submitted', done: true, source: 'Jan 2026' },
     ],
     draftContent: `This was a historical grant focused on substance abuse prevention education...`,
+  },
+];
+
+// Seed notifications for initial state
+export const seedNotifications: Notification[] = [
+  {
+    id: 'notif-1',
+    text: 'NSF Technology Access grant deadline in 25 days',
+    time: '2 hours ago',
+    dot: 'NSF',
+  },
+  {
+    id: 'notif-2',
+    text: 'Morrell Family Foundation deadline approaching: 11 days remaining',
+    time: '4 hours ago',
+    dot: 'Morrell',
+  },
+  {
+    id: 'notif-3',
+    text: 'New high-fit grant discovered: Horizon Education Grants (81% fit)',
+    time: '1 day ago',
+    dot: 'New',
+  },
+];
+
+// Seed tasks for initial state
+export const seedTasks: Task[] = [
+  {
+    id: 'task-1',
+    text: 'Review NSF draft and provide feedback',
+    completed: false,
+  },
+  {
+    id: 'task-2',
+    text: 'Collect partnership letters for Silicon Valley Community Foundation',
+    completed: false,
+  },
+  {
+    id: 'task-3',
+    text: 'Finalize budget narrative for Horizon Education grant',
+    completed: true,
   },
 ];
