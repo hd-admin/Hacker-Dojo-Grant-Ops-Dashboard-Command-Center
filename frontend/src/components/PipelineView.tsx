@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant, GrantStatus } from '../../../shared/types';
-import { mockGrants, isElectronAPIavailable } from '../lib/mockData';
+import { isElectronAPIavailable, createGrantOpsClient } from '../lib/grant-ops-client';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
@@ -62,11 +62,16 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
           const data = await window.electronAPI.getGrants();
           setGrants(data);
         } else {
-          setGrants(mockGrants);
+          // Use grant-ops-client for browser/E2E testing
+          const client = createGrantOpsClient();
+          if (client) {
+            const data = await client.grants.getAll();
+            setGrants(data);
+          }
         }
       } catch (error) {
         console.error('Error loading grants:', error);
-        setGrants(mockGrants);
+        setGrants([]);
       } finally {
         setLoading(false);
       }
@@ -120,12 +125,20 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
     if (draggingGrantId) {
       const grant = grants.find((g) => g.id === draggingGrantId);
       try {
-        await window.electronAPI.updateGrantStatus(draggingGrantId, colKey as GrantStatus);
+        if (isElectronAPIavailable()) {
+          await window.electronAPI.updateGrantStatus(draggingGrantId, colKey as GrantStatus);
+        } else {
+          // Use grant-ops-client for browser/E2E testing
+          const client = createGrantOpsClient();
+          if (client) {
+            await client.grants.update(draggingGrantId, { status: colKey as GrantStatus, statusLabel: colKey === 'draft' ? 'In Draft' : colKey === 'matched' ? 'Matched' : colKey === 'review' ? 'In Review' : colKey === 'submitted' ? 'Submitted' : 'Awarded' });
+          }
+        }
         setGrants((prev) =>
           prev.map((g) => (g.id === draggingGrantId ? { ...g, status: colKey as GrantStatus } : g)),
         );
-        // Notify for high-fit grants moved to matched
-        if (colKey === 'matched' && grant && grant.fit >= 70) {
+        // Notify for high-fit grants moved to matched (Electron only)
+        if (isElectronAPIavailable() && colKey === 'matched' && grant && grant.fit >= 70) {
           window.electronAPI.showNotification(
             'New High-Fit Grant',
             `${grant.title} — ${grant.fit}% fit`,

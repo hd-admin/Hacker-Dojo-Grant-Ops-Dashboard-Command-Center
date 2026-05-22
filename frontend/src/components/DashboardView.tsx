@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant, OrganizationProfile, ActivityEvent } from '../../../shared/types';
-import { mockGrants, mockProfile, mockActivity, isElectronAPIavailable } from '../lib/mockData';
+import { isElectronAPIavailable, createGrantOpsClient } from '../lib/grant-ops-client';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
@@ -94,17 +94,23 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
           setProfile(profileData);
           setActivity(activityData.length > 0 ? activityData : getDefaultActivity());
         } else {
-          // Use mock data for browser/E2E testing
-          setGrants(mockGrants);
-          setProfile(mockProfile);
-          setActivity(mockActivity);
+          // Use grant-ops-client for browser/E2E testing
+          const client = createGrantOpsClient();
+          if (client) {
+            const [grantsData, profileData] = await Promise.all([
+              client.grants.getAll(),
+              client.profile.get(),
+            ]);
+            setGrants(grantsData);
+            setProfile(profileData);
+            setActivity(getDefaultActivity());
+          }
         }
       } catch (error) {
         console.error('Error loading dashboard data:', error);
-        // Fallback to mock data on error
-        setGrants(mockGrants);
-        setProfile(mockProfile);
-        setActivity(mockActivity);
+        setGrants([]);
+        setProfile(null);
+        setActivity(getDefaultActivity());
       } finally {
         setLoading(false);
       }

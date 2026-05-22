@@ -383,4 +383,39 @@ test.describe('Grant Operations Center', () => {
     const items = page.locator('.task-item');
     expect(await items.count()).toBeGreaterThan(0);
   });
+
+  test('api-persistence: Grant update via API persists and reflects in GET', async ({ request }) => {
+    // Get all grants via API
+    const grantsResponse = await request.get('http://localhost:3000/api/grants');
+    expect(grantsResponse.ok()).toBeTruthy();
+    const grants: Array<{ id: string; status: string }> = await grantsResponse.json();
+    expect(grants.length).toBeGreaterThan(0);
+
+    // Get the first grant's current state
+    const firstGrant = grants[0];
+    const originalStatus = firstGrant.status;
+
+    // Update the grant status via PATCH
+    const newStatus = originalStatus === 'matched' ? 'draft' : 'matched';
+    const updateResponse = await request.patch(
+      `http://localhost:3000/api/grants/${firstGrant.id}`,
+      {
+        headers: { 'Content-Type': 'application/json' },
+        data: { status: newStatus, statusLabel: newStatus === 'draft' ? 'In Draft' : 'Matched' },
+      },
+    );
+    expect(updateResponse.ok()).toBeTruthy();
+
+    // Read it back via GET and verify persistence
+    const getResponse = await request.get(`http://localhost:3000/api/grants/${firstGrant.id}`);
+    expect(getResponse.ok()).toBeTruthy();
+    const updatedGrant = await getResponse.json();
+    expect(updatedGrant.status).toBe(newStatus);
+
+    // Restore original status
+    await request.patch(`http://localhost:3000/api/grants/${firstGrant.id}`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: { status: originalStatus, statusLabel: originalStatus === 'draft' ? 'In Draft' : originalStatus === 'matched' ? 'Matched' : originalStatus },
+    });
+  });
 });
