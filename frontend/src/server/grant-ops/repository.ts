@@ -67,6 +67,15 @@ export async function addCrawlRun(run: CrawlRun): Promise<void> {
   await savePersistedData(data);
 }
 
+export async function updateCrawlRun(run: CrawlRun): Promise<void> {
+  const data = await loadPersistedData();
+  const index = data.crawlRuns.findIndex((r: CrawlRun) => r.id === run.id);
+  if (index !== -1) {
+    data.crawlRuns[index] = run;
+    await savePersistedData(data);
+  }
+}
+
 // DraftArtifact operations
 export async function getDraftArtifacts(grantId: string): Promise<DraftArtifact[]> {
   const data = await loadPersistedData();

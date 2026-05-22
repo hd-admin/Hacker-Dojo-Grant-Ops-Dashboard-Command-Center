@@ -155,19 +155,15 @@ export async function runResearch(
       }
     }
 
-    // Update crawl run with results
+    // Update crawl run with results and persist
     crawlRun.completedAt = new Date().toISOString();
     crawlRun.status = 'completed';
     crawlRun.sourcesCrawled = sources.length;
     crawlRun.grantsFound = totalGrantsFound;
     crawlRun.grantsMatched = totalGrantsMatched;
 
-    // Update the crawl run in repository
-    const allRuns = await repository.getCrawlRuns();
-    const runIndex = allRuns.findIndex((r) => r.id === crawlRunId);
-    if (runIndex !== -1) {
-      allRuns[runIndex] = crawlRun;
-    }
+    // Persist the updated crawl run state
+    await repository.updateCrawlRun(crawlRun);
 
     return {
       crawlRun,
@@ -177,10 +173,11 @@ export async function runResearch(
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-    // Update crawl run with error
+    // Update crawl run with error and persist
     crawlRun.completedAt = new Date().toISOString();
     crawlRun.status = 'failed';
     crawlRun.errorMessage = errorMessage;
+    await repository.updateCrawlRun(crawlRun);
 
     return {
       crawlRun,
