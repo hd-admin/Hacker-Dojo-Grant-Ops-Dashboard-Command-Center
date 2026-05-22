@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Notification } from '../../../shared/types';
-import { notificationsApi, isElectronAPIavailable } from '../lib/grant-ops-client';
+import { notificationsApi } from '../lib/grant-ops-client';
 
 export default function NotificationsView() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -11,17 +11,10 @@ export default function NotificationsView() {
   useEffect(() => {
     async function load() {
       try {
-        if (isElectronAPIavailable()) {
-          const data = await window.electronAPI.getNotifications();
-          setNotifications(data);
-        } else {
-          // Use HTTP client API for browser/non-Electron context
-          const data = await notificationsApi.getAll();
-          setNotifications(data);
-        }
+        const data = await notificationsApi.getAll();
+        setNotifications(data);
       } catch (error) {
         console.error('Error loading notifications:', error);
-        // Use empty array on error instead of mock data
         setNotifications([]);
       } finally {
         setLoading(false);

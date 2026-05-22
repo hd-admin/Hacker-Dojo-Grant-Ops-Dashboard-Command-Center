@@ -9,6 +9,7 @@ import NotificationsView from './NotificationsView';
 import TasksView from './TasksView';
 import GrantDrawer from './GrantDrawer';
 import type { Grant, OrganizationProfile, CrawlStatus } from '../../../shared/types';
+import { client } from '../lib/grant-ops-client';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
@@ -34,7 +35,7 @@ const activityNav: NavItem[] = [
 export default function AppShell() {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
-  const [appVersion, setAppVersion] = useState('0.1.0');
+  const [appVersion] = useState('0.1.0');
   const [grants, setGrants] = useState<Grant[]>([]);
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
   const [crawlStatus, setCrawlStatus] = useState<CrawlStatus>({
@@ -44,38 +45,30 @@ export default function AppShell() {
   const [notifications, setNotifications] = useState<{ id: string }[]>([]);
 
   useEffect(() => {
-    if (window.electronAPI) {
-      window.electronAPI.getAppVersion().then(setAppVersion);
-      window.electronAPI.getGrants().then(setGrants);
-      window.electronAPI.getOrgProfile().then((p) => p && setProfile(p));
-      window.electronAPI.getCrawlStatus().then(setCrawlStatus);
-      window.electronAPI.getNotifications().then(setNotifications);
+    async function loadInitialData() {
+      try {
+        const [grantsData, profileData, notificationsData] = await Promise.all([
+          client.grants.getAll(),
+          client.profile.get(),
+          client.notifications.getAll(),
+        ]);
+        setGrants(grantsData);
+        setProfile(profileData);
+        setNotifications(notificationsData);
 
-      // Listen for tray "Refresh Crawl" action
-      window.electronAPI.onRefreshCrawl(async () => {
-        console.warn('Refresh crawl triggered from tray');
-        try {
-          // Call the research API to trigger a crawl
-          const response = await fetch('/api/research', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+        // Get crawl runs to determine status
+        const runsResponse = await client.research.getRuns();
+        if (runsResponse.latestRun) {
+          setCrawlStatus({
+            online: runsResponse.latestRun.status === 'completed',
+            lastSync: runsResponse.latestRun.completedAt || new Date().toISOString(),
           });
-          if (response.ok) {
-            // Refresh grants and crawl status after research completes
-            const updatedGrants = await window.electronAPI.getGrants();
-            setGrants(updatedGrants);
-            const updatedStatus = await window.electronAPI.getCrawlStatus();
-            setCrawlStatus(updatedStatus);
-            window.electronAPI.showNotification(
-              'Crawl Complete',
-              'Grant database has been updated.',
-            );
-          }
-        } catch (error) {
-          console.error('Error triggering research:', error);
         }
-      });
+      } catch (error) {
+        console.error('Error loading initial data:', error);
+      }
     }
+    loadInitialData();
   }, []);
 
   const handleNavClick = (item: NavItem) => {

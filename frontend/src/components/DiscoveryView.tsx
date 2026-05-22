@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant } from '../../../shared/types';
-import { isElectronAPIavailable, createGrantOpsClient } from '../lib/grant-ops-client';
+import { client } from '../lib/grant-ops-client';
 
 interface DiscoveryViewProps {
   onGrantSelect: (grantId: string) => void;
@@ -64,26 +64,8 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
   useEffect(() => {
     async function load() {
       try {
-        if (isElectronAPIavailable()) {
-          const data = await window.electronAPI.getGrants();
-          setGrants(data);
-          // Notify for high-fit matched grants
-          const highFitGrants = data.filter((g) => g.fit >= 70 && g.status === 'matched');
-          if (highFitGrants.length > 0) {
-            const top = highFitGrants.sort((a, b) => b.fit - a.fit)[0]!;
-            window.electronAPI.showNotification(
-              'New High-Fit Grant',
-              `${top.title} — ${top.fit}% fit`,
-            );
-          }
-        } else {
-          // Use grant-ops-client for browser/E2E testing (GAP-01 fix)
-          const client = createGrantOpsClient();
-          if (client) {
-            const data = await client.grants.getAll();
-            setGrants(data);
-          }
-        }
+        const data = await client.grants.getAll();
+        setGrants(data);
       } catch (error) {
         console.error('Error loading grants:', error);
       } finally {
@@ -129,40 +111,16 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
 
     setIsAddingSource(true);
     try {
-      if (isElectronAPIavailable()) {
-        const source = {
-          id: `source-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
-          name: newSourceName.trim(),
-          url: newSourceUrl.trim(),
-          type: 'website' as const,
-          createdAt: new Date().toISOString(),
-          isActive: true,
-        };
-        await window.electronAPI.addSource(source);
-        // Trigger research after adding source
-        await fetch('/api/research', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        });
-        // Refresh grants
-        const updatedGrants = await window.electronAPI.getGrants();
-        setGrants(updatedGrants);
-      } else {
-        // Browser/E2E mode: use HTTP client
-        const client = createGrantOpsClient();
-        if (client) {
-          await client.sources.add({
-            name: newSourceName.trim(),
-            url: newSourceUrl.trim(),
-            type: 'website',
-          });
-          // Trigger research after adding source
-          await client.research.trigger();
-          // Refresh grants
-          const data = await client.grants.getAll();
-          setGrants(data);
-        }
-      }
+      await client.sources.add({
+        name: newSourceName.trim(),
+        url: newSourceUrl.trim(),
+        type: 'website',
+      });
+      // Trigger research after adding source
+      await client.research.trigger();
+      // Refresh grants
+      const data = await client.grants.getAll();
+      setGrants(data);
 
       setNewSourceName('');
       setNewSourceUrl('');

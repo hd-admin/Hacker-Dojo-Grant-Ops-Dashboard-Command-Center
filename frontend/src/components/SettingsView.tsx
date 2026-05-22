@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { OrganizationProfile, DocumentMetadata, OpencodeSettings } from '../../../shared/types';
-import { isElectronAPIavailable, createGrantOpsClient } from '../lib/grant-ops-client';
+import { client } from '../lib/grant-ops-client';
 
 export default function SettingsView() {
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
@@ -18,30 +18,15 @@ export default function SettingsView() {
   useEffect(() => {
     async function load() {
       try {
-        if (isElectronAPIavailable()) {
-          const [profileData, docsData, opencodeData] = await Promise.all([
-            window.electronAPI.getOrgProfile(),
-            window.electronAPI.getDocuments(),
-            window.electronAPI.getOpencodeSettings(),
-          ]);
-          setProfile(profileData);
-          setEditForm(profileData);
-          setDocuments(docsData);
-          setOpencodeSettings(opencodeData);
-        } else {
-          // Use grant-ops-client for browser/E2E testing (GAP-01 fix)
-          const client = createGrantOpsClient();
-          if (client) {
-            const [profileData, opencodeData] = await Promise.all([
-              client.profile.get(),
-              client.opencodeSettings.get(),
-            ]);
-            setProfile(profileData);
-            setEditForm(profileData);
-            setDocuments([]);
-            setOpencodeSettings(opencodeData);
-          }
-        }
+        const [profileData, docsData, opencodeData] = await Promise.all([
+          client.profile.get(),
+          client.documents.getAll(),
+          client.opencodeSettings.get(),
+        ]);
+        setProfile(profileData);
+        setEditForm(profileData);
+        setDocuments(docsData);
+        setOpencodeSettings(opencodeData);
       } catch (error) {
         console.error('Error loading profile:', error);
       } finally {
@@ -68,21 +53,10 @@ export default function SettingsView() {
   const handleSave = async () => {
     if (!editForm) return;
     try {
-      if (isElectronAPIavailable()) {
-        await window.electronAPI.updateOrgProfile(editForm as OrganizationProfile);
-        const updated = await window.electronAPI.getOrgProfile();
-        setProfile(updated);
-        setEditForm(updated);
-      } else {
-        // Use grant-ops-client for browser/E2E testing (GAP-01 fix)
-        const client = createGrantOpsClient();
-        if (client) {
-          await client.profile.update(editForm as OrganizationProfile);
-          const updated = await client.profile.get();
-          setProfile(updated);
-          setEditForm(updated);
-        }
-      }
+      await client.profile.update(editForm as OrganizationProfile);
+      const updated = await client.profile.get();
+      setProfile(updated);
+      setEditForm(updated);
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -104,22 +78,36 @@ export default function SettingsView() {
   };
 
   const handleUploadDocument = async () => {
-    try {
-      const doc = await window.electronAPI.uploadDocument();
-      if (doc) {
-        setDocuments((prev) => [...prev, doc]);
-      }
-    } catch (error) {
-      console.error('Error uploading document:', error);
-    }
+    // Create a file input element
+    const input = window.document.createElement('input');
+    input.type = 'file';
+    input.accept = '.pdf,.xls,.xlsx,.doc,.docx';
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+
+      const ext = file.name.split('.').pop()?.toLowerCase() || '';
+      const docType = ext === 'pdf' ? 'PDF' : ext === 'xls' || ext === 'xlsx' ? 'XLS' : 'DOC';
+
+      const doc = await client.documents.create({
+        name: file.name,
+        type: docType,
+        lastUsed: new Date().toISOString(),
+      });
+
+      setDocuments((prev) => [...prev, doc]);
+    };
+    input.click();
   };
 
   const handleRemoveTheme = async (theme: string) => {
+    if (!profile) return;
     try {
-      await window.electronAPI.removeTheme(theme);
-      const updated = await window.electronAPI.getOrgProfile();
-      setProfile(updated);
-      setEditForm(updated);
+      const updatedThemes = profile.searchThemes.filter((t) => t !== theme);
+      const updatedProfile = { ...profile, searchThemes: updatedThemes };
+      await client.profile.update(updatedProfile);
+      setProfile(updatedProfile);
+      setEditForm(updatedProfile);
     } catch (error) {
       console.error('Error removing theme:', error);
     }
@@ -127,12 +115,13 @@ export default function SettingsView() {
 
   const handleAddTheme = async () => {
     const theme = newTheme.trim();
-    if (!theme) return;
+    if (!theme || !profile) return;
     try {
-      await window.electronAPI.addTheme(theme);
-      const updated = await window.electronAPI.getOrgProfile();
-      setProfile(updated);
-      setEditForm(updated);
+      const updatedThemes = [...profile.searchThemes, theme];
+      const updatedProfile = { ...profile, searchThemes: updatedThemes };
+      await client.profile.update(updatedProfile);
+      setProfile(updatedProfile);
+      setEditForm(updatedProfile);
       setNewTheme('');
     } catch (error) {
       console.error('Error adding theme:', error);
@@ -161,19 +150,9 @@ export default function SettingsView() {
 
   const handleSaveOpencode = async () => {
     try {
-      if (isElectronAPIavailable()) {
-        await window.electronAPI.updateOpencodeSettings(opencodeForm as OpencodeSettings);
-        const updated = await window.electronAPI.getOpencodeSettings();
-        setOpencodeSettings(updated);
-      } else {
-        // Use grant-ops-client for browser/E2E testing (GAP-01 fix)
-        const client = createGrantOpsClient();
-        if (client) {
-          await client.opencodeSettings.update(opencodeForm as OpencodeSettings);
-          const updated = await client.opencodeSettings.get();
-          setOpencodeSettings(updated);
-        }
-      }
+      await client.opencodeSettings.update(opencodeForm as OpencodeSettings);
+      const updated = await client.opencodeSettings.get();
+      setOpencodeSettings(updated);
       setIsEditingOpencode(false);
     } catch (error) {
       console.error('Error saving Opencode settings:', error);

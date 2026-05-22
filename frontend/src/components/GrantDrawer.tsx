@@ -1,8 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { grantsApi, revisionsApi, isElectronAPIavailable } from '../lib/grant-ops-client';
-import type { Grant, RevisionRequest, SubmissionMethod } from '../../../shared/types';
+import { grantsApi, revisionsApi } from '../lib/grant-ops-client';
+import type { Grant, SubmissionMethod } from '../../../shared/types';
 
 interface GrantDrawerProps {
   grantId: string | null;
@@ -48,14 +48,8 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
       if (grantId) {
         setLoading(true);
         try {
-          if (isElectronAPIavailable()) {
-            const data = await window.electronAPI.getGrantById(grantId);
-            setGrant(data);
-          } else {
-            // Use HTTP client API for browser/non-Electron context
-            const data = await grantsApi.getById(grantId);
-            setGrant(data);
-          }
+          const data = await grantsApi.getById(grantId);
+          setGrant(data);
         } catch (err) {
           console.error('Error loading grant:', err);
           setGrant(null);
@@ -83,13 +77,8 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
       });
       if (response.ok) {
         // Refresh grant data
-        if (isElectronAPIavailable()) {
-          const updatedGrant = await window.electronAPI.getGrantById(grant.id);
-          if (updatedGrant) setGrant(updatedGrant);
-        } else {
-          const updatedGrant = await grantsApi.getById(grant.id);
-          if (updatedGrant) setGrant(updatedGrant);
-        }
+        const updatedGrant = await grantsApi.getById(grant.id);
+        if (updatedGrant) setGrant(updatedGrant);
       } else {
         const error = await response.json();
         console.error('Error approving grant:', error);
@@ -136,24 +125,11 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
   const handleConfirmRevision = async () => {
     if (!grant || !revisionNote.trim()) return;
     try {
-      if (isElectronAPIavailable()) {
-        const revisionRequest: RevisionRequest = {
-          id: `revision-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
-          grantId: grant.id,
-          draftVersion: 1,
-          notes: revisionNote,
-          requestedAt: new Date().toISOString(),
-          requestedBy: 'human',
-          status: 'pending',
-        };
-        await window.electronAPI.createRevisionRequest(revisionRequest);
-      } else {
-        // Browser/E2E mode: use HTTP client - call revisions API to create revision request
-        await revisionsApi.create(grant.id, revisionNote, 'human');
-        // Refresh grant data after revision
-        const updatedGrant = await grantsApi.getById(grant.id);
-        if (updatedGrant) setGrant(updatedGrant);
-      }
+      // Browser/E2E mode: use HTTP client - call revisions API to create revision request
+      await revisionsApi.create(grant.id, revisionNote, 'human');
+      // Refresh grant data after revision
+      const updatedGrant = await grantsApi.getById(grant.id);
+      if (updatedGrant) setGrant(updatedGrant);
       setShowRevision(false);
       setRevisionNote('');
     } catch (error) {

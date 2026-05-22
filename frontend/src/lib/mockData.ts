@@ -241,7 +241,4 @@ export const mockActivity: ActivityEvent[] = [
   },
 ];
 
-// Type guard to check if electronAPI is available
-export function isElectronAPIavailable(): boolean {
-  return typeof window !== 'undefined' && typeof window.electronAPI !== 'undefined';
-}
+

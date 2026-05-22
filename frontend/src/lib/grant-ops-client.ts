@@ -2,8 +2,7 @@
  * Grant Ops HTTP Client
  *
  * Typed client for calling Next.js API routes from the browser.
- * Used when running in browser/non-Electron context (e.g., standalone dev server).
- * In Electron context, the renderer uses window.electronAPI IPC bridge instead.
+ * This is the sole transport for the web-only application.
  */
 
 import type {
@@ -265,27 +264,13 @@ export const documentsApi = {
     }),
 };
 
-// ============ Type Guards ============
-
-export function isElectronAPIavailable(): boolean {
-  return typeof window !== 'undefined' && typeof window.electronAPI !== 'undefined';
-}
+// ============ Grant Ops Client ============
 
 /**
- * Determines whether to use the Electron IPC bridge or the HTTP client.
- * In Electron context, use window.electronAPI; otherwise use the HTTP client.
- *
- * This client is primarily for:
- * - Browser-based development without Electron
- * - E2E tests running in Playwright
- * - Any scenario where the Next.js server is accessible via HTTP
+ * Creates the Grant Ops HTTP client.
+ * This is the sole transport for the web-only application.
  */
 export function createGrantOpsClient() {
-  if (isElectronAPIavailable()) {
-    // In Electron, use IPC bridge - return null to indicate IPC should be used
-    return null;
-  }
-  // In browser/standalone mode, return the HTTP API client
   return {
     sources: sourcesApi,
     research: researchApi,
@@ -304,3 +289,6 @@ export function createGrantOpsClient() {
 }
 
 export type GrantOpsClient = ReturnType<typeof createGrantOpsClient>;
+
+// Re-export for convenience
+export const client = createGrantOpsClient();

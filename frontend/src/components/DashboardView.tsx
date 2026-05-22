@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant, OrganizationProfile, ActivityEvent } from '../../../shared/types';
-import { isElectronAPIavailable, createGrantOpsClient } from '../lib/grant-ops-client';
+import { client } from '../lib/grant-ops-client';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
@@ -84,28 +84,13 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
   useEffect(() => {
     async function load() {
       try {
-        if (isElectronAPIavailable()) {
-          const [grantsData, profileData, activityData] = await Promise.all([
-            window.electronAPI.getGrants(),
-            window.electronAPI.getOrgProfile(),
-            window.electronAPI.getRecentActivity(10),
-          ]);
-          setGrants(grantsData);
-          setProfile(profileData);
-          setActivity(activityData.length > 0 ? activityData : getDefaultActivity());
-        } else {
-          // Use grant-ops-client for browser/E2E testing
-          const client = createGrantOpsClient();
-          if (client) {
-            const [grantsData, profileData] = await Promise.all([
-              client.grants.getAll(),
-              client.profile.get(),
-            ]);
-            setGrants(grantsData);
-            setProfile(profileData);
-            setActivity(getDefaultActivity());
-          }
-        }
+        const [grantsData, profileData] = await Promise.all([
+          client.grants.getAll(),
+          client.profile.get(),
+        ]);
+        setGrants(grantsData);
+        setProfile(profileData);
+        setActivity(getDefaultActivity());
       } catch (error) {
         console.error('Error loading dashboard data:', error);
         setGrants([]);
@@ -120,17 +105,10 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
 
   const handleRefreshCrawl = async () => {
     try {
-      const response = await fetch('/api/research', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      if (response.ok) {
-        // Refresh grants after research completes
-        if (isElectronAPIavailable()) {
-          const grantsData = await window.electronAPI.getGrants();
-          setGrants(grantsData);
-        }
-      }
+      await client.research.trigger();
+      // Refresh grants after research completes
+      const grantsData = await client.grants.getAll();
+      setGrants(grantsData);
     } catch (error) {
       console.error('Error triggering research:', error);
     }
@@ -160,7 +138,7 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
 
   const draftedReady = grants.filter((g) => g.status === 'review').length;
 
-  // GAP-06: New Matches 7d - grants with matchedAt within 7 days of TODAY
+  // New Matches 7d - grants with matchedAt within 7 days of TODAY
   const today = new Date();
   const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);

@@ -1,12 +1,12 @@
 /**
  * Persistence Integrity Tests
  *
- * Verifies that both electron/store.ts and repository.ts use the same
- * shared persistence layer and DATA_DIR (.grant-ops-data/).
+ * Verifies that the shared persistence layer functions (loadGrants, saveGrants,
+ * loadProfile, saveProfile, loadPersistedData, savePersistedData) all use
+ * the same DATA_DIR (.grant-ops-data/) for file storage.
  *
- * This is the test required by the analysis feedback:
- * "Add a test that verifies electron/store.ts and repository.ts read/write
- * to the same .grant-ops-data/ files."
+ * This ensures that repository.ts and any other module using the shared
+ * persistence layer read/write to the same files.
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
@@ -77,34 +77,26 @@ describe('Shared Persistence Integrity', () => {
     });
   });
 
-  describe('electron/store.ts integration', () => {
-    it('electron/store.ts imports loadGrants from shared persistence', async () => {
-      // electron/store.ts uses: import { loadGrants, saveGrants, ... } from '../shared/grant-ops-persistence'
-      // This test verifies the functions exist and work with the same DATA_DIR
-      const grants = await loadGrants();
-      expect(Array.isArray(grants)).toBe(true);
-    });
-
-    it('electron/store.ts uses same saveGrants function as repository.ts', async () => {
-      // Both electron/store.ts and repository.ts use saveGrants from shared/grant-ops-persistence
-      // This ensures they write to the same files
+  describe('Persistence functions use consistent paths', () => {
+    it('loadGrants and saveGrants use same file path', async () => {
+      // Both loadGrants and saveGrants use: path.join(cwd, DATA_DIR, 'grants.json')
+      // This test verifies they read/write to the same location
       // Use unique ID to avoid conflicts with other tests
-      const testGrant = createTestGrant(uniqueId('electron-grant'));
+      const testGrant = createTestGrant(uniqueId('persistence-grant'));
 
       await saveGrants([testGrant]);
 
-      // Verify we can read back what we wrote (same DATA_DIR)
+      // Verify we can read back what we wrote (same file path)
       const loaded = await loadGrants();
       const found = loaded.find((g) => g.id === testGrant.id);
       expect(found).toBeDefined();
       expect(found?.title).toBe(testGrant.title);
     });
-  });
 
-  describe('repository.ts integration', () => {
-    it('repository.ts imports loadPersistedData from shared persistence', async () => {
-      // repository.ts uses: import { loadPersistedData, savePersistedData, ... } from '../../../../shared/grant-ops-persistence'
+    it('loadPersistedData and savePersistedData use same directory', async () => {
+      // Both use: path.join(cwd, DATA_DIR, 'persisted-data.json')
       const data = await loadPersistedData();
+      expect(data).toBeDefined();
       expect(data).toHaveProperty('sources');
       expect(data).toHaveProperty('crawlRuns');
       expect(data).toHaveProperty('draftArtifacts');
@@ -114,12 +106,27 @@ describe('Shared Persistence Integrity', () => {
       expect(data).toHaveProperty('opencodeSettings');
     });
 
-    it('repository.ts uses same savePersistedData function as electron/store.ts would', async () => {
-      // electron/store.ts syncWithPersistence() calls loadGrants, loadProfile, loadOpencodeSettings
-      // repository.ts uses loadPersistedData, savePersistedData
-      // Both ultimately use the same DATA_DIR for file storage
-      const data = await loadPersistedData();
-      expect(data).toBeDefined();
+    it('loadProfile and saveProfile use same file path', async () => {
+      // Both use: path.join(cwd, DATA_DIR, 'profile.json')
+      const testProfile = {
+        legalName: 'Test Org',
+        ein: '12-3456789',
+        samUEI: 'TEST123456789',
+        mission: 'Test mission',
+        docTypes: ['PDF'] as string[],
+        searchThemes: ['Test'] as string[],
+        agentBehavior: {
+          autoDraftThreshold: 50,
+          submissionPolicy: 'Test',
+          notifyEmail: 'test@test.com',
+          voiceAndTone: 'Test',
+        },
+      };
+
+      await saveProfile(testProfile);
+
+      const loaded = await loadProfile();
+      expect(loaded.legalName).toBe('Test Org');
     });
   });
 

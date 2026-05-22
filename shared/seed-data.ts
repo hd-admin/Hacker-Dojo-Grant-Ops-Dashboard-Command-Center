@@ -2,10 +2,10 @@
  * Shared Seed Data
  *
  * Canonical default values used to initialize the grant operations system.
- * This module is the single source of truth for seed data used by both
- * the Electron store and the Next.js API repository.
+ * This module is the single source of truth for seed data used by the
+ * Next.js API repository and persistence layer.
  *
- * GAP-05: Eliminates duplication between electron/store.ts and mockData.ts.
+ * GAP-05: Eliminates duplication in seed data.
  */
 
 import type {

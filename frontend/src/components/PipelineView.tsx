@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant, GrantStatus } from '../../../shared/types';
-import { isElectronAPIavailable, createGrantOpsClient } from '../lib/grant-ops-client';
+import { client } from '../lib/grant-ops-client';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
@@ -58,17 +58,8 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
   useEffect(() => {
     async function load() {
       try {
-        if (isElectronAPIavailable()) {
-          const data = await window.electronAPI.getGrants();
-          setGrants(data);
-        } else {
-          // Use grant-ops-client for browser/E2E testing
-          const client = createGrantOpsClient();
-          if (client) {
-            const data = await client.grants.getAll();
-            setGrants(data);
-          }
-        }
+        const data = await client.grants.getAll();
+        setGrants(data);
       } catch (error) {
         console.error('Error loading grants:', error);
         setGrants([]);
@@ -123,27 +114,18 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
     e.preventDefault();
     setDragOverCol(null);
     if (draggingGrantId) {
-      const grant = grants.find((g) => g.id === draggingGrantId);
+      const statusLabelMap: Record<GrantStatus, string> = {
+        matched: 'Matched',
+        draft: 'Drafting',
+        review: 'Review',
+        submitted: 'Submitted',
+        awarded: 'Awarded',
+      };
       try {
-        if (isElectronAPIavailable()) {
-          await window.electronAPI.updateGrantStatus(draggingGrantId, colKey as GrantStatus);
-        } else {
-          // Use grant-ops-client for browser/E2E testing
-          const client = createGrantOpsClient();
-          if (client) {
-            await client.grants.update(draggingGrantId, { status: colKey as GrantStatus, statusLabel: colKey === 'draft' ? 'In Draft' : colKey === 'matched' ? 'Matched' : colKey === 'review' ? 'In Review' : colKey === 'submitted' ? 'Submitted' : 'Awarded' });
-          }
-        }
+        await client.grants.update(draggingGrantId, { status: colKey as GrantStatus, statusLabel: statusLabelMap[colKey as GrantStatus] });
         setGrants((prev) =>
           prev.map((g) => (g.id === draggingGrantId ? { ...g, status: colKey as GrantStatus } : g)),
         );
-        // Notify for high-fit grants moved to matched (Electron only)
-        if (isElectronAPIavailable() && colKey === 'matched' && grant && grant.fit >= 70) {
-          window.electronAPI.showNotification(
-            'New High-Fit Grant',
-            `${grant.title} — ${grant.fit}% fit`,
-          );
-        }
       } catch (error) {
         console.error('Error updating grant status:', error);
       }

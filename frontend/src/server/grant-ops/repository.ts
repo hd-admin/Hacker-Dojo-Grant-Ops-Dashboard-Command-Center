@@ -5,7 +5,7 @@
  * This acts as a bridge between the Next.js API routes and the Electron store via IPC.
  *
  * GAP-01: This module now uses the shared grant-ops-persistence.ts functions,
- * ensuring both electron/store.ts and repository.ts read/write to the same data files.
+ * ensuring repository.ts reads/writes to the same data files as other persistence functions.
  */
 
 import type {

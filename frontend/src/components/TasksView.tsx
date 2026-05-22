@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Task } from '../../../shared/types';
-import { tasksApi, isElectronAPIavailable } from '../lib/grant-ops-client';
+import { tasksApi } from '../lib/grant-ops-client';
 
 export default function TasksView() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -14,17 +14,10 @@ export default function TasksView() {
   useEffect(() => {
     async function load() {
       try {
-        if (isElectronAPIavailable()) {
-          const data = await window.electronAPI.getTasks();
-          setTasks(data);
-        } else {
-          // Use HTTP client API for browser/non-Electron context
-          const data = await tasksApi.getAll();
-          setTasks(data);
-        }
+        const data = await tasksApi.getAll();
+        setTasks(data);
       } catch (error) {
         console.error('Error loading tasks:', error);
-        // Use empty array on error instead of mock data
         setTasks([]);
       } finally {
         setLoading(false);
@@ -38,10 +31,7 @@ export default function TasksView() {
       t.id === taskId ? { ...t, completed: !t.completed } : t,
     );
     setTasks(updatedTasks);
-    if (isElectronAPIavailable()) {
-      await window.electronAPI.updateTasks(updatedTasks);
-    }
-    // Note: Browser mode would need a PATCH endpoint for task updates
+    await tasksApi.update(updatedTasks);
   };
 
   const handleAddTask = () => {
@@ -54,17 +44,11 @@ export default function TasksView() {
 
     setIsAddingTask(true);
     try {
-      const newTask: Task = {
-        id: `task-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
+      const newTask = await tasksApi.create({
         completed: false,
         text: newTaskText.trim(),
-      };
-      const updatedTasks = [...tasks, newTask];
-      setTasks(updatedTasks);
-      if (isElectronAPIavailable()) {
-        await window.electronAPI.updateTasks(updatedTasks);
-      }
-      // Note: Browser mode would need a POST endpoint for task creation
+      });
+      setTasks((prev) => [...prev, newTask]);
       setNewTaskText('');
       setShowAddTaskForm(false);
     } catch (error) {
