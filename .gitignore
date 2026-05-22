@@ -1,0 +1,7 @@
+
+.agent/
+/PROMPT*
+wt-*/
+
+node_modules/
+dist-electron/
