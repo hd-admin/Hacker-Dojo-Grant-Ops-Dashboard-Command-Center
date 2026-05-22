@@ -2,6 +2,7 @@ import { Tray, Menu, nativeImage, app, NativeImage } from 'electron';
 import path from 'path';
 import log from 'electron-log';
 import { showWindow, getMainWindow } from './main';
+import { autoUpdater } from 'electron-updater';
 
 let tray: Tray | null = null;
 
@@ -54,6 +55,15 @@ export const initTray = () => {
         if (win) {
           win.webContents.send('refresh-crawl');
         }
+      },
+    },
+    {
+      label: 'Check for Updates',
+      click: () => {
+        log.info('Checking for updates...');
+        autoUpdater.checkForUpdates().catch((err) => {
+          log.error('Failed to check for updates:', err);
+        });
       },
     },
     {

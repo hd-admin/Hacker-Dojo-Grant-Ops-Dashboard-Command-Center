@@ -6,6 +6,7 @@ import DiscoveryView from './DiscoveryView';
 import PipelineView from './PipelineView';
 import SettingsView from './SettingsView';
 import GrantDrawer from './GrantDrawer';
+import type { Grant } from '../../../shared/types';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings';
 
@@ -13,28 +14,31 @@ interface NavItem {
   view?: ViewType;
   label: string;
   decorative?: boolean;
+  icon?: string;
 }
 
 const workspaceNav: NavItem[] = [
-  { view: 'dashboard', label: 'Dashboard' },
-  { view: 'discovery', label: 'Discovery' },
-  { view: 'pipeline', label: 'Pipeline' },
-  { view: 'settings', label: 'Settings' },
+  { view: 'dashboard', label: 'Dashboard', icon: '◐' },
+  { view: 'discovery', label: 'Discovery', icon: '◇' },
+  { view: 'pipeline', label: 'Pipeline', icon: '▤' },
+  { view: 'settings', label: 'Settings', icon: '◯' },
 ];
 
 const activityNav: NavItem[] = [
-  { label: 'Notifications', decorative: true },
-  { label: 'Tasks', decorative: true },
+  { label: 'Notifications', decorative: true, icon: '✉' },
+  { label: 'Tasks', decorative: true, icon: '⌖' },
 ];
 
 export default function AppShell() {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
   const [appVersion, setAppVersion] = useState('0.1.0');
+  const [grants, setGrants] = useState<Grant[]>([]);
 
   useEffect(() => {
     if (window.electronAPI) {
       window.electronAPI.getAppVersion().then(setAppVersion);
+      window.electronAPI.getGrants().then(setGrants);
     }
   }, []);
 
@@ -69,16 +73,27 @@ export default function AppShell() {
 
         <div className="nav-section">
           <div className="nav-label">Workspace</div>
-          {workspaceNav.map((item) => (
-            <div
-              key={item.label}
-              className={`nav-item ${activeView === item.view ? 'active' : ''}`}
-              data-view={item.view}
-              onClick={() => handleNavClick(item)}
-            >
-              {item.label}
-            </div>
-          ))}
+          {workspaceNav.map((item) => {
+            const matchedCount = item.view === 'discovery'
+              ? grants.filter(g => g.status === 'matched').length
+              : item.view === 'pipeline'
+              ? grants.filter(g => g.status !== 'awarded').length
+              : 0;
+            return (
+              <div
+                key={item.label}
+                className={`nav-item ${activeView === item.view ? 'active' : ''}`}
+                data-view={item.view}
+                onClick={() => handleNavClick(item)}
+              >
+                <span className="nav-icon">{item.icon}</span>
+                {item.label}
+                {matchedCount > 0 && item.view && (
+                  <span className="nav-count">{matchedCount}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="nav-section">
@@ -89,18 +104,21 @@ export default function AppShell() {
               className="nav-item"
               onClick={() => handleNavClick(item)}
             >
+              <span className="nav-icon">{item.icon}</span>
               {item.label}
+              {item.decorative && item.icon === '✉' && grants.filter(g => g.status === 'review').length > 0 && (
+                <span className="nav-count">{grants.filter(g => g.status === 'review').length}</span>
+              )}
             </div>
           ))}
         </div>
 
         <div className="sidebar-footer">
-          <div>
-            <span className="status-dot" />
-            Live
-          </div>
-          <div style={{ marginTop: 4 }}>Last crawl: 6h ago</div>
-          <div style={{ marginTop: 8, color: 'var(--accent)' }}>ed@hackerdojo.com</div>
+          <span className="status-dot" />Crawler online<br/>
+          Last sync: 2h ago<br/>
+          <br/>
+          Logged in as<br/>
+          <strong style={{color:'var(--text-dim)'}}>ed@hackerdojo.com</strong>
         </div>
       </aside>
 

@@ -981,6 +981,15 @@ body {
   transform: translateY(-1px);
 }
 
+.board-card.dragging {
+  opacity: 0.5;
+}
+
+.board-col.drag-over {
+  border-color: var(--accent);
+  background: rgba(212, 169, 67, 0.05);
+}
+
 .board-card-funder {
   font-family: var(--mono);
   font-size: 9px;

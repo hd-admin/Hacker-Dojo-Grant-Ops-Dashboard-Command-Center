@@ -32,6 +32,8 @@ function formatDate(dateStr: string): string {
 export default function PipelineView({ onGrantSelect }: PipelineViewProps) {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(true);
+  const [draggingGrantId, setDraggingGrantId] = useState<string | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -58,6 +60,38 @@ export default function PipelineView({ onGrantSelect }: PipelineViewProps) {
     return grants.filter((g) => g.status === status);
   };
 
+  const handleDragStart = (grantId: string) => {
+    setDraggingGrantId(grantId);
+  };
+
+  const handleDragOver = (e: React.DragEvent, colKey: string) => {
+    e.preventDefault();
+    setDragOverCol(colKey);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverCol(null);
+  };
+
+  const handleDrop = async (e: React.DragEvent, colKey: GrantStatus | 'awarded') => {
+    e.preventDefault();
+    setDragOverCol(null);
+    if (draggingGrantId) {
+      try {
+        await window.electronAPI.updateGrantStatus(draggingGrantId, colKey as GrantStatus);
+        setGrants(prev => prev.map(g => g.id === draggingGrantId ? {...g, status: colKey as GrantStatus} : g));
+      } catch (error) {
+        console.error('Error updating grant status:', error);
+      }
+      setDraggingGrantId(null);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggingGrantId(null);
+    setDragOverCol(null);
+  };
+
   return (
     <>
       <div className="header">
@@ -76,9 +110,15 @@ export default function PipelineView({ onGrantSelect }: PipelineViewProps) {
         {columns.map((col) => {
           const colGrants = getGrantsForColumn(col.key);
           return (
-            <div key={col.key} className="board-col">
+            <div
+              key={col.key}
+              className={`board-col ${dragOverCol === col.key ? 'drag-over' : ''}`}
+              onDragOver={(e) => handleDragOver(e, col.key)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, col.key)}
+            >
               <div className="board-col-header">
-                <div className="board-col-title">{col.title}</div>
+                <div className="board-col-title">{col.title.toUpperCase()}</div>
                 <div className="board-col-count">{colGrants.length}</div>
               </div>
               <div className="board-col-body">
@@ -88,10 +128,13 @@ export default function PipelineView({ onGrantSelect }: PipelineViewProps) {
                   colGrants.map((grant) => (
                     <div
                       key={grant.id}
-                      className="board-card"
+                      className={`board-card ${draggingGrantId === grant.id ? 'dragging' : ''}`}
+                      draggable={true}
+                      onDragStart={() => handleDragStart(grant.id)}
+                      onDragEnd={handleDragEnd}
                       onClick={() => onGrantSelect(grant.id)}
                     >
-                      <div className="board-card-funder">{grant.funder}</div>
+                      <div className="board-card-funder">{grant.funderShort}</div>
                       <div className="board-card-title">{grant.title}</div>
                       <div className="board-card-foot">
                         <span>{formatDate(grant.deadline)}</span>

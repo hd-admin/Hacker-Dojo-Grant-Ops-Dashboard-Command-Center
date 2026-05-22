@@ -260,7 +260,7 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
               {/* Footer Buttons */}
               <div className="drawer-footer">
                 <button className="btn btn-primary" onClick={handleApproveAndLock}>
-                  Approve &amp; lock
+                  Approve &amp; lock draft
                 </button>
                 <button className="btn" onClick={handleRequestRevision}>
                   Request revision

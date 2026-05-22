@@ -1,19 +1,30 @@
-import { app, BrowserWindow, nativeImage } from 'electron';
+import { app, BrowserWindow, nativeImage, Menu } from 'electron';
 import path from 'path';
 import { initTray } from './tray';
 import { initAutoUpdater } from './updater';
 import { registerIpcHandlers } from './ipc-handlers';
 import log from 'electron-log';
+import Store from 'electron-store';
 
 let mainWindow: BrowserWindow | null = null;
 let isQuitting = false;
 
+// Window state store
+const store = new Store<{ windowState?: { x: number; y: number; width: number; height: number } }>({
+  name: 'window-state',
+});
+
 const createWindow = () => {
   log.info('Creating main window...');
 
+  // Restore window state
+  const windowState = store.get('windowState');
+
   mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
+    width: windowState?.width ?? 1200,
+    height: windowState?.height ?? 800,
+    x: windowState?.x,
+    y: windowState?.y,
     minWidth: 800,
     minHeight: 600,
     show: false,
@@ -22,6 +33,14 @@ const createWindow = () => {
       contextIsolation: true,
       nodeIntegration: false,
     },
+  });
+
+  // Save window state on close
+  mainWindow.on('close', () => {
+    if (mainWindow) {
+      const bounds = mainWindow.getBounds();
+      store.set('windowState', bounds);
+    }
   });
 
   const startUrl = process.env.ELECTRON_START_URL || 'http://localhost:3000';
@@ -67,6 +86,16 @@ app.whenReady().then(() => {
   createWindow();
   initTray();
   initAutoUpdater();
+
+  // macOS app menu bar
+  const menu = Menu.buildFromTemplate([
+    { label: `About ${app.name}` },
+    { type: 'separator' },
+    { label: 'Preferences...' },
+    { type: 'separator' },
+    { label: 'Quit' },
+  ]);
+  Menu.setApplicationMenu(menu);
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {

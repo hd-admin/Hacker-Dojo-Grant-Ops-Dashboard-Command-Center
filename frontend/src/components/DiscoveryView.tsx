@@ -7,7 +7,7 @@ interface DiscoveryViewProps {
   onGrantSelect: (grantId: string) => void;
 }
 
-type SortOption = 'fit' | 'deadline' | 'award';
+type SortOption = 'fit' | 'deadline' | 'award' | 'recently-added';
 type CategoryFilter = 'All' | 'EdTech' | 'Community' | 'Science & Tech' | 'Federal' | 'Foundation' | 'Corporate';
 
 const categoryFilters: CategoryFilter[] = ['All', 'EdTech', 'Community', 'Science & Tech', 'Federal', 'Foundation', 'Corporate'];
@@ -74,6 +74,8 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
         return a.daysOut - b.daysOut;
       case 'award':
         return b.awardSort - a.awardSort;
+      case 'recently-added':
+        return (b.matchedAt || '').localeCompare(a.matchedAt || '');
       default:
         return 0;
     }
@@ -105,16 +107,22 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
           <option value="fit">Best fit</option>
           <option value="deadline">Deadline</option>
           <option value="award">Award size</option>
+          <option value="recently-added">Recently added</option>
         </select>
-        {categoryFilters.map((cat) => (
-          <button
-            key={cat}
-            className={`filter-pill ${category === cat ? 'active' : ''}`}
-            onClick={() => setCategory(cat)}
-          >
-            {cat}
-          </button>
-        ))}
+        {categoryFilters.map((cat) => {
+          const count = cat === 'All'
+            ? grants.length
+            : grants.filter(g => g.tags.some(t => t === cat || t.includes(cat))).length;
+          return (
+            <button
+              key={cat}
+              className={`filter-pill ${category === cat ? 'active' : ''}`}
+              onClick={() => setCategory(cat)}
+            >
+              {cat} {count > 0 && `(${count})`}
+            </button>
+          );
+        })}
       </div>
 
       {/* Grants Table */}

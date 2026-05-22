@@ -65,6 +65,10 @@ export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
     return <div className="header-title">Loading...</div>;
   }
 
+  // Dynamic time-of-day greeting
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
   // KPI calculations
   const activeGrants = grants.filter((g) => g.status !== 'awarded');
   const activePipeline = activeGrants.reduce((sum, g) => sum + g.awardSort, 0);
@@ -76,12 +80,13 @@ export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
   const draftedReady = grants.filter((g) => g.status === 'review').length;
 
   // GAP-06: New Matches 7d - grants with matchedAt within 7 days of TODAY
-  const sevenDaysAgo = new Date(TODAY);
+  const today = new Date();
+  const sevenDaysAgo = new Date(today);
   sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const newMatches7d = grants.filter((g) => {
     if (!g.matchedAt || g.status !== 'matched') return false;
     const matchedDate = new Date(g.matchedAt);
-    return matchedDate >= sevenDaysAgo && matchedDate <= new Date(TODAY);
+    return matchedDate >= sevenDaysAgo && matchedDate <= today;
   }).length;
 
   // Upcoming deadlines (next 90 days, not rolling)
@@ -93,17 +98,22 @@ export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
   // Review queue
   const reviewQueue = grants.filter((g) => g.status === 'review');
 
+  // Header sub text
+  const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+  const dateStr = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
   return (
     <>
       <div className="header">
         <div>
           <h1 className="header-title">
-            Good morning. <span className="accent">Here&apos;s your pipeline.</span>
+            {greeting}, <span className="accent">Qi</span>.
           </h1>
-          <div className="header-sub">Grant Operations Center</div>
+          <div className="header-sub">{dayName} · {dateStr} · {activeGrants.length} grants in pipeline</div>
         </div>
         <div className="header-actions">
-          <button className="btn btn-primary">+ New grant</button>
+          <button className="btn btn-ghost btn-sm">↻ Refresh crawl</button>
+          <button className="btn btn-primary">+ New search</button>
         </div>
       </div>
 
