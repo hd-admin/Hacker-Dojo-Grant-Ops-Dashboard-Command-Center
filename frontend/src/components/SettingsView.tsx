@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { OrganizationProfile, DocumentMetadata, OpencodeSettings } from '../../../shared/types';
-import { mockProfile, isElectronAPIavailable } from '../lib/mockData';
+import { isElectronAPIavailable, createGrantOpsClient } from '../lib/grant-ops-client';
 
 export default function SettingsView() {
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
@@ -29,16 +29,21 @@ export default function SettingsView() {
           setDocuments(docsData);
           setOpencodeSettings(opencodeData);
         } else {
-          setProfile(mockProfile);
-          setEditForm(mockProfile);
-          setDocuments([]);
-          setOpencodeSettings(null);
+          // Use grant-ops-client for browser/E2E testing (GAP-01 fix)
+          const client = createGrantOpsClient();
+          if (client) {
+            const [profileData, opencodeData] = await Promise.all([
+              client.profile.get(),
+              client.opencodeSettings.get(),
+            ]);
+            setProfile(profileData);
+            setEditForm(profileData);
+            setDocuments([]);
+            setOpencodeSettings(opencodeData);
+          }
         }
       } catch (error) {
         console.error('Error loading profile:', error);
-        setProfile(mockProfile);
-        setEditForm(mockProfile);
-        setDocuments([]);
       } finally {
         setLoading(false);
       }
@@ -63,10 +68,21 @@ export default function SettingsView() {
   const handleSave = async () => {
     if (!editForm) return;
     try {
-      await window.electronAPI.updateOrgProfile(editForm as OrganizationProfile);
-      const updated = await window.electronAPI.getOrgProfile();
-      setProfile(updated);
-      setEditForm(updated);
+      if (isElectronAPIavailable()) {
+        await window.electronAPI.updateOrgProfile(editForm as OrganizationProfile);
+        const updated = await window.electronAPI.getOrgProfile();
+        setProfile(updated);
+        setEditForm(updated);
+      } else {
+        // Use grant-ops-client for browser/E2E testing (GAP-01 fix)
+        const client = createGrantOpsClient();
+        if (client) {
+          await client.profile.update(editForm as OrganizationProfile);
+          const updated = await client.profile.get();
+          setProfile(updated);
+          setEditForm(updated);
+        }
+      }
       setIsEditing(false);
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -145,9 +161,19 @@ export default function SettingsView() {
 
   const handleSaveOpencode = async () => {
     try {
-      await window.electronAPI.updateOpencodeSettings(opencodeForm as OpencodeSettings);
-      const updated = await window.electronAPI.getOpencodeSettings();
-      setOpencodeSettings(updated);
+      if (isElectronAPIavailable()) {
+        await window.electronAPI.updateOpencodeSettings(opencodeForm as OpencodeSettings);
+        const updated = await window.electronAPI.getOpencodeSettings();
+        setOpencodeSettings(updated);
+      } else {
+        // Use grant-ops-client for browser/E2E testing (GAP-01 fix)
+        const client = createGrantOpsClient();
+        if (client) {
+          await client.opencodeSettings.update(opencodeForm as OpencodeSettings);
+          const updated = await client.opencodeSettings.get();
+          setOpencodeSettings(updated);
+        }
+      }
       setIsEditingOpencode(false);
     } catch (error) {
       console.error('Error saving Opencode settings:', error);

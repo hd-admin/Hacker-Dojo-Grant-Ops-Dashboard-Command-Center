@@ -15,6 +15,7 @@ import type {
   ApprovalRecord,
   SubmissionRecord,
   OrganizationProfile,
+  OpencodeSettings,
 } from '../../../shared/types';
 
 // Base fetch wrapper with error handling
@@ -188,7 +189,7 @@ export interface OpencodeSettingsRequest {
 }
 
 export const opencodeSettingsApi = {
-  get: () => apiFetch<{ isConfigured: boolean; binaryPath: string }>('/api/opencode-settings'),
+  get: () => apiFetch<OpencodeSettings>('/api/opencode-settings'),
 
   update: (settings: OpencodeSettingsRequest) =>
     apiFetch<{ success: boolean }>('/api/opencode-settings', {

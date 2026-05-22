@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant } from '../../../shared/types';
-import { mockGrants, isElectronAPIavailable } from '../lib/mockData';
+import { isElectronAPIavailable, createGrantOpsClient } from '../lib/grant-ops-client';
 
 interface DiscoveryViewProps {
   onGrantSelect: (grantId: string) => void;
@@ -77,13 +77,15 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
             );
           }
         } else {
-          // Use mock data for browser/E2E testing
-          setGrants(mockGrants);
+          // Use grant-ops-client for browser/E2E testing (GAP-01 fix)
+          const client = createGrantOpsClient();
+          if (client) {
+            const data = await client.grants.getAll();
+            setGrants(data);
+          }
         }
       } catch (error) {
         console.error('Error loading grants:', error);
-        // Fallback to mock data on error
-        setGrants(mockGrants);
       } finally {
         setLoading(false);
       }

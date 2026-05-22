@@ -10,7 +10,8 @@
  * operate on the same persisted state.
  *
  * All data is stored in the `.grant-ops-data/` directory relative to the
- * application root (process.cwd() for Next.js, app.getPath('userData') for Electron).
+ * base directory. The base directory defaults to `process.cwd()` for Next.js
+ * contexts, but can be overridden for Electron by passing app.getPath('userData').
  */
 
 import type {
@@ -43,10 +44,11 @@ export interface PersistedData {
 }
 
 // In-memory cache for server-side persistence (Next.js API routes)
-let dataCache: PersistedData | null = null;
+// Keyed by baseDir to support multiple base directories
+const dataCache = new Map<string, PersistedData>();
 
-export function getDataPath(): string {
-  return `${DATA_DIR}/persisted-data.json`;
+export function getDataPath(baseDir?: string): string {
+  return `${baseDir ?? process.cwd()}/${DATA_DIR}/persisted-data.json`;
 }
 
 export async function _ensureDataDir(dataPath: string): Promise<void> {
@@ -60,18 +62,20 @@ export async function _ensureDataDir(dataPath: string): Promise<void> {
   }
 }
 
-export async function loadPersistedData(): Promise<PersistedData> {
-  if (dataCache) {
-    return dataCache;
+export async function loadPersistedData(baseDir?: string): Promise<PersistedData> {
+  const cwd = baseDir ?? process.cwd();
+  if (dataCache.has(cwd)) {
+    return dataCache.get(cwd)!;
   }
 
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    const dataPath = path.join(process.cwd(), getDataPath());
+    const dataPath = path.join(cwd, DATA_DIR, 'persisted-data.json');
     const raw = await fs.readFile(dataPath, 'utf-8');
-    dataCache = JSON.parse(raw);
-    return dataCache!;
+    const cached = JSON.parse(raw);
+    dataCache.set(cwd, cached);
+    return cached;
   } catch {
     // Return default data if file doesn't exist
     const defaultData: PersistedData = {
@@ -85,17 +89,18 @@ export async function loadPersistedData(): Promise<PersistedData> {
       opencodeSettings: defaultOpencodeSettings,
       lastSync: new Date().toISOString(),
     };
-    dataCache = defaultData;
+    dataCache.set(cwd, defaultData);
     return defaultData;
   }
 }
 
-export async function savePersistedData(data: PersistedData): Promise<void> {
-  dataCache = data;
+export async function savePersistedData(data: PersistedData, baseDir?: string): Promise<void> {
+  const cwd = baseDir ?? process.cwd();
+  dataCache.set(cwd, data);
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    const dataPath = path.join(process.cwd(), getDataPath());
+    const dataPath = path.join(cwd, DATA_DIR, 'persisted-data.json');
     await _ensureDataDir(dataPath);
     await fs.writeFile(dataPath, JSON.stringify(data, null, 2), 'utf-8');
   } catch (error) {
@@ -103,17 +108,19 @@ export async function savePersistedData(data: PersistedData): Promise<void> {
   }
 }
 
-export function invalidateCache(): void {
-  dataCache = null;
+export function invalidateCache(baseDir?: string): void {
+  const cwd = baseDir ?? process.cwd();
+  dataCache.delete(cwd);
 }
 
 // ============ Convenience load/save helpers for grant operations ============
 
-export async function loadGrants(): Promise<Grant[]> {
+export async function loadGrants(baseDir?: string): Promise<Grant[]> {
+  const cwd = baseDir ?? process.cwd();
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    const dataPath = path.join(process.cwd(), DATA_DIR, 'grants.json');
+    const dataPath = path.join(cwd, DATA_DIR, 'grants.json');
     const raw = await fs.readFile(dataPath, 'utf-8');
     return JSON.parse(raw);
   } catch {
@@ -122,11 +129,12 @@ export async function loadGrants(): Promise<Grant[]> {
   }
 }
 
-export async function saveGrants(grants: Grant[]): Promise<void> {
+export async function saveGrants(grants: Grant[], baseDir?: string): Promise<void> {
+  const cwd = baseDir ?? process.cwd();
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    const dataPath = path.join(process.cwd(), DATA_DIR, 'grants.json');
+    const dataPath = path.join(cwd, DATA_DIR, 'grants.json');
     await _ensureDataDir(dataPath);
     await fs.writeFile(dataPath, JSON.stringify(grants, null, 2), 'utf-8');
   } catch (error) {
@@ -134,11 +142,12 @@ export async function saveGrants(grants: Grant[]): Promise<void> {
   }
 }
 
-export async function loadProfile(): Promise<OrganizationProfile> {
+export async function loadProfile(baseDir?: string): Promise<OrganizationProfile> {
+  const cwd = baseDir ?? process.cwd();
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    const dataPath = path.join(process.cwd(), DATA_DIR, 'profile.json');
+    const dataPath = path.join(cwd, DATA_DIR, 'profile.json');
     const raw = await fs.readFile(dataPath, 'utf-8');
     return JSON.parse(raw);
   } catch {
@@ -146,11 +155,12 @@ export async function loadProfile(): Promise<OrganizationProfile> {
   }
 }
 
-export async function saveProfile(profile: OrganizationProfile): Promise<void> {
+export async function saveProfile(profile: OrganizationProfile, baseDir?: string): Promise<void> {
+  const cwd = baseDir ?? process.cwd();
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    const dataPath = path.join(process.cwd(), DATA_DIR, 'profile.json');
+    const dataPath = path.join(cwd, DATA_DIR, 'profile.json');
     await _ensureDataDir(dataPath);
     await fs.writeFile(dataPath, JSON.stringify(profile, null, 2), 'utf-8');
   } catch (error) {
@@ -158,11 +168,12 @@ export async function saveProfile(profile: OrganizationProfile): Promise<void> {
   }
 }
 
-export async function loadOpencodeSettings(): Promise<OpencodeSettings> {
+export async function loadOpencodeSettings(baseDir?: string): Promise<OpencodeSettings> {
+  const cwd = baseDir ?? process.cwd();
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    const dataPath = path.join(process.cwd(), DATA_DIR, 'opencode-settings.json');
+    const dataPath = path.join(cwd, DATA_DIR, 'opencode-settings.json');
     const raw = await fs.readFile(dataPath, 'utf-8');
     return JSON.parse(raw);
   } catch {
@@ -170,11 +181,12 @@ export async function loadOpencodeSettings(): Promise<OpencodeSettings> {
   }
 }
 
-export async function saveOpencodeSettings(settings: OpencodeSettings): Promise<void> {
+export async function saveOpencodeSettings(settings: OpencodeSettings, baseDir?: string): Promise<void> {
+  const cwd = baseDir ?? process.cwd();
   try {
     const fs = await import('fs/promises');
     const path = await import('path');
-    const dataPath = path.join(process.cwd(), DATA_DIR, 'opencode-settings.json');
+    const dataPath = path.join(cwd, DATA_DIR, 'opencode-settings.json');
     await _ensureDataDir(dataPath);
     await fs.writeFile(dataPath, JSON.stringify(settings, null, 2), 'utf-8');
   } catch (error) {
