@@ -35,7 +35,11 @@ import {
   saveNotifications,
   loadTasks,
   saveTasks,
+  loadDocuments,
+  saveDocuments,
 } from '../../../../shared/grant-ops-persistence';
+
+import type { DocumentMetadata } from '../../../../shared/types';
 
 // Source operations
 export async function getSources(): Promise<Source[]> {
@@ -187,6 +191,31 @@ export async function getTasks(): Promise<Task[]> {
 
 export async function updateTasks(tasks: Task[]): Promise<void> {
   await saveTasks(tasks);
+}
+
+// Document operations
+export async function getDocuments(): Promise<DocumentMetadata[]> {
+  return loadDocuments();
+}
+
+export async function addDocument(doc: DocumentMetadata): Promise<void> {
+  const docs = await loadDocuments();
+  docs.push(doc);
+  await saveDocuments(docs);
+}
+
+export async function updateDocument(id: string, updates: Partial<DocumentMetadata>): Promise<void> {
+  const docs = await loadDocuments();
+  const index = docs.findIndex((d: DocumentMetadata) => d.id === id);
+  if (index !== -1) {
+    const existing = docs[index];
+    if (existing) {
+      // Apply only the properties that were explicitly provided in updates
+      const { id: _id, ...rest } = updates;
+      Object.assign(existing, rest);
+      await saveDocuments(docs);
+    }
+  }
 }
 
 // Grants operations - now uses shared persistence (GAP-01 fix)

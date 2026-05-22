@@ -27,6 +27,7 @@ import type {
   OrganizationProfile,
   Notification,
   Task,
+  DocumentMetadata,
 } from './types';
 
 import { defaultProfile, defaultOpencodeSettings, seedGrants } from './seed-data';
@@ -44,6 +45,7 @@ export interface PersistedData {
   opencodeSettings: OpencodeSettings | null;
   notifications: Notification[];
   tasks: Task[];
+  documents: DocumentMetadata[];
   lastSync: string;
 }
 
@@ -89,6 +91,7 @@ export async function loadPersistedData(baseDir?: string): Promise<PersistedData
       opencodeSettings: defaultOpencodeSettings,
       notifications: [],
       tasks: [],
+      documents: [],
       lastSync: new Date().toISOString(),
     };
     dataCache.set(cwd, defaultData);
@@ -223,5 +226,18 @@ export async function loadTasks(baseDir?: string): Promise<Task[]> {
 export async function saveTasks(tasks: Task[], baseDir?: string): Promise<void> {
   const data = await loadPersistedData(baseDir);
   data.tasks = tasks;
+  await savePersistedData(data, baseDir);
+}
+
+// ============ Documents ============
+
+export async function loadDocuments(baseDir?: string): Promise<import('./types').DocumentMetadata[]> {
+  const data = await loadPersistedData(baseDir);
+  return data.documents;
+}
+
+export async function saveDocuments(documents: import('./types').DocumentMetadata[], baseDir?: string): Promise<void> {
+  const data = await loadPersistedData(baseDir);
+  data.documents = documents;
   await savePersistedData(data, baseDir);
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { grantsApi, isElectronAPIavailable } from '../lib/grant-ops-client';
+import { grantsApi, revisionsApi, isElectronAPIavailable } from '../lib/grant-ops-client';
 import type { Grant, RevisionRequest, SubmissionMethod } from '../../../shared/types';
 
 interface GrantDrawerProps {
@@ -148,8 +148,8 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
         };
         await window.electronAPI.createRevisionRequest(revisionRequest);
       } else {
-        // Browser/E2E mode: use HTTP client
-        await grantsApi.update(grant.id, { status: 'draft', statusLabel: 'Drafting' });
+        // Browser/E2E mode: use HTTP client - call revisions API to create revision request
+        await revisionsApi.create(grant.id, revisionNote, 'human');
         // Refresh grant data after revision
         const updatedGrant = await grantsApi.getById(grant.id);
         if (updatedGrant) setGrant(updatedGrant);

@@ -18,6 +18,7 @@ import type {
   OpencodeSettings,
   Notification,
   Task,
+  DocumentMetadata,
 } from '../../../shared/types';
 
 // Base fetch wrapper with error handling
@@ -214,12 +215,54 @@ export const opencodeSettingsApi = {
 
 export const notificationsApi = {
   getAll: () => apiFetch<Notification[]>('/api/notifications'),
+
+  update: (notifications: Notification[]) =>
+    apiFetch<{ success: boolean }>('/api/notifications', {
+      method: 'PATCH',
+      body: JSON.stringify({ notifications }),
+    }),
+
+  create: (notification: Omit<Notification, 'id'>) =>
+    apiFetch<Notification>('/api/notifications', {
+      method: 'POST',
+      body: JSON.stringify(notification),
+    }),
 };
 
 // ============ Tasks API ============
 
 export const tasksApi = {
   getAll: () => apiFetch<Task[]>('/api/tasks'),
+
+  update: (tasks: Task[]) =>
+    apiFetch<{ success: boolean }>('/api/tasks', {
+      method: 'PATCH',
+      body: JSON.stringify({ tasks }),
+    }),
+
+  create: (task: Omit<Task, 'id'>) =>
+    apiFetch<Task>('/api/tasks', {
+      method: 'POST',
+      body: JSON.stringify(task),
+    }),
+};
+
+// ============ Documents API ============
+
+export const documentsApi = {
+  getAll: () => apiFetch<DocumentMetadata[]>('/api/documents'),
+
+  create: (doc: Omit<DocumentMetadata, 'id'>) =>
+    apiFetch<DocumentMetadata>('/api/documents', {
+      method: 'POST',
+      body: JSON.stringify(doc),
+    }),
+
+  update: (id: string, updates: Partial<DocumentMetadata>) =>
+    apiFetch<{ success: boolean }>('/api/documents', {
+      method: 'PATCH',
+      body: JSON.stringify({ id, ...updates }),
+    }),
 };
 
 // ============ Type Guards ============
@@ -256,6 +299,7 @@ export function createGrantOpsClient() {
     revisions: revisionsApi,
     notifications: notificationsApi,
     tasks: tasksApi,
+    documents: documentsApi,
   };
 }
 
