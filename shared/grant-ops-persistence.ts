@@ -33,10 +33,33 @@ import type {
 import path from 'path';
 
 import { defaultProfile, defaultOpencodeSettings, seedGrants, seedNotifications, seedTasks } from './seed-data';
-// Canonical data directory - always at repo root, NOT relative to process.cwd()
+// Canonical data directory - relative to project root
+// Resolved from the workspace root to support both dev server and tests
 // This ensures tests and app use the same path regardless of working directory
-// Hardcoded to project root to avoid path resolution issues in different runtime contexts
-export const DATA_DIR = '/Users/mistlight/Projects/Experiments/HackerDojoGrantApp/.grant-ops-data';
+export function getDataDir(): string {
+  // Use environment variable if set, otherwise resolve from process.cwd()
+  if (process.env.DATA_DIR) {
+    return process.env.DATA_DIR;
+  }
+  // Get the project root (two levels up from shared/)
+  const projectRoot = path.resolve(__dirname, '..', '..');
+  return path.join(projectRoot, '.grant-ops-data');
+}
+
+// Lazy initialization for DATA_DIR to avoid module-level path resolution issues
+let _DATA_DIR: string | null = null;
+
+export function getDATA_DIR(): string {
+  if (_DATA_DIR === null) {
+    _DATA_DIR = getDataDir();
+  }
+  return _DATA_DIR;
+}
+
+// Backward compatibility - deprecated, use getDATA_DIR() instead
+// NOTE: This now delegates to getDATA_DIR() to ensure consistent path resolution
+// that respects process.cwd() and environment variables, avoiding machine-specific paths
+export const DATA_DIR = getDATA_DIR();
 
 export interface PersistedData {
   sources: Source[];
@@ -61,7 +84,7 @@ export const dataCache = new Map<string, PersistedData>();
 export const grantsCache = new Map<string, Grant[]>();
 
 export function getDataPath(): string {
-  return `${DATA_DIR}/persisted-data.json`;
+  return `${getDATA_DIR()}/persisted-data.json`;
 }
 
 export async function _ensureDataDir(dataPath: string): Promise<void> {
@@ -71,16 +94,17 @@ export async function _ensureDataDir(dataPath: string): Promise<void> {
 }
 
 export async function loadPersistedData(): Promise<PersistedData> {
-  if (dataCache.has(DATA_DIR)) {
-    return dataCache.get(DATA_DIR)!;
+  const dataDir = getDATA_DIR();
+  if (dataCache.has(dataDir)) {
+    return dataCache.get(dataDir)!;
   }
 
   try {
     const fs = await import('fs/promises');
-    const dataPath = path.join(DATA_DIR, 'persisted-data.json');
+    const dataPath = path.join(dataDir, 'persisted-data.json');
     const raw = await fs.readFile(dataPath, 'utf-8');
     const cached = JSON.parse(raw);
-    dataCache.set(DATA_DIR, cached);
+    dataCache.set(dataDir, cached);
     return cached;
   } catch {
     // Return default data if file doesn't exist
@@ -98,16 +122,17 @@ export async function loadPersistedData(): Promise<PersistedData> {
       documents: [],
       lastSync: new Date().toISOString(),
     };
-    dataCache.set(DATA_DIR, defaultData);
+    dataCache.set(dataDir, defaultData);
     return defaultData;
   }
 }
 
 export async function savePersistedData(data: PersistedData): Promise<void> {
-  dataCache.set(DATA_DIR, data);
+  const dataDir = getDATA_DIR();
+  dataCache.set(dataDir, data);
   try {
     const fs = await import('fs/promises');
-    const dataPath = path.join(DATA_DIR, 'persisted-data.json');
+    const dataPath = path.join(dataDir, 'persisted-data.json');
     await _ensureDataDir(dataPath);
     await fs.writeFile(dataPath, JSON.stringify(data, null, 2), 'utf-8');
   } catch (error) {
@@ -116,39 +141,42 @@ export async function savePersistedData(data: PersistedData): Promise<void> {
 }
 
 export function invalidateCache(): void {
-  dataCache.delete(DATA_DIR);
-  grantsCache.delete(DATA_DIR);
+  const dataDir = getDATA_DIR();
+  dataCache.delete(dataDir);
+  grantsCache.delete(dataDir);
 }
 
 // ============ Convenience load/save helpers for grant operations ============
 
 export async function loadGrants(): Promise<Grant[]> {
-  if (grantsCache.has(DATA_DIR)) {
-    return [...grantsCache.get(DATA_DIR)!]; // Return a copy to prevent mutation
+  const dataDir = getDATA_DIR();
+  if (grantsCache.has(dataDir)) {
+    return [...grantsCache.get(dataDir)!]; // Return a copy to prevent mutation
   }
 
   try {
     const fs = await import('fs/promises');
-    const dataPath = path.join(DATA_DIR, 'grants.json');
+    const dataPath = path.join(dataDir, 'grants.json');
     const raw = await fs.readFile(dataPath, 'utf-8');
     const grants = JSON.parse(raw);
-    grantsCache.set(DATA_DIR, grants);
+    grantsCache.set(dataDir, grants);
     return grants;
   } catch {
     // Return seed grants when no persisted file exists
     // Return a copy to prevent mutation of the module-level seedGrants array
     const grants = [...seedGrants];
-    grantsCache.set(DATA_DIR, grants);
+    grantsCache.set(dataDir, grants);
     return grants;
   }
 }
 
 export async function saveGrants(grants: Grant[]): Promise<void> {
+  const dataDir = getDATA_DIR();
   // Update cache first to ensure consistency
-  grantsCache.set(DATA_DIR, grants);
+  grantsCache.set(dataDir, grants);
   
   const fs = await import('fs/promises');
-  const dataPath = path.join(DATA_DIR, 'grants.json');
+  const dataPath = path.join(dataDir, 'grants.json');
   await _ensureDataDir(dataPath);
   try {
     await fs.writeFile(dataPath, JSON.stringify(grants, null, 2), 'utf-8');
@@ -161,7 +189,7 @@ export async function saveGrants(grants: Grant[]): Promise<void> {
 export async function loadProfile(): Promise<OrganizationProfile> {
   try {
     const fs = await import('fs/promises');
-    const dataPath = path.join(DATA_DIR, 'profile.json');
+    const dataPath = path.join(getDATA_DIR(), 'profile.json');
     const raw = await fs.readFile(dataPath, 'utf-8');
     return JSON.parse(raw);
   } catch {
@@ -173,7 +201,7 @@ export async function loadProfile(): Promise<OrganizationProfile> {
 export async function saveProfile(profile: OrganizationProfile): Promise<void> {
   try {
     const fs = await import('fs/promises');
-    const dataPath = path.join(DATA_DIR, 'profile.json');
+    const dataPath = path.join(getDATA_DIR(), 'profile.json');
     await _ensureDataDir(dataPath);
     await fs.writeFile(dataPath, JSON.stringify(profile, null, 2), 'utf-8');
   } catch (error) {
@@ -184,7 +212,7 @@ export async function saveProfile(profile: OrganizationProfile): Promise<void> {
 export async function loadOpencodeSettings(): Promise<OpencodeSettings> {
   try {
     const fs = await import('fs/promises');
-    const dataPath = path.join(DATA_DIR, 'opencode-settings.json');
+    const dataPath = path.join(getDATA_DIR(), 'opencode-settings.json');
     const raw = await fs.readFile(dataPath, 'utf-8');
     return JSON.parse(raw);
   } catch {
@@ -196,7 +224,7 @@ export async function loadOpencodeSettings(): Promise<OpencodeSettings> {
 export async function saveOpencodeSettings(settings: OpencodeSettings): Promise<void> {
   try {
     const fs = await import('fs/promises');
-    const dataPath = path.join(DATA_DIR, 'opencode-settings.json');
+    const dataPath = path.join(getDATA_DIR(), 'opencode-settings.json');
     await _ensureDataDir(dataPath);
     await fs.writeFile(dataPath, JSON.stringify(settings, null, 2), 'utf-8');
   } catch (error) {

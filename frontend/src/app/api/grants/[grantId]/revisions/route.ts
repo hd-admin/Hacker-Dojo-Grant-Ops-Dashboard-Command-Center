@@ -42,7 +42,14 @@ export async function POST(
 
     // Check if Opencode is configured for CLI mode
     const settings = await deps.repository.getOpencodeSettings();
-    const useCliProvider = settings?.isConfigured && body.useOpencode !== false;
+    
+    // Require CLI provider in production - fail explicitly if not configured
+    if (!settings?.isConfigured) {
+      return NextResponse.json(
+        { error: 'Opencode is not configured. Please set up Opencode settings in the application before generating revisions.' },
+        { status: 400 },
+      );
+    }
 
     // Create revision request using the draftingService
     const revision = await draftingService.createRevisionRequest(
@@ -52,10 +59,10 @@ export async function POST(
     );
 
     // Generate a new draft version with revision notes
-    // Use fake provider if Opencode is not configured, or if explicitly requested
+    // Always use CLI provider when Opencode is configured
     const newDraft = await draftingService.generateDraft(grant, profile, {
       revisionNotes: body.notes || '',
-      opencodeProvider: useCliProvider ? 'cli' : 'fake',
+      opencodeProvider: 'cli',
     });
 
     return NextResponse.json(

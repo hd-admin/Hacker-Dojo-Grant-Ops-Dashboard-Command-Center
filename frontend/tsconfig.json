@@ -30,7 +30,7 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitReturns": true,
     "exactOptionalPropertyTypes": true,
-    "allowJs": true
+    "allowJs": false
   },
   "include": [
     "next-env.d.ts",

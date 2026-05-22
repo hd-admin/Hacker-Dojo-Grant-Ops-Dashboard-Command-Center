@@ -7,25 +7,27 @@
  * - Human notification is created via notifyEmail
  */
 
-import { test, expect, request } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
 
 test.describe('Submission Notification', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000');
-    await page.waitForSelector('.app', { timeout: 10000 });
+  // Use a single API context for the entire test suite
+  let apiContext: APIRequestContext;
+
+  test.beforeEach(async ({ request }) => {
+    // The request fixture is already an APIRequestContext - use it directly
+    apiContext = request;
   });
 
   test('email-submission-creates-notification: Email submission creates notification', async ({
     page,
   }) => {
     // Navigate to discovery and find a grant to submit
+    await page.goto('http://localhost:3000');
     await page.click('[data-view="discovery"]');
     await page.waitForSelector('.grants-table', { timeout: 10000 });
 
     // Get initial notification count
-    const initialNotificationsResponse = await request.get(
-      'http://localhost:3000/api/notifications',
-    );
+    const initialNotificationsResponse = await apiContext.get('/api/notifications');
     const initialNotifications: Array<{ id: string }> =
       await initialNotificationsResponse.json();
     const _initialCount = initialNotifications.length;
@@ -55,9 +57,7 @@ test.describe('Submission Notification', () => {
     }
 
     // Check notifications API for new notification
-    const finalNotificationsResponse = await request.get(
-      'http://localhost:3000/api/notifications',
-    );
+    const finalNotificationsResponse = await apiContext.get('/api/notifications');
     const finalNotifications: Array<{ id: string; text: string }> =
       await finalNotificationsResponse.json();
 
@@ -67,15 +67,13 @@ test.describe('Submission Notification', () => {
 
   test('email-submission-creates-follow-ups: Email submission creates follow-up tasks', async () => {
     // Get initial follow-ups count
-    const initialFollowUpsResponse = await request.get(
-      'http://localhost:3000/api/follow-ups',
-    );
+    const initialFollowUpsResponse = await apiContext.get('/api/follow-ups');
     const initialFollowUps: Array<{ id: string }> =
       await initialFollowUpsResponse.json();
     const _initialCount = initialFollowUps.length;
 
     // Get grants to find one to submit
-    const grantsResponse = await request.get('http://localhost:3000/api/grants');
+    const grantsResponse = await apiContext.get('/api/grants');
     const grants: Array<{
       id: string;
       status: string;
@@ -93,8 +91,8 @@ test.describe('Submission Notification', () => {
 
       if (grantToSubmit) {
         // Approve the grant
-        await request.post(
-          `http://localhost:3000/api/grants/${grantToSubmit.id}/approval`,
+        await apiContext.post(
+          `/api/grants/${grantToSubmit.id}/approval`,
           {
             headers: { 'Content-Type': 'application/json' },
             data: { approvedBy: 'test-user' },
@@ -102,8 +100,8 @@ test.describe('Submission Notification', () => {
         );
 
         // Submit via email
-        await request.post(
-          `http://localhost:3000/api/grants/${grantToSubmit.id}/submit`,
+        await apiContext.post(
+          `/api/grants/${grantToSubmit.id}/submit`,
           {
             headers: { 'Content-Type': 'application/json' },
             data: {
@@ -119,9 +117,7 @@ test.describe('Submission Notification', () => {
         );
 
         // Check follow-ups were created
-        const finalFollowUpsResponse = await request.get(
-          'http://localhost:3000/api/follow-ups',
-        );
+        const finalFollowUpsResponse = await apiContext.get('/api/follow-ups');
         const finalFollowUps: Array<{ id: string; grantId: string }> =
           await finalFollowUpsResponse.json();
 
@@ -136,14 +132,12 @@ test.describe('Submission Notification', () => {
 
   test('submission-creates-task: Submission creates task for human review', async () => {
     // Get initial tasks count
-    const initialTasksResponse = await request.get(
-      'http://localhost:3000/api/tasks',
-    );
+    const initialTasksResponse = await apiContext.get('/api/tasks');
     const initialTasks: Array<{ id: string }> = await initialTasksResponse.json();
-    const _initialCount = initialTasks.length;
+    const initialCount = initialTasks.length;
 
     // Get grants
-    const grantsResponse = await request.get('http://localhost:3000/api/grants');
+    const grantsResponse = await apiContext.get('/api/grants');
     const grants: Array<{
       id: string;
       status: string;
@@ -158,8 +152,8 @@ test.describe('Submission Notification', () => {
 
       if (grantToSubmit) {
         // Approve
-        await request.post(
-          `http://localhost:3000/api/grants/${grantToSubmit.id}/approval`,
+        await apiContext.post(
+          `/api/grants/${grantToSubmit.id}/approval`,
           {
             headers: { 'Content-Type': 'application/json' },
             data: { approvedBy: 'test-user' },
@@ -167,8 +161,8 @@ test.describe('Submission Notification', () => {
         );
 
         // Submit
-        await request.post(
-          `http://localhost:3000/api/grants/${grantToSubmit.id}/submit`,
+        await apiContext.post(
+          `/api/grants/${grantToSubmit.id}/submit`,
           {
             headers: { 'Content-Type': 'application/json' },
             data: {
@@ -182,9 +176,7 @@ test.describe('Submission Notification', () => {
         );
 
         // Check tasks were created
-        const finalTasksResponse = await request.get(
-          'http://localhost:3000/api/tasks',
-        );
+        const finalTasksResponse = await apiContext.get('/api/tasks');
         const finalTasks: Array<{ id: string }> =
           await finalTasksResponse.json();
 
@@ -195,9 +187,7 @@ test.describe('Submission Notification', () => {
   });
 
   test('notify-email-is-configured: notifyEmail is set in profile', async () => {
-    const profileResponse = await request.get(
-      'http://localhost:3000/api/profile',
-    );
+    const profileResponse = await apiContext.get('/api/profile');
     expect(profileResponse.ok()).toBeTruthy();
 
     const profile = await profileResponse.json();
@@ -211,7 +201,7 @@ test.describe('Submission Notification', () => {
 
   test('submission-record-has-email-method: Submission records method.type as email', async () => {
     // Get grants
-    const grantsResponse = await request.get('http://localhost:3000/api/grants');
+    const grantsResponse = await apiContext.get('/api/grants');
     const grants: Array<{
       id: string;
       status: string;
@@ -226,8 +216,8 @@ test.describe('Submission Notification', () => {
 
       if (grantToSubmit) {
         // Approve
-        await request.post(
-          `http://localhost:3000/api/grants/${grantToSubmit.id}/approval`,
+        await apiContext.post(
+          `/api/grants/${grantToSubmit.id}/approval`,
           {
             headers: { 'Content-Type': 'application/json' },
             data: { approvedBy: 'test-user' },
@@ -235,8 +225,8 @@ test.describe('Submission Notification', () => {
         );
 
         // Submit via email
-        const submitResponse = await request.post(
-          `http://localhost:3000/api/grants/${grantToSubmit.id}/submit`,
+        const submitResponse = await apiContext.post(
+          `/api/grants/${grantToSubmit.id}/submit`,
           {
             headers: { 'Content-Type': 'application/json' },
             data: {
@@ -253,8 +243,8 @@ test.describe('Submission Notification', () => {
         expect(submitResponse.ok()).toBeTruthy();
 
         // Get submission record
-        const submissionGetResponse = await request.get(
-          `http://localhost:3000/api/grants/${grantToSubmit.id}/submit`,
+        const submissionGetResponse = await apiContext.get(
+          `/api/grants/${grantToSubmit.id}/submit`,
         );
         const submission = await submissionGetResponse.json();
 
