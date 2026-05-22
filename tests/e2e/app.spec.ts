@@ -96,11 +96,14 @@ test.describe('Grant Operations Center', () => {
     await expect(page.locator('#view-settings')).toHaveClass(/active/);
   });
 
-  test('nav-notifications-decorative: Notifications does not change view', async ({ page }) => {
-    const initialView = await page.locator('.view.active').getAttribute('id');
+  test('nav-notifications-switch: Notifications nav switches to notifications view', async ({ page }) => {
     await page.click('.nav-item:has-text("Notifications")');
-    const afterView = await page.locator('.view.active').getAttribute('id');
-    expect(afterView).toBe(initialView);
+    await expect(page.locator('#view-notifications')).toHaveClass(/active/);
+  });
+
+  test('nav-tasks-switch: Tasks nav switches to tasks view', async ({ page }) => {
+    await page.click('.nav-item:has-text("Tasks")');
+    await expect(page.locator('#view-tasks')).toHaveClass(/active/);
   });
 
   test('dashboard-date-greeting: Dashboard greeting contains day name', async ({ page }) => {
@@ -203,5 +206,78 @@ test.describe('Grant Operations Center', () => {
     await expect(page.locator('.drawer')).toHaveClass(/open/);
     await page.click('.drawer-overlay');
     await expect(page.locator('.drawer')).not.toHaveClass(/open/);
+  });
+
+  test('discovery-export-csv-button: Export CSV button exists in header', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    const exportBtn = page.locator('button:has-text("Export CSV")');
+    await expect(exportBtn).toBeVisible();
+  });
+
+  test('discovery-add-source-button: Add source button exists in header', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    const addSourceBtn = page.locator('button:has-text("+ Add source")');
+    await expect(addSourceBtn).toBeVisible();
+  });
+
+  test('pipeline-filter-dropdown: Filter dropdown exists in header', async ({ page }) => {
+    await page.click('[data-view="pipeline"]');
+    const filterSelect = page.locator('select.filter-select');
+    await expect(filterSelect).toBeVisible();
+  });
+
+  test('pipeline-add-to-pipeline-button: + Add to pipeline button exists in header', async ({ page }) => {
+    await page.click('[data-view="pipeline"]');
+    const addBtn = page.locator('button:has-text("+ Add to pipeline")');
+    await expect(addBtn).toBeVisible();
+  });
+
+  test('settings-theme-tags: Theme tags have X remove buttons', async ({ page }) => {
+    await page.click('[data-view="settings"]');
+    const themeTags = page.locator('.theme-tag');
+    await expect(themeTags.first()).toBeVisible();
+    const removeButtons = page.locator('.theme-tag-remove');
+    await expect(removeButtons.first()).toBeVisible();
+  });
+
+  test('settings-theme-add: Theme add input and button exist', async ({ page }) => {
+    await page.click('[data-view="settings"]');
+    const themeInput = page.locator('.theme-input');
+    await expect(themeInput).toBeVisible();
+    const addBtn = page.locator('.theme-add button');
+    await expect(addBtn).toBeVisible();
+  });
+
+  test('settings-upload-button: Upload button exists in documents section', async ({ page }) => {
+    await page.click('[data-view="settings"]');
+    const uploadBtn = page.locator('.upload-item');
+    await expect(uploadBtn).toBeVisible();
+  });
+
+  test('dashboard-panel-action: View all panel action has data-view-link', async ({ page }) => {
+    const panelAction = page.locator('.panel-action[data-view-link="pipeline"]');
+    await expect(panelAction.first()).toBeVisible();
+  });
+
+  test('dashboard-kpi-delta: Active Pipeline card has delta text', async ({ page }) => {
+    const deltaText = page.locator('.delta-up');
+    await expect(deltaText.first()).toBeVisible();
+  });
+
+  test('notifications-view: Notifications view shows notification list', async ({ page }) => {
+    await page.click('.nav-item:has-text("Notifications")');
+    await expect(page.locator('#view-notifications')).toHaveClass(/active/);
+  });
+
+  test('tasks-view: Tasks view shows task list', async ({ page }) => {
+    await page.click('.nav-item:has-text("Tasks")');
+    await expect(page.locator('#view-tasks')).toHaveClass(/active/);
+  });
+
+  test('sidebar-footer-dynamic: Sidebar footer shows dynamic data', async ({ page }) => {
+    const sidebarFooter = page.locator('.sidebar-footer');
+    await expect(sidebarFooter).toBeVisible();
+    const footerText = await sidebarFooter.textContent();
+    expect(footerText).toContain('Logged in as');
   });
 });

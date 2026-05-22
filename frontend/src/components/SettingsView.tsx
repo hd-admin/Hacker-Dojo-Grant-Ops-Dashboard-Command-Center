@@ -1,29 +1,26 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { OrganizationProfile } from '../../../shared/types';
-
-const docList = [
-  { type: 'pdf', name: '2025 Impact Report', meta: 'v2.1 · Apr 2026' },
-  { type: 'pdf', name: 'One-Pager', meta: 'v3.0 · Mar 2026' },
-  { type: 'xls', name: 'Budget & Financials FY2025', meta: 'Mar 2026' },
-  { type: 'doc', name: 'Board roster + bios', meta: 'Jan 2026' },
-  { type: 'pdf', name: 'Program logic model', meta: 'Dec 2025' },
-  { type: 'doc', name: '+ Upload', meta: '' },
-];
+import type { OrganizationProfile, DocumentMetadata } from '../../../shared/types';
 
 export default function SettingsView() {
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
+  const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<OrganizationProfile>>({});
+  const [newTheme, setNewTheme] = useState('');
 
   useEffect(() => {
     async function load() {
       try {
-        const data = await window.electronAPI.getOrgProfile();
-        setProfile(data);
-        setEditForm(data);
+        const [profileData, docsData] = await Promise.all([
+          window.electronAPI.getOrgProfile(),
+          window.electronAPI.getDocuments(),
+        ]);
+        setProfile(profileData);
+        setEditForm(profileData);
+        setDocuments(docsData);
       } catch (error) {
         console.error('Error loading profile:', error);
       } finally {
@@ -62,6 +59,48 @@ export default function SettingsView() {
 
   const handleInputChange = (field: keyof OrganizationProfile, value: string) => {
     setEditForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleUploadDocument = async () => {
+    try {
+      const doc = await window.electronAPI.uploadDocument();
+      if (doc) {
+        setDocuments((prev) => [...prev, doc]);
+      }
+    } catch (error) {
+      console.error('Error uploading document:', error);
+    }
+  };
+
+  const handleRemoveTheme = async (theme: string) => {
+    try {
+      await window.electronAPI.removeTheme(theme);
+      const updated = await window.electronAPI.getOrgProfile();
+      setProfile(updated);
+      setEditForm(updated);
+    } catch (error) {
+      console.error('Error removing theme:', error);
+    }
+  };
+
+  const handleAddTheme = async () => {
+    const theme = newTheme.trim();
+    if (!theme) return;
+    try {
+      await window.electronAPI.addTheme(theme);
+      const updated = await window.electronAPI.getOrgProfile();
+      setProfile(updated);
+      setEditForm(updated);
+      setNewTheme('');
+    } catch (error) {
+      console.error('Error adding theme:', error);
+    }
+  };
+
+  const handleThemeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      handleAddTheme();
+    }
   };
 
   if (loading) {
@@ -189,23 +228,26 @@ export default function SettingsView() {
           </div>
           <div className="setting-card-body">
             <div className="doc-list">
-              {docList.map((doc, idx) => (
-                <div
-                  key={idx}
-                  className="doc-item"
-                  onClick={() => {
-                    if (doc.name === '+ Upload') {
-                      console.log('Reference document upload not implemented in v1');
-                    }
-                  }}
-                >
-                  <div className={`doc-icon ${doc.type}`}>{doc.type.toUpperCase()}</div>
+              {documents.map((doc) => (
+                <div key={doc.id} className="doc-item">
+                  <div className={`doc-icon ${doc.type.toLowerCase()}`}>{doc.type}</div>
                   <div className="doc-info">
                     <div className="doc-name">{doc.name}</div>
-                    {doc.meta && <div className="doc-meta">{doc.meta}</div>}
+                    {doc.lastUsed && (
+                      <div className="doc-meta">
+                        {new Date(doc.lastUsed).toLocaleDateString()}
+                        {doc.audited && <span className="audited-badge"> · Audited</span>}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
+              <div className="doc-item upload-item" onClick={handleUploadDocument}>
+                <div className="doc-icon upload">+</div>
+                <div className="doc-info">
+                  <div className="doc-name">Upload</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -220,8 +262,28 @@ export default function SettingsView() {
               {profile.searchThemes.map((theme) => (
                 <span key={theme} className="theme-tag">
                   {theme}
+                  <button
+                    className="theme-tag-remove"
+                    onClick={() => handleRemoveTheme(theme)}
+                    aria-label={`Remove ${theme}`}
+                  >
+                    ×
+                  </button>
                 </span>
               ))}
+            </div>
+            <div className="theme-add">
+              <input
+                type="text"
+                className="theme-input"
+                placeholder="Add theme..."
+                value={newTheme}
+                onChange={(e) => setNewTheme(e.target.value)}
+                onKeyDown={handleThemeKeyDown}
+              />
+              <button className="btn btn-sm" onClick={handleAddTheme}>
+                Add
+              </button>
             </div>
           </div>
         </div>

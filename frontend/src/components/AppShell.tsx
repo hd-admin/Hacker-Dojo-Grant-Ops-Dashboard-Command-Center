@@ -5,10 +5,12 @@ import DashboardView from './DashboardView';
 import DiscoveryView from './DiscoveryView';
 import PipelineView from './PipelineView';
 import SettingsView from './SettingsView';
+import NotificationsView from './NotificationsView';
+import TasksView from './TasksView';
 import GrantDrawer from './GrantDrawer';
-import type { Grant } from '../../../shared/types';
+import type { Grant, OrganizationProfile, CrawlStatus } from '../../../shared/types';
 
-type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings';
+type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
 interface NavItem {
   view?: ViewType;
@@ -25,8 +27,8 @@ const workspaceNav: NavItem[] = [
 ];
 
 const activityNav: NavItem[] = [
-  { label: 'Notifications', decorative: true, icon: '✉' },
-  { label: 'Tasks', decorative: true, icon: '⌖' },
+  { view: 'notifications', label: 'Notifications', icon: '✉' },
+  { view: 'tasks', label: 'Tasks', icon: '⌖' },
 ];
 
 export default function AppShell() {
@@ -34,22 +36,28 @@ export default function AppShell() {
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
   const [appVersion, setAppVersion] = useState('0.1.0');
   const [grants, setGrants] = useState<Grant[]>([]);
+  const [profile, setProfile] = useState<OrganizationProfile | null>(null);
+  const [crawlStatus, setCrawlStatus] = useState<CrawlStatus>({ online: true, lastSync: new Date().toISOString() });
+  const [notifications, setNotifications] = useState<{ id: string }[]>([]);
 
   useEffect(() => {
     if (window.electronAPI) {
       window.electronAPI.getAppVersion().then(setAppVersion);
       window.electronAPI.getGrants().then(setGrants);
+      window.electronAPI.getOrgProfile().then((p) => p && setProfile(p));
+      window.electronAPI.getCrawlStatus().then(setCrawlStatus);
+      window.electronAPI.getNotifications().then(setNotifications);
     }
   }, []);
 
   const handleNavClick = (item: NavItem) => {
-    if (item.decorative) {
-      console.log(`${item.label} not implemented in v1`);
-      return;
-    }
     if (item.view) {
       setActiveView(item.view);
     }
+  };
+
+  const handleNavigate = (view: ViewType) => {
+    setActiveView(view);
   };
 
   const handleGrantSelect = (grantId: string) => {
@@ -101,40 +109,48 @@ export default function AppShell() {
           {activityNav.map((item) => (
             <div
               key={item.label}
-              className="nav-item"
+              className={`nav-item ${activeView === item.view ? 'active' : ''}`}
+              data-view={item.view}
               onClick={() => handleNavClick(item)}
             >
               <span className="nav-icon">{item.icon}</span>
               {item.label}
-              {item.decorative && item.icon === '✉' && grants.filter(g => g.status === 'review').length > 0 && (
-                <span className="nav-count">{grants.filter(g => g.status === 'review').length}</span>
+              {item.view === 'notifications' && notifications.length > 0 && (
+                <span className="nav-count">{notifications.length}</span>
               )}
             </div>
           ))}
         </div>
 
         <div className="sidebar-footer">
-          <span className="status-dot" />Crawler online<br/>
-          Last sync: 2h ago<br/>
+          <span className={`status-dot ${crawlStatus.online ? '' : 'offline'}`} />
+          Crawler {crawlStatus.online ? 'online' : 'offline'}<br/>
+          Last sync: {getRelativeTime(crawlStatus.lastSync)}<br/>
           <br/>
           Logged in as<br/>
-          <strong style={{color:'var(--text-dim)'}}>ed@hackerdojo.com</strong>
+          <strong style={{color:'var(--text-dim)'}}>{profile?.agentBehavior.notifyEmail || 'ed@hackerdojo.com'}</strong>
         </div>
       </aside>
 
       {/* Main content */}
       <main className="main">
         <div id="view-dashboard" className={`view ${activeView === 'dashboard' ? 'active' : ''}`}>
-          <DashboardView onGrantSelect={handleGrantSelect} />
+          <DashboardView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} />
         </div>
         <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`}>
           <DiscoveryView onGrantSelect={handleGrantSelect} />
         </div>
         <div id="view-pipeline" className={`view ${activeView === 'pipeline' ? 'active' : ''}`}>
-          <PipelineView onGrantSelect={handleGrantSelect} />
+          <PipelineView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} />
         </div>
         <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`}>
           <SettingsView />
+        </div>
+        <div id="view-notifications" className={`view ${activeView === 'notifications' ? 'active' : ''}`}>
+          <NotificationsView />
+        </div>
+        <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`}>
+          <TasksView />
         </div>
       </main>
 
@@ -142,4 +158,19 @@ export default function AppShell() {
       <GrantDrawer grantId={selectedGrantId} onClose={handleDrawerClose} />
     </div>
   );
+}
+
+function getRelativeTime(isoString: string): string {
+  const now = new Date();
+  const date = new Date(isoString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
 }

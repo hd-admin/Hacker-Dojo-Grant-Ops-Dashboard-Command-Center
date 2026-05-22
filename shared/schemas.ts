@@ -58,6 +58,33 @@ export const ActivityEventSchema = z.object({
   time: z.string(),
 });
 
+export const CrawlStatusSchema = z.object({
+  online: z.boolean(),
+  lastSync: z.string(),
+});
+
+export const NotificationSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  time: z.string(),
+  dot: z.string(),
+});
+
+export const TaskSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  completed: z.boolean(),
+});
+
+export const DocumentMetadataSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.string(),
+  lastUsed: z.string().optional(),
+  version: z.string().optional(),
+  audited: z.boolean().optional(),
+});
+
 export type Grant = z.infer<typeof GrantSchema>;
 export type OrganizationProfile = z.infer<typeof OrganizationProfileSchema>;
 export type ActivityEvent = z.infer<typeof ActivityEventSchema>;

@@ -1,4 +1,4 @@
-import type { GrantStatus } from '../../shared/types';
+import type { GrantStatus, OrganizationProfile, CrawlStatus, Notification, Task, DocumentMetadata, ActivityEvent } from '../../shared/types';
 
 export interface ElectronAPI {
   getGrants: () => Promise<Grant[]>;
@@ -10,6 +10,23 @@ export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   quitApp: () => Promise<void>;
   onUpdateStatus: (callback: (status: string) => void) => void;
+  // Crawl
+  getCrawlStatus: () => Promise<CrawlStatus>;
+  triggerCrawl: () => Promise<boolean>;
+  // Notifications
+  getNotifications: () => Promise<Notification[]>;
+  updateNotifications: (notifications: Notification[]) => Promise<boolean>;
+  // Tasks
+  getTasks: () => Promise<Task[]>;
+  updateTasks: (tasks: Task[]) => Promise<boolean>;
+  // Documents
+  uploadDocument: () => Promise<DocumentMetadata | null>;
+  getDocuments: () => Promise<DocumentMetadata[]>;
+  // Themes
+  addTheme: (theme: string) => Promise<boolean>;
+  removeTheme: (theme: string) => Promise<boolean>;
+  // Activity
+  getRecentActivity: (count: number) => Promise<ActivityEvent[]>;
 }
 
 interface Grant {
@@ -44,21 +61,6 @@ interface ChecklistItem {
   label: string;
   done: boolean;
   source: string;
-}
-
-interface OrganizationProfile {
-  legalName: string;
-  ein: string;
-  samUEI: string;
-  mission: string;
-  docTypes: string[];
-  searchThemes: string[];
-  agentBehavior: {
-    autoDraftThreshold: number;
-    submissionPolicy: string;
-    notifyEmail: string;
-    voiceAndTone: string;
-  };
 }
 
 declare global {

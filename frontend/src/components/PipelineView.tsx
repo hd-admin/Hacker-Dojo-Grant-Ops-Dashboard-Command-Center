@@ -3,9 +3,14 @@
 import { useState, useEffect } from 'react';
 import type { Grant, GrantStatus } from '../../../shared/types';
 
+type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
+
 interface PipelineViewProps {
   onGrantSelect: (grantId: string) => void;
+  onNavigate?: (view: ViewType) => void;
 }
+
+type StatusFilter = 'All' | 'Matched' | 'Drafting' | 'Review' | 'Submitted' | 'Awarded';
 
 interface BoardColumn {
   key: GrantStatus | 'awarded';
@@ -29,11 +34,12 @@ function formatDate(dateStr: string): string {
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}`;
 }
 
-export default function PipelineView({ onGrantSelect }: PipelineViewProps) {
+export default function PipelineView({ onGrantSelect, onNavigate }: PipelineViewProps) {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(true);
   const [draggingGrantId, setDraggingGrantId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
 
   useEffect(() => {
     async function load() {
@@ -54,6 +60,22 @@ export default function PipelineView({ onGrantSelect }: PipelineViewProps) {
   }
 
   const getGrantsForColumn = (status: GrantStatus | 'awarded') => {
+    if (statusFilter !== 'All') {
+      // When filtered, only show grants matching the filter in their respective column
+      const filterStatusMap: Record<StatusFilter, GrantStatus | 'awarded'> = {
+        'All': 'matched',
+        'Matched': 'matched',
+        'Drafting': 'draft',
+        'Review': 'review',
+        'Submitted': 'submitted',
+        'Awarded': 'awarded',
+      };
+      const targetStatus = filterStatusMap[statusFilter];
+      if (status !== targetStatus) {
+        return []; // Hide this column when filtered to a different status
+      }
+      return grants.filter((g) => g.status === targetStatus);
+    }
     if (status === 'awarded') {
       return grants.filter((g) => g.status === 'awarded');
     }
@@ -102,6 +124,21 @@ export default function PipelineView({ onGrantSelect }: PipelineViewProps) {
           <div className="header-sub">
             {grants.filter((g) => g.status !== 'awarded').length} active grants
           </div>
+        </div>
+        <div className="header-actions">
+          <select
+            className="filter-select"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          >
+            <option value="All">Filter: All</option>
+            <option value="Matched">Matched</option>
+            <option value="Drafting">Drafting</option>
+            <option value="Review">Review</option>
+            <option value="Submitted">Submitted</option>
+            <option value="Awarded">Awarded</option>
+          </select>
+          <button className="btn btn-primary" onClick={() => onNavigate?.('discovery')}>+ Add to pipeline</button>
         </div>
       </div>
 

@@ -2,11 +2,43 @@ import { app } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import log from 'electron-log';
-import { Grant, GrantStatus, OrganizationProfile } from '../shared/types';
+import { Grant, GrantStatus, OrganizationProfile, ActivityEvent } from '../shared/types';
+
+interface CrawlStatus {
+  online: boolean;
+  lastSync: string;
+}
+
+interface Notification {
+  id: string;
+  text: string;
+  time: string;
+  dot: string;
+}
+
+interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+interface DocumentMetadata {
+  id: string;
+  name: string;
+  type: string;
+  lastUsed?: string;
+  version?: string;
+  audited?: boolean;
+}
 
 interface StoreData {
   grants: Grant[];
   profile: OrganizationProfile;
+  crawlStatus: CrawlStatus;
+  notifications: Notification[];
+  tasks: Task[];
+  documents: DocumentMetadata[];
+  activity: ActivityEvent[];
 }
 
 // GAP-06 FIX: matchedAt dates relative to TODAY constant
@@ -491,9 +523,15 @@ class Store {
         const data = fs.readFileSync(this.storePath, 'utf-8');
         const parsed = JSON.parse(data);
         log.info('Store loaded from:', this.storePath);
+        // Migration: add new fields with defaults if missing from persisted store
         return {
           grants: parsed.grants || seedGrants,
           profile: parsed.profile || defaultProfile,
+          crawlStatus: parsed.crawlStatus || { online: true, lastSync: new Date().toISOString() },
+          notifications: parsed.notifications || [],
+          tasks: parsed.tasks || [],
+          documents: parsed.documents || [],
+          activity: parsed.activity || [],
         };
       }
     } catch (error) {
@@ -503,6 +541,11 @@ class Store {
     return {
       grants: seedGrants,
       profile: defaultProfile,
+      crawlStatus: { online: true, lastSync: new Date().toISOString() },
+      notifications: [],
+      tasks: [],
+      documents: [],
+      activity: [],
     };
   }
 
@@ -553,6 +596,60 @@ class Store {
   updateProfile(profile: OrganizationProfile): void {
     this.data.profile = profile;
     this.saveStore();
+  }
+
+  // Crawl status methods
+  getCrawlStatus(): CrawlStatus {
+    return this.data.crawlStatus;
+  }
+
+  updateCrawlStatus(status: CrawlStatus): void {
+    this.data.crawlStatus = status;
+    this.saveStore();
+  }
+
+  // Notification methods
+  getNotifications(): Notification[] {
+    return this.data.notifications;
+  }
+
+  updateNotifications(notifications: Notification[]): void {
+    this.data.notifications = notifications;
+    this.saveStore();
+  }
+
+  // Task methods
+  getTasks(): Task[] {
+    return this.data.tasks;
+  }
+
+  updateTasks(tasks: Task[]): void {
+    this.data.tasks = tasks;
+    this.saveStore();
+  }
+
+  // Document methods
+  getDocuments(): DocumentMetadata[] {
+    return this.data.documents;
+  }
+
+  addDocument(doc: DocumentMetadata): void {
+    this.data.documents.push(doc);
+    this.saveStore();
+  }
+
+  // Activity methods
+  getActivity(): ActivityEvent[] {
+    return this.data.activity;
+  }
+
+  addActivityEvent(event: ActivityEvent): void {
+    this.data.activity.push(event);
+    this.saveStore();
+  }
+
+  getRecentActivity(count: number): ActivityEvent[] {
+    return this.data.activity.slice(-count);
   }
 }
 

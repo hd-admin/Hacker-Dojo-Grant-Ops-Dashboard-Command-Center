@@ -46,6 +46,37 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
     return <div className="header-title">Loading...</div>;
   }
 
+  const handleExportCsv = () => {
+    const headers = ['Title', 'Funder', 'Award', 'Deadline', 'Fit', 'Status'];
+    const rows = filtered.map((g) => [
+      `"${g.title}"`,
+      `"${g.funder}"`,
+      g.award,
+      g.deadline,
+      g.fit.toString(),
+      g.statusLabel,
+    ]);
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = window.document.createElement('a');
+    a.href = url;
+    a.download = `grants-export-${new Date().toISOString().split('T')[0]}.csv`;
+    window.document.body.appendChild(a);
+    a.click();
+    window.document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const handleAddSource = () => {
+    const name = window.prompt('Enter grant source name:');
+    if (!name) return;
+    const url = window.prompt('Enter source URL:');
+    if (url) {
+      console.log('Adding source:', { name, url });
+    }
+  };
+
   // Filter grants
   let filtered = grants.filter((g) => {
     // Search filter
@@ -89,6 +120,10 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
             Discovery <span className="accent">Find grants</span>
           </h1>
           <div className="header-sub">{filtered.length} grants</div>
+        </div>
+        <div className="header-actions">
+          <button className="btn btn-ghost btn-sm" onClick={handleExportCsv}>Export CSV</button>
+          <button className="btn btn-primary" onClick={handleAddSource}>+ Add source</button>
         </div>
       </div>
 

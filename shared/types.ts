@@ -56,6 +56,33 @@ export interface ActivityEvent {
   time: string;
 }
 
+export interface CrawlStatus {
+  online: boolean;
+  lastSync: string;
+}
+
+export interface Notification {
+  id: string;
+  text: string;
+  time: string;
+  dot: string;
+}
+
+export interface Task {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export interface DocumentMetadata {
+  id: string;
+  name: string;
+  type: string;
+  lastUsed?: string;
+  version?: string;
+  audited?: boolean;
+}
+
 export interface BoardCard {
   id: string;
   title: string;
@@ -75,4 +102,21 @@ export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   quitApp: () => Promise<void>;
   onUpdateStatus: (callback: (status: string) => void) => void;
+  // Crawl
+  getCrawlStatus: () => Promise<CrawlStatus>;
+  triggerCrawl: () => Promise<boolean>;
+  // Notifications
+  getNotifications: () => Promise<Notification[]>;
+  updateNotifications: (notifications: Notification[]) => Promise<boolean>;
+  // Tasks
+  getTasks: () => Promise<Task[]>;
+  updateTasks: (tasks: Task[]) => Promise<boolean>;
+  // Documents
+  uploadDocument: () => Promise<DocumentMetadata | null>;
+  getDocuments: () => Promise<DocumentMetadata[]>;
+  // Themes
+  addTheme: (theme: string) => Promise<boolean>;
+  removeTheme: (theme: string) => Promise<boolean>;
+  // Activity
+  getRecentActivity: (count: number) => Promise<ActivityEvent[]>;
 }

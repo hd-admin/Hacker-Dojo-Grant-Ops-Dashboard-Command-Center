@@ -1,22 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { Grant, OrganizationProfile } from '../../../shared/types';
+import type { Grant, OrganizationProfile, ActivityEvent } from '../../../shared/types';
+
+type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
 interface DashboardViewProps {
   onGrantSelect: (grantId: string) => void;
+  onNavigate?: (view: ViewType) => void;
 }
-
-const TODAY = '2026-05-21';
-
-const activity = [
-  { dot: 'success', text: '<strong>3 new grants</strong> matched from Candid weekly crawl', time: '2h ago' },
-  { dot: 'accent', text: 'Draft completed for <strong>SVCF Community Innovation Fund</strong> · awaiting review', time: '4h ago' },
-  { dot: 'info', text: 'Crawled 47 sources · 12 federal, 28 foundation, 7 corporate', time: '6h ago' },
-  { dot: 'warning', text: 'NSF TechAccess LOI deadline in <strong>26 days</strong> — checklist 4/7 complete', time: 'yesterday' },
-  { dot: 'success', text: 'Submitted: <strong>Wiener Family Foundation</strong> · confirmation #WFF-2026-0341', time: '2d ago' },
-  { dot: 'accent', text: 'Org profile updated · Impact Report v2.1 indexed', time: '3d ago' },
-];
 
 function formatDate(dateStr: string): { day: string; month: string } {
   if (dateStr === 'Rolling') return { day: '—', month: '' };
@@ -38,20 +30,34 @@ function formatCurrency(amount: number): string {
   return `$${amount}`;
 }
 
-export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
+function getDefaultActivity(): ActivityEvent[] {
+  return [
+    { dot: 'success', text: '<strong>3 new grants</strong> matched from Candid weekly crawl', time: '2h ago' },
+    { dot: 'accent', text: 'Draft completed for <strong>SVCF Community Innovation Fund</strong> · awaiting review', time: '4h ago' },
+    { dot: 'info', text: 'Crawled 47 sources · 12 federal, 28 foundation, 7 corporate', time: '6h ago' },
+    { dot: 'warning', text: 'NSF TechAccess LOI deadline in <strong>26 days</strong> — checklist 4/7 complete', time: 'yesterday' },
+    { dot: 'success', text: 'Submitted: <strong>Wiener Family Foundation</strong> · confirmation #WFF-2026-0341', time: '2d ago' },
+    { dot: 'accent', text: 'Org profile updated · Impact Report v2.1 indexed', time: '3d ago' },
+  ];
+}
+
+export default function DashboardView({ onGrantSelect, onNavigate }: DashboardViewProps) {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
+  const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
       try {
-        const [grantsData, profileData] = await Promise.all([
+        const [grantsData, profileData, activityData] = await Promise.all([
           window.electronAPI.getGrants(),
           window.electronAPI.getOrgProfile(),
+          window.electronAPI.getRecentActivity(10),
         ]);
         setGrants(grantsData);
         setProfile(profileData);
+        setActivity(activityData.length > 0 ? activityData : getDefaultActivity());
       } catch (error) {
         console.error('Error loading dashboard data:', error);
       } finally {
@@ -60,6 +66,18 @@ export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
     }
     load();
   }, []);
+
+  const handleRefreshCrawl = async () => {
+    if (window.electronAPI) {
+      await window.electronAPI.triggerCrawl();
+    }
+  };
+
+  const handleNewSearch = () => {
+    if (onNavigate) {
+      onNavigate('discovery');
+    }
+  };
 
   if (loading) {
     return <div className="header-title">Loading...</div>;
@@ -89,6 +107,17 @@ export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
     return matchedDate >= sevenDaysAgo && matchedDate <= today;
   }).length;
 
+  // KPI delta: grants added this month
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const grantsThisMonth = grants.filter((g) => {
+    if (!g.matchedAt) return false;
+    const matchedDate = new Date(g.matchedAt);
+    return matchedDate >= firstOfMonth && matchedDate <= today;
+  }).length;
+
+  // High-fit count: matched grants with fit >= 85
+  const highFitCount = grants.filter((g) => g.fit >= 85 && g.status === 'matched').length;
+
   // Upcoming deadlines (next 90 days, not rolling)
   const upcomingDeadlines = grants
     .filter((g) => g.daysOut < 90 && g.daysOut > 0 && g.deadline !== 'Rolling')
@@ -112,8 +141,8 @@ export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
           <div className="header-sub">{dayName} · {dateStr} · {activeGrants.length} grants in pipeline</div>
         </div>
         <div className="header-actions">
-          <button className="btn btn-ghost btn-sm">↻ Refresh crawl</button>
-          <button className="btn btn-primary">+ New search</button>
+          <button className="btn btn-ghost btn-sm" onClick={handleRefreshCrawl}>↻ Refresh crawl</button>
+          <button className="btn btn-primary" onClick={handleNewSearch}>+ New search</button>
         </div>
       </div>
 
@@ -122,7 +151,7 @@ export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
         <div className="kpi-card">
           <div className="kpi-label">Active Pipeline</div>
           <div className="kpi-value">{formatCurrency(activePipeline)}</div>
-          <div className="kpi-meta">{activeGrants.length} grants tracked</div>
+          <div className="kpi-meta">{activeGrants.length} applications · <span className="delta-up">+{grantsThisMonth} this month</span></div>
         </div>
         <div className="kpi-card warning">
           <div className="kpi-label">Next Deadline</div>
@@ -142,7 +171,7 @@ export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
         <div className="kpi-card info">
           <div className="kpi-label">New Matches 7d</div>
           <div className="kpi-value">{newMatches7d}</div>
-          <div className="kpi-meta">matched this week</div>
+          <div className="kpi-meta">{highFitCount} high-fit (&gt; 85)</div>
         </div>
       </div>
 
@@ -152,7 +181,7 @@ export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
         <div className="panel">
           <div className="panel-header">
             <div className="panel-title">Upcoming Deadlines</div>
-            <div className="panel-action">View all</div>
+            <div className="panel-action" data-view-link="pipeline" onClick={() => onNavigate?.('pipeline')}>View all</div>
           </div>
           <div className="deadline-list">
             {upcomingDeadlines.map((grant) => {
@@ -209,7 +238,7 @@ export default function DashboardView({ onGrantSelect }: DashboardViewProps) {
         <div className="panel">
           <div className="panel-header">
             <div className="panel-title">Awaiting Review</div>
-            <div className="panel-action">{reviewQueue.length} drafts</div>
+            <div className="panel-action" data-view-link="pipeline" onClick={() => onNavigate?.('pipeline')}>{reviewQueue.length} drafts</div>
           </div>
           {reviewQueue.map((grant) => {
             const { day, month } = formatDate(grant.deadline);
