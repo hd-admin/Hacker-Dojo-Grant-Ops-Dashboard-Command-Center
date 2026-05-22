@@ -479,7 +479,7 @@ Topics include: the role of technology in immigration and diaspora communities, 
   },
   // Awarded/Closed historical grant
   {
-    id: 'dea-just说',
+    id: 'dea-youth-prevention',
     title: 'DEA Youth Prevention Grants (Closed)',
     funder: 'Drug Enforcement Administration',
     funderShort: 'DEA',
