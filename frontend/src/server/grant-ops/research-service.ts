@@ -5,8 +5,7 @@
  * Crawls sources, normalizes findings, ranks by fit/deadline/award, and persists evidence.
  *
  * This service uses the DI boundary from dependencies.ts for all external dependencies.
- * Production behavior: when using 'cli' provider, requires configured Opencode settings.
- * When 'fake' provider is explicitly requested, works without Opencode configuration (for testing).
+ * Production behavior: requires configured Opencode settings.
  */
 
 import type {
@@ -16,15 +15,18 @@ import type {
 } from '../../../../shared/types';
 import { getDependencies, type Clock, type IdGenerator } from './dependencies';
 
+export interface ResearchOptions {
+  /**
+   * @internal Test-only option. Do not use in production code.
+   */
+  _providerType?: 'cli' | 'fake';
+}
+
 export interface ResearchResult {
   crawlRun: CrawlRun;
   grantsFound: number;
   grantsMatched: number;
   error?: string;
-}
-
-export interface ResearchOptions {
-  opencodeProvider?: 'cli' | 'fake';
 }
 
 export async function runResearch(
@@ -64,32 +66,23 @@ export async function runResearch(
       sources.push(defaultSource);
     }
 
-    // Determine provider type - explicit option overrides default
-    const providerType = options.opencodeProvider || 'cli';
+    const settings = await deps.repository.getOpencodeSettings();
 
-    // For CLI provider, require configured settings
+    // Determine provider type - use internal _providerType if set (test-only), otherwise require CLI with config
+    const providerType = options._providerType || 'cli';
+
     if (providerType === 'cli') {
-      const settings = await deps.repository.getOpencodeSettings();
       if (!settings?.isConfigured) {
         throw new Error(
           'Opencode is not configured. Please set up Opencode settings in the application before running research.',
         );
       }
-
-      // Create Opencode adapter using DI
-      const adapter = deps.createOpencodeAdapter(settings, 'cli');
-
-      const result = await performResearch(profile, sources, adapter, deps, clock, idGenerator);
-      return result;
     }
 
-    // For 'fake' provider, create adapter without requiring Opencode configuration
-    const fakeAdapter = deps.createOpencodeAdapter(
-      { isConfigured: true, binaryPath: '', workingDirectory: '', timeoutMs: 60000 },
-      'fake',
-    );
+    // Create Opencode adapter using DI
+    const adapter = deps.createOpencodeAdapter(settings!, providerType);
 
-    const result = await performResearch(profile, sources, fakeAdapter, deps, clock, idGenerator);
+    const result = await performResearch(profile, sources, adapter, deps, clock, idGenerator);
     return result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -161,7 +154,7 @@ async function performResearch(
               funderShort: grantData.funderShort || grantData.funder.substring(0, 10),
               award: grantData.award || `$${grantData.awardSort?.toLocaleString() || '0'}`,
               awardSort: grantData.awardSort || 0,
-              deadline: grantData.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+              deadline: grantData.deadline || new Date(clock.now().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
               daysOut: grantData.daysOut || calculateDaysOut(grantData.deadline, clock.now()),
               fit: grantData.fit || 70,
               tags: grantData.tags || profile.searchThemes.slice(0, 2),

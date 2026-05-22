@@ -2,16 +2,10 @@
  * Shared Grant Ops Persistence
  *
  * Provides a unified file-based persistence layer for grant operations data.
- * This adapter is used by both:
- *   - The Next.js API server (repository.ts)
- *   - The Electron main process (store.ts)
- *
- * GAP-01: Unifies the data source so Electron IPC reads and Next API writes
- * operate on the same persisted state.
+ * Used by the Next.js API server for reading and writing grant operations data.
  *
  * All data is stored in the `.grant-ops-data/` directory relative to the
- * base directory. The base directory defaults to `process.cwd()` for Next.js
- * contexts, but can be overridden for Electron by passing app.getPath('userData').
+ * project root.
  */
 
 import type {
@@ -37,13 +31,13 @@ import { defaultProfile, defaultOpencodeSettings, seedGrants, seedNotifications,
 // Resolved from the workspace root to support both dev server and tests
 // This ensures tests and app use the same path regardless of working directory
 export function getDataDir(): string {
-  // Use environment variable if set, otherwise resolve from process.cwd()
+  // Use environment variable if set
   if (process.env.DATA_DIR) {
     return process.env.DATA_DIR;
   }
-  // Get the project root (two levels up from shared/)
-  const projectRoot = path.resolve(__dirname, '..', '..');
-  return path.join(projectRoot, '.grant-ops-data');
+  // Get the project root from process.cwd() (the working directory where the app started)
+  // This correctly resolves to <repo>/.grant-ops-data when running from the repo root
+  return path.join(process.cwd(), '.grant-ops-data');
 }
 
 // Lazy initialization for DATA_DIR to avoid module-level path resolution issues

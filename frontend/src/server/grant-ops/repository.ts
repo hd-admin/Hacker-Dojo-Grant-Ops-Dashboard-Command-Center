@@ -2,10 +2,7 @@
  * Repository Layer
  *
  * Provides a clean interface for persisting and retrieving grant operations data.
- * This acts as a bridge between the Next.js API routes and the Electron store via IPC.
- *
- * GAP-01: This module now uses the shared grant-ops-persistence.ts functions,
- * ensuring repository.ts reads/writes to the same data files as other persistence functions.
+ * Uses the shared grant-ops-persistence.ts functions for data storage.
  */
 
 import type {

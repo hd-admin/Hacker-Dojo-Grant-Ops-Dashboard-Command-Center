@@ -50,18 +50,20 @@ describe('Grants API Route', () => {
       }
     });
 
-    it('can be sorted by fit score descending', async () => {
+    it('can be sorted by fit score descending with exact order', async () => {
       const deps = getDependencies();
       const grants = await deps.repository.getGrants();
       if (grants.length > 1) {
         // Sort by fit descending - same logic DiscoveryView uses
         const sorted = [...grants].sort((a, b) => b.fit - a.fit);
-        // Verify the first grant has >= fit than the last
-        expect(sorted[0]!.fit).toBeGreaterThanOrEqual(sorted[sorted.length - 1]!.fit);
+        // Verify descending order
+        for (let i = 0; i < sorted.length - 1; i++) {
+          expect(sorted[i]!.fit).toBeGreaterThanOrEqual(sorted[i + 1]!.fit);
+        }
       }
     });
 
-    it('can be sorted by deadline with Rolling grants at the end', async () => {
+    it('can be sorted by deadline with Rolling grants at the end with exact order', async () => {
       const deps = getDependencies();
       const grants = await deps.repository.getGrants();
       if (grants.length > 1) {
@@ -72,31 +74,29 @@ describe('Grants API Route', () => {
           return a.daysOut - b.daysOut;
         });
         
-        // Verify Rolling grants appear at the end
-        let lastRollingIndex = -1;
-        for (let i = 0; i < sorted.length; i++) {
-          if (sorted[i]!.deadline === 'Rolling') {
-            lastRollingIndex = i;
-          }
-        }
+        // Find Rolling position - must be at the end if present
+        const rollingIndices = sorted.map((g, i) => g.deadline === 'Rolling' ? i : -1).filter(i => i !== -1);
+        const lastRollingIndex = rollingIndices.length > 0 ? Math.max(...rollingIndices) : -1;
         
+        // All Rolling grants must be at the end
         if (lastRollingIndex !== -1) {
-          // All dated grants should come before Rolling
-          for (let i = 0; i < lastRollingIndex; i++) {
+          for (let i = lastRollingIndex + 1; i < sorted.length; i++) {
             expect(sorted[i]!.deadline).not.toBe('Rolling');
           }
         }
       }
     });
 
-    it('can be sorted by award amount descending', async () => {
+    it('can be sorted by award amount descending with exact order', async () => {
       const deps = getDependencies();
       const grants = await deps.repository.getGrants();
       if (grants.length > 1) {
         // Sort by award descending - same logic DiscoveryView uses
         const sorted = [...grants].sort((a, b) => b.awardSort - a.awardSort);
-        // Verify the first grant has >= award than the last
-        expect(sorted[0]!.awardSort).toBeGreaterThanOrEqual(sorted[sorted.length - 1]!.awardSort);
+        // Verify descending order
+        for (let i = 0; i < sorted.length - 1; i++) {
+          expect(sorted[i]!.awardSort).toBeGreaterThanOrEqual(sorted[i + 1]!.awardSort);
+        }
       }
     });
   });

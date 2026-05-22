@@ -59,10 +59,8 @@ export async function POST(
     );
 
     // Generate a new draft version with revision notes
-    // Always use CLI provider when Opencode is configured
     const newDraft = await draftingService.generateDraft(grant, profile, {
       revisionNotes: body.notes || '',
-      opencodeProvider: 'cli',
     });
 
     return NextResponse.json(

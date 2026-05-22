@@ -61,7 +61,7 @@ describe('ResearchService', () => {
 
       // Run research
       const result = await researchService.runResearch(mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       // The crawlRun should have completedAt set
@@ -79,7 +79,7 @@ describe('ResearchService', () => {
 
       // Run research
       const result = await researchService.runResearch(mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       // Status should be completed
@@ -96,7 +96,7 @@ describe('ResearchService', () => {
 
       // Run research
       const result = await researchService.runResearch(mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       // grantsFound should be set and non-negative
@@ -113,7 +113,7 @@ describe('ResearchService', () => {
 
       // Run research
       const result = await researchService.runResearch(mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       // grantsMatched should be set and non-negative
@@ -137,7 +137,7 @@ describe('ResearchService', () => {
 
       // Run research
       await researchService.runResearch(mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       // Source should now have lastCrawledAt set
@@ -159,7 +159,7 @@ describe('ResearchService', () => {
 
       // Run research
       const result = await researchService.runResearch(mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       // Grants found should be accessible for sorting
@@ -185,7 +185,7 @@ describe('ResearchService', () => {
 
       // Run research
       const result = await researchService.runResearch(mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       // The research result should indicate grants were found
@@ -211,7 +211,7 @@ describe('ResearchService', () => {
 
       // Run research
       const result = await researchService.runResearch(mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       // The research result should indicate grants were found

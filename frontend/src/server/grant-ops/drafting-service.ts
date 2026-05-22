@@ -17,8 +17,11 @@ import type {
 import { getDependencies } from './dependencies';
 
 export interface GenerateDraftOptions {
-  opencodeProvider?: 'cli' | 'fake';
   revisionNotes?: string;
+  /**
+   * @internal Test-only option. Do not use in production code.
+   */
+  _providerType?: 'cli' | 'fake';
 }
 
 export async function generateDraft(
@@ -36,78 +39,28 @@ export async function generateDraft(
     ? Math.max(...existingDrafts.map((d) => d.version))
     : 0;
 
-  // Determine provider type - explicit option overrides default
-  const providerType = options.opencodeProvider || 'cli';
+  const settings = await deps.repository.getOpencodeSettings();
+  
+  // Determine provider type - use internal _providerType if set (test-only), otherwise require CLI with config
+  const providerType = options._providerType || 'cli';
 
-  // For CLI provider, require configured settings
   if (providerType === 'cli') {
-    const settings = await deps.repository.getOpencodeSettings();
     if (!settings?.isConfigured) {
       throw new Error(
         'Opencode is not configured. Please set up Opencode settings in the application before generating drafts.',
       );
     }
-
-    // Create Opencode adapter using DI
-    const adapter = deps.createOpencodeAdapter(settings, 'cli');
-
-    // Get previous draft if exists
-    const previousDraft = await deps.repository.getLatestDraftArtifact(grant.id);
-    const previousContent = previousDraft?.content;
-
-    // Generate new draft
-    const response = await adapter.generateDraft({
-      grantTitle: grant.title,
-      grantFunder: grant.funder,
-      grantAmount: grant.award,
-      grantDeadline: grant.deadline,
-      organizationProfile: `${profile.legalName}\n\nEIN: ${profile.ein}\nSAM UEI: ${profile.samUEI}`,
-      missionStatement: profile.mission,
-      previousDraft: previousContent || '',
-      revisionNotes: options.revisionNotes || '',
-    });
-
-    if (!response.success || !response.content) {
-      throw new Error(
-        `Draft generation failed: ${response.error || 'Unknown error from Opencode'}`,
-      );
-    }
-
-    // Create draft artifact
-    const draftArtifact: DraftArtifact = {
-      id: idGenerator.generateId('draft'),
-      grantId: grant.id,
-      version: latestVersion + 1,
-      content: response.content,
-      createdAt: clock.now().toISOString(),
-      createdBy: 'agent',
-      revisionNotes: options.revisionNotes || '',
-    };
-
-    await deps.repository.addDraftArtifact(draftArtifact);
-
-    // Update grant status to drafting
-    await deps.repository.updateGrant(grant.id, {
-      status: 'draft',
-      statusLabel: 'Drafting',
-      draftContent: response.content,
-    });
-
-    return draftArtifact;
   }
 
-  // For 'fake' provider, create adapter without requiring Opencode configuration
-  const fakeAdapter = deps.createOpencodeAdapter(
-    { isConfigured: true, binaryPath: '', workingDirectory: '', timeoutMs: 60000 },
-    'fake',
-  );
+  // Create Opencode adapter using DI
+  const adapter = deps.createOpencodeAdapter(settings!, providerType);
 
   // Get previous draft if exists
   const previousDraft = await deps.repository.getLatestDraftArtifact(grant.id);
   const previousContent = previousDraft?.content;
 
-  // Generate draft using fake provider
-  const response = await fakeAdapter.generateDraft({
+  // Generate new draft
+  const response = await adapter.generateDraft({
     grantTitle: grant.title,
     grantFunder: grant.funder,
     grantAmount: grant.award,
@@ -120,7 +73,7 @@ export async function generateDraft(
 
   if (!response.success || !response.content) {
     throw new Error(
-      `Draft generation failed with fake provider: ${response.error || 'Unknown error'}`,
+      `Draft generation failed: ${response.error || 'Unknown error from Opencode'}`,
     );
   }
 

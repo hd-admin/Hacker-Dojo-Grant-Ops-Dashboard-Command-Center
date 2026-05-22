@@ -76,7 +76,7 @@ describe('DraftingService', () => {
 
       // First draft
       const draft1 = await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       expect(draft1.id).toBeDefined();
@@ -86,7 +86,7 @@ describe('DraftingService', () => {
 
       // Second draft should increment version
       const draft2 = await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       expect(draft2.version).toBe(2);
@@ -97,7 +97,7 @@ describe('DraftingService', () => {
       await repository.addGrant(mockGrant);
 
       const draft = await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       expect(draft.id.startsWith('draft-')).toBe(true);
@@ -108,19 +108,19 @@ describe('DraftingService', () => {
       await repository.addGrant(mockGrant);
 
       const draft = await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       expect(draft.createdAt).toBeDefined();
       expect(new Date(draft.createdAt).getTime()).toBeLessThanOrEqual(Date.now());
     });
 
-    it('uses fake provider when opencodeProvider is fake', async () => {
+    it('uses fake provider when _providerType is fake', async () => {
       const mockGrant = createMockGrant(`draft-test-4-${Date.now()}`);
       await repository.addGrant(mockGrant);
 
       const draft = await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       expect(draft.content).toContain(mockGrant.title);
@@ -131,7 +131,7 @@ describe('DraftingService', () => {
       await repository.addGrant(mockGrant);
 
       const draft = await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       const drafts = await repository.getDraftArtifacts(mockGrant.id);
@@ -143,7 +143,7 @@ describe('DraftingService', () => {
       await repository.addGrant(mockGrant);
 
       await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       const updatedGrant = await repository.getGrant(mockGrant.id);
@@ -157,7 +157,7 @@ describe('DraftingService', () => {
 
       const revisionNotes = 'Please improve the executive summary';
       const draft = await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
         revisionNotes,
       });
 
@@ -224,10 +224,10 @@ describe('DraftingService', () => {
       await repository.addGrant(mockGrant);
 
       await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
       await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       const drafts = await draftingService.getDraftArtifacts(mockGrant.id);

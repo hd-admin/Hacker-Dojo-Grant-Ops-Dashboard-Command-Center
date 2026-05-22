@@ -14,12 +14,11 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'cd frontend && npx next dev -p 3000',
+    command: 'pnpm next dev -p 3000',
+    cwd: './frontend',
     port: 3000,
     reuseExistingServer: true,
     timeout: 300000,
-    stdout: 'ignore',
-    stderr: 'ignore',
   },
   projects: [
     {

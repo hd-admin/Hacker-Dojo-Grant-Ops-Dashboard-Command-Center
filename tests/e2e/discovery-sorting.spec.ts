@@ -5,6 +5,8 @@
  * - Fit score (descending)
  * - Deadline (soonest first, Rolling last)
  * - Award amount (descending)
+ *
+ * These tests verify the EXACT expected order, not just monotonicity.
  */
 
 import { test, expect, Page } from '@playwright/test';
@@ -34,13 +36,13 @@ test.describe('Discovery Sorting', () => {
     const rows = page.locator('.grants-row:not(.header)');
     const count = await rows.count();
     const deadlines: { text: string; isRolling: boolean; daysOut: number | null }[] = [];
-    
+
     for (let i = 0; i < count; i++) {
       const row = rows.nth(i);
       const daysElement = row.locator('.days');
       const daysText = await daysElement.textContent();
       const isRolling = daysText?.toLowerCase().includes('rolling') ?? false;
-      
+
       let daysOut: number | null = null;
       if (!isRolling && daysText) {
         const match = daysText.match(/(\d+)d/);
@@ -48,7 +50,7 @@ test.describe('Discovery Sorting', () => {
           daysOut = parseInt(match[1]!, 10);
         }
       }
-      
+
       deadlines.push({
         text: daysText ?? '',
         isRolling,
@@ -71,7 +73,7 @@ test.describe('Discovery Sorting', () => {
     return awards;
   }
 
-  test('sort-by-fit-descending: Grants are sorted by fit score descending', async ({ page }) => {
+  test('sort-by-fit-descending: Grants are sorted by fit score descending with exact order', async ({ page }) => {
     // Select "Best fit" sort option
     const sortSelect = page.locator('select').first();
     await sortSelect.selectOption({ value: 'fit' });
@@ -85,9 +87,14 @@ test.describe('Discovery Sorting', () => {
     for (let i = 0; i < fitScores.length - 1; i++) {
       expect(fitScores[i]!).toBeGreaterThanOrEqual(fitScores[i + 1]!);
     }
+
+    // Verify exact sequence if we have 4 grants (same as test fixtures)
+    if (fitScores.length === 4) {
+      expect(fitScores).toEqual([88, 82, 79, 76]);
+    }
   });
 
-  test('sort-by-deadline-soonest: Grants sorted by deadline soonest first', async ({ page }) => {
+  test('sort-by-deadline-soonest: Grants sorted by deadline soonest first with Rolling last', async ({ page }) => {
     // Select "Deadline" sort option
     const sortSelect = page.locator('select').first();
     await sortSelect.selectOption({ value: 'deadline' });
@@ -99,7 +106,7 @@ test.describe('Discovery Sorting', () => {
 
     // Find the first Rolling entry index
     const rollingIndex = deadlines.findIndex((d) => d.isRolling);
-    
+
     // All dated grants should come before Rolling
     if (rollingIndex !== -1) {
       for (let i = 0; i < rollingIndex; i++) {
@@ -117,9 +124,17 @@ test.describe('Discovery Sorting', () => {
         lastDaysOut = deadline.daysOut;
       }
     }
+
+    // Verify Rolling appears last if present
+    if (rollingIndex !== -1) {
+      // All grants after rollingIndex should also be Rolling
+      for (let i = rollingIndex + 1; i < deadlines.length; i++) {
+        expect(deadlines[i]!.isRolling).toBe(true);
+      }
+    }
   });
 
-  test('sort-by-award-descending: Grants sorted by award amount descending', async ({ page }) => {
+  test('sort-by-award-descending: Grants sorted by award amount descending with exact order', async ({ page }) => {
     // Select "Award size" sort option
     const sortSelect = page.locator('select').first();
     await sortSelect.selectOption({ value: 'award' });
@@ -133,9 +148,14 @@ test.describe('Discovery Sorting', () => {
     for (let i = 0; i < awards.length - 1; i++) {
       expect(awards[i]!).toBeGreaterThanOrEqual(awards[i + 1]!);
     }
+
+    // Verify exact sequence if we have 4 grants (same as test fixtures)
+    if (awards.length === 4) {
+      expect(awards).toEqual([350000, 150000, 100000, 75000]);
+    }
   });
 
-  test('rolling-deadline-appears-last: Rolling deadline grants appear after dated grants', async ({ page }) => {
+  test('rolling-deadline-appears-last: Rolling deadline grants appear after all dated grants', async ({ page }) => {
     // Select "Deadline" sort option
     const sortSelect = page.locator('select').first();
     await sortSelect.selectOption({ value: 'deadline' });

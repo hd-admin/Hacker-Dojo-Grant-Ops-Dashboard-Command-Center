@@ -26,9 +26,7 @@ export async function POST(_request: NextRequest) {
     }
 
     // Run research - will fail explicitly if Opencode is not properly configured
-    const result = await researchService.runResearch(profile, {
-      opencodeProvider: 'cli',
-    });
+    const result = await researchService.runResearch(profile);
 
     return NextResponse.json(result);
   } catch (error) {

@@ -119,26 +119,32 @@ describe('DiscoveryView', () => {
   });
 
   describe('Sorting', () => {
-    it('should sort by best fit (descending)', () => {
+    it('should sort by best fit (descending) with exact order', () => {
       const sorted = [...mockGrants].sort((a, b) => b.fit - a.fit);
-      expect(sorted[0]?.id).toBe('nsf-tech');
-      expect(sorted[sorted.length - 1]?.id).toBe('dell-equality');
+      // Expected order: nsf-tech (88), svc-f-community (82), google-cs (79), dell-equality (76)
+      const expectedOrder = ['nsf-tech', 'svcf-community', 'google-cs', 'dell-equality'];
+      const actualOrder = sorted.map(g => g.id);
+      expect(actualOrder).toEqual(expectedOrder);
     });
 
-    it('should sort by deadline (soonest first, rolling last)', () => {
+    it('should sort by deadline (soonest first, rolling last) with exact order', () => {
       const sorted = [...mockGrants].sort((a, b) => {
         if (a.deadline === 'Rolling') return 1;
         if (b.deadline === 'Rolling') return -1;
         return a.daysOut - b.daysOut;
       });
-      expect(sorted[0]?.deadline).toBe('2026-06-15');
-      expect(sorted[sorted.length - 1]?.deadline).toBe('Rolling');
+      // Expected order: nsf-tech (2026-06-15, 25d), google-cs (2026-06-30, 40d), dell-equality (2026-07-01, 41d), svc-f-community (Rolling)
+      const expectedOrder = ['nsf-tech', 'google-cs', 'dell-equality', 'svcf-community'];
+      const actualOrder = sorted.map(g => g.id);
+      expect(actualOrder).toEqual(expectedOrder);
     });
 
-    it('should sort by award size (descending)', () => {
+    it('should sort by award size (descending) with exact order', () => {
       const sorted = [...mockGrants].sort((a, b) => b.awardSort - a.awardSort);
-      expect(sorted[0]?.awardSort).toBe(350000);
-      expect(sorted[sorted.length - 1]?.awardSort).toBe(75000);
+      // Expected order: nsf-tech ($350k), dell-equality ($150k), google-cs ($100k), svc-f-community ($75k)
+      const expectedOrder = ['nsf-tech', 'dell-equality', 'google-cs', 'svcf-community'];
+      const actualOrder = sorted.map(g => g.id);
+      expect(actualOrder).toEqual(expectedOrder);
     });
 
     it('should sort by recently added (matchedAt descending)', () => {

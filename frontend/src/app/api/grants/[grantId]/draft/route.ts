@@ -49,7 +49,6 @@ export async function POST(
 
     const draft = await draftingService.generateDraft(grant, profile, {
       revisionNotes: body.revisionNotes,
-      opencodeProvider: body.opencodeProvider,
     });
 
     return NextResponse.json(draft);

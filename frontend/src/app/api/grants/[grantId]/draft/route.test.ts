@@ -65,7 +65,7 @@ describe('Grant Draft Route', () => {
 
       // Create a draft first
       await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       const drafts = await draftingService.getDraftArtifacts(mockGrant.id);
@@ -89,7 +89,7 @@ describe('Grant Draft Route', () => {
       await repository.addGrant(mockGrant);
 
       const draft = await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       expect(draft).toBeDefined();
@@ -102,7 +102,7 @@ describe('Grant Draft Route', () => {
       await repository.addGrant(mockGrant);
 
       const draft = await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       expect(draft.version).toBe(1);
@@ -113,10 +113,10 @@ describe('Grant Draft Route', () => {
       await repository.addGrant(mockGrant);
 
       await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
       const draft2 = await draftingService.generateDraft(mockGrant, mockProfile, {
-        opencodeProvider: 'fake',
+        _providerType: 'fake',
       });
 
       expect(draft2.version).toBe(2);
