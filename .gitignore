@@ -1,7 +1,8 @@
-
 .agent/
 /PROMPT*
 wt-*/
 
 node_modules/
 dist-electron/
+frontend/.next/
+frontend/tsconfig.tsbuildinfo
