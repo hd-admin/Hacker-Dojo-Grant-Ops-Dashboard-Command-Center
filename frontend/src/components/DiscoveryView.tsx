@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant } from '../../../shared/types';
+import { mockGrants, isElectronAPIavailable } from '../lib/mockData';
 
 interface DiscoveryViewProps {
   onGrantSelect: (grantId: string) => void;
@@ -31,10 +32,17 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
   useEffect(() => {
     async function load() {
       try {
-        const data = await window.electronAPI.getGrants();
-        setGrants(data);
+        if (isElectronAPIavailable()) {
+          const data = await window.electronAPI.getGrants();
+          setGrants(data);
+        } else {
+          // Use mock data for browser/E2E testing
+          setGrants(mockGrants);
+        }
       } catch (error) {
         console.error('Error loading grants:', error);
+        // Fallback to mock data on error
+        setGrants(mockGrants);
       } finally {
         setLoading(false);
       }

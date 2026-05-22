@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { mockGrants, isElectronAPIavailable } from '../lib/mockData';
 import type { Grant } from '../../../shared/types';
 
 interface GrantDrawerProps {
@@ -27,16 +28,23 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
   useEffect(() => {
     if (grantId) {
       setLoading(true);
-      window.electronAPI
-        .getGrantById(grantId)
-        .then((data) => {
-          setGrant(data);
-          setLoading(false);
-        })
-        .catch((err) => {
-          console.error('Error loading grant:', err);
-          setLoading(false);
-        });
+      if (isElectronAPIavailable()) {
+        window.electronAPI
+          .getGrantById(grantId)
+          .then((data) => {
+            setGrant(data);
+            setLoading(false);
+          })
+          .catch((err) => {
+            console.error('Error loading grant:', err);
+            setLoading(false);
+          });
+      } else {
+        // Use mock data for browser/E2E testing
+        const mockGrant = mockGrants.find(g => g.id === grantId) || null;
+        setGrant(mockGrant);
+        setLoading(false);
+      }
     } else {
       setGrant(null);
     }

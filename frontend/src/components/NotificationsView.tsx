@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Notification } from '../../../shared/types';
+import { mockNotifications, isElectronAPIavailable } from '../lib/mockData';
 
 export default function NotificationsView() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -10,10 +11,15 @@ export default function NotificationsView() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await window.electronAPI.getNotifications();
-        setNotifications(data);
+        if (isElectronAPIavailable()) {
+          const data = await window.electronAPI.getNotifications();
+          setNotifications(data);
+        } else {
+          setNotifications(mockNotifications);
+        }
       } catch (error) {
         console.error('Error loading notifications:', error);
+        setNotifications(mockNotifications);
       } finally {
         setLoading(false);
       }

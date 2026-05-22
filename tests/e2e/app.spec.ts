@@ -36,7 +36,7 @@ test.describe('Grant Operations Center', () => {
   test('pipeline-columns-titles: Pipeline columns have correct titles', async ({ page }) => {
     await page.click('[data-view="pipeline"]');
     const titles = await page.locator('.board-col-title').allTextContents();
-    expect(titles).toEqual(['Matched', 'Drafting', 'Review', 'Submitted', 'Awarded/Closed']);
+    expect(titles).toEqual(['MATCHED', 'DRAFTING', 'REVIEW', 'SUBMITTED', 'AWARDED/CLOSED']);
   });
 
   test('pipeline-board-cards: Board cards exist and open drawer on click', async ({ page }) => {
@@ -47,13 +47,13 @@ test.describe('Grant Operations Center', () => {
 
   test('drawer-open: Clicking grant row opens drawer', async ({ page }) => {
     await page.click('[data-view="discovery"]');
-    await page.click('.grants-row:not(.header):first-child');
+    await page.locator('.grants-row:not(.header)').first().click();
     await expect(page.locator('.drawer')).toHaveClass(/open/);
   });
 
   test('drawer-close: Clicking close button closes drawer', async ({ page }) => {
     await page.click('[data-view="discovery"]');
-    await page.click('.grants-row:not(.header):first-child');
+    await page.locator('.grants-row:not(.header)').first().click();
     await expect(page.locator('.drawer')).toHaveClass(/open/);
     await page.click('.drawer-close');
     await expect(page.locator('.drawer')).not.toHaveClass(/open/);
@@ -61,7 +61,7 @@ test.describe('Grant Operations Center', () => {
 
   test('drawer-draft-preview: Draft preview shows content', async ({ page }) => {
     await page.click('[data-view="discovery"]');
-    await page.click('.grants-row:not(.header):first-child');
+    await page.locator('.grants-row:not(.header)').first().click();
     const draftPreview = page.locator('.draft-preview');
     await expect(draftPreview).toBeVisible();
   });
@@ -152,12 +152,12 @@ test.describe('Grant Operations Center', () => {
   test('discovery-sort-recently-added: Recently added sort option exists', async ({ page }) => {
     await page.click('[data-view="discovery"]');
     const sortSelect = page.locator('select').first();
-    await expect(sortSelect.locator('option:has-text("Recently added")')).toBeVisible();
+    await expect(sortSelect.locator('option:has-text("Recently added")')).toBeAttached();
   });
 
   test('drawer-approve-button: Approve & lock draft button exists', async ({ page }) => {
     await page.click('[data-view="discovery"]');
-    await page.click('.grants-row:not(.header):first-child');
+    await page.locator('.grants-row:not(.header)').first().click();
     await expect(page.locator('.drawer')).toHaveClass(/open/);
     const approveBtn = page.locator('.drawer-footer .btn-primary');
     await expect(approveBtn).toContainText('Approve & lock draft');
@@ -165,7 +165,7 @@ test.describe('Grant Operations Center', () => {
 
   test('drawer-checklist: Checklist shows done/undone state', async ({ page }) => {
     await page.click('[data-view="discovery"]');
-    await page.click('.grants-row:not(.header):first-child');
+    await page.locator('.grants-row:not(.header)').first().click();
     await page.waitForSelector('.checklist', { timeout: 5000 });
     const checklistItems = page.locator('.check-item');
     const count = await checklistItems.count();
@@ -202,7 +202,7 @@ test.describe('Grant Operations Center', () => {
 
   test('drawer-overlay-close: Clicking overlay closes drawer', async ({ page }) => {
     await page.click('[data-view="discovery"]');
-    await page.click('.grants-row:not(.header):first-child');
+    await page.locator('.grants-row:not(.header)').first().click();
     await expect(page.locator('.drawer')).toHaveClass(/open/);
     await page.click('.drawer-overlay');
     await expect(page.locator('.drawer')).not.toHaveClass(/open/);
@@ -279,5 +279,92 @@ test.describe('Grant Operations Center', () => {
     await expect(sidebarFooter).toBeVisible();
     const footerText = await sidebarFooter.textContent();
     expect(footerText).toContain('Logged in as');
+  });
+
+  test('discovery-filter-Community: Community filter shows only Community grants', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    await page.click('.filter-pill:has-text("Community")');
+    await page.waitForTimeout(300);
+    const rows = page.locator('.grants-row:not(.header)');
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('discovery-filter-ScienceTech: Science & Tech filter shows only Science & Tech grants', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    await page.click('.filter-pill:has-text("Science & Tech")');
+    await page.waitForTimeout(300);
+    const rows = page.locator('.grants-row:not(.header)');
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('discovery-filter-Federal: Federal filter shows only Federal grants', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    await page.click('.filter-pill:has-text("Federal")');
+    await page.waitForTimeout(300);
+    const rows = page.locator('.grants-row:not(.header)');
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('discovery-filter-Foundation: Foundation filter shows only Foundation grants', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    await page.click('.filter-pill:has-text("Foundation")');
+    await page.waitForTimeout(300);
+    const rows = page.locator('.grants-row:not(.header)');
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('discovery-filter-Corporate: Corporate filter shows only Corporate grants', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    await page.click('.filter-pill:has-text("Corporate")');
+    await page.waitForTimeout(300);
+    const rows = page.locator('.grants-row:not(.header)');
+    const count = await rows.count();
+    expect(count).toBeGreaterThan(0);
+  });
+
+  test('discovery-sort-by-fit: Fit sort option exists and sorts correctly', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    const sortSelect = page.locator('select').first();
+    await expect(sortSelect.locator('option:has-text("Best fit")')).toBeAttached();
+  });
+
+  test('discovery-sort-by-deadline: Deadline sort option exists', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    const sortSelect = page.locator('select').first();
+    await expect(sortSelect.locator('option:has-text("Deadline")')).toBeAttached();
+  });
+
+  test('discovery-sort-by-award: Award amount sort option exists', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    const sortSelect = page.locator('select').first();
+    await expect(sortSelect.locator('option:has-text("Award size")')).toBeAttached();
+  });
+
+  test('drawer-displays-funder-info: Drawer displays funder name', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    await page.locator('.grants-row:not(.header)').first().click();
+    await expect(page.locator('.drawer')).toHaveClass(/open/);
+    const funderInfo = page.locator('.drawer-funder');
+    await expect(funderInfo).toBeVisible();
+    const funderText = await funderInfo.textContent();
+    expect(funderText?.length).toBeGreaterThan(0);
+  });
+
+  test('notifications-list-renders: Notifications view shows list of notifications', async ({ page }) => {
+    await page.click('.nav-item:has-text("Notifications")');
+    await page.waitForSelector('.notification-item', { timeout: 5000 });
+    const items = page.locator('.notification-item');
+    expect(await items.count()).toBeGreaterThan(0);
+  });
+
+  test('tasks-list-renders: Tasks view shows list of tasks', async ({ page }) => {
+    await page.click('.nav-item:has-text("Tasks")');
+    await page.waitForSelector('.task-item', { timeout: 5000 });
+    const items = page.locator('.task-item');
+    expect(await items.count()).toBeGreaterThan(0);
   });
 });

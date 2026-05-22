@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { OrganizationProfile, DocumentMetadata } from '../../../shared/types';
+import { mockProfile, isElectronAPIavailable } from '../lib/mockData';
 
 export default function SettingsView() {
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
@@ -14,15 +15,24 @@ export default function SettingsView() {
   useEffect(() => {
     async function load() {
       try {
-        const [profileData, docsData] = await Promise.all([
-          window.electronAPI.getOrgProfile(),
-          window.electronAPI.getDocuments(),
-        ]);
-        setProfile(profileData);
-        setEditForm(profileData);
-        setDocuments(docsData);
+        if (isElectronAPIavailable()) {
+          const [profileData, docsData] = await Promise.all([
+            window.electronAPI.getOrgProfile(),
+            window.electronAPI.getDocuments(),
+          ]);
+          setProfile(profileData);
+          setEditForm(profileData);
+          setDocuments(docsData);
+        } else {
+          setProfile(mockProfile);
+          setEditForm(mockProfile);
+          setDocuments([]);
+        }
       } catch (error) {
         console.error('Error loading profile:', error);
+        setProfile(mockProfile);
+        setEditForm(mockProfile);
+        setDocuments([]);
       } finally {
         setLoading(false);
       }

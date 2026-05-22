@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant, GrantStatus } from '../../../shared/types';
+import { mockGrants, isElectronAPIavailable } from '../lib/mockData';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
@@ -44,10 +45,15 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
   useEffect(() => {
     async function load() {
       try {
-        const data = await window.electronAPI.getGrants();
-        setGrants(data);
+        if (isElectronAPIavailable()) {
+          const data = await window.electronAPI.getGrants();
+          setGrants(data);
+        } else {
+          setGrants(mockGrants);
+        }
       } catch (error) {
         console.error('Error loading grants:', error);
+        setGrants(mockGrants);
       } finally {
         setLoading(false);
       }

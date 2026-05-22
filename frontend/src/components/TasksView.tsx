@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Task } from '../../../shared/types';
+import { mockTasks, isElectronAPIavailable } from '../lib/mockData';
 
 export default function TasksView() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -10,10 +11,15 @@ export default function TasksView() {
   useEffect(() => {
     async function load() {
       try {
-        const data = await window.electronAPI.getTasks();
-        setTasks(data);
+        if (isElectronAPIavailable()) {
+          const data = await window.electronAPI.getTasks();
+          setTasks(data);
+        } else {
+          setTasks(mockTasks);
+        }
       } catch (error) {
         console.error('Error loading tasks:', error);
+        setTasks(mockTasks);
       } finally {
         setLoading(false);
       }

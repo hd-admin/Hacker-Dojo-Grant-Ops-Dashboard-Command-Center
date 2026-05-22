@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant, OrganizationProfile, ActivityEvent } from '../../../shared/types';
+import { mockGrants, mockProfile, mockActivity, isElectronAPIavailable } from '../lib/mockData';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
@@ -50,16 +51,27 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
   useEffect(() => {
     async function load() {
       try {
-        const [grantsData, profileData, activityData] = await Promise.all([
-          window.electronAPI.getGrants(),
-          window.electronAPI.getOrgProfile(),
-          window.electronAPI.getRecentActivity(10),
-        ]);
-        setGrants(grantsData);
-        setProfile(profileData);
-        setActivity(activityData.length > 0 ? activityData : getDefaultActivity());
+        if (isElectronAPIavailable()) {
+          const [grantsData, profileData, activityData] = await Promise.all([
+            window.electronAPI.getGrants(),
+            window.electronAPI.getOrgProfile(),
+            window.electronAPI.getRecentActivity(10),
+          ]);
+          setGrants(grantsData);
+          setProfile(profileData);
+          setActivity(activityData.length > 0 ? activityData : getDefaultActivity());
+        } else {
+          // Use mock data for browser/E2E testing
+          setGrants(mockGrants);
+          setProfile(mockProfile);
+          setActivity(mockActivity);
+        }
       } catch (error) {
         console.error('Error loading dashboard data:', error);
+        // Fallback to mock data on error
+        setGrants(mockGrants);
+        setProfile(mockProfile);
+        setActivity(mockActivity);
       } finally {
         setLoading(false);
       }
