@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { createGrantOpsClient } from '../lib/grant-ops-client';
 import { mockGrants, isElectronAPIavailable } from '../lib/mockData';
 import type { Grant, RevisionRequest, SubmissionMethod } from '../../../shared/types';
 
@@ -132,17 +133,26 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
   const handleConfirmRevision = async () => {
     if (!grant || !revisionNote.trim()) return;
     try {
-      const revisionRequest: RevisionRequest = {
-        id: `revision-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        grantId: grant.id,
-        draftVersion: 1, // Will be determined by backend
-        notes: revisionNote,
-        requestedAt: new Date().toISOString(),
-        requestedBy: 'human',
-        status: 'pending',
-      };
       if (isElectronAPIavailable()) {
+        const revisionRequest: RevisionRequest = {
+          id: `revision-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          grantId: grant.id,
+          draftVersion: 1,
+          notes: revisionNote,
+          requestedAt: new Date().toISOString(),
+          requestedBy: 'human',
+          status: 'pending',
+        };
         await window.electronAPI.createRevisionRequest(revisionRequest);
+      } else {
+        // Browser/E2E mode: use HTTP client
+        const client = createGrantOpsClient();
+        if (client) {
+          await client.revisions.create(grant.id, revisionNote, 'human');
+          // Refresh grant data after revision
+          const updatedGrant = await client.grants.getById(grant.id);
+          if (updatedGrant) setGrant(updatedGrant);
+        }
       }
       setShowRevision(false);
       setRevisionNote('');

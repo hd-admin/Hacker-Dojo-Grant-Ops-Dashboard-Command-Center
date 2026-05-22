@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as repository from '@/server/grant-ops/repository';
+import * as draftingService from '@/server/grant-ops/drafting-service';
 import type { RevisionRequest } from '../../../../../../../shared/types';
 
 export async function GET(
@@ -29,6 +30,15 @@ export async function POST(
       return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
     }
 
+    // Get organization profile for draft generation
+    const profile = await repository.getOrgProfile();
+    if (!profile) {
+      return NextResponse.json(
+        { error: 'Organization profile not configured. Please set up your profile in Settings.' },
+        { status: 400 },
+      );
+    }
+
     // Get the latest draft version for this grant
     const latestDraft = await repository.getLatestDraftArtifact(grantId);
     const draftVersion = latestDraft ? latestDraft.version + 1 : 1;
@@ -45,13 +55,21 @@ export async function POST(
 
     await repository.addRevisionRequest(revision);
 
+    // Generate a new draft version with revision notes (GAP-WF-08 fix)
+    const newDraft = await draftingService.generateDraft(grant, profile, {
+      revisionNotes: body.notes || '',
+    });
+
     // Move grant back to draft status for revision (does not change board column)
     await repository.updateGrant(grantId, {
       status: 'draft',
-      statusLabel: 'In Draft',
+      statusLabel: 'Drafting',
     });
 
-    return NextResponse.json(revision, { status: 201 });
+    return NextResponse.json(
+      { revision, draft: newDraft },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Error creating revision:', error);
     return NextResponse.json({ error: 'Failed to create revision' }, { status: 500 });

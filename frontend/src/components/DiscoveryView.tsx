@@ -129,16 +129,15 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
 
     setIsAddingSource(true);
     try {
-      const source = {
-        id: `source-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-        name: newSourceName.trim(),
-        url: newSourceUrl.trim(),
-        type: 'website' as const,
-        createdAt: new Date().toISOString(),
-        isActive: true,
-      };
-
       if (isElectronAPIavailable()) {
+        const source = {
+          id: `source-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          name: newSourceName.trim(),
+          url: newSourceUrl.trim(),
+          type: 'website' as const,
+          createdAt: new Date().toISOString(),
+          isActive: true,
+        };
         await window.electronAPI.addSource(source);
         // Trigger research after adding source
         await fetch('/api/research', {
@@ -148,6 +147,21 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
         // Refresh grants
         const updatedGrants = await window.electronAPI.getGrants();
         setGrants(updatedGrants);
+      } else {
+        // Browser/E2E mode: use HTTP client
+        const client = createGrantOpsClient();
+        if (client) {
+          await client.sources.add({
+            name: newSourceName.trim(),
+            url: newSourceUrl.trim(),
+            type: 'website',
+          });
+          // Trigger research after adding source
+          await client.research.trigger();
+          // Refresh grants
+          const data = await client.grants.getAll();
+          setGrants(data);
+        }
       }
 
       setNewSourceName('');

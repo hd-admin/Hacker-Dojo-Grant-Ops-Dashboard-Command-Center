@@ -179,6 +179,16 @@ export const profileApi = {
     }),
 };
 
+// ============ Revisions API ============
+
+export const revisionsApi = {
+  create: (grantId: string, notes: string, requestedBy?: string) =>
+    apiFetch(`/api/grants/${encodeURIComponent(grantId)}/revisions`, {
+      method: 'POST',
+      body: JSON.stringify({ notes, requestedBy: requestedBy || 'human' }),
+    }),
+};
+
 // ============ Opencode Settings API ============
 
 export interface OpencodeSettingsRequest {
@@ -229,6 +239,7 @@ export function createGrantOpsClient() {
     followUps: followUpsApi,
     profile: profileApi,
     opencodeSettings: opencodeSettingsApi,
+    revisions: revisionsApi,
   };
 }
 
