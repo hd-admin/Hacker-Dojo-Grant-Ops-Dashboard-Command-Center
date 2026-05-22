@@ -25,6 +25,8 @@ import type {
   FollowUp,
   OpencodeSettings,
   OrganizationProfile,
+  Notification,
+  Task,
 } from './types';
 
 import { defaultProfile, defaultOpencodeSettings, seedGrants } from './seed-data';
@@ -40,6 +42,8 @@ export interface PersistedData {
   submissionRecords: SubmissionRecord[];
   followUps: FollowUp[];
   opencodeSettings: OpencodeSettings | null;
+  notifications: Notification[];
+  tasks: Task[];
   lastSync: string;
 }
 
@@ -83,6 +87,8 @@ export async function loadPersistedData(baseDir?: string): Promise<PersistedData
       submissionRecords: [],
       followUps: [],
       opencodeSettings: defaultOpencodeSettings,
+      notifications: [],
+      tasks: [],
       lastSync: new Date().toISOString(),
     };
     dataCache.set(cwd, defaultData);
@@ -121,7 +127,8 @@ export async function loadGrants(baseDir?: string): Promise<Grant[]> {
     return JSON.parse(raw);
   } catch {
     // Return seed grants when no persisted file exists
-    return seedGrants;
+    // Return a copy to prevent mutation of the module-level seedGrants array
+    return [...seedGrants];
   }
 }
 
@@ -148,7 +155,8 @@ export async function loadProfile(baseDir?: string): Promise<OrganizationProfile
     const raw = await fs.readFile(dataPath, 'utf-8');
     return JSON.parse(raw);
   } catch {
-    return defaultProfile;
+    // Return a copy to prevent mutation of the module-level defaultProfile
+    return { ...defaultProfile };
   }
 }
 
@@ -174,7 +182,8 @@ export async function loadOpencodeSettings(baseDir?: string): Promise<OpencodeSe
     const raw = await fs.readFile(dataPath, 'utf-8');
     return JSON.parse(raw);
   } catch {
-    return defaultOpencodeSettings;
+    // Return a copy to prevent mutation of the module-level defaultOpencodeSettings
+    return { ...defaultOpencodeSettings };
   }
 }
 
@@ -189,4 +198,30 @@ export async function saveOpencodeSettings(settings: OpencodeSettings, baseDir?:
   } catch (error) {
     console.error('[grant-ops-persistence] Failed to save opencode settings:', error);
   }
+}
+
+// ============ Notifications ============
+
+export async function loadNotifications(baseDir?: string): Promise<Notification[]> {
+  const data = await loadPersistedData(baseDir);
+  return data.notifications;
+}
+
+export async function saveNotifications(notifications: Notification[], baseDir?: string): Promise<void> {
+  const data = await loadPersistedData(baseDir);
+  data.notifications = notifications;
+  await savePersistedData(data, baseDir);
+}
+
+// ============ Tasks ============
+
+export async function loadTasks(baseDir?: string): Promise<Task[]> {
+  const data = await loadPersistedData(baseDir);
+  return data.tasks;
+}
+
+export async function saveTasks(tasks: Task[], baseDir?: string): Promise<void> {
+  const data = await loadPersistedData(baseDir);
+  data.tasks = tasks;
+  await savePersistedData(data, baseDir);
 }

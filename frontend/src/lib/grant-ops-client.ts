@@ -16,6 +16,8 @@ import type {
   SubmissionRecord,
   OrganizationProfile,
   OpencodeSettings,
+  Notification,
+  Task,
 } from '../../../shared/types';
 
 // Base fetch wrapper with error handling
@@ -208,6 +210,18 @@ export const opencodeSettingsApi = {
     }),
 };
 
+// ============ Notifications API ============
+
+export const notificationsApi = {
+  getAll: () => apiFetch<Notification[]>('/api/notifications'),
+};
+
+// ============ Tasks API ============
+
+export const tasksApi = {
+  getAll: () => apiFetch<Task[]>('/api/tasks'),
+};
+
 // ============ Type Guards ============
 
 export function isElectronAPIavailable(): boolean {
@@ -240,6 +254,8 @@ export function createGrantOpsClient() {
     profile: profileApi,
     opencodeSettings: opencodeSettingsApi,
     revisions: revisionsApi,
+    notifications: notificationsApi,
+    tasks: tasksApi,
   };
 }
 

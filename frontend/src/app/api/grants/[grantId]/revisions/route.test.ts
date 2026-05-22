@@ -9,14 +9,14 @@
  * They test the drafting service behavior directly (which the route uses).
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import type { Grant } from '../../../../../../../shared/types';
-import { invalidateCache } from '../../../../../../../shared/grant-ops-persistence';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { Grant, OrganizationProfile } from '../../../../../../../shared/types';
+import { invalidateCache, loadGrants, saveGrants } from '../../../../../../../shared/grant-ops-persistence';
 import * as repository from '../../../../../server/grant-ops/repository';
 import * as draftingService from '../../../../../server/grant-ops/drafting-service';
 
-// Mock profile for draft generation
-const mockProfile = {
+// Mock profile for draft generation (properly typed to match OrganizationProfile)
+const mockProfile: OrganizationProfile = {
   legalName: 'Hacker Dojo',
   ein: '12-3456789',
   samUEI: 'XyxabC123AB',
@@ -32,7 +32,20 @@ const mockProfile = {
 };
 
 describe('POST /api/grants/[grantId]/revisions', () => {
+  // Backup grants before each test and restore after
+  let originalGrantsBackup: Awaited<ReturnType<typeof loadGrants>> | null = null;
+
   beforeEach(async () => {
+    invalidateCache();
+    // Backup current grants before test
+    originalGrantsBackup = await loadGrants();
+  });
+
+  afterEach(async () => {
+    // Restore original grants after each test
+    if (originalGrantsBackup !== null) {
+      await saveGrants(originalGrantsBackup);
+    }
     invalidateCache();
   });
 
@@ -60,7 +73,7 @@ describe('POST /api/grants/[grantId]/revisions', () => {
       await repository.addGrant(testGrant);
 
       // Create an initial draft for the grant
-      const initialDraft = await draftingService.generateDraft(testGrant, mockProfile as any, {});
+      const initialDraft = await draftingService.generateDraft(testGrant, mockProfile, {});
       expect(initialDraft.version).toBe(1);
 
       // Get draft count before revision
@@ -72,7 +85,7 @@ describe('POST /api/grants/[grantId]/revisions', () => {
       const revisionNotes = 'Please improve the budget section';
 
       // The route should call draftingService.generateDraft with revisionNotes
-      const newDraft = await draftingService.generateDraft(testGrant, mockProfile as any, {
+      const newDraft = await draftingService.generateDraft(testGrant, mockProfile, {
         revisionNotes,
       });
 
@@ -103,12 +116,12 @@ describe('POST /api/grants/[grantId]/revisions', () => {
       await repository.addGrant(testGrant);
 
       // Create an initial draft for the grant
-      await draftingService.generateDraft(testGrant, mockProfile as any, {});
+      await draftingService.generateDraft(testGrant, mockProfile, {});
 
       const revisionNotes = 'Please improve the budget section and add more details';
 
       // Generate new draft with revision notes
-      const newDraft = await draftingService.generateDraft(testGrant, mockProfile as any, {
+      const newDraft = await draftingService.generateDraft(testGrant, mockProfile, {
         revisionNotes,
       });
 
@@ -139,14 +152,14 @@ describe('POST /api/grants/[grantId]/revisions', () => {
       await repository.addGrant(testGrant);
 
       // Create an initial draft for the grant
-      await draftingService.generateDraft(testGrant, mockProfile as any, {});
+      await draftingService.generateDraft(testGrant, mockProfile, {});
 
       // Get draft count before revision
       const draftsBefore = await repository.getDraftArtifacts(testGrant.id);
       const countBefore = draftsBefore.length;
 
       // Simulate revision by generating a new draft
-      await draftingService.generateDraft(testGrant, mockProfile as any, {
+      await draftingService.generateDraft(testGrant, mockProfile, {
         revisionNotes: 'Please improve the budget section',
       });
 
@@ -181,14 +194,14 @@ describe('POST /api/grants/[grantId]/revisions', () => {
       await repository.addGrant(testGrant);
 
       // Create an initial draft for the grant
-      await draftingService.generateDraft(testGrant, mockProfile as any, {});
+      await draftingService.generateDraft(testGrant, mockProfile, {});
 
       // Get grant status before revision
       const grantBefore = await repository.getGrant(testGrant.id);
       expect(grantBefore?.status).toBe('draft');
 
       // Simulate revision
-      await draftingService.generateDraft(testGrant, mockProfile as any, {
+      await draftingService.generateDraft(testGrant, mockProfile, {
         revisionNotes: 'Please improve the budget section',
       });
 

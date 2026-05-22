@@ -18,25 +18,51 @@ import {
   saveProfile,
   loadPersistedData,
   getDataPath,
+  invalidateCache,
 } from './grant-ops-persistence';
 
+// Helper to create unique test grant with crypto UUID
+function createTestGrant(id: string) {
+  return {
+    id,
+    title: `Test Grant ${id}`,
+    funder: 'Test Funder',
+    funderShort: 'TF',
+    award: '$50,000',
+    awardSort: 50000,
+    deadline: '2026-12-31',
+    daysOut: 200,
+    fit: 80,
+    tags: ['Community'],
+    status: 'matched' as const,
+    statusLabel: 'Matched',
+  };
+}
+
+// Generate unique ID using crypto
+function uniqueId(prefix: string): string {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  return `${prefix}-${timestamp}-${random}`;
+}
+
 describe('Shared Persistence Integrity', () => {
-  // Backup original grants for test isolation
-  let originalGrants: ReturnType<typeof loadGrants> extends Promise<infer T> ? T : never;
+  // Backup original grants.json before each test and restore after
+  let originalGrantsBackup: Awaited<ReturnType<typeof loadGrants>> | null = null;
 
   beforeEach(async () => {
-    // Save original state before each test that writes
-    originalGrants = await loadGrants();
+    // Invalidate cache to ensure we read fresh from disk
+    invalidateCache();
+    // Backup current grants before test
+    originalGrantsBackup = await loadGrants();
   });
 
   afterEach(async () => {
-    // Restore original state after each test to prevent cross-test contamination
-    try {
-      await saveGrants(originalGrants);
-    } catch {
-      // If save fails during cleanup, log but don't fail the test
-      console.error('Failed to restore original grants during cleanup');
+    // Restore original grants after each test
+    if (originalGrantsBackup !== null) {
+      await saveGrants(originalGrantsBackup);
     }
+    invalidateCache();
   });
 
   describe('DATA_DIR constant', () => {
@@ -62,13 +88,16 @@ describe('Shared Persistence Integrity', () => {
     it('electron/store.ts uses same saveGrants function as repository.ts', async () => {
       // Both electron/store.ts and repository.ts use saveGrants from shared/grant-ops-persistence
       // This ensures they write to the same files
-      const testGrants = [{ id: 'test-grant', title: 'Test', funder: 'Test', funderShort: 'T', award: '$1', awardSort: 1, deadline: '2026-12-31', daysOut: 100, fit: 50, tags: [], status: 'matched' as const, statusLabel: 'Test' }];
+      // Use unique ID to avoid conflicts with other tests
+      const testGrant = createTestGrant(uniqueId('electron-grant'));
 
-      await saveGrants(testGrants);
+      await saveGrants([testGrant]);
 
       // Verify we can read back what we wrote (same DATA_DIR)
       const loaded = await loadGrants();
-      expect(loaded.some(g => g.id === 'test-grant')).toBe(true);
+      const found = loaded.find((g) => g.id === testGrant.id);
+      expect(found).toBeDefined();
+      expect(found?.title).toBe(testGrant.title);
     });
   });
 
@@ -97,16 +126,17 @@ describe('Shared Persistence Integrity', () => {
   describe('Cross-module file path consistency', () => {
     it('loadGrants reads from same path as what saveGrants writes to', async () => {
       // This verifies the shared persistence functions use consistent paths
-      const testGrant = { id: 'consistency-test', title: 'Consistency Test', funder: 'Test', funderShort: 'T', award: '$1', awardSort: 1, deadline: '2026-12-31', daysOut: 100, fit: 50, tags: [], status: 'matched' as const, statusLabel: 'Test' };
+      // Use unique ID to avoid conflicts with other tests
+      const testGrant = createTestGrant(uniqueId('consistency-grant'));
 
       await saveGrants([testGrant]);
 
       // Both loadGrants and saveGrants use: path.join(cwd, DATA_DIR, 'grants.json')
       const loaded = await loadGrants();
-      const found = loaded.find(g => g.id === 'consistency-test');
+      const found = loaded.find((g) => g.id === testGrant.id);
 
       expect(found).toBeDefined();
-      expect(found?.title).toBe('Consistency Test');
+      expect(found?.title).toBe(testGrant.title);
     });
 
     it('loadProfile reads from same path as saveProfile writes to', async () => {

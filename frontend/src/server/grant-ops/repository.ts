@@ -19,6 +19,8 @@ import type {
   FollowUp,
   OpencodeSettings,
   OrganizationProfile,
+  Notification,
+  Task,
 } from '../../../../shared/types';
 
 // Import from shared persistence layer (GAP-01 fix)
@@ -29,6 +31,10 @@ import {
   saveGrants,
   loadProfile,
   saveProfile,
+  loadNotifications,
+  saveNotifications,
+  loadTasks,
+  saveTasks,
 } from '../../../../shared/grant-ops-persistence';
 
 // Source operations
@@ -163,6 +169,24 @@ export async function updateOpencodeSettings(settings: OpencodeSettings): Promis
   const data = await loadPersistedData();
   data.opencodeSettings = settings;
   await savePersistedData(data);
+}
+
+// Notification operations
+export async function getNotifications(): Promise<Notification[]> {
+  return loadNotifications();
+}
+
+export async function updateNotifications(notifications: Notification[]): Promise<void> {
+  await saveNotifications(notifications);
+}
+
+// Task operations
+export async function getTasks(): Promise<Task[]> {
+  return loadTasks();
+}
+
+export async function updateTasks(tasks: Task[]): Promise<void> {
+  await saveTasks(tasks);
 }
 
 // Grants operations - now uses shared persistence (GAP-01 fix)

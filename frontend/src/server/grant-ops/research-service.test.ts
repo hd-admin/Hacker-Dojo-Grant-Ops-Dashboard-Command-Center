@@ -10,9 +10,9 @@
  * They test the actual behavior by checking persisted state after runResearch completes.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import type { OrganizationProfile } from '../../../../shared/types';
-import { invalidateCache } from '../../../../shared/grant-ops-persistence';
+import { invalidateCache, loadPersistedData, savePersistedData } from '../../../../shared/grant-ops-persistence';
 import * as repository from './repository';
 import * as researchService from './research-service';
 import * as sourceService from './source-service';
@@ -33,7 +33,20 @@ const mockProfile: OrganizationProfile = {
 };
 
 describe('ResearchService', () => {
+  // Backup persisted data before each test and restore after
+  let originalPersistedDataBackup: Awaited<ReturnType<typeof loadPersistedData>> | null = null;
+
   beforeEach(async () => {
+    invalidateCache();
+    // Backup current persisted data before test
+    originalPersistedDataBackup = await loadPersistedData();
+  });
+
+  afterEach(async () => {
+    // Restore original persisted data after each test
+    if (originalPersistedDataBackup !== null) {
+      await savePersistedData(originalPersistedDataBackup);
+    }
     invalidateCache();
   });
 

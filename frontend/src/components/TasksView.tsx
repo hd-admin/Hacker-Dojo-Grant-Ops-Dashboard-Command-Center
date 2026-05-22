@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Task } from '../../../shared/types';
-import { mockTasks, isElectronAPIavailable } from '../lib/mockData';
+import { tasksApi, isElectronAPIavailable } from '../lib/grant-ops-client';
 
 export default function TasksView() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -18,11 +18,14 @@ export default function TasksView() {
           const data = await window.electronAPI.getTasks();
           setTasks(data);
         } else {
-          setTasks(mockTasks);
+          // Use HTTP client API for browser/non-Electron context
+          const data = await tasksApi.getAll();
+          setTasks(data);
         }
       } catch (error) {
         console.error('Error loading tasks:', error);
-        setTasks(mockTasks);
+        // Use empty array on error instead of mock data
+        setTasks([]);
       } finally {
         setLoading(false);
       }
@@ -35,7 +38,10 @@ export default function TasksView() {
       t.id === taskId ? { ...t, completed: !t.completed } : t,
     );
     setTasks(updatedTasks);
-    await window.electronAPI.updateTasks(updatedTasks);
+    if (isElectronAPIavailable()) {
+      await window.electronAPI.updateTasks(updatedTasks);
+    }
+    // Note: Browser mode would need a PATCH endpoint for task updates
   };
 
   const handleAddTask = () => {
@@ -48,14 +54,17 @@ export default function TasksView() {
 
     setIsAddingTask(true);
     try {
-      const newTask = {
+      const newTask: Task = {
         id: `task-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
         completed: false,
         text: newTaskText.trim(),
       };
       const updatedTasks = [...tasks, newTask];
       setTasks(updatedTasks);
-      await window.electronAPI.updateTasks(updatedTasks);
+      if (isElectronAPIavailable()) {
+        await window.electronAPI.updateTasks(updatedTasks);
+      }
+      // Note: Browser mode would need a POST endpoint for task creation
       setNewTaskText('');
       setShowAddTaskForm(false);
     } catch (error) {

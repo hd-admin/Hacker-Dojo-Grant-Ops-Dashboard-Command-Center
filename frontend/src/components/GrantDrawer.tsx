@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { createGrantOpsClient } from '../lib/grant-ops-client';
-import { mockGrants, isElectronAPIavailable } from '../lib/mockData';
+import { grantsApi, isElectronAPIavailable } from '../lib/grant-ops-client';
 import type { Grant, RevisionRequest, SubmissionMethod } from '../../../shared/types';
 
 interface GrantDrawerProps {
@@ -45,31 +44,32 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
   const [submitNotes, setSubmitNotes] = useState('');
 
   useEffect(() => {
-    if (grantId) {
-      setLoading(true);
-      if (isElectronAPIavailable()) {
-        window.electronAPI
-          .getGrantById(grantId)
-          .then((data) => {
+    async function loadGrant() {
+      if (grantId) {
+        setLoading(true);
+        try {
+          if (isElectronAPIavailable()) {
+            const data = await window.electronAPI.getGrantById(grantId);
             setGrant(data);
-            setLoading(false);
-          })
-          .catch((err) => {
-            console.error('Error loading grant:', err);
-            setLoading(false);
-          });
+          } else {
+            // Use HTTP client API for browser/non-Electron context
+            const data = await grantsApi.getById(grantId);
+            setGrant(data);
+          }
+        } catch (err) {
+          console.error('Error loading grant:', err);
+          setGrant(null);
+        } finally {
+          setLoading(false);
+        }
       } else {
-        // Use mock data for browser/E2E testing
-        const mockGrant = mockGrants.find((g) => g.id === grantId) || null;
-        setGrant(mockGrant);
-        setLoading(false);
+        setGrant(null);
       }
-    } else {
-      setGrant(null);
+      // Reset revision state when drawer closes
+      setShowRevision(false);
+      setRevisionNote('');
     }
-    // Reset revision state when drawer closes
-    setShowRevision(false);
-    setRevisionNote('');
+    loadGrant();
   }, [grantId]);
 
   const handleApproveAndLock = async () => {
@@ -85,6 +85,9 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
         // Refresh grant data
         if (isElectronAPIavailable()) {
           const updatedGrant = await window.electronAPI.getGrantById(grant.id);
+          if (updatedGrant) setGrant(updatedGrant);
+        } else {
+          const updatedGrant = await grantsApi.getById(grant.id);
           if (updatedGrant) setGrant(updatedGrant);
         }
       } else {
@@ -146,13 +149,10 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
         await window.electronAPI.createRevisionRequest(revisionRequest);
       } else {
         // Browser/E2E mode: use HTTP client
-        const client = createGrantOpsClient();
-        if (client) {
-          await client.revisions.create(grant.id, revisionNote, 'human');
-          // Refresh grant data after revision
-          const updatedGrant = await client.grants.getById(grant.id);
-          if (updatedGrant) setGrant(updatedGrant);
-        }
+        await grantsApi.update(grant.id, { status: 'draft', statusLabel: 'Drafting' });
+        // Refresh grant data after revision
+        const updatedGrant = await grantsApi.getById(grant.id);
+        if (updatedGrant) setGrant(updatedGrant);
       }
       setShowRevision(false);
       setRevisionNote('');
