@@ -5,7 +5,7 @@
   "description": "Hacker Dojo Grant Operations Center - Web App",
   "scripts": {
     "dev": "cd frontend && next dev",
-    "build": "cd frontend && next build",
+    "build": "cd frontend && rm -rf .next && next build",
     "start": "cd frontend && next start",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "vitest run",
