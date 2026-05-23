@@ -17,7 +17,7 @@
     "typecheck": "tsc --noEmit -p frontend/tsconfig.json",
     "typecheck:frontend": "tsc --noEmit -p frontend/tsconfig.json",
     "verify:persistence-root": "tsx scripts/print-grant-ops-data-dir.ts && cd frontend && ../node_modules/.bin/tsx ../scripts/print-grant-ops-data-dir.ts",
-    "verify": "pnpm lint && pnpm build && pnpm typecheck && pnpm test && pnpm test:e2e"
+    "verify": "./scripts/verify.sh"
   },
   "dependencies": {
     "better-sqlite3": "^12.4.1",
