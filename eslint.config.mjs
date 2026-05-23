@@ -34,6 +34,8 @@ export default [
       'node_modules/**',
       '.next/**',
       'frontend/.next/**',
+      'playwright-report/**',
+      'test-results/**',
     ],
   },
 ];

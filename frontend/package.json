@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "rm -rf .next && next build",
-    "start": "next start"
+    "build": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && next build",
+    "start": "PORT=3000 HOSTNAME=0.0.0.0 next start"
   },
   "devDependencies": {
     "next": "^15.2.0"

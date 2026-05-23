@@ -5,8 +5,8 @@
   "description": "Hacker Dojo Grant Operations Center - Web App",
   "scripts": {
     "dev": "cd frontend && next dev",
-    "build": "cd frontend && rm -rf .next && next build",
-    "start": "cd frontend && next start",
+    "build": "cd frontend && node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && next build",
+    "start": "cd frontend && PORT=3000 HOSTNAME=0.0.0.0 next start",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "vitest run",
     "test:watch": "vitest",
