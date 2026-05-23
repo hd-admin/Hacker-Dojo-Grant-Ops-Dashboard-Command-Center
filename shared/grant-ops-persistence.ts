@@ -1,376 +1,234 @@
 /**
  * Shared Grant Ops Persistence
  *
- * Provides a unified file-based persistence layer for grant operations data.
- * Used by the Next.js API server for reading and writing grant operations data.
- *
- * All data is stored in the `.grant-ops-data/` directory relative to the
- * project root.
+ * Public async façade over the sqlite-backed grant operations store.
  */
 
-import path from "node:path";
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import {
-	defaultOpencodeSettings,
-	defaultProfile,
-	seedGrants,
-	seedNotifications,
-	seedTasks,
-} from "./seed-data";
+  clearDatabase,
+  getSqliteState,
+  readGrants as readGrantsFromSqlite,
+  readOpencodeSettings as readOpencodeSettingsFromSqlite,
+  readPersistedData as readPersistedDataFromSqlite,
+  readProfile as readProfileFromSqlite,
+  resolveDataDir,
+  resetSqliteCache,
+  writeGrants as writeGrantsToSqlite,
+  writeOpencodeSettings as writeOpencodeSettingsToSqlite,
+  writePersistedData as writePersistedDataToSqlite,
+  writeProfile as writeProfileToSqlite,
+} from './grant-ops-sqlite';
+import {
+  defaultOpencodeSettings,
+} from './seed-data';
 import type {
-	ApprovalRecord,
-	CrawlRun,
-	DocumentMetadata,
-	DraftArtifact,
-	FollowUp,
-	Grant,
-	Notification,
-	OpencodeSettings,
-	OrganizationProfile,
-	RevisionRequest,
-	Source,
-	SubmissionRecord,
-	Task,
-} from "./types";
-// Canonical data directory - relative to project root
-// Resolved from the workspace root to support both dev server and tests
-// This ensures tests and app use the same path regardless of working directory
-export function getDataDir(): string {
-	// Use environment variable if set
-	if (process.env.DATA_DIR) {
-		return process.env.DATA_DIR;
-	}
-	// Get the project root from process.cwd() (the working directory where the app started)
-	// This correctly resolves to <repo>/.grant-ops-data when running from the repo root
-	return path.join(process.cwd(), ".grant-ops-data");
-}
+  ApprovalRecord,
+  CrawlRun,
+  DocumentMetadata,
+  DraftArtifact,
+  FollowUp,
+  Grant,
+  Notification,
+  OpencodeSettings,
+  OrganizationProfile,
+  RevisionRequest,
+  Source,
+  SubmissionRecord,
+  Task,
+} from './types';
 
-// Lazy initialization for DATA_DIR to avoid module-level path resolution issues
-let _DATA_DIR: string | null = null;
+export function getDataDir(): string {
+  return resolveDataDir();
+}
 
 export function getDATA_DIR(): string {
-	if (_DATA_DIR === null) {
-		_DATA_DIR = getDataDir();
-	}
-	return _DATA_DIR;
+  return getDataDir();
 }
 
-// Backward compatibility - deprecated, use getDATA_DIR() instead
-// NOTE: This now delegates to getDATA_DIR() to ensure consistent path resolution
-// that respects process.cwd() and environment variables, avoiding machine-specific paths
-export const DATA_DIR = getDATA_DIR();
+export const DATA_DIR = getDataDir();
 
 export interface PersistedData {
-	sources: Source[];
-	crawlRuns: CrawlRun[];
-	draftArtifacts: DraftArtifact[];
-	revisionRequests: RevisionRequest[];
-	approvalRecords: ApprovalRecord[];
-	submissionRecords: SubmissionRecord[];
-	followUps: FollowUp[];
-	opencodeSettings: OpencodeSettings | null;
-	notifications: Notification[];
-	tasks: Task[];
-	documents: DocumentMetadata[];
-	lastSync: string;
+  sources: Source[];
+  crawlRuns: CrawlRun[];
+  draftArtifacts: DraftArtifact[];
+  revisionRequests: RevisionRequest[];
+  approvalRecords: ApprovalRecord[];
+  submissionRecords: SubmissionRecord[];
+  followUps: FollowUp[];
+  opencodeSettings: OpencodeSettings | null;
+  notifications: Notification[];
+  tasks: Task[];
+  documents: DocumentMetadata[];
+  lastSync: string;
 }
 
-// In-memory cache for server-side persistence (Next.js API routes)
-// Keyed by DATA_DIR to ensure single canonical cache
 export const dataCache = new Map<string, PersistedData>();
-
-// Separate cache for grants to ensure consistency with loadGrants/saveGrants
 export const grantsCache = new Map<string, Grant[]>();
 
 export function getDataPath(): string {
-	return `${getDATA_DIR()}/persisted-data.json`;
+  return path.join(getDATA_DIR(), 'grant-ops.sqlite');
 }
 
 export async function _ensureDataDir(dataPath: string): Promise<void> {
-	const fs = await import("node:fs/promises");
-	const dir = path.dirname(dataPath);
-	await fs.mkdir(dir, { recursive: true });
+  await fs.mkdir(path.dirname(dataPath), { recursive: true });
+}
+
+async function readPersistedDataInternal(): Promise<PersistedData> {
+  const state = getSqliteState();
+  const dataDir = state.dataDir;
+  if (dataCache.has(dataDir)) {
+    const cachedData = dataCache.get(dataDir);
+    if (!cachedData) {
+      throw new Error('Cached persisted data missing for current data dir');
+    }
+    return cachedData;
+  }
+
+  const data = await readPersistedDataFromSqlite(state);
+  dataCache.set(dataDir, data);
+  return data;
 }
 
 export async function loadPersistedData(): Promise<PersistedData> {
-	const dataDir = getDATA_DIR();
-	if (dataCache.has(dataDir)) {
-		const cachedData = dataCache.get(dataDir);
-	if (!cachedData) {
-		throw new Error("Cached persisted data missing for current data dir");
-	}
-	return cachedData;
-	}
-
-	try {
-		const fs = await import("node:fs/promises");
-		const dataPath = path.join(dataDir, "persisted-data.json");
-		const raw = await fs.readFile(dataPath, "utf-8");
-		const cached = JSON.parse(raw);
-		dataCache.set(dataDir, cached);
-		return cached;
-	} catch {
-		// Return default data if file doesn't exist
-		const defaultData: PersistedData = {
-			sources: [],
-			crawlRuns: [],
-			draftArtifacts: [],
-			revisionRequests: [],
-			approvalRecords: [],
-			submissionRecords: [],
-			followUps: [],
-			opencodeSettings: defaultOpencodeSettings,
-			notifications: [...seedNotifications],
-			tasks: [...seedTasks],
-			documents: [],
-			lastSync: new Date().toISOString(),
-		};
-		dataCache.set(dataDir, defaultData);
-		return defaultData;
-	}
+  return readPersistedDataInternal();
 }
 
 export async function savePersistedData(data: PersistedData): Promise<void> {
-	const dataDir = getDATA_DIR();
-	dataCache.set(dataDir, data);
-	try {
-		const fs = await import("node:fs/promises");
-		const dataPath = path.join(dataDir, "persisted-data.json");
-		await _ensureDataDir(dataPath);
-		await fs.writeFile(dataPath, JSON.stringify(data, null, 2), "utf-8");
-	} catch (error) {
-		console.error("[grant-ops-persistence] Failed to save data:", error);
-	}
+  const dataDir = getDATA_DIR();
+  dataCache.set(dataDir, data);
+  await writePersistedDataToSqlite(getSqliteState(), data);
 }
 
 export function invalidateCache(): void {
-	const dataDir = getDATA_DIR();
-	dataCache.delete(dataDir);
-	grantsCache.delete(dataDir);
+  const dataDir = getDATA_DIR();
+  dataCache.delete(dataDir);
+  grantsCache.delete(dataDir);
+  resetSqliteCache(dataDir);
 }
 
-// ============ Convenience load/save helpers for grant operations ============
-
 export async function loadGrants(): Promise<Grant[]> {
-	const dataDir = getDATA_DIR();
-	if (grantsCache.has(dataDir)) {
-		const cachedGrants = grantsCache.get(dataDir);
-	if (!cachedGrants) {
-		throw new Error("Cached grants missing for current data dir");
-	}
-	return [...cachedGrants]; // Return a copy to prevent mutation
-	}
+  const dataDir = getDATA_DIR();
+  if (grantsCache.has(dataDir)) {
+    const cachedGrants = grantsCache.get(dataDir);
+    if (!cachedGrants) {
+      throw new Error('Cached grants missing for current data dir');
+    }
+    return [...cachedGrants];
+  }
 
-	try {
-		const fs = await import("node:fs/promises");
-		const dataPath = path.join(dataDir, "grants.json");
-		const raw = await fs.readFile(dataPath, "utf-8");
-		const grants = JSON.parse(raw);
-		grantsCache.set(dataDir, grants);
-		return grants;
-	} catch {
-		// Return seed grants when no persisted file exists
-		// Return a copy to prevent mutation of the module-level seedGrants array
-		const grants = [...seedGrants];
-		grantsCache.set(dataDir, grants);
-		return grants;
-	}
+  const grants = await readGrantsFromSqlite(getSqliteState());
+  grantsCache.set(dataDir, grants);
+  return [...grants];
 }
 
 export async function saveGrants(grants: Grant[]): Promise<void> {
-	const dataDir = getDATA_DIR();
-	// Update cache first to ensure consistency
-	grantsCache.set(dataDir, grants);
-
-	const fs = await import("node:fs/promises");
-	const dataPath = path.join(dataDir, "grants.json");
-	await _ensureDataDir(dataPath);
-	try {
-		await fs.writeFile(dataPath, JSON.stringify(grants, null, 2), "utf-8");
-	} catch (error) {
-		console.error("[grant-ops-persistence] Failed to save grants:", error);
-		throw error; // Propagate to caller so they know the save failed
-	}
+  const dataDir = getDATA_DIR();
+  grantsCache.set(dataDir, grants);
+  dataCache.delete(dataDir);
+  await writeGrantsToSqlite(getSqliteState(), grants);
 }
 
 export async function loadProfile(): Promise<OrganizationProfile> {
-	try {
-		const fs = await import("node:fs/promises");
-		const dataPath = path.join(getDATA_DIR(), "profile.json");
-		const raw = await fs.readFile(dataPath, "utf-8");
-		return JSON.parse(raw);
-	} catch {
-		// Return a copy to prevent mutation of the module-level defaultProfile
-		return { ...defaultProfile };
-	}
+  const profile = await readProfileFromSqlite(getSqliteState());
+  return { ...profile };
 }
 
 export async function saveProfile(profile: OrganizationProfile): Promise<void> {
-	try {
-		const fs = await import("node:fs/promises");
-		const dataPath = path.join(getDATA_DIR(), "profile.json");
-		await _ensureDataDir(dataPath);
-		await fs.writeFile(dataPath, JSON.stringify(profile, null, 2), "utf-8");
-	} catch (error) {
-		console.error("[grant-ops-persistence] Failed to save profile:", error);
-	}
+  dataCache.delete(getDATA_DIR());
+  await writeProfileToSqlite(getSqliteState(), profile);
 }
 
 export async function loadOpencodeSettings(): Promise<OpencodeSettings> {
-	try {
-		const fs = await import("node:fs/promises");
-		const dataPath = path.join(getDATA_DIR(), "opencode-settings.json");
-		const raw = await fs.readFile(dataPath, "utf-8");
-		return JSON.parse(raw);
-	} catch {
-		// Return a copy to prevent mutation of the module-level defaultOpencodeSettings
-		return { ...defaultOpencodeSettings };
-	}
+  const settings = await readOpencodeSettingsFromSqlite(getSqliteState());
+  return settings ? { ...settings } : { ...defaultOpencodeSettings };
 }
 
-export async function saveOpencodeSettings(
-	settings: OpencodeSettings,
-): Promise<void> {
-	try {
-		const fs = await import("node:fs/promises");
-		const dataPath = path.join(getDATA_DIR(), "opencode-settings.json");
-		await _ensureDataDir(dataPath);
-		await fs.writeFile(dataPath, JSON.stringify(settings, null, 2), "utf-8");
-	} catch (error) {
-		console.error(
-			"[grant-ops-persistence] Failed to save opencode settings:",
-			error,
-		);
-	}
+export async function saveOpencodeSettings(settings: OpencodeSettings): Promise<void> {
+  dataCache.delete(getDATA_DIR());
+  await writeOpencodeSettingsToSqlite(getSqliteState(), settings);
 }
-
-// ============ Notifications ============
 
 export async function loadNotifications(): Promise<Notification[]> {
-	const data = await loadPersistedData();
-	return data.notifications;
+  const data = await loadPersistedData();
+  return data.notifications;
 }
 
-export async function saveNotifications(
-	notifications: Notification[],
-): Promise<void> {
-	const data = await loadPersistedData();
-	data.notifications = notifications;
-	await savePersistedData(data);
+export async function saveNotifications(notifications: Notification[]): Promise<void> {
+  const data = await loadPersistedData();
+  data.notifications = notifications;
+  await savePersistedData(data);
 }
-
-// ============ Tasks ============
 
 export async function loadTasks(): Promise<Task[]> {
-	const data = await loadPersistedData();
-	return data.tasks;
+  const data = await loadPersistedData();
+  return data.tasks;
 }
 
 export async function saveTasks(tasks: Task[]): Promise<void> {
-	const data = await loadPersistedData();
-	data.tasks = tasks;
-	await savePersistedData(data);
+  const data = await loadPersistedData();
+  data.tasks = tasks;
+  await savePersistedData(data);
 }
 
-// ============ Documents ============
-
-export async function loadDocuments(): Promise<
-	import("./types").DocumentMetadata[]
-> {
-	const data = await loadPersistedData();
-	return data.documents;
+export async function loadDocuments(): Promise<DocumentMetadata[]> {
+  const data = await loadPersistedData();
+  return data.documents;
 }
 
-export async function saveDocuments(
-	documents: import("./types").DocumentMetadata[],
-): Promise<void> {
-	const data = await loadPersistedData();
-	data.documents = documents;
-	await savePersistedData(data);
+export async function saveDocuments(documents: DocumentMetadata[]): Promise<void> {
+  const data = await loadPersistedData();
+  data.documents = documents;
+  await savePersistedData(data);
 }
 
-// ============ Test Isolation Helpers ============
-
-import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import os from "node:os";
-import { join } from "node:path";
-
-/**
- * Test isolation helper that provides a temporary data directory for each test.
- * This eliminates the need for tests to backup/restore persistence state.
- *
- * Usage:
- * ```
- * import { withTempDataDir } from './grant-ops-persistence';
- *
- * test('my test', async () => {
- *   const { dataDir, cleanup } = await withTempDataDir();
- *   try {
- *     // test code here - uses isolated temp directory
- *   } finally {
- *     await cleanup();
- *   }
- * });
- * ```
- */
 export interface TempDataDirResult {
-	dataDir: string;
-	cleanup: () => Promise<void>;
+  dataDir: string;
+  cleanup: () => Promise<void>;
 }
 
 export async function withTempDataDir(): Promise<TempDataDirResult> {
-	const tempDirPath = `grant-ops-test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
-	const tempDir = (await mkdir(join(os.tmpdir(), tempDirPath), {
-		recursive: true,
-	})) as string;
+  const tempDirPath = `grant-ops-test-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  const tempDir = path.join(os.tmpdir(), tempDirPath);
+  await fs.mkdir(tempDir, { recursive: true });
 
-	// Save original DATA_DIR if set
-	const originalDataDir: string | undefined = process.env.DATA_DIR;
+  const originalDataDir: string | undefined = process.env.DATA_DIR;
+  process.env.DATA_DIR = tempDir;
+  invalidateCache();
 
-	// Set temp directory
-	process.env.DATA_DIR = tempDir;
-
-	// Invalidate cache to ensure we use the new directory
-	invalidateCache();
-
-	return {
-		dataDir: tempDir,
-		cleanup: async () => {
-			// Restore original DATA_DIR
-			if (originalDataDir === undefined) {
-				delete process.env.DATA_DIR;
-			} else {
-				process.env.DATA_DIR = originalDataDir;
-			}
-
-			// Invalidate cache again
-			invalidateCache();
-
-			// Clean up temp directory
-			try {
-				await rm(tempDir, { recursive: true, force: true });
-			} catch {
-				// Ignore cleanup errors
-			}
-		},
-	};
+  return {
+    dataDir: tempDir,
+    cleanup: async () => {
+      if (originalDataDir === undefined) {
+        delete process.env.DATA_DIR;
+      } else {
+        process.env.DATA_DIR = originalDataDir;
+      }
+      invalidateCache();
+      await fs.rm(tempDir, { recursive: true, force: true });
+    },
+  };
 }
 
-/**
- * Helper to copy persisted data between directories.
- * Useful when tests need to seed specific state.
- */
 export async function copyPersistedData(
-	fromDir: string,
-	toDir: string,
-	filenames: string[],
+  fromDir: string,
+  toDir: string,
+  filenames: string[],
 ): Promise<void> {
-	for (const filename of filenames) {
-		try {
-			const content = await readFile(join(fromDir, filename), "utf-8");
-			await mkdir(toDir, { recursive: true });
-			await writeFile(join(toDir, filename), content, "utf-8");
-		} catch {
-			// File might not exist, ignore
-		}
-	}
+  await fs.mkdir(toDir, { recursive: true });
+  for (const filename of filenames) {
+    try {
+      const content = await fs.readFile(path.join(fromDir, filename), 'utf8');
+      await fs.writeFile(path.join(toDir, filename), content, 'utf8');
+    } catch {
+      // ignore missing files for tests
+    }
+  }
+}
+
+export async function resetPersistentStateForTests(): Promise<void> {
+  await clearDatabase(getSqliteState());
+  invalidateCache();
 }

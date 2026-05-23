@@ -163,7 +163,7 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
             <option value="Submitted">Submitted</option>
             <option value="Awarded">Awarded</option>
           </select>
-          <button className="btn btn-primary" onClick={() => onNavigate?.('discovery')}>
+          <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('discovery')}>
             + Add to pipeline
           </button>
         </div>
@@ -174,8 +174,9 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
         {columns.map((col) => {
           const colGrants = getGrantsForColumn(col.key);
           return (
-            <div
+            <section
               key={col.key}
+              aria-label={`${col.title} drop zone`}
               className={`board-col ${dragOverCol === col.key ? 'drag-over' : ''}`}
               onDragOver={(e) => handleDragOver(e, col.key)}
               onDragLeave={handleDragLeave}
@@ -190,7 +191,8 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
                   <div className="empty">none</div>
                 ) : (
                   colGrants.map((grant) => (
-                    <div
+                    <button
+                      type="button"
                       key={grant.id}
                       className={`board-card ${draggingGrantId === grant.id ? 'dragging' : ''}`}
                       draggable={true}
@@ -204,11 +206,11 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
                         <span>{formatDate(grant.deadline)}</span>
                         <span className="amount">{grant.award}</span>
                       </div>
-                    </div>
+                    </button>
                   ))
                 )}
               </div>
-            </div>
+            </section>
           );
         })}
       </div>

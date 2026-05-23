@@ -19,6 +19,7 @@ import type {
   FollowUp,
   OpencodeSettings,
   WorkflowState,
+  DocumentExtractionStatus,
 } from './types';
 
 // Grant status - GAP-02 FIX: 'discarded' is NOT a valid status
@@ -103,6 +104,13 @@ export const TaskSchema: z.ZodType<Task> = z.object({
   completed: z.boolean(),
 });
 
+export const DocumentExtractionStatusSchema: z.ZodType<DocumentExtractionStatus> = z.enum([
+  'pending',
+  'extracted',
+  'stored_unparsed',
+  'failed',
+]);
+
 export const DocumentMetadataSchema: z.ZodType<DocumentMetadata> = z.object({
   id: z.string(),
   name: z.string(),
@@ -110,6 +118,13 @@ export const DocumentMetadataSchema: z.ZodType<DocumentMetadata> = z.object({
   lastUsed: z.string().optional(),
   version: z.string().optional(),
   audited: z.boolean().optional(),
+  uploadedAt: z.string().optional(),
+  storagePath: z.string().optional(),
+  extractionStatus: DocumentExtractionStatusSchema.optional(),
+  extractedText: z.string().optional(),
+  contentSnippet: z.string().optional(),
+  extractionError: z.string().optional(),
+  mimeType: z.string().optional(),
 });
 
 // ============ NEW WORKFLOW SCHEMAS ============
@@ -250,7 +265,6 @@ export const StoreDataSchema = z.object({
   opencodeSettings: OpencodeSettingsSchema.optional(),
 });
 
-// Re-export types from types.ts for convenience
 export type {
   Grant,
   GrantStatus,
@@ -271,4 +285,5 @@ export type {
   FollowUp,
   OpencodeSettings,
   WorkflowState,
+  DocumentExtractionStatus,
 } from './types';

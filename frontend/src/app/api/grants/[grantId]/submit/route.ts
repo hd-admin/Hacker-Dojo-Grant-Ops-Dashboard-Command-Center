@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as submissionService from '@/server/grant-ops/submission-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+
 export const dynamic = 'force-dynamic';
 
-
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
 ) {
   try {
@@ -24,39 +24,35 @@ export async function POST(
 ) {
   try {
     const { grantId } = await params;
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
     const deps = getDependencies();
+
+    if (!body || typeof body.method !== 'object' || !body.method || typeof body.method.type !== 'string') {
+      return NextResponse.json({ error: 'Submission method is required' }, { status: 400 });
+    }
 
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
       return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
     }
 
-    // Validate submission method
-    if (!body.method || !body.method.type) {
-      return NextResponse.json(
-        { error: 'Submission method is required' },
-        { status: 400 },
-      );
-    }
-
     const result = await submissionService.recordSubmission({
       grant,
       method: {
         type: body.method.type,
-        portalUrl: body.method.portalUrl,
-        confirmationId: body.method.confirmationId,
-        submittedBy: body.method.submittedBy || 'human',
+        portalUrl: typeof body.method.portalUrl === 'string' ? body.method.portalUrl : undefined,
+        confirmationId: typeof body.method.confirmationId === 'string' ? body.method.confirmationId : undefined,
+        submittedBy: typeof body.method.submittedBy === 'string' ? body.method.submittedBy : 'human',
       },
-      notes: body.notes,
-      submittedBy: body.method.submittedBy || 'human',
+      notes: typeof body.notes === 'string' ? body.notes : undefined,
+      submittedBy: typeof body.method.submittedBy === 'string' ? body.method.submittedBy : 'human',
     });
 
-    if (result.success) {
-      return NextResponse.json(result);
-    } else {
-      return NextResponse.json({ error: result.error }, { status: 400 });
+    if (!result.success) {
+      return NextResponse.json({ error: result.error || 'Failed to record submission' }, { status: 400 });
     }
+
+    return NextResponse.json({ success: true, submissionRecord: result.submissionRecord, followUps: result.followUps }, { status: 201 });
   } catch (error) {
     console.error('Error recording submission:', error);
     return NextResponse.json({ error: 'Failed to record submission' }, { status: 500 });

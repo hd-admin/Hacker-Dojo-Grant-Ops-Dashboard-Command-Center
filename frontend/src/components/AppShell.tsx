@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardView from './DashboardView';
 import DiscoveryView from './DiscoveryView';
 import PipelineView from './PipelineView';
@@ -8,8 +8,8 @@ import SettingsView from './SettingsView';
 import NotificationsView from './NotificationsView';
 import TasksView from './TasksView';
 import GrantDrawer from './GrantDrawer';
-import type { Grant, OrganizationProfile, CrawlStatus } from '../../../shared/types';
-import { seedGrants, defaultProfile, seedNotifications } from '../../../shared/seed-data';
+import type { Grant, OrganizationProfile, CrawlStatus, Notification, Task } from '../../../shared/types';
+import { seedGrants, defaultProfile, seedNotifications, seedTasks } from '../../../shared/seed-data';
 import { client } from '../lib/grant-ops-client';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
@@ -30,61 +30,58 @@ const workspaceNav: NavItem[] = [
 
 const activityNav: NavItem[] = [
   { view: 'notifications', label: 'Notifications', icon: '✉' },
-  { view: 'tasks', label: 'Tasks', icon: '⌖' },
+  { view: 'tasks', label: 'Tasks', icon: '⌶' },
 ];
 
 export default function AppShell() {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
+  const [selectedGrantRefreshKey, setSelectedGrantRefreshKey] = useState(0);
   const [appVersion] = useState('0.1.0');
   const [grants, setGrants] = useState<Grant[]>(seedGrants);
   const [profile, setProfile] = useState<OrganizationProfile | null>(defaultProfile);
-  const [crawlStatus, setCrawlStatus] = useState<CrawlStatus>({
-    online: true,
-    lastSync: '',
-  });
-  const [notifications, setNotifications] = useState<{ id: string }[]>(seedNotifications);
+  const [crawlStatus, setCrawlStatus] = useState<CrawlStatus>({ online: true, lastSync: '' });
+  const [notifications, setNotifications] = useState<Notification[]>(seedNotifications);
+  const [tasks, setTasks] = useState<Task[]>(seedTasks);
   const [isMounted, setIsMounted] = useState(false);
+
+  const unreadTaskCount = useMemo(() => tasks.filter((task) => !task.completed).length, [tasks]);
+
+  const refreshAppState = useCallback(async (): Promise<void> => {
+    const [grantsData, profileData, notificationsData, tasksData, runsResponse] = await Promise.all([
+      client.grants.getAll(),
+      client.profile.get(),
+      client.notifications.getAll(),
+      client.tasks.getAll(),
+      client.research.getRuns(),
+    ]);
+
+    setGrants(grantsData);
+    setProfile(profileData);
+    setNotifications(notificationsData);
+    setTasks(tasksData);
+
+    const latestRun = runsResponse.latestRun;
+    setCrawlStatus({
+      online: latestRun ? latestRun.status !== 'failed' : true,
+      lastSync: latestRun?.completedAt || latestRun?.startedAt || '',
+    });
+  }, []);
+
+  const refreshSelectedGrant = useCallback(async (): Promise<void> => {
+    if (!selectedGrantId) {
+      return;
+    }
+    setSelectedGrantRefreshKey((value) => value + 1);
+    await refreshAppState();
+  }, [refreshAppState, selectedGrantId]);
 
   useEffect(() => {
     setIsMounted(true);
-
-    async function loadInitialData() {
-      try {
-        const grantsData = await client.grants.getAll();
-        setGrants(grantsData);
-      } catch (error) {
-        console.error('Error loading grants:', error);
-      }
-
-      try {
-        const profileData = await client.profile.get();
-        setProfile(profileData);
-      } catch (error) {
-        console.error('Error loading profile:', error);
-      }
-
-      try {
-        const notificationsData = await client.notifications.getAll();
-        setNotifications(notificationsData);
-      } catch (error) {
-        console.error('Error loading notifications:', error);
-      }
-
-      try {
-        const runsResponse = await client.research.getRuns();
-        if (runsResponse.latestRun) {
-          setCrawlStatus({
-            online: runsResponse.latestRun.status === 'completed',
-            lastSync: runsResponse.latestRun.completedAt || new Date().toISOString(),
-          });
-        }
-      } catch (error) {
-        console.error('Error loading crawl status:', error);
-      }
-    }
-    loadInitialData();
-  }, []);
+    void refreshAppState().catch((error) => {
+      console.error('Error loading app state:', error);
+    });
+  }, [refreshAppState]);
 
   const handleNavClick = (item: NavItem) => {
     if (item.view) {
@@ -106,7 +103,6 @@ export default function AppShell() {
 
   return (
     <div className="app">
-      {/* Sidebar */}
       <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">
@@ -125,8 +121,9 @@ export default function AppShell() {
                   ? grants.filter((g) => g.status !== 'awarded').length
                   : 0;
             return (
-              <div
+              <button
                 key={item.label}
+                type="button"
                 className={`nav-item ${activeView === item.view ? 'active' : ''}`}
                 data-view={item.view}
                 onClick={() => handleNavClick(item)}
@@ -134,7 +131,7 @@ export default function AppShell() {
                 <span className="nav-icon">{item.icon}</span>
                 {item.label}
                 {matchedCount > 0 && item.view && <span className="nav-count">{matchedCount}</span>}
-              </div>
+              </button>
             );
           })}
         </div>
@@ -142,8 +139,9 @@ export default function AppShell() {
         <div className="nav-section">
           <div className="nav-label">Activity</div>
           {activityNav.map((item) => (
-            <div
+            <button
               key={item.label}
+              type="button"
               className={`nav-item ${activeView === item.view ? 'active' : ''}`}
               data-view={item.view}
               onClick={() => handleNavClick(item)}
@@ -153,7 +151,10 @@ export default function AppShell() {
               {item.view === 'notifications' && notifications.length > 0 && (
                 <span className="nav-count">{notifications.length}</span>
               )}
-            </div>
+              {item.view === 'tasks' && unreadTaskCount > 0 && (
+                <span className="nav-count">{unreadTaskCount}</span>
+              )}
+            </button>
           ))}
         </div>
 
@@ -172,24 +173,27 @@ export default function AppShell() {
         </div>
       </aside>
 
-      {/* Main content */}
       <main className="main">
         <div id="view-dashboard" className={`view ${activeView === 'dashboard' ? 'active' : ''}`}>
           <DashboardView
             onGrantSelect={handleGrantSelect}
             onNavigate={handleNavigate}
+            onRefreshAppState={refreshAppState}
             grants={grants}
             profile={profile}
           />
         </div>
         <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`}>
-          <DiscoveryView onGrantSelect={handleGrantSelect} />
+          <DiscoveryView
+            onGrantSelect={handleGrantSelect}
+            onRefreshAppState={refreshAppState}
+          />
         </div>
         <div id="view-pipeline" className={`view ${activeView === 'pipeline' ? 'active' : ''}`}>
           <PipelineView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} />
         </div>
         <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`}>
-          <SettingsView />
+          <SettingsView onRefreshAppState={refreshAppState} />
         </div>
         <div
           id="view-notifications"
@@ -198,12 +202,16 @@ export default function AppShell() {
           <NotificationsView />
         </div>
         <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`}>
-          <TasksView />
+          <TasksView onRefreshAppState={refreshAppState} />
         </div>
       </main>
 
-      {/* Drawer */}
-      <GrantDrawer grantId={selectedGrantId} onClose={handleDrawerClose} />
+      <GrantDrawer
+        key={`${selectedGrantId ?? 'none'}-${selectedGrantRefreshKey}`}
+        grantId={selectedGrantId}
+        onClose={handleDrawerClose}
+        onRefreshAppState={refreshSelectedGrant}
+      />
     </div>
   );
 }

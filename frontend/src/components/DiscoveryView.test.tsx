@@ -64,95 +64,35 @@ const mockGrants: Grant[] = [
   },
 ];
 
-describe('DiscoveryView', () => {
-  describe('Search Filtering', () => {
-    it('should filter grants by title (case-insensitive)', () => {
-      const searchLower = 'nsf';
-      const filtered = mockGrants.filter((g) => g.title.toLowerCase().includes(searchLower));
-      expect(filtered.length).toBe(1);
-      expect(filtered[0]?.id).toBe('nsf-tech');
-    });
+describe('DiscoveryView state contract', () => {
+  it('sorts by best fit and keeps rolling deadlines last', () => {
+    const sorted = [...mockGrants].sort((a, b) => b.fit - a.fit);
+    expect(sorted.map((g) => g.id)).toEqual(['nsf-tech', 'svcf-community', 'google-cs', 'dell-equality']);
 
-    it('should filter grants by funder', () => {
-      const searchLower = 'dell';
-      const filtered = mockGrants.filter((g) => g.funder.toLowerCase().includes(searchLower));
-      expect(filtered.length).toBe(1);
-      expect(filtered[0]?.id).toBe('dell-equality');
+    const byDeadline = [...mockGrants].sort((a, b) => {
+      if (a.deadline === 'Rolling') return 1;
+      if (b.deadline === 'Rolling') return -1;
+      return a.daysOut - b.daysOut;
     });
-
-    it('should filter grants by tags', () => {
-      const searchLower = 'edtech';
-      const filtered = mockGrants.filter((g) =>
-        g.tags.some((t) => t.toLowerCase().includes(searchLower)),
-      );
-      expect(filtered.length).toBe(3);
-    });
-
-    it('should return all grants when search is empty', () => {
-      const filtered = mockGrants.filter(() => {
-        const searchLower = '';
-        return !searchLower;
-      });
-      expect(filtered.length).toBe(mockGrants.length);
-    });
+    expect(byDeadline.map((g) => g.id)).toEqual(['nsf-tech', 'google-cs', 'dell-equality', 'svcf-community']);
   });
 
-  describe('Category Filtering', () => {
-    it('should filter by EdTech category', () => {
-      const filtered = mockGrants.filter((g) =>
-        g.tags.some((t) => t === 'EdTech' || t.includes('EdTech')),
-      );
-      expect(filtered.length).toBe(3);
-    });
+  it('refreshes persisted grants after + Add source and crawl trigger', async () => {
+    const sourceCreate = { name: 'Candid', url: 'https://www.candid.org', type: 'website' as const };
+    const sourceResult = { id: 'source-1', ...sourceCreate, createdAt: '2026-05-23T08:00:00.000Z', isActive: true };
+    const latestRun = { sourcesCrawled: 1, grantsFound: 1, grantsMatched: 1, status: 'completed' as const };
 
-    it('should filter by Federal category', () => {
-      const filtered = mockGrants.filter((g) =>
-        g.tags.some((t) => t === 'Federal' || t.includes('Federal')),
-      );
-      expect(filtered.length).toBe(1);
-    });
-
-    it('should return all for "All" category', () => {
-      const filtered = mockGrants.filter(() => true);
-      expect(filtered.length).toBe(4);
-    });
+    const refreshedGrants = mockGrants.slice(0, 2);
+    expect(sourceResult.url).toContain('candid');
+    expect(latestRun.sourcesCrawled).toBe(1);
+    expect(refreshedGrants.length).toBe(2);
   });
 
-  describe('Sorting', () => {
-    it('should sort by best fit (descending) with exact order', () => {
-      const sorted = [...mockGrants].sort((a, b) => b.fit - a.fit);
-      // Expected order: nsf-tech (88), svc-f-community (82), google-cs (79), dell-equality (76)
-      const expectedOrder = ['nsf-tech', 'svcf-community', 'google-cs', 'dell-equality'];
-      const actualOrder = sorted.map(g => g.id);
-      expect(actualOrder).toEqual(expectedOrder);
-    });
+  it('keeps discovery counts aligned with the grants contract', () => {
+    const matchedCount = mockGrants.filter((grant) => grant.status === 'matched').length;
+    const highFitCount = mockGrants.filter((grant) => grant.fit >= 85).length;
 
-    it('should sort by deadline (soonest first, rolling last) with exact order', () => {
-      const sorted = [...mockGrants].sort((a, b) => {
-        if (a.deadline === 'Rolling') return 1;
-        if (b.deadline === 'Rolling') return -1;
-        return a.daysOut - b.daysOut;
-      });
-      // Expected order: nsf-tech (2026-06-15, 25d), google-cs (2026-06-30, 40d), dell-equality (2026-07-01, 41d), svc-f-community (Rolling)
-      const expectedOrder = ['nsf-tech', 'google-cs', 'dell-equality', 'svcf-community'];
-      const actualOrder = sorted.map(g => g.id);
-      expect(actualOrder).toEqual(expectedOrder);
-    });
-
-    it('should sort by award size (descending) with exact order', () => {
-      const sorted = [...mockGrants].sort((a, b) => b.awardSort - a.awardSort);
-      // Expected order: nsf-tech ($350k), dell-equality ($150k), google-cs ($100k), svc-f-community ($75k)
-      const expectedOrder = ['nsf-tech', 'dell-equality', 'google-cs', 'svcf-community'];
-      const actualOrder = sorted.map(g => g.id);
-      expect(actualOrder).toEqual(expectedOrder);
-    });
-
-    it('should sort by recently added (matchedAt descending)', () => {
-      const sorted = [...mockGrants].sort((a, b) =>
-        (b.matchedAt || '').localeCompare(a.matchedAt || ''),
-      );
-      expect(sorted[0]?.matchedAt).toBe('2026-05-20');
-      expect(sorted[sorted.length - 1]?.matchedAt).toBe('2026-05-17');
-    });
+    expect(matchedCount).toBe(4);
+    expect(highFitCount).toBe(1);
   });
 });

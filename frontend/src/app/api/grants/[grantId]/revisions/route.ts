@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as draftingService from '@/server/grant-ops/drafting-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+
 export const dynamic = 'force-dynamic';
 
-
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
 ) {
   try {
@@ -25,15 +25,18 @@ export async function POST(
 ) {
   try {
     const { grantId } = await params;
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
     const deps = getDependencies();
+
+    if (!body || (body.notes !== undefined && typeof body.notes !== 'string')) {
+      return NextResponse.json({ error: 'Revision notes are required' }, { status: 400 });
+    }
 
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
       return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
     }
 
-    // Get organization profile for draft generation
     const profile = await deps.repository.getOrgProfile();
     if (!profile) {
       return NextResponse.json(
@@ -42,10 +45,7 @@ export async function POST(
       );
     }
 
-    // Check if Opencode is configured for CLI mode
     const settings = await deps.repository.getOpencodeSettings();
-    
-    // Require CLI provider in production - fail explicitly if not configured
     if (!settings?.isConfigured) {
       return NextResponse.json(
         { error: 'Opencode is not configured. Please set up Opencode settings in the application before generating revisions.' },
@@ -53,22 +53,17 @@ export async function POST(
       );
     }
 
-    // Create revision request using the draftingService
     const revision = await draftingService.createRevisionRequest(
       grant,
       body.notes || '',
-      body.requestedBy || 'human',
+      typeof body.requestedBy === 'string' ? body.requestedBy : 'human',
     );
 
-    // Generate a new draft version with revision notes
-    const newDraft = await draftingService.generateDraft(grant, profile, {
+    const draft = await draftingService.generateDraft(grant, profile, {
       revisionNotes: body.notes || '',
     });
 
-    return NextResponse.json(
-      { revision, draft: newDraft },
-      { status: 201 },
-    );
+    return NextResponse.json({ revision, draft }, { status: 201 });
   } catch (error) {
     console.error('Error creating revision:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to create revision';

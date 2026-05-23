@@ -42,6 +42,7 @@ export interface DraftGenerationRequest {
   missionStatement: string;
   previousDraft?: string;
   revisionNotes?: string;
+  groundingDocuments?: string[];
 }
 
 export type OpencodeProvider = 'cli' | 'fake';
@@ -106,11 +107,15 @@ class FakeOpencodeProvider implements OpencodeAdapter {
       };
     }
 
+    const groundingSection = request.groundingDocuments?.length
+      ? `\n\nGrounding Documents:\n${request.groundingDocuments.join('\n\n')}`
+      : '';
+
     const mockDraft = `## ${request.grantTitle}
 
 ### Executive Summary
 
-${request.organizationProfile} is seeking funding to support our mission of ${request.missionStatement}.
+${request.organizationProfile} is seeking funding to support our mission of ${request.missionStatement}.${groundingSection}
 
 ### Program Description
 
@@ -264,6 +269,10 @@ ${request.organizationProfile}
 Mission:
 ${request.missionStatement}
 `;
+
+    if (request.groundingDocuments?.length) {
+      prompt += `\n\nGrounding documents:\n${request.groundingDocuments.join('\n\n')}`;
+    }
 
     if (request.previousDraft) {
       prompt += `\n\nPrevious Draft:\n${request.previousDraft}`;

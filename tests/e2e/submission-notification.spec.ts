@@ -11,6 +11,7 @@
  */
 
 import { type APIRequestContext, expect, test } from "@playwright/test";
+import { resetAppState } from './test-utils';
 
 test.describe("Submission Notification", () => {
 	// Use a single API context for the entire test suite
@@ -37,6 +38,7 @@ test.describe("Submission Notification", () => {
 	test.beforeEach(async ({ request }) => {
 		// The request fixture is already an APIRequestContext - use it directly
 		apiContext = request;
+		await resetAppState(request);
 		await request.patch("/api/grants/nsf-techaccess", {
 			data: {
 				status: "draft",

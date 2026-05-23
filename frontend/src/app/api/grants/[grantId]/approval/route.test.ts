@@ -1,105 +1,93 @@
-/**
- * Grant Approval API Route Tests
- *
- * Tests the /api/grants/[grantId]/approval endpoint.
- */
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import type { Grant } from '../../../../../../../shared/types';
+import * as repository from '../../../../../server/grant-ops/repository';
+import { GET, POST } from './route';
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-	invalidateCache,
-	withTempDataDir,
-} from "../../../../../../../shared/grant-ops-persistence";
-import type { Grant } from "../../../../../../../shared/types";
-import * as repository from "../../../../../server/grant-ops/repository";
-import * as submissionService from "../../../../../server/grant-ops/submission-service";
-
-function createMockGrant(idSuffix: string): Grant {
-	return {
-		id: `test-grant-approval-${idSuffix}`,
-		title: "Test Grant for Approval",
-		funder: "Test Funder",
-		funderShort: "TF",
-		award: "$100,000",
-		awardSort: 100000,
-		deadline: "2026-12-31",
-		daysOut: 180,
-		fit: 85,
-		tags: ["Test"],
-		status: "review",
-		statusLabel: "Review",
-		matchedAt: "2026-05-01",
-	};
+function createGrant(id: string): Grant {
+  return {
+    id,
+    title: 'Test Grant for Approval',
+    funder: 'Test Funder',
+    funderShort: 'TF',
+    award: '$100,000',
+    awardSort: 100000,
+    deadline: '2026-12-31',
+    daysOut: 180,
+    fit: 85,
+    tags: ['Test'],
+    status: 'review',
+    statusLabel: 'Review',
+    matchedAt: '2026-05-01',
+  };
 }
 
-describe("Grant Approval Route", () => {
-	let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
-	let mockGrant: Grant;
+describe('/api/grants/[grantId]/approval route', () => {
+  let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+  let grant: Grant;
 
-	beforeEach(async () => {
-		tempDataDir = await withTempDataDir();
-		invalidateCache();
+  beforeEach(async () => {
+    tempDataDir = await withTempDataDir();
+    invalidateCache();
+    grant = createGrant(`approval-${Date.now()}`);
+    await repository.addGrant(grant);
+  });
 
-		// Use unique grant ID per test to avoid cross-test pollution
-		mockGrant = createMockGrant(
-			`unique-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-		);
+  afterEach(async () => {
+    await tempDataDir.cleanup();
+    invalidateCache();
+  });
 
-		// Add test grant
-		await repository.addGrant(mockGrant);
-	});
+  it('returns 404 when grant is missing', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/grants/missing/approval', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedBy: 'human' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: 'missing' }) },
+    );
+    const data = await response.json();
 
-	afterEach(async () => {
-		await tempDataDir.cleanup();
-		invalidateCache();
-	});
+    expect(response.status).toBe(404);
+    expect(data.error).toMatch(/Grant not found/i);
+  });
 
-	describe("GET /api/grants/[grantId]/approval", () => {
-		it("returns null when no approval exists", async () => {
-			const approval = await submissionService.getApprovalRecord(mockGrant.id);
-			expect(approval).toBeNull();
-		});
+  it('returns 400 for invalid body shapes', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/grants/test/approval', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedBy: 123 }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const data = await response.json();
 
-		it("returns approval record after grant is approved", async () => {
-			await submissionService.approveGrant({
-				grant: mockGrant,
-				approvedBy: "test-approver",
-			});
+    expect(response.status).toBe(400);
+    expect(data.error).toMatch(/ApprovedBy must be a string/i);
+  });
 
-			const approval = await submissionService.getApprovalRecord(mockGrant.id);
-			expect(approval).not.toBeNull();
-			expect(approval?.grantId).toBe(mockGrant.id);
-		});
-	});
+  it('returns approvalRecord on success and GET reads it back', async () => {
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/approval`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedBy: 'human' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const data = await response.json();
 
-	describe("POST /api/grants/[grantId]/approval", () => {
-		it("approves a grant and returns approval record", async () => {
-			const result = await submissionService.approveGrant({
-				grant: mockGrant,
-				approvedBy: "test-approver",
-			});
+    expect(response.status).toBe(201);
+    expect(data.success).toBe(true);
+    expect(data.approvalRecord.grantId).toBe(grant.id);
+    expect(data.approvalRecord.approvedBy).toBe('human');
 
-			expect(result.success).toBe(true);
-			expect(result.approvalRecord).toBeDefined();
-			expect(result.approvalRecord?.grantId).toBe(mockGrant.id);
-		});
-
-		it("creates approval record with approvedBy", async () => {
-			const result = await submissionService.approveGrant({
-				grant: mockGrant,
-				approvedBy: "human",
-			});
-
-			expect(result.approvalRecord?.approvedBy).toBe("human");
-		});
-
-		it("sets draft version in approval record", async () => {
-			const result = await submissionService.approveGrant({
-				grant: mockGrant,
-				approvedBy: "test-approver",
-			});
-
-			expect(result.approvalRecord?.draftVersion).toBeDefined();
-			expect(result.approvalRecord?.draftVersion).toBeGreaterThanOrEqual(1);
-		});
-	});
+    const getResponse = await GET(new Request(`http://localhost/api/grants/${grant.id}/approval`) as never, {
+      params: Promise.resolve({ grantId: grant.id }),
+    });
+    const getData = await getResponse.json();
+    expect(getData?.grantId).toBe(grant.id);
+  });
 });

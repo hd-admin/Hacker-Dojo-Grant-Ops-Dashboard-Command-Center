@@ -5,7 +5,11 @@ import type { Task } from '../../../shared/types';
 import { seedTasks } from '../../../shared/seed-data';
 import { tasksApi } from '../lib/grant-ops-client';
 
-export default function TasksView() {
+interface TasksViewProps {
+  onRefreshAppState?: () => Promise<void> | void;
+}
+
+export default function TasksView({ onRefreshAppState }: TasksViewProps) {
   const [tasks, setTasks] = useState<Task[]>(seedTasks);
   const [loading, setLoading] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
@@ -33,6 +37,7 @@ export default function TasksView() {
     );
     setTasks(updatedTasks);
     await tasksApi.update(updatedTasks);
+    await onRefreshAppState?.();
   };
 
   const handleAddTask = () => {
@@ -52,6 +57,7 @@ export default function TasksView() {
       setTasks((prev) => [...prev, newTask]);
       setNewTaskText('');
       setShowAddTaskForm(false);
+      await onRefreshAppState?.();
     } catch (error) {
       console.error('Error adding task:', error);
     } finally {
@@ -108,7 +114,6 @@ export default function TasksView() {
                 value={newTaskText}
                 onChange={(e) => setNewTaskText(e.target.value)}
                 disabled={isAddingTask}
-                autoFocus
               />
               <button
                 type="submit"
@@ -127,7 +132,7 @@ export default function TasksView() {
               </button>
             </form>
           ) : (
-            <button className="btn btn-primary" onClick={handleAddTask}>
+            <button type="button" className="btn btn-primary" onClick={handleAddTask}>
               + Add task
             </button>
           )}

@@ -1,6 +1,8 @@
 import { test, expect } from '@playwright/test';
+import { resetAppState } from './test-utils';
 
-test('simple-discovery: Navigate to discovery view and wait for grants table', async ({ page }) => {
+test('simple-discovery: Navigate to discovery view and wait for grants table', async ({ request, page }) => {
+  await resetAppState(request);
   await page.goto('http://localhost:3000');
   await page.waitForSelector('.app', { timeout: 10000 });
   await expect(page.locator('[data-view="discovery"]')).toBeVisible();

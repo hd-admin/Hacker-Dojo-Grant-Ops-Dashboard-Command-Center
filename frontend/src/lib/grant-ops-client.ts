@@ -25,12 +25,16 @@ async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit,
 ): Promise<T> {
+  const headers = new Headers(options?.headers);
+  if (options?.body instanceof FormData) {
+    headers.delete('Content-Type');
+  } else if (options?.body !== undefined && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
   const response = await fetch(endpoint, {
     ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
+    headers,
   });
 
   if (!response.ok) {
@@ -53,7 +57,7 @@ export const sourcesApi = {
   getAll: () => apiFetch<Source[]>('/api/sources'),
 
   add: (source: AddSourceRequest) =>
-    apiFetch<Source>('/api/sources', {
+    apiFetch<{ success: boolean; source: Source }>('/api/sources', {
       method: 'POST',
       body: JSON.stringify(source),
     }),
@@ -251,11 +255,23 @@ export const tasksApi = {
 export const documentsApi = {
   getAll: () => apiFetch<DocumentMetadata[]>('/api/documents'),
 
-  create: (doc: Omit<DocumentMetadata, 'id'>) =>
-    apiFetch<DocumentMetadata>('/api/documents', {
+  create: (
+    file: File,
+    metadata: Partial<Omit<DocumentMetadata, 'id' | 'storagePath' | 'extractedText' | 'contentSnippet' | 'extractionError' | 'extractionStatus'>> = {},
+  ) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (metadata.name) formData.append('name', metadata.name);
+    if (metadata.type) formData.append('type', metadata.type);
+    if (metadata.lastUsed) formData.append('lastUsed', metadata.lastUsed);
+    if (metadata.version) formData.append('version', metadata.version);
+    if (typeof metadata.audited === 'boolean') formData.append('audited', String(metadata.audited));
+    if (metadata.uploadedAt) formData.append('uploadedAt', metadata.uploadedAt);
+    return apiFetch<DocumentMetadata>('/api/documents', {
       method: 'POST',
-      body: JSON.stringify(doc),
-    }),
+      body: formData,
+    });
+  },
 
   update: (id: string, updates: Partial<DocumentMetadata>) =>
     apiFetch<{ success: boolean }>('/api/documents', {

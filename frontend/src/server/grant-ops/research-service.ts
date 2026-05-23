@@ -12,6 +12,7 @@ import type {
   CrawlRun,
   Grant,
   OrganizationProfile,
+  Source,
 } from '../../../../shared/types';
 import { getDependencies, type Clock, type IdGenerator } from './dependencies';
 
@@ -104,7 +105,7 @@ export async function runResearch(
 
 async function performResearch(
   profile: OrganizationProfile,
-  sources: Awaited<ReturnType<typeof deps.sourceService.getActiveSources>>,
+  sources: Source[],
   adapter: ReturnType<ReturnType<typeof getDependencies>['createOpencodeAdapter']>,
   deps: ReturnType<typeof getDependencies>,
   clock: Clock,
@@ -127,9 +128,20 @@ async function performResearch(
 
       if (response.success && response.content) {
         // Parse the response (expecting JSON)
-        let researchData;
+        let researchData: { grants?: Array<{
+          id?: string;
+          title: string;
+          funder: string;
+          funderShort?: string;
+          award?: string;
+          awardSort?: number;
+          deadline?: string;
+          daysOut?: number;
+          fit?: number;
+          tags?: string[];
+        }> };
         try {
-          researchData = JSON.parse(response.content);
+          researchData = JSON.parse(response.content) as typeof researchData;
         } catch {
           throw new Error(
             `Failed to parse research response from Opencode for source ${source.name}. Expected JSON format.`,
@@ -143,19 +155,21 @@ async function performResearch(
         for (const grantData of grants) {
           // Check if grant already exists
           const existing = existingGrants.find(
-            (g) => g.title === grantData.title && g.funder === grantData.funder,
+            (g) => g.title === grantData.title && g.funder === grantData.funder!,
           );
 
           if (!existing) {
+            const fallbackDeadline = new Date(clock.now().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]!;
+            const deadline = grantData.deadline ?? fallbackDeadline;
             const newGrant: Grant = {
               id: grantData.id || idGenerator.generateId('grant'),
-              title: grantData.title,
-              funder: grantData.funder,
-              funderShort: grantData.funderShort || grantData.funder.substring(0, 10),
+              title: grantData.title!,
+              funder: grantData.funder!,
+              funderShort: grantData.funderShort || grantData.funder!.substring(0, 10),
               award: grantData.award || `$${grantData.awardSort?.toLocaleString() || '0'}`,
               awardSort: grantData.awardSort || 0,
-              deadline: grantData.deadline || new Date(clock.now().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-              daysOut: grantData.daysOut || calculateDaysOut(grantData.deadline, clock.now()),
+              deadline,
+              daysOut: grantData.daysOut ?? calculateDaysOut(deadline, clock.now()),
               fit: grantData.fit || 70,
               tags: grantData.tags || profile.searchThemes.slice(0, 2),
               status: 'matched',

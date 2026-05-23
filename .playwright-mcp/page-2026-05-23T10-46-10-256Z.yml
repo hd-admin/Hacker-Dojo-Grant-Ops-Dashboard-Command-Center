@@ -1,0 +1,243 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - text: Hacker Dojo
+          - emphasis [ref=e6]: Grant Ops
+        - generic [ref=e7]: v0.1.0
+      - generic [ref=e8]:
+        - generic [ref=e9]: Workspace
+        - button "◐ Dashboard" [ref=e10] [cursor=pointer]:
+          - generic [ref=e11]: ◐
+          - text: Dashboard
+        - button "◇ Discovery 8" [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: ◇
+          - text: Discovery
+          - generic [ref=e14]: "8"
+        - button "▤ Pipeline 44" [ref=e15] [cursor=pointer]:
+          - generic [ref=e16]: ▤
+          - text: Pipeline
+          - generic [ref=e17]: "44"
+        - button "◯ Settings" [ref=e18] [cursor=pointer]:
+          - generic [ref=e19]: ◯
+          - text: Settings
+      - generic [ref=e20]:
+        - generic [ref=e21]: Activity
+        - button "✉ Notifications 5" [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: ✉
+          - text: Notifications
+          - generic [ref=e24]: "5"
+        - button "⌶ Tasks 4" [ref=e25] [cursor=pointer]:
+          - generic [ref=e26]: ⌶
+          - text: Tasks
+          - generic [ref=e27]: "4"
+      - generic [ref=e28]:
+        - text: Crawler online
+        - text: "Last sync: —"
+        - text: Logged in as
+        - strong [ref=e30]: test@test.com
+    - main [ref=e31]:
+      - generic [ref=e32]:
+        - generic [ref=e33]:
+          - generic [ref=e34]:
+            - heading "Good morning, test." [level=1] [ref=e35]
+            - generic [ref=e36]: Saturday · May 23, 2026 · 44 grants in pipeline
+          - generic [ref=e37]:
+            - button "↻ Refresh crawl" [ref=e38] [cursor=pointer]
+            - button "+ New search" [ref=e39] [cursor=pointer]
+        - generic [ref=e40]:
+          - generic [ref=e41]:
+            - generic [ref=e42]: Active Pipeline
+            - generic [ref=e43]: $5.3M
+            - generic [ref=e44]:
+              - text: 44 applications ·
+              - generic [ref=e45]: +10 this month
+          - generic [ref=e46]:
+            - generic [ref=e47]: Next Deadline
+            - generic [ref=e48]: 11d
+            - generic [ref=e49]: Morrell Family Foundation Gene...
+          - generic [ref=e50]:
+            - generic [ref=e51]: Drafted & Ready
+            - generic [ref=e52]: "13"
+            - generic [ref=e53]: awaiting your review
+          - generic [ref=e54]:
+            - generic [ref=e55]: New Matches 7d
+            - generic [ref=e56]: "3"
+            - generic [ref=e57]: 1 high-fit (> 85)
+        - generic [ref=e58]:
+          - generic [ref=e59]:
+            - generic [ref=e60]:
+              - generic [ref=e61]: Upcoming Deadlines
+              - button "View all" [ref=e62] [cursor=pointer]
+            - generic [ref=e63]:
+              - button "01 Jun Morrell Family Foundation General Support Morrell Family Foundation · $50,000 Drafting" [ref=e64] [cursor=pointer]:
+                - generic [ref=e65]:
+                  - generic [ref=e66]: "01"
+                  - generic [ref=e67]: Jun
+                - generic [ref=e68]:
+                  - generic [ref=e69]: Morrell Family Foundation General Support
+                  - generic [ref=e70]: Morrell Family Foundation · $50,000
+                - generic [ref=e71]: Drafting
+              - button "10 Jun Horizon Education Grants Horizon Therapeutics · $90,000 Review" [ref=e72] [cursor=pointer]:
+                - generic [ref=e73]:
+                  - generic [ref=e74]: "10"
+                  - generic [ref=e75]: Jun
+                - generic [ref=e76]:
+                  - generic [ref=e77]: Horizon Education Grants
+                  - generic [ref=e78]: Horizon Therapeutics · $90,000
+                - generic [ref=e79]: Review
+              - button "15 Jun NSF Technology Access and Adoption Program National Science Foundation · $350,000 Drafting" [ref=e80] [cursor=pointer]:
+                - generic [ref=e81]:
+                  - generic [ref=e82]: "15"
+                  - generic [ref=e83]: Jun
+                - generic [ref=e84]:
+                  - generic [ref=e85]: NSF Technology Access and Adoption Program
+                  - generic [ref=e86]: National Science Foundation · $350,000
+                - generic [ref=e87]: Drafting
+              - button "22 Jun EdTech Community Grant Mock Foundation · $50,000 Matched" [ref=e88] [cursor=pointer]:
+                - generic [ref=e89]:
+                  - generic [ref=e90]: "22"
+                  - generic [ref=e91]: Jun
+                - generic [ref=e92]:
+                  - generic [ref=e93]: EdTech Community Grant
+                  - generic [ref=e94]: Mock Foundation · $50,000
+                - generic [ref=e95]: Matched
+              - button "20 Jun Stanford Recovery Act Community Grants Stanford University · $60,000 Drafting" [ref=e96] [cursor=pointer]:
+                - generic [ref=e97]:
+                  - generic [ref=e98]: "20"
+                  - generic [ref=e99]: Jun
+                - generic [ref=e100]:
+                  - generic [ref=e101]: Stanford Recovery Act Community Grants
+                  - generic [ref=e102]: Stanford University · $60,000
+                - generic [ref=e103]: Drafting
+          - generic [ref=e104]:
+            - generic [ref=e106]: Agent Activity
+            - generic [ref=e107]:
+              - generic [ref=e110]:
+                - generic [ref=e111]: <strong>3 new grants</strong> matched from Candid weekly crawl
+                - generic [ref=e112]: 2h ago
+              - generic [ref=e115]:
+                - generic [ref=e116]: Draft completed for <strong>SVCF Community Innovation Fund</strong> · awaiting review
+                - generic [ref=e117]: 4h ago
+              - generic [ref=e120]:
+                - generic [ref=e121]: Crawled 47 sources · 12 federal, 28 foundation, 7 corporate
+                - generic [ref=e122]: 6h ago
+              - generic [ref=e125]:
+                - generic [ref=e126]: NSF TechAccess LOI deadline in <strong>26 days</strong> — checklist 4/7 complete
+                - generic [ref=e127]: yesterday
+              - generic [ref=e130]:
+                - generic [ref=e131]: "Submitted: <strong>Wiener Family Foundation</strong> · confirmation #WFF-2026-0341"
+                - generic [ref=e132]: 2d ago
+              - generic [ref=e135]:
+                - generic [ref=e136]: Org profile updated · Impact Report v2.1 indexed
+                - generic [ref=e137]: 3d ago
+        - generic [ref=e138]:
+          - generic [ref=e139]:
+            - generic [ref=e140]: Awaiting Review
+            - button "13 drafts" [ref=e141] [cursor=pointer]
+          - button "31 Dec Test Grant for Submit Test Funder · $75,000 · Fit 90 Review draft" [ref=e142] [cursor=pointer]:
+            - generic [ref=e143]:
+              - generic [ref=e144]: "31"
+              - generic [ref=e145]: Dec
+            - generic [ref=e146]:
+              - generic [ref=e147]: Test Grant for Submit
+              - generic [ref=e148]: Test Funder · $75,000 · Fit 90
+            - generic [ref=e149]: Review draft
+          - button "31 Dec Test Grant for Approval Test Funder · $100,000 · Fit 85 Review draft" [ref=e150] [cursor=pointer]:
+            - generic [ref=e151]:
+              - generic [ref=e152]: "31"
+              - generic [ref=e153]: Dec
+            - generic [ref=e154]:
+              - generic [ref=e155]: Test Grant for Approval
+              - generic [ref=e156]: Test Funder · $100,000 · Fit 85
+            - generic [ref=e157]: Review draft
+          - button "31 Dec Test Grant for Approval Test Funder · $100,000 · Fit 85 Review draft" [ref=e158] [cursor=pointer]:
+            - generic [ref=e159]:
+              - generic [ref=e160]: "31"
+              - generic [ref=e161]: Dec
+            - generic [ref=e162]:
+              - generic [ref=e163]: Test Grant for Approval
+              - generic [ref=e164]: Test Funder · $100,000 · Fit 85
+            - generic [ref=e165]: Review draft
+          - button "31 Dec Test Grant for Approval Test Funder · $100,000 · Fit 85 Review draft" [ref=e166] [cursor=pointer]:
+            - generic [ref=e167]:
+              - generic [ref=e168]: "31"
+              - generic [ref=e169]: Dec
+            - generic [ref=e170]:
+              - generic [ref=e171]: Test Grant for Approval
+              - generic [ref=e172]: Test Funder · $100,000 · Fit 85
+            - generic [ref=e173]: Review draft
+          - button "31 Dec Test Grant for Approval Test Funder · $100,000 · Fit 85 Review draft" [ref=e174] [cursor=pointer]:
+            - generic [ref=e175]:
+              - generic [ref=e176]: "31"
+              - generic [ref=e177]: Dec
+            - generic [ref=e178]:
+              - generic [ref=e179]: Test Grant for Approval
+              - generic [ref=e180]: Test Funder · $100,000 · Fit 85
+            - generic [ref=e181]: Review draft
+          - button "31 Dec Test Grant for Approval Test Funder · $100,000 · Fit 85 Review draft" [ref=e182] [cursor=pointer]:
+            - generic [ref=e183]:
+              - generic [ref=e184]: "31"
+              - generic [ref=e185]: Dec
+            - generic [ref=e186]:
+              - generic [ref=e187]: Test Grant for Approval
+              - generic [ref=e188]: Test Funder · $100,000 · Fit 85
+            - generic [ref=e189]: Review draft
+          - button "31 Dec Test Grant for Approval Test Funder · $100,000 · Fit 85 Review draft" [ref=e190] [cursor=pointer]:
+            - generic [ref=e191]:
+              - generic [ref=e192]: "31"
+              - generic [ref=e193]: Dec
+            - generic [ref=e194]:
+              - generic [ref=e195]: Test Grant for Approval
+              - generic [ref=e196]: Test Funder · $100,000 · Fit 85
+            - generic [ref=e197]: Review draft
+          - button "31 Dec Test Grant for Approval Test Funder · $100,000 · Fit 85 Review draft" [ref=e198] [cursor=pointer]:
+            - generic [ref=e199]:
+              - generic [ref=e200]: "31"
+              - generic [ref=e201]: Dec
+            - generic [ref=e202]:
+              - generic [ref=e203]: Test Grant for Approval
+              - generic [ref=e204]: Test Funder · $100,000 · Fit 85
+            - generic [ref=e205]: Review draft
+          - button "31 Dec Test Grant for Approval Test Funder · $100,000 · Fit 85 Review draft" [ref=e206] [cursor=pointer]:
+            - generic [ref=e207]:
+              - generic [ref=e208]: "31"
+              - generic [ref=e209]: Dec
+            - generic [ref=e210]:
+              - generic [ref=e211]: Test Grant for Approval
+              - generic [ref=e212]: Test Funder · $100,000 · Fit 85
+            - generic [ref=e213]: Review draft
+          - button "31 Dec Test Grant for Approval Test Funder · $100,000 · Fit 85 Review draft" [ref=e214] [cursor=pointer]:
+            - generic [ref=e215]:
+              - generic [ref=e216]: "31"
+              - generic [ref=e217]: Dec
+            - generic [ref=e218]:
+              - generic [ref=e219]: Test Grant for Approval
+              - generic [ref=e220]: Test Funder · $100,000 · Fit 85
+            - generic [ref=e221]: Review draft
+          - button "31 Dec Test Grant for Approval Test Funder · $100,000 · Fit 85 Review draft" [ref=e222] [cursor=pointer]:
+            - generic [ref=e223]:
+              - generic [ref=e224]: "31"
+              - generic [ref=e225]: Dec
+            - generic [ref=e226]:
+              - generic [ref=e227]: Test Grant for Approval
+              - generic [ref=e228]: Test Funder · $100,000 · Fit 85
+            - generic [ref=e229]: Review draft
+          - button "10 Jun Horizon Education Grants Horizon Therapeutics · $90,000 · Fit 81 Review draft" [ref=e230] [cursor=pointer]:
+            - generic [ref=e231]:
+              - generic [ref=e232]: "10"
+              - generic [ref=e233]: Jun
+            - generic [ref=e234]:
+              - generic [ref=e235]: Horizon Education Grants
+              - generic [ref=e236]: Horizon Therapeutics · $90,000 · Fit 81
+            - generic [ref=e237]: Review draft
+          - button "30 Jul Mellon Foundation Humanities & Justice Grants Andrew W. Mellon Foundation · $175,000 · Fit 73 Review draft" [ref=e238] [cursor=pointer]:
+            - generic [ref=e239]:
+              - generic [ref=e240]: "30"
+              - generic [ref=e241]: Jul
+            - generic [ref=e242]:
+              - generic [ref=e243]: Mellon Foundation Humanities & Justice Grants
+              - generic [ref=e244]: Andrew W. Mellon Foundation · $175,000 · Fit 73
+            - generic [ref=e245]: Review draft
+  - alert [ref=e246]

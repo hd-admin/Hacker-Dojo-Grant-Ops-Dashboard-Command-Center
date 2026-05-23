@@ -7,6 +7,7 @@ type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notificat
 interface DashboardViewProps {
   onGrantSelect: (grantId: string) => void;
   onNavigate?: (view: ViewType) => void;
+  onRefreshAppState?: () => Promise<void> | void;
   grants: Grant[];
   profile: OrganizationProfile | null;
 }
@@ -74,7 +75,7 @@ function getDefaultActivity(): ActivityEvent[] {
   ];
 }
 
-export default function DashboardView({ onGrantSelect, onNavigate, grants, profile }: DashboardViewProps) {
+export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile }: DashboardViewProps) {
   const activity = getDefaultActivity();
 
   const handleRefreshCrawl = async () => {
@@ -83,8 +84,7 @@ export default function DashboardView({ onGrantSelect, onNavigate, grants, profi
       if (!response.ok) {
         throw new Error(`Failed to trigger research: ${response.status}`);
       }
-      // The parent shell already owns the canonical grants state; a full refresh
-      // happens through the normal app navigation / data reload path.
+      await onRefreshAppState?.();
     } catch (error) {
       console.error('Error triggering research:', error);
     }
@@ -151,10 +151,10 @@ export default function DashboardView({ onGrantSelect, onNavigate, grants, profi
           </div>
         </div>
         <div className="header-actions">
-          <button className="btn btn-ghost btn-sm" onClick={handleRefreshCrawl}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={handleRefreshCrawl}>
             ↻ Refresh crawl
           </button>
-          <button className="btn btn-primary" onClick={handleNewSearch}>
+          <button type="button" className="btn btn-primary" onClick={handleNewSearch}>
             + New search
           </button>
         </div>
@@ -195,20 +195,22 @@ export default function DashboardView({ onGrantSelect, onNavigate, grants, profi
         <div className="panel">
           <div className="panel-header">
             <div className="panel-title">Upcoming Deadlines</div>
-            <div
+            <button
+              type="button"
               className="panel-action"
               data-view-link="pipeline"
               onClick={() => onNavigate?.('pipeline')}
             >
               View all
-            </div>
+            </button>
           </div>
           <div className="deadline-list">
             {upcomingDeadlines.map((grant) => {
               const { day, month } = formatDate(grant.deadline);
               const urgency = grant.daysOut < 30 ? 'urgent' : grant.daysOut < 60 ? 'review' : 'draft';
               return (
-                <div
+                <button
+                  type="button"
                   key={grant.id}
                   className="deadline-item"
                   onClick={() => onGrantSelect(grant.id)}
@@ -224,7 +226,7 @@ export default function DashboardView({ onGrantSelect, onNavigate, grants, profi
                     </div>
                   </div>
                   <div className={`deadline-status ${urgency}`}>{grant.statusLabel}</div>
-                </div>
+                </button>
               );
             })}
           </div>
@@ -254,18 +256,19 @@ export default function DashboardView({ onGrantSelect, onNavigate, grants, profi
         <div className="panel">
           <div className="panel-header">
             <div className="panel-title">Awaiting Review</div>
-            <div
+            <button
+              type="button"
               className="panel-action"
               data-view-link="pipeline"
               onClick={() => onNavigate?.('pipeline')}
             >
               {reviewQueue.length} drafts
-            </div>
+            </button>
           </div>
           {reviewQueue.map((grant) => {
             const { day, month } = formatDate(grant.deadline);
             return (
-              <div key={grant.id} className="deadline-item" onClick={() => onGrantSelect(grant.id)}>
+              <button type="button" key={grant.id} className="deadline-item" onClick={() => onGrantSelect(grant.id)}>
                 <div className="deadline-date">
                   <div className="deadline-day">{day}</div>
                   <div className="deadline-month">{month}</div>
@@ -276,16 +279,8 @@ export default function DashboardView({ onGrantSelect, onNavigate, grants, profi
                     {grant.funder} · {grant.award} · Fit {grant.fit}
                   </div>
                 </div>
-                <button
-                  className="btn btn-sm btn-primary"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onGrantSelect(grant.id);
-                  }}
-                >
-                  Review draft
-                </button>
-              </div>
+                <span className="btn btn-sm btn-primary">Review draft</span>
+              </button>
             );
           })}
         </div>

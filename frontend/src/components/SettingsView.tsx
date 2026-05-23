@@ -5,7 +5,11 @@ import type { OrganizationProfile, DocumentMetadata, OpencodeSettings } from '..
 import { defaultProfile } from '../../../shared/seed-data';
 import { client } from '../lib/grant-ops-client';
 
-export default function SettingsView() {
+interface SettingsViewProps {
+  onRefreshAppState?: () => Promise<void> | void;
+}
+
+export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
   const [profile, setProfile] = useState<OrganizationProfile | null>(defaultProfile);
   const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(false);
@@ -59,6 +63,7 @@ export default function SettingsView() {
       setProfile(updated);
       setEditForm(updated);
       setIsEditing(false);
+      await onRefreshAppState?.();
     } catch (error) {
       console.error('Error saving profile:', error);
     }
@@ -78,8 +83,7 @@ export default function SettingsView() {
     }));
   };
 
-  const handleUploadDocument = async () => {
-    // Create a file input element
+  const handleUploadDocument = () => {
     const input = window.document.createElement('input');
     input.type = 'file';
     input.accept = '.pdf,.xls,.xlsx,.doc,.docx';
@@ -90,13 +94,14 @@ export default function SettingsView() {
       const ext = file.name.split('.').pop()?.toLowerCase() || '';
       const docType = ext === 'pdf' ? 'PDF' : ext === 'xls' || ext === 'xlsx' ? 'XLS' : 'DOC';
 
-      const doc = await client.documents.create({
+      const doc = await client.documents.create(file, {
         name: file.name,
         type: docType,
         lastUsed: new Date().toISOString(),
       });
 
       setDocuments((prev) => [...prev, doc]);
+      await onRefreshAppState?.();
     };
     input.click();
   };
@@ -109,6 +114,7 @@ export default function SettingsView() {
       await client.profile.update(updatedProfile);
       setProfile(updatedProfile);
       setEditForm(updatedProfile);
+      await onRefreshAppState?.();
     } catch (error) {
       console.error('Error removing theme:', error);
     }
@@ -124,6 +130,7 @@ export default function SettingsView() {
       setProfile(updatedProfile);
       setEditForm(updatedProfile);
       setNewTheme('');
+      await onRefreshAppState?.();
     } catch (error) {
       console.error('Error adding theme:', error);
     }
@@ -155,6 +162,7 @@ export default function SettingsView() {
       const updated = await client.opencodeSettings.get();
       setOpencodeSettings(updated);
       setIsEditingOpencode(false);
+      await onRefreshAppState?.();
     } catch (error) {
       console.error('Error saving Opencode settings:', error);
     }
@@ -183,16 +191,14 @@ export default function SettingsView() {
         </div>
         <div className="header-actions">
           {!isEditing && (
-            <button className="btn btn-primary" onClick={handleEdit}>
+            <button type="button" className="btn btn-primary" onClick={handleEdit}>
               Edit profile
             </button>
           )}
         </div>
       </div>
 
-      {/* Settings Grid */}
       <div className="settings-grid">
-        {/* Organization Card */}
         <div className="setting-card">
           <div className="setting-card-header">
             <div className="setting-card-title">Organization</div>
@@ -282,7 +288,6 @@ export default function SettingsView() {
           </div>
         </div>
 
-        {/* Reference Documents Card */}
         <div className="setting-card">
           <div className="setting-card-header">
             <div className="setting-card-title">Reference Documents</div>
@@ -294,26 +299,31 @@ export default function SettingsView() {
                   <div className={`doc-icon ${doc.type.toLowerCase()}`}>{doc.type}</div>
                   <div className="doc-info">
                     <div className="doc-name">{doc.name}</div>
-                    {doc.lastUsed && (
-                      <div className="doc-meta">
-                        {new Date(doc.lastUsed).toLocaleDateString()}
-                        {doc.audited && <span className="audited-badge"> · Audited</span>}
-                      </div>
-                    )}
+                    <div className="doc-meta">
+                      {doc.lastUsed && <span>{new Date(doc.lastUsed).toLocaleDateString()}</span>}
+                      {doc.extractionStatus && (
+                        <span className="audited-badge"> · {doc.extractionStatus}</span>
+                      )}
+                      {doc.extractionStatus === 'stored_unparsed' && (
+                        <span className="audited-badge"> · stored only</span>
+                      )}
+                      {doc.extractionStatus === 'extracted' && (
+                        <span className="audited-badge"> · grounded</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
-              <div className="doc-item upload-item" onClick={handleUploadDocument}>
+              <button type="button" className="doc-item upload-item" onClick={handleUploadDocument}>
                 <div className="doc-icon upload">+</div>
                 <div className="doc-info">
                   <div className="doc-name">Upload</div>
                 </div>
-              </div>
+              </button>
             </div>
           </div>
         </div>
 
-        {/* Search Themes Card */}
         <div className="setting-card">
           <div className="setting-card-header">
             <div className="setting-card-title">Search Themes</div>
@@ -324,6 +334,7 @@ export default function SettingsView() {
                 <span key={theme} className="theme-tag">
                   {theme}
                   <button
+                    type="button"
                     className="theme-tag-remove"
                     onClick={() => handleRemoveTheme(theme)}
                     aria-label={`Remove ${theme}`}
@@ -342,14 +353,13 @@ export default function SettingsView() {
                 onChange={(e) => setNewTheme(e.target.value)}
                 onKeyDown={handleThemeKeyDown}
               />
-              <button className="btn btn-sm" onClick={handleAddTheme}>
+              <button type="button" className="btn btn-sm" onClick={handleAddTheme}>
                 Add
               </button>
             </div>
           </div>
         </div>
 
-        {/* Agent Behavior Card */}
         <div className="setting-card">
           <div className="setting-card-header">
             <div className="setting-card-title">Agent Behavior</div>
@@ -447,13 +457,12 @@ export default function SettingsView() {
           </div>
         </div>
 
-        {/* Opencode Settings Card */}
         <div className="setting-card">
           <div className="setting-card-header">
             <div className="setting-card-title">Opencode Agent</div>
             <div className="setting-card-actions">
               {!isEditingOpencode && opencodeSettings && (
-                <button className="btn btn-sm" onClick={handleEditOpencode}>
+                <button type="button" className="btn btn-sm" onClick={handleEditOpencode}>
                   Configure
                 </button>
               )}
@@ -465,8 +474,7 @@ export default function SettingsView() {
                 <div>
                   <div className="setting-label">Status</div>
                   <div className="setting-value">
-                    <span className="status-dot" style={{ color: '#22c55e' }}>●</span>{' '}
-                    Configured
+                    <span className="status-dot" style={{ color: '#22c55e' }}>●</span> Configured
                   </div>
                 </div>
               </div>
@@ -530,10 +538,10 @@ export default function SettingsView() {
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                  <button className="btn btn-primary btn-sm" onClick={handleSaveOpencode}>
+                  <button type="button" className="btn btn-primary btn-sm" onClick={handleSaveOpencode}>
                     Save
                   </button>
-                  <button className="btn btn-sm" onClick={handleCancelOpencode}>
+                  <button type="button" className="btn btn-sm" onClick={handleCancelOpencode}>
                     Cancel
                   </button>
                 </div>
@@ -549,9 +557,7 @@ export default function SettingsView() {
                 <div className="setting-row">
                   <div>
                     <div className="setting-label">Working directory</div>
-                    <div className="setting-value mono">
-                      {opencodeSettings?.workingDirectory || 'Not set'}
-                    </div>
+                    <div className="setting-value mono">{opencodeSettings?.workingDirectory || 'Not set'}</div>
                   </div>
                 </div>
                 <div className="setting-row">
@@ -574,13 +580,12 @@ export default function SettingsView() {
         </div>
       </div>
 
-      {/* Edit Mode Actions */}
       {isEditing && (
         <div style={{ display: 'flex', gap: '10px', marginTop: '24px' }}>
-          <button className="btn btn-primary" onClick={handleSave}>
+          <button type="button" className="btn btn-primary" onClick={handleSave}>
             Save changes
           </button>
-          <button className="btn" onClick={handleCancel}>
+          <button type="button" className="btn" onClick={handleCancel}>
             Cancel
           </button>
         </div>

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
-
 ROOT_DIR="/Users/mistlight/Projects/Experiments/HackerDojoGrantApp"
+export DATA_DIR="$ROOT_DIR/.grant-ops-data"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 
 cd "$FRONTEND_DIR"

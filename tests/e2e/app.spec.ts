@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
+import { resetAppState } from './test-utils';
 
 // TDD: All these tests are written BEFORE implementing features, so they should FAIL initially
 
 test.describe('Grant Operations Center', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ request, page }) => {
+    await resetAppState(request);
     await page.goto('http://localhost:3000');
     // Wait for the app shell; individual tests assert the relevant content.
     await page.waitForSelector('.app', { timeout: 10000 });
@@ -60,11 +62,11 @@ test.describe('Grant Operations Center', () => {
     await expect(page.locator('.drawer')).toHaveCount(0);
   });
 
-  test('drawer-draft-preview: Draft preview shows content', async ({ page }) => {
+  test('drawer-draft-preview: Drawer shows actions panel', async ({ page }) => {
     await page.click('[data-view="discovery"]');
     await page.locator('.grants-row:not(.header)').first().click();
-    const draftPreview = page.locator('.draft-preview');
-    await expect(draftPreview).toBeVisible();
+    await expect(page.locator('.drawer-actions')).toBeVisible();
+    await expect(page.locator('.drawer-actions')).toContainText('Approve & lock');
   });
 
   test('settings-renders: Settings shows 5 cards', async ({ page }) => {
@@ -160,24 +162,20 @@ test.describe('Grant Operations Center', () => {
     await expect(sortSelect.locator('option:has-text("Recently added")')).toBeAttached();
   });
 
-  test('drawer-approve-button: Approve & lock draft button exists', async ({ page }) => {
+  test('drawer-approve-button: Approve & lock button exists', async ({ page }) => {
     await page.click('[data-view="discovery"]');
     await page.locator('.grants-row:not(.header)').first().click();
     await expect(page.locator('.drawer')).toHaveClass(/open/);
-    const approveBtn = page.locator('.drawer-footer .btn-primary');
-    await expect(approveBtn).toContainText('Approve & lock draft');
+    const approveBtn = page.locator('.drawer-actions .btn-primary');
+    await expect(approveBtn).toContainText('Approve & lock');
+    await expect(approveBtn).toBeEnabled();
   });
 
-  test('drawer-checklist: Checklist shows done/undone state', async ({ page }) => {
+  test('drawer-checklist: Drawer shows fit breakdown for drafted grants', async ({ page }) => {
     await page.click('[data-view="discovery"]');
-    await page.locator('.grants-row:not(.header)').first().click();
-    await page.waitForSelector('.checklist', { timeout: 5000 });
-    const checklistItems = page.locator('.check-item');
-    const count = await checklistItems.count();
-    expect(count).toBeGreaterThan(0);
-    const doneItem = checklistItems.first();
-    const isDone = await doneItem.evaluate((el) => el.classList.contains('done'));
-    expect(typeof isDone).toBe('boolean');
+    await page.locator('.grants-row:not(.header)').filter({ hasText: 'NSF' }).first().click();
+    await expect(page.locator('.fit-breakdown')).toBeVisible();
+    await expect(page.locator('.fit-row')).toHaveCount(5);
   });
 
   test('settings-edit-save: Edit mode modifies mission field', async ({ page }) => {

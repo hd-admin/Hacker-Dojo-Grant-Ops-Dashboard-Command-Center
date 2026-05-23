@@ -7,6 +7,7 @@ import { client } from '../lib/grant-ops-client';
 
 interface DiscoveryViewProps {
   onGrantSelect: (grantId: string) => void;
+  onRefreshAppState?: () => Promise<void> | void;
 }
 
 type SortOption = 'fit' | 'deadline' | 'award' | 'recently-added';
@@ -34,24 +35,11 @@ function formatDate(dateStr: string): string {
   const parts = dateStr.split('-');
   const month = parts[1] ?? '';
   const day = parts[2] ?? '';
-  const months = [
-    'Jan',
-    'Feb',
-    'Mar',
-    'Apr',
-    'May',
-    'Jun',
-    'Jul',
-    'Aug',
-    'Sep',
-    'Oct',
-    'Nov',
-    'Dec',
-  ];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}`;
 }
 
-export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
+export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: DiscoveryViewProps) {
   const [grants, setGrants] = useState<Grant[]>(seedGrants);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
@@ -117,12 +105,10 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
         url: newSourceUrl.trim(),
         type: 'website',
       });
-      // Trigger research after adding source
       await client.research.trigger();
-      // Refresh grants
+      await onRefreshAppState?.();
       const data = await client.grants.getAll();
       setGrants(data);
-
       setNewSourceName('');
       setNewSourceUrl('');
       setShowAddSourceForm(false);
@@ -139,9 +125,7 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
     setShowAddSourceForm(false);
   };
 
-  // Filter grants
   let filtered = grants.filter((g) => {
-    // Search filter
     const searchLower = search.toLowerCase();
     const matchesSearch =
       !search ||
@@ -149,14 +133,12 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
       g.funder.toLowerCase().includes(searchLower) ||
       g.tags.some((t) => t.toLowerCase().includes(searchLower));
 
-    // Category filter
     const matchesCategory =
       category === 'All' || g.tags.some((t) => t === category || t.includes(category));
 
     return matchesSearch && matchesCategory;
   });
 
-  // Sort grants
   filtered = [...filtered].sort((a, b) => {
     switch (sortBy) {
       case 'fit':
@@ -184,7 +166,7 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
           <div className="header-sub">{filtered.length} grants</div>
         </div>
         <div className="header-actions">
-          <button className="btn btn-ghost btn-sm" onClick={handleExportCsv}>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={handleExportCsv}>
             Export CSV
           </button>
           {showAddSourceForm ? (
@@ -196,7 +178,6 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
                   value={newSourceName}
                   onChange={(e) => setNewSourceName(e.target.value)}
                   disabled={isAddingSource}
-                  autoFocus
                 />
                 <input
                   type="url"
@@ -223,14 +204,13 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
               </form>
             </span>
           ) : (
-            <button className="btn btn-primary" onClick={handleAddSource}>
+            <button type="button" className="btn btn-primary" onClick={handleAddSource}>
               + Add source
             </button>
           )}
         </div>
       </div>
 
-      {/* Filter Bar */}
       <div className="filter-bar">
         <input
           type="text"
@@ -252,6 +232,7 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
           return (
             <button
               key={cat}
+              type="button"
               className={`filter-pill ${category === cat ? 'active' : ''}`}
               onClick={() => setCategory(cat)}
             >
@@ -261,7 +242,6 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
         })}
       </div>
 
-      {/* Grants Table */}
       <div className="grants-table">
         <div className="grants-row header">
           <div>Grant</div>
@@ -274,7 +254,7 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
           const fitClass = grant.fit >= 85 ? 'high' : grant.fit >= 70 ? 'med' : 'low';
           const dayClass = grant.daysOut < 30 ? 'urgent' : grant.daysOut < 60 ? 'soon' : '';
           return (
-            <div key={grant.id} className="grants-row" onClick={() => onGrantSelect(grant.id)}>
+            <button type="button" key={grant.id} className="grants-row" onClick={() => onGrantSelect(grant.id)}>
               <div>
                 <div className="grant-title">{grant.title}</div>
                 <div className="grant-tags">
@@ -299,7 +279,7 @@ export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
                 </div>
                 <div className="fit-num">{grant.fit}</div>
               </div>
-            </div>
+            </button>
           );
         })}
       </div>

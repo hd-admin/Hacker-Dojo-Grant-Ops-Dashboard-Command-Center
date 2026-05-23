@@ -1,240 +1,143 @@
-/**
- * Revisions Route Tests (TDD)
- *
- * These tests guard the missing behavior identified in the analysis:
- * - POST /api/grants/[grantId]/revisions should create a new DraftArtifact version
- *   instead of only creating a RevisionRequest record
- *
- * Uses isolated temp data directory for proper test isolation.
- */
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import type { Grant, OrganizationProfile, OpencodeSettings } from '../../../../../../../shared/types';
+import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
+import * as repository from '../../../../../server/grant-ops/repository';
+import { POST } from './route';
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { withTempDataDir } from "../../../../../../../shared/grant-ops-persistence";
-import type {
-	Grant,
-	OrganizationProfile,
-} from "../../../../../../../shared/types";
-import * as draftingService from "../../../../../server/grant-ops/drafting-service";
-import * as repository from "../../../../../server/grant-ops/repository";
-
-// Mock profile for draft generation (properly typed to match OrganizationProfile)
-const mockProfile: OrganizationProfile = {
-	legalName: "Hacker Dojo",
-	ein: "12-3456789",
-	samUEI: "XyxabC123AB",
-	mission: "To support tech education",
-	docTypes: ["501(c)(3) letter"],
-	searchThemes: ["EdTech"],
-	agentBehavior: {
-		autoDraftThreshold: 80,
-		submissionPolicy: "human-review-required",
-		notifyEmail: "ed@hackerdojo.com",
-		voiceAndTone: "professional",
-	},
+const profile: OrganizationProfile = {
+  legalName: 'Hacker Dojo',
+  ein: '12-3456789',
+  samUEI: 'XyxabC123AB',
+  mission: 'To support tech education',
+  docTypes: ['PDF'],
+  searchThemes: ['EdTech'],
+  agentBehavior: {
+    autoDraftThreshold: 80,
+    submissionPolicy: 'Human approval required',
+    notifyEmail: 'ed@hackerdojo.com',
+    voiceAndTone: 'professional',
+  },
 };
 
-describe("POST /api/grants/[grantId]/revisions", () => {
-	// Use isolated temp directory for each test
-	let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+const settings: OpencodeSettings = {
+  binaryPath: '/usr/local/bin/opencode',
+  workingDirectory: '/tmp/hacker-dojo',
+  timeoutMs: 60000,
+  profile: 'default',
+  isConfigured: true,
+};
 
-	beforeEach(async () => {
-		// Use isolated temp directory instead of backup/restore
-		tempDataDir = await withTempDataDir();
-	});
+const fakeAdapter = {
+  executeResearch: vi.fn(),
+  generateDraft: vi.fn().mockImplementation(async (request) => ({
+    success: true,
+    content: `Draft grounded by: ${request.groundingDocuments?.[0] || 'none'}\n${request.revisionNotes || ''}`,
+  })),
+  isConfigured: () => true,
+};
 
-	afterEach(async () => {
-		// Cleanup temp directory
-		await tempDataDir.cleanup();
-	});
+function createGrant(id: string): Grant {
+  return {
+    id,
+    title: 'Test Grant for Revisions',
+    funder: 'Test Funder',
+    funderShort: 'TF',
+    award: '$25,000',
+    awardSort: 25000,
+    deadline: '2026-12-31',
+    daysOut: 180,
+    fit: 75,
+    tags: ['Test'],
+    status: 'draft',
+    statusLabel: 'Drafting',
+    matchedAt: '2026-05-01',
+    draftContent: 'Existing draft content',
+  };
+}
 
-	describe("revision creates new draft version", () => {
-		it("FAILS: revision should create a new DraftArtifact version with incremented version number", async () => {
-			// Create a unique grant for this test
-			const testGrant: Grant = {
-				id: `test-revision-grant-${Date.now()}`,
-				title: "Test Revision Grant",
-				funder: "Test Funder",
-				funderShort: "TF",
-				award: "$50,000",
-				awardSort: 50000,
-				deadline: "2026-12-31",
-				daysOut: 200,
-				fit: 80,
-				tags: ["Community"],
-				status: "draft",
-				statusLabel: "Drafting",
-				matchedAt: "2026-05-01",
-				draftContent: "Existing draft content",
-			};
+describe('/api/grants/[grantId]/revisions route', () => {
+  let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+  let grant: Grant;
 
-			// Setup: Add test grant to repository
-			await repository.addGrant(testGrant);
+  beforeEach(async () => {
+    tempDataDir = await withTempDataDir();
+    invalidateCache();
+    setDependencies(createDependencies({ createOpencodeAdapter: () => fakeAdapter }));
+    grant = createGrant(`revision-${Date.now()}`);
+    await repository.addGrant(grant);
+    await repository.updateOrgProfile(profile);
+    await repository.updateOpencodeSettings(settings);
+  });
 
-			// Create an initial draft for the grant using fake provider for testing
-			const initialDraft = await draftingService.generateDraft(
-				testGrant,
-				mockProfile,
-				{
-					_providerType: "fake",
-				},
-			);
-			expect(initialDraft.version).toBe(1);
+  afterEach(async () => {
+    resetDependencies();
+    await tempDataDir.cleanup();
+    invalidateCache();
+  });
 
-			// Get draft count before revision
-			const draftsBefore = await repository.getDraftArtifacts(testGrant.id);
-			const versionBefore =
-				draftsBefore.length > 0
-					? Math.max(...draftsBefore.map((d) => d.version))
-					: 0;
+  it('returns 404 when grant is missing', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/grants/missing/revisions', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ notes: 'Please revise' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: 'missing' }) },
+    );
+    const data = await response.json();
 
-			// Simulate what the route should do: create a revision request with notes
-			// and generate a new draft with those revision notes
-			const revisionNotes = "Please improve the budget section";
+    expect(response.status).toBe(404);
+    expect(data.error).toMatch(/Grant not found/i);
+  });
 
-			// The route should call draftingService.generateDraft with revisionNotes
-			// Use fake provider since Opencode is not configured in test environment
-			const newDraft = await draftingService.generateDraft(
-				testGrant,
-				mockProfile,
-				{
-					revisionNotes,
-					_providerType: "fake",
-				},
-			);
+  it('returns 400 for invalid body shapes', async () => {
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/revisions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ notes: 42 }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const data = await response.json();
 
-			// The new draft should have version = previousVersion + 1
-			expect(newDraft.version).toBe(versionBefore + 1);
-		});
+    expect(response.status).toBe(400);
+    expect(data.error).toMatch(/Revision notes are required/i);
+  });
 
-		it("FAILS: revision should pass revision notes to draft generation", async () => {
-			// Create a unique grant for this test
-			const testGrant: Grant = {
-				id: `test-revision-grant-notes-${Date.now()}`,
-				title: "Test Revision Grant Notes",
-				funder: "Test Funder",
-				funderShort: "TF",
-				award: "$50,000",
-				awardSort: 50000,
-				deadline: "2026-12-31",
-				daysOut: 200,
-				fit: 80,
-				tags: ["Community"],
-				status: "draft",
-				statusLabel: "Drafting",
-				matchedAt: "2026-05-01",
-				draftContent: "Existing draft content",
-			};
+  it('returns 400 when profile or opencode settings are missing', async () => {
+    await repository.updateOrgProfile(profile);
+    await repository.updateOpencodeSettings({ ...settings, isConfigured: false });
 
-			// Setup: Add test grant to repository
-			await repository.addGrant(testGrant);
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/revisions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ notes: 'Please revise' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const data = await response.json();
 
-			// Create an initial draft for the grant using fake provider for testing
-			await draftingService.generateDraft(testGrant, mockProfile, {
-				_providerType: "fake",
-			});
+    expect(response.status).toBe(400);
+    expect(data.error).toMatch(/Opencode is not configured/i);
+  });
 
-			const revisionNotes =
-				"Please improve the budget section and add more details";
+  it('returns revision and draft payloads after validation passes', async () => {
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/revisions`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ notes: 'Please improve the budget section', requestedBy: 'human' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const data = await response.json();
 
-			// Generate new draft with revision notes using fake provider for testing
-			const newDraft = await draftingService.generateDraft(
-				testGrant,
-				mockProfile,
-				{
-					revisionNotes,
-					_providerType: "fake",
-				},
-			);
-
-			// The new draft should contain revision notes from the request
-			expect(newDraft.revisionNotes).toBe(revisionNotes);
-		});
-
-		it("FAILS: draftArtifacts array should have more entries after revision", async () => {
-			// Create a unique grant for this test
-			const testGrant: Grant = {
-				id: `test-revision-grant-count-${Date.now()}`,
-				title: "Test Revision Grant Count",
-				funder: "Test Funder",
-				funderShort: "TF",
-				award: "$50,000",
-				awardSort: 50000,
-				deadline: "2026-12-31",
-				daysOut: 200,
-				fit: 80,
-				tags: ["Community"],
-				status: "draft",
-				statusLabel: "Drafting",
-				matchedAt: "2026-05-01",
-				draftContent: "Existing draft content",
-			};
-
-			// Setup: Add test grant to repository
-			await repository.addGrant(testGrant);
-
-			// Create an initial draft for the grant using fake provider for testing
-			await draftingService.generateDraft(testGrant, mockProfile, {
-				_providerType: "fake",
-			});
-
-			// Get draft count before revision
-			const draftsBefore = await repository.getDraftArtifacts(testGrant.id);
-			const countBefore = draftsBefore.length;
-
-			// Simulate revision by generating a new draft with fake provider
-			await draftingService.generateDraft(testGrant, mockProfile, {
-				revisionNotes: "Please improve the budget section",
-				_providerType: "fake",
-			});
-
-			// Get draft count after revision
-			const draftsAfter = await repository.getDraftArtifacts(testGrant.id);
-			const countAfter = draftsAfter.length;
-
-			// Should now have one more draft
-			expect(countAfter).toBe(countBefore + 1);
-		});
-
-		it("FAILS: revision should update grant status to drafting", async () => {
-			// Create a unique grant for this test
-			const testGrant: Grant = {
-				id: `test-revision-grant-status-${Date.now()}`,
-				title: "Test Revision Grant Status",
-				funder: "Test Funder",
-				funderShort: "TF",
-				award: "$50,000",
-				awardSort: 50000,
-				deadline: "2026-12-31",
-				daysOut: 200,
-				fit: 80,
-				tags: ["Community"],
-				status: "draft",
-				statusLabel: "Drafting",
-				matchedAt: "2026-05-01",
-				draftContent: "Existing draft content",
-			};
-
-			// Setup: Add test grant to repository
-			await repository.addGrant(testGrant);
-
-			// Create an initial draft for the grant using fake provider for testing
-			await draftingService.generateDraft(testGrant, mockProfile, {
-				_providerType: "fake",
-			});
-
-			// Get grant status before revision
-			const grantBefore = await repository.getGrant(testGrant.id);
-			expect(grantBefore?.status).toBe("draft");
-
-			// Simulate revision with fake provider for testing
-			await draftingService.generateDraft(testGrant, mockProfile, {
-				revisionNotes: "Please improve the budget section",
-				_providerType: "fake",
-			});
-
-			// Get grant status after revision
-			const grantAfter = await repository.getGrant(testGrant.id);
-			expect(grantAfter?.status).toBe("draft");
-		});
-	});
+    expect(response.status).toBe(201);
+    expect(data.revision.grantId).toBe(grant.id);
+    expect(data.revision.notes).toContain('budget section');
+    expect(data.draft.content).toContain('Please improve the budget section');
+  });
 });

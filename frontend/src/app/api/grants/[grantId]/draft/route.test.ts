@@ -1,139 +1,162 @@
-/**
- * Grant Draft API Route Tests
- *
- * Tests the /api/grants/[grantId]/draft endpoint using isolated temp data directory.
- */
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import type { Grant, OrganizationProfile, OpencodeSettings } from '../../../../../../../shared/types';
+import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
+import * as repository from '../../../../../server/grant-ops/repository';
+import { POST as documentPOST } from '../../../documents/route';
+import { POST as draftPOST } from './route';
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { withTempDataDir } from "../../../../../../../shared/grant-ops-persistence";
-import type {
-	Grant,
-	OrganizationProfile,
-} from "../../../../../../../shared/types";
-import * as draftingService from "../../../../../server/grant-ops/drafting-service";
-import * as repository from "../../../../../server/grant-ops/repository";
+const fixturePath = path.join(
+  process.cwd(),
+  'tests/fixtures/documents/hacker-dojo-program-summary.pdf',
+);
 
-function createMockGrant(id: string): Grant {
-	return {
-		id,
-		title: "Test Grant for Draft Route",
-		funder: "Test Funder",
-		funderShort: "TF",
-		award: "$25,000",
-		awardSort: 25000,
-		deadline: "2026-12-31",
-		daysOut: 180,
-		fit: 75,
-		tags: ["Test"],
-		status: "matched",
-		statusLabel: "Matched",
-		matchedAt: "2026-05-01",
-	};
+function buildMultipartRequest(fields: Record<string, string>, file: { name: string; type: string; bytes: Buffer }) {
+  const formData = new FormData();
+  for (const [key, value] of Object.entries(fields)) {
+    formData.append(key, value);
+  }
+  formData.append('file', new File([new Uint8Array(file.bytes)], file.name, { type: file.type }));
+  return { formData };
 }
 
-const mockProfile: OrganizationProfile = {
-	legalName: "Hacker Dojo",
-	ein: "12-3456789",
-	samUEI: "XyxabC123AB",
-	mission: "Test mission",
-	docTypes: ["501(c)(3) letter"],
-	searchThemes: ["EdTech"],
-	agentBehavior: {
-		autoDraftThreshold: 80,
-		submissionPolicy: "human-review-required",
-		notifyEmail: "ed@hackerdojo.com",
-		voiceAndTone: "professional",
-	},
+const profile: OrganizationProfile = {
+  legalName: 'Hacker Dojo',
+  ein: '12-3456789',
+  samUEI: 'XyxabC123AB',
+  mission: 'Test mission',
+  docTypes: ['PDF', 'DOCX'],
+  searchThemes: ['EdTech'],
+  agentBehavior: {
+    autoDraftThreshold: 80,
+    submissionPolicy: 'human-review-required',
+    notifyEmail: 'ed@hackerdojo.com',
+    voiceAndTone: 'professional',
+  },
 };
 
-describe("Grant Draft Route", () => {
-	// Use isolated temp directory for each test
-	let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+const settings: OpencodeSettings = {
+  binaryPath: '/usr/local/bin/opencode',
+  workingDirectory: '/tmp/hacker-dojo',
+  timeoutMs: 60000,
+  profile: 'default',
+  isConfigured: true,
+};
 
-	beforeEach(async () => {
-		// Use isolated temp directory instead of backup/restore
-		tempDataDir = await withTempDataDir();
-	});
+const fakeAdapter = {
+  executeResearch: vi.fn(),
+  generateDraft: vi.fn().mockImplementation(async (request) => ({
+    success: true,
+    content: `Grounding:\n${request.groundingDocuments?.join('\n') || ''}\nNotes:\n${request.revisionNotes || ''}`,
+  })),
+  isConfigured: () => true,
+};
 
-	afterEach(async () => {
-		// Cleanup temp directory
-		await tempDataDir.cleanup();
-	});
+function createGrant(id: string): Grant {
+  return {
+    id,
+    title: 'Test Grant for Draft Route',
+    funder: 'Test Funder',
+    funderShort: 'TF',
+    award: '$25,000',
+    awardSort: 25000,
+    deadline: '2026-12-31',
+    daysOut: 180,
+    fit: 75,
+    tags: ['Test'],
+    status: 'matched',
+    statusLabel: 'Matched',
+    matchedAt: '2026-05-01',
+  };
+}
 
-	describe("GET /api/grants/[grantId]/draft", () => {
-		it("returns drafts for a grant", async () => {
-			const mockGrant = createMockGrant(`draft-route-get-${Date.now()}`);
-			await repository.addGrant(mockGrant);
+describe('/api/grants/[grantId]/draft route', () => {
+  let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+  let grant: Grant;
 
-			// Create a draft first
-			await draftingService.generateDraft(mockGrant, mockProfile, {
-				_providerType: "fake",
-			});
+  beforeEach(async () => {
+    tempDataDir = await withTempDataDir();
+    invalidateCache();
+    setDependencies(createDependencies({ createOpencodeAdapter: () => fakeAdapter }));
+    grant = createGrant(`draft-${Date.now()}`);
+    await repository.addGrant(grant);
+    await repository.updateOrgProfile(profile);
+    await repository.updateOpencodeSettings(settings);
+  });
 
-			const drafts = await draftingService.getDraftArtifacts(mockGrant.id);
-			expect(Array.isArray(drafts)).toBe(true);
-			expect(drafts.length).toBeGreaterThan(0);
-		});
+  afterEach(async () => {
+    resetDependencies();
+    await tempDataDir.cleanup();
+    invalidateCache();
+  });
 
-		it("returns empty array when no drafts exist", async () => {
-			const mockGrant = createMockGrant(`draft-route-empty-${Date.now()}`);
-			await repository.addGrant(mockGrant);
+  it('rejects missing grant ids with 404', async () => {
+    const response = await draftPOST(
+      new Request('http://localhost/api/grants/missing/draft', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ revisionNotes: 'Please revise' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: 'missing' }) },
+    );
+    const data = await response.json();
 
-			const drafts = await draftingService.getDraftArtifacts(mockGrant.id);
-			expect(Array.isArray(drafts)).toBe(true);
-			expect(drafts.length).toBe(0);
-		});
-	});
+    expect(response.status).toBe(404);
+    expect(data.error).toMatch(/Grant not found/i);
+  });
 
-	describe("POST /api/grants/[grantId]/draft", () => {
-		it("generates a draft for a grant", async () => {
-			const mockGrant = createMockGrant(`draft-route-post-${Date.now()}`);
-			await repository.addGrant(mockGrant);
+  it('grounds draft generation from extracted PDF content only', async () => {
+    const payload = await buildMultipartRequest(
+      { name: 'Hacker Dojo Program Summary', type: 'PDF' },
+      {
+        name: 'hacker-dojo-program-summary.pdf',
+        type: 'application/pdf',
+        bytes: await fs.readFile(fixturePath),
+      },
+    );
 
-			const draft = await draftingService.generateDraft(
-				mockGrant,
-				mockProfile,
-				{
-					_providerType: "fake",
-				},
-			);
+    const documentResponse = await documentPOST({ formData: async () => payload.formData } as never);
+    const documentData = await documentResponse.json();
 
-			expect(draft).toBeDefined();
-			expect(draft.grantId).toBe(mockGrant.id);
-			expect(draft.content).toBeDefined();
-		});
+    expect(documentResponse.status).toBe(201);
+    expect(documentData.extractionStatus).toBe('extracted');
+    expect(documentData.contentSnippet).toBe(
+      'Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
+    );
 
-		it("creates a draft with version 1 for first draft", async () => {
-			const mockGrant = createMockGrant(`draft-route-v1-${Date.now()}`);
-			await repository.addGrant(mockGrant);
+    const response = await draftPOST(
+      new Request(`http://localhost/api/grants/${grant.id}/draft`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ revisionNotes: 'Please improve the budget section' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const draft = await response.json();
 
-			const draft = await draftingService.generateDraft(
-				mockGrant,
-				mockProfile,
-				{
-					_providerType: "fake",
-				},
-			);
+    expect(response.status).toBe(200);
+    expect(draft.content).toContain(
+      'Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
+    );
+    expect(draft.content).not.toContain('stored_unparsed');
+  });
 
-			expect(draft.version).toBe(1);
-		});
+  it('returns 400 when opencode settings are not configured', async () => {
+    await repository.updateOpencodeSettings({ ...settings, isConfigured: false });
 
-		it("increments version for subsequent drafts", async () => {
-			const mockGrant = createMockGrant(`draft-route-v2-${Date.now()}`);
-			await repository.addGrant(mockGrant);
+    const response = await draftPOST(
+      new Request(`http://localhost/api/grants/${grant.id}/draft`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ revisionNotes: 'Please revise' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const data = await response.json();
 
-			await draftingService.generateDraft(mockGrant, mockProfile, {
-				_providerType: "fake",
-			});
-			const draft2 = await draftingService.generateDraft(
-				mockGrant,
-				mockProfile,
-				{
-					_providerType: "fake",
-				},
-			);
-
-			expect(draft2.version).toBe(2);
-		});
-	});
+    expect(response.status).toBe(400);
+    expect(data.error).toMatch(/Opencode is not configured/i);
+  });
 });

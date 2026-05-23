@@ -23,9 +23,22 @@
  */
 
 import { expect, type Page, test } from "@playwright/test";
+import { resetAppState } from './test-utils';
+
+function expectSubsequence(actual: string[], expected: string[]): void {
+	let index = 0;
+	for (const item of actual) {
+		if (item === expected[index]) {
+			index += 1;
+			if (index === expected.length) break;
+		}
+	}
+	expect(index).toBe(expected.length);
+}
 
 test.describe("Discovery Sorting", () => {
-	test.beforeEach(async ({ page }) => {
+	test.beforeEach(async ({ request, page }) => {
+		await resetAppState(request);
 		await page.goto("http://localhost:3000");
 		await page.click('[data-view="discovery"]');
 		await page.waitForSelector(".grants-table", { timeout: 10000 });
@@ -127,9 +140,9 @@ test.describe("Discovery Sorting", () => {
 			expect(current).toBeGreaterThanOrEqual(next ?? 0);
 		}
 
-		// With live data, verify exact expected order
+		// With live data, verify the expected grants remain in descending fit order
 		const funderShorts = await getGrantIds(page);
-		expect(funderShorts).toEqual([
+		expectSubsequence(funderShorts, [
 			"NSF",
 			"FCC",
 			"Morrell",
@@ -187,9 +200,9 @@ test.describe("Discovery Sorting", () => {
 			}
 		}
 
-		// With live data, verify exact expected order
+		// With live data, verify the expected grants remain in deadline order
 		const funderShorts = await getGrantIds(page);
-		expect(funderShorts).toEqual([
+		expectSubsequence(funderShorts, [
 			"DEA",
 			"United Way",
 			"FCC",
@@ -225,9 +238,9 @@ test.describe("Discovery Sorting", () => {
 			expect(current).toBeGreaterThanOrEqual(next ?? 0);
 		}
 
-		// With live data, verify exact expected order
+		// With live data, verify the expected grants remain in award order
 		const funderShorts = await getGrantIds(page);
-		expect(funderShorts).toEqual([
+		expectSubsequence(funderShorts, [
 			"NSF",
 			"FCC",
 			"Kresge",

@@ -1,27 +1,22 @@
-/**
- * Persistence Integrity Tests
- *
- * Verifies that the shared persistence layer functions (loadGrants, saveGrants,
- * loadProfile, saveProfile, loadPersistedData, savePersistedData) all use
- * the same DATA_DIR (.grant-ops-data/) for file storage.
- *
- * This ensures that repository.ts and any other module using the shared
- * persistence layer read/write to the same files.
- */
-
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import {
   DATA_DIR,
-  loadGrants,
-  saveGrants,
-  loadProfile,
-  saveProfile,
-  loadPersistedData,
+  getDataDir,
   getDataPath,
   invalidateCache,
+  loadGrants,
+  loadOpencodeSettings,
+  loadPersistedData,
+  loadProfile,
+  saveGrants,
+  saveOpencodeSettings,
+  saveProfile,
+  withTempDataDir,
 } from './grant-ops-persistence';
+import { defaultProfile, defaultOpencodeSettings } from './seed-data';
 
-// Helper to create unique test grant with crypto UUID
 function createTestGrant(id: string) {
   return {
     id,
@@ -39,134 +34,112 @@ function createTestGrant(id: string) {
   };
 }
 
-// Generate unique ID using crypto
-function uniqueId(prefix: string): string {
-  const timestamp = Date.now();
-  const random = Math.random().toString(36).substring(2, 8);
-  return `${prefix}-${timestamp}-${random}`;
-}
-
 describe('Shared Persistence Integrity', () => {
-  // Backup original grants.json before each test and restore after
-  let originalGrantsBackup: Awaited<ReturnType<typeof loadGrants>> | null = null;
+  let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>> | null = null;
 
-  beforeEach(async () => {
-    // Invalidate cache to ensure we read fresh from disk
+  beforeEach(() => {
     invalidateCache();
-    // Create deep copy via JSON serialization to avoid reference issues
-    originalGrantsBackup = JSON.parse(JSON.stringify(await loadGrants()));
   });
 
   afterEach(async () => {
-    // Restore original grants after each test
-    if (originalGrantsBackup !== null) {
-      await saveGrants(originalGrantsBackup);
+    if (tempDataDir) {
+      await tempDataDir.cleanup();
+      tempDataDir = null;
     }
     invalidateCache();
   });
 
   describe('DATA_DIR constant', () => {
-    it('exports DATA_DIR as an absolute path ending with .grant-ops-data', () => {
-      expect(DATA_DIR).toMatch(/\.grant-ops-data$/);
+    it('exports a canonical absolute path ending with .grant-ops-data', () => {
       expect(DATA_DIR).toContain('/');
+      expect(DATA_DIR).toMatch(/\.grant-ops-data$/);
     });
 
-    it('getDataPath uses DATA_DIR', () => {
-      const dataPath = getDataPath();
-      expect(dataPath).toContain(DATA_DIR);
-    });
-  });
+    it('resolves the same data dir from repo-root and frontend working directories', async () => {
+      const originalCwd = process.cwd();
+      const repoRootResult = getDataDir();
+      process.chdir(path.join(originalCwd, 'frontend'));
+      const frontendCwdResult = getDataDir();
+      process.chdir(originalCwd);
 
-  describe('Persistence functions use consistent paths', () => {
-    it('loadGrants and saveGrants use same file path', async () => {
-      // Both loadGrants and saveGrants use: path.join(cwd, DATA_DIR, 'grants.json')
-      // This test verifies they read/write to the same location
-      // Use unique ID to avoid conflicts with other tests
-      const testGrant = createTestGrant(uniqueId('persistence-grant'));
-
-      await saveGrants([testGrant]);
-
-      // Verify we can read back what we wrote (same file path)
-      const loaded = await loadGrants();
-      const found = loaded.find((g) => g.id === testGrant.id);
-      expect(found).toBeDefined();
-      expect(found?.title).toBe(testGrant.title);
-    });
-
-    it('loadPersistedData and savePersistedData use same directory', async () => {
-      // Both use: path.join(cwd, DATA_DIR, 'persisted-data.json')
-      const data = await loadPersistedData();
-      expect(data).toBeDefined();
-      expect(data).toHaveProperty('sources');
-      expect(data).toHaveProperty('crawlRuns');
-      expect(data).toHaveProperty('draftArtifacts');
-      expect(data).toHaveProperty('approvalRecords');
-      expect(data).toHaveProperty('submissionRecords');
-      expect(data).toHaveProperty('followUps');
-      expect(data).toHaveProperty('opencodeSettings');
-    });
-
-    it('loadProfile and saveProfile use same file path', async () => {
-      // Both use: path.join(cwd, DATA_DIR, 'profile.json')
-      const testProfile = {
-        legalName: 'Test Org',
-        ein: '12-3456789',
-        samUEI: 'TEST123456789',
-        mission: 'Test mission',
-        docTypes: ['PDF'] as string[],
-        searchThemes: ['Test'] as string[],
-        agentBehavior: {
-          autoDraftThreshold: 50,
-          submissionPolicy: 'Test',
-          notifyEmail: 'test@test.com',
-          voiceAndTone: 'Test',
-        },
-      };
-
-      await saveProfile(testProfile);
-
-      const loaded = await loadProfile();
-      expect(loaded.legalName).toBe('Test Org');
+      expect(repoRootResult).toBe(frontendCwdResult);
+      expect(getDataPath()).toBe(path.join(repoRootResult, 'grant-ops.sqlite'));
     });
   });
 
-  describe('Cross-module file path consistency', () => {
-    it('loadGrants reads from same path as what saveGrants writes to', async () => {
-      // This verifies the shared persistence functions use consistent paths
-      // Use unique ID to avoid conflicts with other tests
-      const testGrant = createTestGrant(uniqueId('consistency-grant'));
+  describe('sqlite bootstrap precedence', () => {
+    it('prefers standalone opencode-settings.json over embedded persisted-data settings', async () => {
+      tempDataDir = await withTempDataDir();
+      const { dataDir } = tempDataDir;
 
-      await saveGrants([testGrant]);
+      await fs.writeFile(
+        path.join(dataDir, 'grants.json'),
+        JSON.stringify([createTestGrant('bootstrap-grant')], null, 2),
+        'utf8',
+      );
+      await fs.writeFile(
+        path.join(dataDir, 'profile.json'),
+        JSON.stringify(defaultProfile, null, 2),
+        'utf8',
+      );
+      await fs.writeFile(
+        path.join(dataDir, 'persisted-data.json'),
+        JSON.stringify(
+          {
+            sources: [],
+            crawlRuns: [],
+            draftArtifacts: [],
+            revisionRequests: [],
+            approvalRecords: [],
+            submissionRecords: [],
+            followUps: [],
+            opencodeSettings: { ...defaultOpencodeSettings, binaryPath: '/embedded/bin', isConfigured: true },
+            notifications: [],
+            tasks: [],
+            documents: [],
+            lastSync: '2026-05-22T00:00:00.000Z',
+          },
+          null,
+          2,
+        ),
+        'utf8',
+      );
+      await fs.writeFile(
+        path.join(dataDir, 'opencode-settings.json'),
+        JSON.stringify(
+          { ...defaultOpencodeSettings, binaryPath: '/standalone/bin', isConfigured: true },
+          null,
+          2,
+        ),
+        'utf8',
+      );
 
-      // Both loadGrants and saveGrants use: path.join(cwd, DATA_DIR, 'grants.json')
-      const loaded = await loadGrants();
-      const found = loaded.find((g) => g.id === testGrant.id);
+      invalidateCache();
 
-      expect(found).toBeDefined();
-      expect(found?.title).toBe(testGrant.title);
+      const settings = await loadOpencodeSettings();
+      const persisted = await loadPersistedData();
+      const grants = await loadGrants();
+      const profile = await loadProfile();
+
+      expect(settings.binaryPath).toBe('/standalone/bin');
+      expect(persisted.opencodeSettings?.binaryPath).toBe('/standalone/bin');
+      expect(grants[0]?.id).toBe('bootstrap-grant');
+      expect(profile.legalName).toBe(defaultProfile.legalName);
     });
 
-    it('loadProfile reads from same path as saveProfile writes to', async () => {
-      // Both use: path.join(cwd, DATA_DIR, 'profile.json')
-      const testProfile = {
-        legalName: 'Test Org',
-        ein: '12-3456789',
-        samUEI: 'TEST123456789',
-        mission: 'Test mission',
-        docTypes: ['PDF'] as string[],
-        searchThemes: ['Test'] as string[],
-        agentBehavior: {
-          autoDraftThreshold: 50,
-          submissionPolicy: 'Test',
-          notifyEmail: 'test@test.com',
-          voiceAndTone: 'Test',
-        },
-      };
+    it('writes sqlite-backed data without relying on JSON files', async () => {
+      tempDataDir = await withTempDataDir();
+      const grant = createTestGrant('write-grant');
 
-      await saveProfile(testProfile);
+      await saveGrants([grant]);
+      await saveProfile(defaultProfile);
+      await saveOpencodeSettings({ ...defaultOpencodeSettings, isConfigured: true, binaryPath: '/bin/opencode' });
 
-      const loaded = await loadProfile();
-      expect(loaded.legalName).toBe('Test Org');
+      const persisted = await loadPersistedData();
+      expect(persisted.sources).toEqual([]);
+      expect(persisted.documents).toEqual([]);
+      expect(persisted.opencodeSettings?.binaryPath).toBe('/bin/opencode');
+      expect(persisted.lastSync).toBeTruthy();
     });
   });
 });

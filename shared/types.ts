@@ -74,6 +74,8 @@ export interface Task {
   completed: boolean;
 }
 
+export type DocumentExtractionStatus = 'pending' | 'extracted' | 'stored_unparsed' | 'failed';
+
 export interface DocumentMetadata {
   id: string;
   name: string;
@@ -81,6 +83,13 @@ export interface DocumentMetadata {
   lastUsed?: string;
   version?: string;
   audited?: boolean;
+  uploadedAt?: string;
+  storagePath?: string;
+  extractionStatus?: DocumentExtractionStatus;
+  extractedText?: string;
+  contentSnippet?: string;
+  extractionError?: string;
+  mimeType?: string;
 }
 
 export interface BoardCard {
@@ -227,5 +236,3 @@ export interface StoreData {
   followUps: FollowUp[];
   opencodeSettings: OpencodeSettings;
 }
-
-

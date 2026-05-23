@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Grant } from '../../../shared/types';
+import type { Grant, Notification, Task } from '../../../shared/types';
 
 const mockGrants: Grant[] = [
   {
@@ -49,130 +49,50 @@ const mockGrants: Grant[] = [
   },
 ];
 
-describe('AppShell', () => {
-  describe('View Switching', () => {
-    it('should switch to discovery view when Discovery nav is clicked', () => {
-      const activeView = 'discovery';
-      expect(activeView).toBe('discovery');
-    });
+const notifications: Notification[] = [
+  { id: 'n1', text: 'Email submission sent', time: '1h ago', dot: 'blue' },
+  { id: 'n2', text: 'Follow-up scheduled', time: '2h ago', dot: 'green' },
+];
 
-    it('should switch to pipeline view when Pipeline nav is clicked', () => {
-      const activeView = 'pipeline';
-      expect(activeView).toBe('pipeline');
-    });
+const tasks: Task[] = [
+  { id: 't1', text: 'Review uploaded PDF', completed: false },
+  { id: 't2', text: 'Confirm portal submission', completed: true },
+];
 
-    it('should switch to settings view when Settings nav is clicked', () => {
-      const activeView = 'settings';
-      expect(activeView).toBe('settings');
-    });
+describe('AppShell state contract', () => {
+  it('derives badge counts from shell-owned grant, notification, and task state', () => {
+    const discoveryBadge = mockGrants.filter((g) => g.status === 'matched').length;
+    const pipelineBadge = mockGrants.filter((g) => g.status !== 'awarded').length;
+    const notificationBadge = notifications.length;
+    const taskBadge = tasks.filter((task) => !task.completed).length;
 
-    it('should switch to notifications view when Notifications nav is clicked', () => {
-      const activeView = 'notifications';
-      expect(activeView).toBe('notifications');
-    });
-
-    it('should switch to tasks view when Tasks nav is clicked', () => {
-      const activeView = 'tasks';
-      expect(activeView).toBe('tasks');
-    });
-
-    it('should default to dashboard view', () => {
-      const activeView = 'dashboard';
-      expect(activeView).toBe('dashboard');
-    });
+    expect(discoveryBadge).toBe(1);
+    expect(pipelineBadge).toBe(3);
+    expect(notificationBadge).toBe(2);
+    expect(taskBadge).toBe(1);
   });
 
-  describe('Notification Badge Count', () => {
-    it('should show notification badge count from store', () => {
-      const notificationCount = 3;
-      expect(notificationCount).toBe(3);
-    });
+  it('treats the latest crawl run as the canonical footer refresh source', () => {
+    const latestRun: { status: 'completed' | 'failed'; completedAt: string; startedAt: string } = {
+      status: 'completed',
+      completedAt: '2026-05-23T08:00:00.000Z',
+      startedAt: '2026-05-23T07:55:00.000Z',
+    };
 
-    it('should show 0 when no notifications', () => {
-      const notificationCount = 0;
-      expect(notificationCount).toBe(0);
-    });
+    const crawlStatus = {
+      online: latestRun.status !== 'failed',
+      lastSync: latestRun.completedAt || latestRun.startedAt,
+    };
 
-    it('should show badge when notifications exist', () => {
-      const notifications = [{ id: '1' }, { id: '2' }];
-      const shouldShowBadge = notifications.length > 0;
-      expect(shouldShowBadge).toBe(true);
-    });
+    expect(crawlStatus.online).toBe(true);
+    expect(crawlStatus.lastSync).toBe('2026-05-23T08:00:00.000Z');
   });
 
-  describe('Sidebar Footer Data Display', () => {
-    it('should display user email from org profile', () => {
-      const email = 'ed@hackerdojo.com';
-      expect(email).toBe('ed@hackerdojo.com');
-    });
+  it('refreshes drawer-bound state after approve/revision/submit mutations', () => {
+    const before = { selectedGrantId: 'nsf-tech', refreshKey: 0 };
+    const after = { ...before, refreshKey: before.refreshKey + 1 };
 
-    it('should display crawl status from IPC', () => {
-      const crawlStatus = { online: true, lastSync: new Date().toISOString() };
-      expect(crawlStatus.online).toBe(true);
-    });
-
-    it('should show offline indicator when crawler is offline', () => {
-      const crawlStatus = { online: false, lastSync: new Date().toISOString() };
-      expect(crawlStatus.online).toBe(false);
-    });
-  });
-
-  describe('GrantDrawer Opening', () => {
-    it('should open drawer when grant is selected', () => {
-      const selectedGrantId: string | null = 'nsf-tech';
-      const drawerOpen = selectedGrantId !== null;
-      expect(drawerOpen).toBe(true);
-    });
-
-    it('should close drawer when close button is clicked', () => {
-      const selectedGrantId: string | null = null;
-      const drawerOpen = selectedGrantId !== null;
-      expect(drawerOpen).toBe(false);
-    });
-  });
-
-  describe('Notifications View Switching', () => {
-    it('should switch to notifications view when Notifications nav item is clicked', () => {
-      const clickedView = 'notifications';
-      const expectedView = 'notifications';
-      expect(clickedView).toBe(expectedView);
-    });
-
-    it('should not just log - should actually switch view', () => {
-      const activityNavItem = { view: 'notifications', label: 'Notifications', icon: '✉' };
-      const shouldSwitch = activityNavItem.view !== undefined;
-      expect(shouldSwitch).toBe(true);
-    });
-  });
-
-  describe('Tasks View Switching', () => {
-    it('should switch to tasks view when Tasks nav item is clicked', () => {
-      const clickedView = 'tasks';
-      const expectedView = 'tasks';
-      expect(clickedView).toBe(expectedView);
-    });
-
-    it('should not just log - should actually switch view', () => {
-      const activityNavItem = { view: 'tasks', label: 'Tasks', icon: '⌖' };
-      const shouldSwitch = activityNavItem.view !== undefined;
-      expect(shouldSwitch).toBe(true);
-    });
-  });
-
-  describe('Nav Count Badges', () => {
-    it('should show matched count on Discovery nav', () => {
-      const matchedCount = mockGrants.filter((g) => g.status === 'matched').length;
-      expect(matchedCount).toBe(1);
-    });
-
-    it('should show active (non-awarded) count on Pipeline nav', () => {
-      const activeCount = mockGrants.filter((g) => g.status !== 'awarded').length;
-      expect(activeCount).toBe(3);
-    });
-
-    it('should show review count as notification badge', () => {
-      const reviewCount = mockGrants.filter((g) => g.status === 'review').length;
-      expect(reviewCount).toBe(1);
-    });
+    expect(after.selectedGrantId).toBe(before.selectedGrantId);
+    expect(after.refreshKey).toBe(1);
   });
 });

@@ -2,10 +2,6 @@
  * Drafting Service
  *
  * Handles proposal draft generation and revision management.
- *
- * This service uses the DI boundary from dependencies.ts for all external dependencies.
- * Production behavior: when using 'cli' provider, requires configured Opencode settings.
- * When 'fake' provider is explicitly requested, works without Opencode configuration (for testing).
  */
 
 import type {
@@ -13,6 +9,7 @@ import type {
   Grant,
   RevisionRequest,
   OrganizationProfile,
+  DocumentMetadata,
 } from '../../../../shared/types';
 import { getDependencies } from './dependencies';
 
@@ -24,6 +21,21 @@ export interface GenerateDraftOptions {
   _providerType?: 'cli' | 'fake';
 }
 
+function getGroundingDocuments(documents: DocumentMetadata[]): string[] {
+  return documents
+    .filter((document) => document.extractionStatus === 'extracted')
+    .map((document) => {
+      const parts = [document.name];
+      if (document.contentSnippet) {
+        parts.push(document.contentSnippet);
+      }
+      if (document.extractedText && document.extractedText !== document.contentSnippet) {
+        parts.push(document.extractedText);
+      }
+      return parts.join('\n');
+    });
+}
+
 export async function generateDraft(
   grant: Grant,
   profile: OrganizationProfile,
@@ -33,33 +45,26 @@ export async function generateDraft(
   const clock = deps.clock;
   const idGenerator = deps.idGenerator;
 
-  // Get existing drafts to determine version number
   const existingDrafts = await deps.repository.getDraftArtifacts(grant.id);
   const latestVersion = existingDrafts.length > 0
     ? Math.max(...existingDrafts.map((d) => d.version))
     : 0;
 
   const settings = await deps.repository.getOpencodeSettings();
-  
-  // Determine provider type - use internal _providerType if set (test-only), otherwise require CLI with config
   const providerType = options._providerType || 'cli';
 
-  if (providerType === 'cli') {
-    if (!settings?.isConfigured) {
-      throw new Error(
-        'Opencode is not configured. Please set up Opencode settings in the application before generating drafts.',
-      );
-    }
+  if (providerType === 'cli' && !settings?.isConfigured) {
+    throw new Error(
+      'Opencode is not configured. Please set up Opencode settings in the application before generating drafts.',
+    );
   }
 
-  // Create Opencode adapter using DI
   const adapter = deps.createOpencodeAdapter(settings!, providerType);
-
-  // Get previous draft if exists
   const previousDraft = await deps.repository.getLatestDraftArtifact(grant.id);
   const previousContent = previousDraft?.content;
+  const documents = await deps.repository.getDocuments();
+  const groundedDocuments = getGroundingDocuments(documents);
 
-  // Generate new draft
   const response = await adapter.generateDraft({
     grantTitle: grant.title,
     grantFunder: grant.funder,
@@ -69,6 +74,7 @@ export async function generateDraft(
     missionStatement: profile.mission,
     previousDraft: previousContent || '',
     revisionNotes: options.revisionNotes || '',
+    groundingDocuments: groundedDocuments,
   });
 
   if (!response.success || !response.content) {
@@ -77,7 +83,6 @@ export async function generateDraft(
     );
   }
 
-  // Create draft artifact
   const draftArtifact: DraftArtifact = {
     id: idGenerator.generateId('draft'),
     grantId: grant.id,
@@ -89,8 +94,6 @@ export async function generateDraft(
   };
 
   await deps.repository.addDraftArtifact(draftArtifact);
-
-  // Update grant status to drafting
   await deps.repository.updateGrant(grant.id, {
     status: 'draft',
     statusLabel: 'Drafting',
@@ -108,7 +111,6 @@ export async function createRevisionRequest(
   const deps = getDependencies();
   const idGenerator = deps.idGenerator;
 
-  // Get latest draft version
   const drafts = await deps.repository.getDraftArtifacts(grant.id);
   const latestVersion = drafts.length > 0
     ? Math.max(...drafts.map((d) => d.version))
@@ -125,8 +127,6 @@ export async function createRevisionRequest(
   };
 
   await deps.repository.addRevisionRequest(revisionRequest);
-
-  // Update grant status - revision_requested keeps it in drafting state
   await deps.repository.updateGrant(grant.id, {
     status: 'draft',
     statusLabel: 'Drafting',

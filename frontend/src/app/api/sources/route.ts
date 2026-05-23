@@ -13,22 +13,18 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-
-    if (!body.name || !body.url) {
-      return NextResponse.json(
-        { error: 'Name and URL are required' },
-        { status: 400 },
-      );
+    const body = await request.json().catch(() => null);
+    if (!body || typeof body.name !== 'string' || typeof body.url !== 'string') {
+      return NextResponse.json({ error: 'Name and URL are required' }, { status: 400 });
     }
 
     const source = await sourceService.addSource({
-      name: body.name,
-      url: body.url,
-      type: body.type || 'website',
+      name: body.name.trim(),
+      url: body.url.trim(),
+      type: body.type === 'database' || body.type === 'api' ? body.type : 'website',
     });
 
-    return NextResponse.json(source, { status: 201 });
+    return NextResponse.json({ success: true, source }, { status: 201 });
   } catch (error) {
     console.error('Error adding source:', error);
     return NextResponse.json({ error: 'Failed to add source' }, { status: 500 });
