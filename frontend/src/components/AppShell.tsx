@@ -40,11 +40,14 @@ export default function AppShell() {
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
   const [crawlStatus, setCrawlStatus] = useState<CrawlStatus>({
     online: true,
-    lastSync: new Date().toISOString(),
+    lastSync: '',
   });
   const [notifications, setNotifications] = useState<{ id: string }[]>([]);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+
     async function loadInitialData() {
       try {
         const [grantsData, profileData, notificationsData] = await Promise.all([
@@ -146,7 +149,7 @@ export default function AppShell() {
           <span className={`status-dot ${crawlStatus.online ? '' : 'offline'}`} />
           Crawler {crawlStatus.online ? 'online' : 'offline'}
           <br />
-          Last sync: {getRelativeTime(crawlStatus.lastSync)}
+          Last sync: {isMounted && crawlStatus.lastSync ? getRelativeTime(crawlStatus.lastSync) : '—'}
           <br />
           <br />
           Logged in as

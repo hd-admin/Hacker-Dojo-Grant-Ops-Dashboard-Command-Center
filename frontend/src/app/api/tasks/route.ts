@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Task } from '../../../../../shared/types';
+export const dynamic = 'force-dynamic';
+
 
 // GET: Get all tasks
 export async function GET() {

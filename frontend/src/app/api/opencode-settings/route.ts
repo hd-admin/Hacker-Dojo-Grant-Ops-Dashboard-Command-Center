@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+export const dynamic = 'force-dynamic';
+
 
 export async function GET() {
   try {

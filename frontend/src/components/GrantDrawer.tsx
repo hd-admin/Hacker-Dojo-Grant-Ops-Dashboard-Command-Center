@@ -156,15 +156,17 @@ export default function GrantDrawer({ grantId, onClose }: GrantDrawerProps) {
     }
   };
 
-  const isOpen = !!grantId;
+  if (!grantId) {
+    return null;
+  }
 
   return (
     <>
       {/* Overlay */}
-      <div className={`drawer-overlay ${isOpen ? 'open' : ''}`} onClick={onClose} />
+      <div className="drawer-overlay open" onClick={onClose} />
 
       {/* Drawer */}
-      <aside className={`drawer ${isOpen ? 'open' : ''}`}>
+      <aside className="drawer open">
         {loading ? (
           <div className="drawer-header">
             <div className="drawer-funder">Loading...</div>

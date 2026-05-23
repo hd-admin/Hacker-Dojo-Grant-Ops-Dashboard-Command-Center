@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as researchService from '@/server/grant-ops/research-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+export const dynamic = 'force-dynamic';
+
 
 export async function POST(_request: NextRequest) {
   try {

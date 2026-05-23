@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { DocumentMetadata } from '../../../../../shared/types';
+export const dynamic = 'force-dynamic';
+
 
 // GET: List all documents
 export async function GET() {

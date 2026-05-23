@@ -80,8 +80,11 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
   const [activity, setActivity] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
+    setIsMounted(true);
+
     async function load() {
       try {
         const [grantsData, profileData] = await Promise.all([
@@ -125,8 +128,9 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
   }
 
   // Dynamic time-of-day greeting
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const hour = isMounted ? new Date().getHours() : null;
+  const greeting =
+    hour === null ? 'Welcome' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   // KPI calculations
   const activeGrants = grants.filter((g) => g.status !== 'awarded');
@@ -139,22 +143,28 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
   const draftedReady = grants.filter((g) => g.status === 'review').length;
 
   // New Matches 7d - grants with matchedAt within 7 days of TODAY
-  const today = new Date();
-  const sevenDaysAgo = new Date(today);
-  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const newMatches7d = grants.filter((g) => {
-    if (!g.matchedAt || g.status !== 'matched') return false;
-    const matchedDate = new Date(g.matchedAt);
-    return matchedDate >= sevenDaysAgo && matchedDate <= today;
-  }).length;
+  const today = isMounted ? new Date() : null;
+  const sevenDaysAgo = today ? new Date(today) : null;
+  if (sevenDaysAgo) sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const newMatches7d =
+    today && sevenDaysAgo
+      ? grants.filter((g) => {
+          if (!g.matchedAt || g.status !== 'matched') return false;
+          const matchedDate = new Date(g.matchedAt);
+          return matchedDate >= sevenDaysAgo && matchedDate <= today;
+        }).length
+      : 0;
 
   // KPI delta: grants added this month
-  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-  const grantsThisMonth = grants.filter((g) => {
-    if (!g.matchedAt) return false;
-    const matchedDate = new Date(g.matchedAt);
-    return matchedDate >= firstOfMonth && matchedDate <= today;
-  }).length;
+  const firstOfMonth = today ? new Date(today.getFullYear(), today.getMonth(), 1) : null;
+  const grantsThisMonth =
+    today && firstOfMonth
+      ? grants.filter((g) => {
+          if (!g.matchedAt) return false;
+          const matchedDate = new Date(g.matchedAt);
+          return matchedDate >= firstOfMonth && matchedDate <= today;
+        }).length
+      : 0;
 
   // High-fit count: matched grants with fit >= 85
   const highFitCount = grants.filter((g) => g.fit >= 85 && g.status === 'matched').length;
@@ -169,12 +179,14 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
   const reviewQueue = grants.filter((g) => g.status === 'review');
 
   // Header sub text
-  const dayName = new Date().toLocaleDateString('en-US', { weekday: 'long' });
-  const dateStr = new Date().toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+  const dayName = today ? today.toLocaleDateString('en-US', { weekday: 'long' }) : '';
+  const dateStr = today
+    ? today.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : '';
 
   return (
     <>
@@ -188,7 +200,7 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
             .
           </h1>
           <div className="header-sub">
-            {dayName} · {dateStr} · {activeGrants.length} grants in pipeline
+            {(dayName || 'Grant operations') + (dateStr ? ` · ${dateStr}` : '')} · {activeGrants.length} grants in pipeline
           </div>
         </div>
         <div className="header-actions">

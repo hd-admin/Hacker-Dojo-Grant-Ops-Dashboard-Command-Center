@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as submissionService from '@/server/grant-ops/submission-service';
+export const dynamic = 'force-dynamic';
+
 
 export async function GET() {
   try {
