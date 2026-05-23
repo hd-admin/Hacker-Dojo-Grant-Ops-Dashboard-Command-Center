@@ -1,7 +1,27 @@
-import { describe, it, expect } from 'vitest';
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { Grant } from '../../../shared/types';
 
-const mockGrants: Grant[] = [
+const { grantsGetAll, sourcesAdd, researchTrigger, onGrantSelect, onRefreshAppState } = vi.hoisted(() => ({
+  grantsGetAll: vi.fn(),
+  sourcesAdd: vi.fn(),
+  researchTrigger: vi.fn(),
+  onGrantSelect: vi.fn(),
+  onRefreshAppState: vi.fn(),
+}));
+
+vi.mock('../lib/grant-ops-client', () => ({
+  client: {
+    grants: { getAll: grantsGetAll },
+    sources: { add: sourcesAdd },
+    research: { trigger: researchTrigger },
+  },
+}));
+
+import DiscoveryView from './DiscoveryView';
+
+const initialGrants: Grant[] = [
   {
     id: 'nsf-tech',
     title: 'NSF Technology Access Grant',
@@ -17,11 +37,15 @@ const mockGrants: Grant[] = [
     statusLabel: 'Matched',
     matchedAt: '2026-05-19',
   },
+];
+
+const refreshedGrants: Grant[] = [
+  ...initialGrants,
   {
-    id: 'svcf-community',
-    title: 'SVCF Community Innovation Fund',
-    funder: 'Silicon Valley Community Foundation',
-    funderShort: 'SVCF',
+    id: 'candid-community',
+    title: 'Candid Community Innovation Fund',
+    funder: 'Candid',
+    funderShort: 'Candid',
     award: '$75,000',
     awardSort: 75000,
     deadline: 'Rolling',
@@ -30,69 +54,78 @@ const mockGrants: Grant[] = [
     tags: ['Community', 'Foundation'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-20',
-  },
-  {
-    id: 'dell-equality',
-    title: 'Dell Technologies Equality Fund',
-    funder: 'Dell Technologies',
-    funderShort: 'Dell',
-    award: '$150,000',
-    awardSort: 150000,
-    deadline: '2026-07-01',
-    daysOut: 41,
-    fit: 76,
-    tags: ['Corporate', 'EdTech'],
-    status: 'matched',
-    statusLabel: 'Matched',
-    matchedAt: '2026-05-18',
-  },
-  {
-    id: 'google-cs',
-    title: 'Google CS First Grant',
-    funder: 'Google.org',
-    funderShort: 'Google',
-    award: '$100,000',
-    awardSort: 100000,
-    deadline: '2026-06-30',
-    daysOut: 40,
-    fit: 79,
-    tags: ['Science & Tech', 'Corporate', 'EdTech'],
-    status: 'matched',
-    statusLabel: 'Matched',
-    matchedAt: '2026-05-17',
+    matchedAt: '2026-05-23',
   },
 ];
 
-describe('DiscoveryView state contract', () => {
-  it('sorts by best fit and keeps rolling deadlines last', () => {
-    const sorted = [...mockGrants].sort((a, b) => b.fit - a.fit);
-    expect(sorted.map((g) => g.id)).toEqual(['nsf-tech', 'svcf-community', 'google-cs', 'dell-equality']);
+let container: HTMLDivElement;
+let root: ReturnType<typeof createRoot>;
 
-    const byDeadline = [...mockGrants].sort((a, b) => {
-      if (a.deadline === 'Rolling') return 1;
-      if (b.deadline === 'Rolling') return -1;
-      return a.daysOut - b.daysOut;
-    });
-    expect(byDeadline.map((g) => g.id)).toEqual(['nsf-tech', 'google-cs', 'dell-equality', 'svcf-community']);
-  });
+async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<void> {
+  const start = Date.now();
+  while (!predicate()) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error('Timed out waiting for condition');
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+  }
+}
 
-  it('refreshes persisted grants after + Add source and crawl trigger', async () => {
-    const sourceCreate = { name: 'Candid', url: 'https://www.candid.org', type: 'website' as const };
-    const sourceResult = { id: 'source-1', ...sourceCreate, createdAt: '2026-05-23T08:00:00.000Z', isActive: true };
-    const latestRun = { sourcesCrawled: 1, grantsFound: 1, grantsMatched: 1, status: 'completed' as const };
+function setInputValue(input: HTMLInputElement, value: string): void {
+  const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+  valueSetter?.call(input, value);
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+  input.dispatchEvent(new Event('change', { bubbles: true }));
+}
 
-    const refreshedGrants = mockGrants.slice(0, 2);
-    expect(sourceResult.url).toContain('candid');
-    expect(latestRun.sourcesCrawled).toBe(1);
-    expect(refreshedGrants.length).toBe(2);
-  });
+beforeEach(() => {
+  grantsGetAll.mockReset();
+  sourcesAdd.mockReset();
+  researchTrigger.mockReset();
+  onGrantSelect.mockReset();
+  onRefreshAppState.mockReset();
 
-  it('keeps discovery counts aligned with the grants contract', () => {
-    const matchedCount = mockGrants.filter((grant) => grant.status === 'matched').length;
-    const highFitCount = mockGrants.filter((grant) => grant.fit >= 85).length;
+  grantsGetAll.mockResolvedValueOnce(initialGrants).mockResolvedValue(refreshedGrants);
+  sourcesAdd.mockResolvedValue({ success: true, source: { id: 'source-1' } });
+  researchTrigger.mockResolvedValue({ success: true, sourcesCrawled: 1 });
 
-    expect(matchedCount).toBe(4);
-    expect(highFitCount).toBe(1);
+  container = document.createElement('div');
+  document.body.appendChild(container);
+  root = createRoot(container);
+});
+
+afterEach(() => {
+  root.unmount();
+  container.remove();
+});
+
+describe('DiscoveryView', () => {
+  it('renders persisted grants and refreshes after adding a source and crawling', async () => {
+    root.render(React.createElement(DiscoveryView, { onGrantSelect, onRefreshAppState }));
+    await waitFor(() => container.querySelectorAll('.grants-row:not(.header)').length === 1);
+    expect(container.textContent).toContain('NSF Technology Access Grant');
+
+    (container.querySelector('button.btn-primary') as HTMLButtonElement | null)?.click();
+    await waitFor(() => container.querySelector('input[placeholder="Source name"]') !== null);
+
+    const nameInput = container.querySelector('input[placeholder="Source name"]') as HTMLInputElement;
+    const urlInput = container.querySelector('input[placeholder="https://..."]') as HTMLInputElement;
+    const addButton = container.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    setInputValue(nameInput, 'Candid');
+    setInputValue(urlInput, 'https://www.candid.org');
+    await waitFor(() => addButton.disabled === false);
+
+    addButton.click();
+    await waitFor(() => container.querySelectorAll('.grants-row:not(.header)').length === 2);
+
+    expect(sourcesAdd).toHaveBeenCalledWith({ name: 'Candid', url: 'https://www.candid.org', type: 'website' });
+    expect(researchTrigger).toHaveBeenCalledTimes(1);
+    expect(onRefreshAppState).toHaveBeenCalledTimes(1);
+    expect(grantsGetAll).toHaveBeenCalledTimes(2);
+    expect(container.textContent).toContain('Candid Community Innovation Fund');
+
+    container.querySelector('.grants-row:not(.header)')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    expect(onGrantSelect).toHaveBeenCalledWith('nsf-tech');
   });
 });

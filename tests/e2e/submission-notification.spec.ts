@@ -210,34 +210,21 @@ test.describe("Submission Notification", () => {
 		expect(grantFollowUps.length).toBeGreaterThan(0);
 	});
 
-	test("submission-creates-task: Submission creates task for human review", async () => {
-		// Get grants - find any grant in draft state
+	test("submission-creates-task: Submission creates a follow-up task for human review", async () => {
 		const grantsResponse = await apiContext.get("/api/grants");
 		expect(grantsResponse.ok()).toBeTruthy();
 		const grants: Array<{
 			id: string;
 			status: string;
 			title: string;
+			funder: string;
 			draftContent?: string;
 		}> = await grantsResponse.json();
 
-		// Find ANY grant in draft state
-		const draftGrant = grants.find(
-			(g) => g.status === "draft" && g.draftContent,
-		);
-
-		// There should be draft grants from seed data
+		const draftGrant = grants.find((g) => g.status === "draft" && g.draftContent);
 		expect(draftGrant).toBeDefined();
 		const draftGrantChecked = requireDraftGrant(draftGrant);
-		expect(draftGrantChecked.id).toBeDefined();
 
-		// Get initial task count
-		const initialTasksResponse = await apiContext.get("/api/tasks");
-		const initialTasks: Array<{ id: string }> =
-			await initialTasksResponse.json();
-		const initialCount = initialTasks.length;
-
-		// Approve
 		const approveResponse = await apiContext.post(
 			`/api/grants/${draftGrantChecked.id}/approval`,
 			{
@@ -247,7 +234,7 @@ test.describe("Submission Notification", () => {
 		);
 		expect(approveResponse.ok()).toBeTruthy();
 
-		// Submit
+		const confirmationId = `TEST-${Date.now()}`;
 		const submitResponse = await apiContext.post(
 			`/api/grants/${draftGrantChecked.id}/submit`,
 			{
@@ -255,7 +242,7 @@ test.describe("Submission Notification", () => {
 				data: {
 					method: {
 						type: "email",
-						confirmationId: `TEST-${Date.now()}`,
+						confirmationId,
 						submittedBy: "test-user",
 					},
 					submittedBy: "test-user",
@@ -264,12 +251,17 @@ test.describe("Submission Notification", () => {
 		);
 		expect(submitResponse.ok()).toBeTruthy();
 
-		// Check tasks were created
 		const finalTasksResponse = await apiContext.get("/api/tasks");
-		const finalTasks: Array<{ id: string }> = await finalTasksResponse.json();
+		const finalTasks: Array<{ id: string; text: string; completed: boolean }> =
+			await finalTasksResponse.json();
 
-		// Should have more tasks than before
-		expect(finalTasks.length).toBeGreaterThan(initialCount);
+		const submissionTask = finalTasks.find(
+			(task) =>
+				task.text.includes(draftGrantChecked.funder) &&
+				task.text.includes(confirmationId) &&
+				task.completed === false,
+		);
+		expect(submissionTask).toBeDefined();
 	});
 
 	test("submission-record-has-email-method: Submission records method.type as email", async () => {

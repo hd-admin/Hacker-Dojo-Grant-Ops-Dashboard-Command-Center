@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { grantsApi, revisionsApi } from '../lib/grant-ops-client';
 import type { Grant, SubmissionMethod } from '../../../shared/types';
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Grant } from '../../../shared/types';
 import { seedGrants } from '../../../shared/seed-data';
 import { client } from '../lib/grant-ops-client';

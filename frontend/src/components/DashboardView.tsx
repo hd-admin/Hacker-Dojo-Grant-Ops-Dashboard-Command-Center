@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import type { Grant, OrganizationProfile, ActivityEvent } from '../../../shared/types';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';

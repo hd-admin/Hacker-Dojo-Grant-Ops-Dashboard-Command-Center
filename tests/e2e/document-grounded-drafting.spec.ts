@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test, type APIRequestContext } from '@playwright/test';
+import { defaultProfile } from '../../shared/seed-data';
 import { resetAppState } from './test-utils';
 
 const fixturePath = path.join(
@@ -26,6 +27,13 @@ EOF
   return opencodeStubPath;
 }
 
+async function configureProfile(api: APIRequestContext): Promise<void> {
+  const response = await api.put('http://localhost:3000/api/profile', {
+    data: defaultProfile,
+  });
+  expect(response.ok()).toBeTruthy();
+}
+
 async function configureOpencode(api: APIRequestContext, binaryPath: string): Promise<void> {
   const response = await api.put('http://localhost:3000/api/opencode-settings', {
     data: {
@@ -46,6 +54,7 @@ test('document-grounded-drafting: upload, ground, draft, approve, revise, and su
   const stubPath = await ensureOpencodeStub();
 
   await resetAppState(request);
+  await configureProfile(request);
   await configureOpencode(request, stubPath);
   await page.goto('http://localhost:3000');
   await page.waitForSelector('.app', { timeout: 10000 });
@@ -60,94 +69,72 @@ test('document-grounded-drafting: upload, ground, draft, approve, revise, and su
   });
 
   const bytes = await fs.readFile(fixturePath);
-  const uploadResult = await page.evaluate(async ({ base64, exact }) => {
-    const binary = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
-    const formData = new FormData();
-    formData.append('name', 'Hacker Dojo Program Summary');
-    formData.append('type', 'PDF');
-    formData.append('file', new File([binary], 'hacker-dojo-program-summary.pdf', { type: 'application/pdf' }));
-
-    const response = await fetch('http://localhost:3000/api/documents', {
-      method: 'POST',
-      body: formData,
-    });
-
-    const text = await response.text();
-    return { ok: response.ok, status: response.status, text, exact };
-  }, { base64: bytes.toString('base64'), exact: exactSentence });
-
-  if (!uploadResult.ok) {
-    throw new Error(`Upload failed with status ${uploadResult.status}: ${uploadResult.text}`);
-  }
-  expect(uploadResult.status).toBe(201);
-  const uploadedDocument = JSON.parse(uploadResult.text) as { extractionStatus?: string; contentSnippet?: string };
+  const uploadResponse = await request.post('http://localhost:3000/api/documents', {
+    multipart: {
+      name: 'Hacker Dojo Program Summary',
+      type: 'PDF',
+      file: {
+        name: 'hacker-dojo-program-summary.pdf',
+        mimeType: 'application/pdf',
+        buffer: bytes,
+      },
+    },
+  });
+  expect(uploadResponse.ok()).toBeTruthy();
+  expect(uploadResponse.status()).toBe(201);
+  const uploadedDocument = (await uploadResponse.json()) as {
+    extractionStatus?: string;
+    contentSnippet?: string;
+  };
   expect(uploadedDocument.extractionStatus).toBe('extracted');
   expect(uploadedDocument.contentSnippet).toBe(exactSentence);
 
-  const draftResponse = await request.post(
-    'http://localhost:3000/api/grants/nsf-techaccess/draft',
-    {
-      headers: { 'Content-Type': 'application/json' },
-      data: { revisionNotes: 'Ground the draft in the uploaded PDF.' },
-    },
-  );
+  const draftResponse = await request.post('http://localhost:3000/api/grants/nsf-techaccess/draft', {
+    headers: { 'Content-Type': 'application/json' },
+    data: { revisionNotes: 'Ground the draft in the uploaded PDF.' },
+  });
   expect(draftResponse.ok()).toBeTruthy();
   const draft = await draftResponse.json();
   expect(draft.content).toContain(exactSentence);
 
-  const approvalResponse = await request.post(
-    'http://localhost:3000/api/grants/nsf-techaccess/approval',
-    {
-      headers: { 'Content-Type': 'application/json' },
-      data: { approvedBy: 'Playwright' },
-    },
-  );
+  const approvalResponse = await request.post('http://localhost:3000/api/grants/nsf-techaccess/approval', {
+    headers: { 'Content-Type': 'application/json' },
+    data: { approvedBy: 'Playwright' },
+  });
   expect(approvalResponse.ok()).toBeTruthy();
 
-  const revisionResponse = await request.post(
-    'http://localhost:3000/api/grants/nsf-techaccess/revisions',
-    {
-      headers: { 'Content-Type': 'application/json' },
-      data: { notes: 'Please tighten the budget section and keep the grounding sentence.' },
-    },
-  );
+  const revisionResponse = await request.post('http://localhost:3000/api/grants/nsf-techaccess/revisions', {
+    headers: { 'Content-Type': 'application/json' },
+    data: { notes: 'Please tighten the budget section and keep the grounding sentence.' },
+  });
   expect(revisionResponse.ok()).toBeTruthy();
   const revision = await revisionResponse.json();
   expect(revision.draft.content).toContain(exactSentence);
 
-  const reapprovalResponse = await request.post(
-    'http://localhost:3000/api/grants/nsf-techaccess/approval',
-    {
-      headers: { 'Content-Type': 'application/json' },
-      data: { approvedBy: 'Playwright' },
-    },
-  );
+  const reapprovalResponse = await request.post('http://localhost:3000/api/grants/nsf-techaccess/approval', {
+    headers: { 'Content-Type': 'application/json' },
+    data: { approvedBy: 'Playwright' },
+  });
   expect(reapprovalResponse.ok()).toBeTruthy();
 
-  const submitResponse = await request.post(
-    'http://localhost:3000/api/grants/nsf-techaccess/submit',
-    {
-      headers: { 'Content-Type': 'application/json' },
-      data: {
-        method: {
-          type: 'email',
-          confirmationId: `PW-${Date.now()}`,
-          submittedBy: 'Playwright',
-        },
-        notes: 'Submitted from E2E grounded drafting flow',
+  const submitResponse = await request.post('http://localhost:3000/api/grants/nsf-techaccess/submit', {
+    headers: { 'Content-Type': 'application/json' },
+    data: {
+      method: {
+        type: 'email',
+        confirmationId: `PW-${Date.now()}`,
+        submittedBy: 'Playwright',
       },
+      notes: 'Submitted from E2E grounded drafting flow',
     },
-  );
+  });
   expect(submitResponse.ok()).toBeTruthy();
   const submit = await submitResponse.json();
   expect(submit.followUps.length).toBeGreaterThan(0);
 
-  await page.goto('http://localhost:3000');
-  await page.waitForSelector('.app', { timeout: 10000 });
   await page.reload();
   await page.waitForSelector('.app', { timeout: 10000 });
-
   await expect(page.locator('.nav-item:has-text("Notifications") .nav-count').first()).toBeVisible();
   await expect(page.locator('.nav-item:has-text("Tasks") .nav-count').first()).toBeVisible();
-  await expect(page.locator('.sidebar-footer')).toContainText('Logged in as');
+  await expect(page.locator('.sidebar-footer')).toContainText(defaultProfile.agentBehavior.notifyEmail);
 });

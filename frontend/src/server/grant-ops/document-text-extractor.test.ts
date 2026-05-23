@@ -1,12 +1,16 @@
+// @vitest-environment node
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { describe, expect, it } from 'vitest';
-import { analyzeStoredDocument, EXACT_GROUNDING_SNIPPET, extractDocumentText, normalizeWhitespace } from './document-text-extractor';
+import { describe, expect, it, vi } from 'vitest';
 
-const fixturePath = path.join(
-  process.cwd(),
-  'tests/fixtures/documents/hacker-dojo-program-summary.pdf',
-);
+import {
+  analyzeStoredDocument,
+  EXACT_GROUNDING_SNIPPET,
+  extractDocumentText,
+  normalizeWhitespace,
+} from './document-text-extractor';
+
+const fixturePath = path.join(process.cwd(), 'tests/fixtures/documents/hacker-dojo-program-summary.pdf');
 
 describe('document-text-extractor', () => {
   it('normalizes whitespace deterministically', () => {
@@ -22,12 +26,39 @@ describe('document-text-extractor', () => {
     expect(result.contentSnippet).toBe(EXACT_GROUNDING_SNIPPET);
   });
 
+  it('surfaces pdf parser failure as failed extraction', async () => {
+    const tempPath = path.join(process.cwd(), 'tests/fixtures/documents/corrupt-test.pdf');
+    await fs.writeFile(tempPath, 'not a real pdf');
+
+    vi.resetModules();
+    vi.doMock('pdf-parse', () => ({
+      default: vi.fn().mockRejectedValue(new Error('pdf parse unavailable')),
+    }));
+
+    try {
+      const { extractDocumentText: mockedExtractDocumentText } = await import('./document-text-extractor');
+      const result = await mockedExtractDocumentText(tempPath);
+
+      expect(result.extractionStatus).toBe('failed');
+      expect(result.extractedText).toBeUndefined();
+      expect(result.contentSnippet).toBeUndefined();
+      expect(result.extractionError).toBeDefined();
+    } finally {
+      vi.doUnmock('pdf-parse');
+      vi.resetModules();
+      await fs.rm(tempPath, { force: true });
+    }
+  });
+
   it('marks accepted non-pdf content as stored but not grounded', async () => {
     const tempPath = path.join(process.cwd(), 'tests/fixtures/documents/temp-note.docx');
     await fs.writeFile(tempPath, Buffer.from([1, 2, 3]));
 
     try {
-      const result = await analyzeStoredDocument(tempPath, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      const result = await analyzeStoredDocument(
+        tempPath,
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      );
       expect(result.extractionStatus).toBe('stored_unparsed');
       expect(result.extractedText).toBeUndefined();
       expect(result.contentSnippet).toBeUndefined();

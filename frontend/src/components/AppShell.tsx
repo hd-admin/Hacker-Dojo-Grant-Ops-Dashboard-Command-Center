@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import DashboardView from './DashboardView';
 import DiscoveryView from './DiscoveryView';
 import PipelineView from './PipelineView';

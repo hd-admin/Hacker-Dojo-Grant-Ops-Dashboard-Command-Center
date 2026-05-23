@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Notification } from '../../../shared/types';
 import { seedNotifications } from '../../../shared/seed-data';
 import { notificationsApi } from '../lib/grant-ops-client';

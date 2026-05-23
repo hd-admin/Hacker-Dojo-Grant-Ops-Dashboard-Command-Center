@@ -15,73 +15,31 @@ export interface DocumentExtractionResult {
   extractionError?: string;
 }
 
-function decodePdfString(value: string): string {
-  return value
-    .replace(/\\n/g, '\n')
-    .replace(/\\r/g, '\r')
-    .replace(/\\t/g, '\t')
-    .replace(/\\b/g, '\b')
-    .replace(/\\f/g, '\f')
-    .replace(/\\\\/g, '\\')
-    .replace(/\\\(/g, '(')
-    .replace(/\\\)/g, ')');
-}
-
-function extractTextFromPdfOperators(rawText: string): string {
-  const textSegments: string[] = [];
-  const directTextMatches = rawText.matchAll(/\(([^()]*)\)\s*Tj/g);
-  for (const match of directTextMatches) {
-    const segment = match[1];
-    if (segment) {
-      textSegments.push(decodePdfString(segment));
-    }
-  }
-
-  const arrayTextMatches = rawText.matchAll(/\[(.*?)\]\s*TJ/gs);
-  for (const match of arrayTextMatches) {
-    const inner = match[1];
-    if (!inner) continue;
-    for (const part of inner.matchAll(/\(([^()]*)\)/g)) {
-      const segment = part[1];
-      if (segment) {
-        textSegments.push(decodePdfString(segment));
-      }
-    }
-  }
-
-  return textSegments.join('\n');
+function snippetFromText(text: string): string {
+  return text.includes(EXACT_GROUNDING_SNIPPET)
+    ? EXACT_GROUNDING_SNIPPET
+    : text.slice(0, 240);
 }
 
 export async function extractDocumentText(filePath: string): Promise<DocumentExtractionResult> {
   try {
     const buffer = await fs.readFile(filePath);
     const { default: pdfParse } = await import('pdf-parse');
-    try {
-      const parsed = await pdfParse(buffer);
-      const extractedText = normalizeWhitespace(parsed.text || '');
-      const contentSnippet = extractedText.includes(EXACT_GROUNDING_SNIPPET)
-        ? EXACT_GROUNDING_SNIPPET
-        : extractedText.slice(0, 240);
+    const parsed = await pdfParse(buffer);
+    const extractedText = normalizeWhitespace(parsed.text || '');
 
+    if (!extractedText) {
       return {
-        extractionStatus: 'extracted',
-        extractedText,
-        contentSnippet,
+        extractionStatus: 'failed',
+        extractionError: 'Failed to extract text',
       };
-    } catch (pdfParseError) {
-      const fallbackText = normalizeWhitespace(extractTextFromPdfOperators(buffer.toString('latin1')));
-      if (fallbackText) {
-        return {
-          extractionStatus: 'extracted',
-          extractedText: fallbackText,
-          contentSnippet: fallbackText.includes(EXACT_GROUNDING_SNIPPET)
-            ? EXACT_GROUNDING_SNIPPET
-            : fallbackText.slice(0, 240),
-        };
-      }
-
-      throw pdfParseError;
     }
+
+    return {
+      extractionStatus: 'extracted',
+      extractedText,
+      contentSnippet: snippetFromText(extractedText),
+    };
   } catch (error) {
     return {
       extractionStatus: 'failed',

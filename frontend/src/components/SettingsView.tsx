@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { OrganizationProfile, DocumentMetadata, OpencodeSettings } from '../../../shared/types';
 import { defaultProfile } from '../../../shared/seed-data';
 import { client } from '../lib/grant-ops-client';
