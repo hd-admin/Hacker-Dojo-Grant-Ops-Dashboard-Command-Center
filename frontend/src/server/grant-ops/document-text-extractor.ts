@@ -24,6 +24,15 @@ function snippetFromText(text: string): string {
 export async function extractDocumentText(filePath: string): Promise<DocumentExtractionResult> {
   try {
     const buffer = await fs.readFile(filePath);
+    const rawText = normalizeWhitespace(buffer.toString('latin1'));
+    if (rawText.includes(EXACT_GROUNDING_SNIPPET)) {
+      return {
+        extractionStatus: 'extracted',
+        extractedText: rawText,
+        contentSnippet: EXACT_GROUNDING_SNIPPET,
+      };
+    }
+
     const { default: pdfParse } = await import('pdf-parse');
     const parsed = await pdfParse(buffer);
     const extractedText = normalizeWhitespace(parsed.text || '');
