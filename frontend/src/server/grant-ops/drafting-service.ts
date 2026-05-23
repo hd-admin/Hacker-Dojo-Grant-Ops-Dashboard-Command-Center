@@ -11,6 +11,10 @@ import type {
   OrganizationProfile,
   DocumentMetadata,
 } from '../../../../shared/types';
+import {
+  createDefaultFunderSummary,
+  createDefaultGrantChecklist,
+} from '../../../../shared/seed-data';
 import { getDependencies } from './dependencies';
 
 export interface GenerateDraftOptions {
@@ -94,10 +98,22 @@ export async function generateDraft(
   };
 
   await deps.repository.addDraftArtifact(draftArtifact);
+  const nextSourceCount = groundedDocuments.length > 0 ? groundedDocuments.length : grant.sourceCount ?? 0;
   await deps.repository.updateGrant(grant.id, {
     status: 'draft',
     statusLabel: 'Drafting',
     draftContent: response.content,
+    latestDraftVersion: draftArtifact.version,
+    groundedDocumentCount: groundedDocuments.length,
+    sourceCount: nextSourceCount,
+    funderSummary: grant.funderSummary ?? createDefaultFunderSummary(grant),
+    checklist: grant.checklist ?? createDefaultGrantChecklist({
+      ...grant,
+      draftContent: response.content,
+      latestDraftVersion: draftArtifact.version,
+      groundedDocumentCount: groundedDocuments.length,
+      sourceCount: nextSourceCount,
+    }),
   });
 
   return draftArtifact;
@@ -129,7 +145,7 @@ export async function createRevisionRequest(
   await deps.repository.addRevisionRequest(revisionRequest);
   await deps.repository.updateGrant(grant.id, {
     status: 'draft',
-    statusLabel: 'Drafting',
+    statusLabel: 'Revision requested',
   });
 
   return revisionRequest;

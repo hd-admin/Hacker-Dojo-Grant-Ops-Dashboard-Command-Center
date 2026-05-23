@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
-import type { Grant } from '../../../shared/types';
+import { describe, expect, it } from 'vitest';
+import type { GrantDetailResponse } from '../../../shared/types';
+import { buildGrantDrawerViewModel } from './GrantDrawer';
 
-const mockGrant: Grant = {
+const baseGrant: GrantDetailResponse['grant'] = {
   id: 'nsf-tech',
   title: 'NSF Technology Access Grant',
   funder: 'National Science Foundation',
@@ -27,101 +28,90 @@ const mockGrant: Grant = {
     { label: 'SAM.gov registration active', done: true, source: 'Verified Apr 12' },
     { label: 'LOI draft', done: false, source: 'In progress' },
   ],
-  draftContent: `Hacker Dojo proposes to anchor the Silicon Valley AI-Ready Hub...`,
+  draftContent: 'Hacker Dojo proposes to anchor the Silicon Valley AI-Ready Hub...',
   externalUrl: 'https://www.nsf.gov/funding/pgm_summ.jsp?pims_id=505734',
+  funderSummary: 'NSF supports community technology programs.',
+  latestDraftVersion: 1,
+  groundedDocumentCount: 2,
+  sourceCount: 3,
 };
 
-describe('GrantDrawer', () => {
-  describe('Grant Data Loading', () => {
-    it('should load grant data when grantId prop changes', async () => {
-      // When grantId changes from null to a grant ID, the drawer should load that grant
-      const _prevGrantId: string | null = null;
-      const nextGrantId = 'nsf-tech';
+const { draftContent: _draftContent, ...baseGrantWithoutDraft } = baseGrant;
 
-      // Simulate the effect: when grantId is set, load the grant
-      const shouldLoad = nextGrantId !== null;
-      expect(shouldLoad).toBe(true);
-    });
+describe('GrantDrawer view model', () => {
+  it('shows a generate-draft action when a matched grant has no draft', () => {
+    const detail: GrantDetailResponse = {
+      grant: {
+        ...baseGrantWithoutDraft,
+        latestDraftVersion: 0,
+      },
+      latestDraft: null,
+      latestRevisionRequest: null,
+      approvalRecord: null,
+      submissionRecord: null,
+      followUps: [],
+      workflow: {
+        canGenerateDraft: true,
+        canRequestRevision: false,
+        canApprove: false,
+        canSubmit: false,
+        blockingReason: 'Grant must be approved before submission',
+      },
+    };
 
-    it('should clear grant data when grantId becomes null', () => {
-      const _grantId: string | null = 'nsf-tech';
-      const nextGrantId: string | null = null;
-
-      const shouldClear = nextGrantId === null;
-      expect(shouldClear).toBe(true);
-    });
+    const viewModel = buildGrantDrawerViewModel(detail);
+    expect(viewModel.showGenerateDraft).toBe(true);
+    expect(viewModel.showApprove).toBe(false);
+    expect(viewModel.showSubmit).toBe(true);
+    expect(viewModel.submitDisabledReason).toBe('Grant must be approved before submission');
+    expect(viewModel.latestDraftVersionLabel).toBe('No draft yet');
   });
 
-  describe('Checklist Rendering', () => {
-    it('should render checklist items with done/undone state', () => {
-      if (!mockGrant.checklist) return;
+  it('shows draft and approval actions when a draft exists', () => {
+    const detail: GrantDetailResponse = {
+      grant: baseGrant,
+      latestDraft: {
+        id: 'draft-1',
+        grantId: baseGrant.id,
+        version: 2,
+        content: 'Draft body',
+        createdAt: '2026-05-20T12:00:00.000Z',
+        createdBy: 'agent',
+      },
+      latestRevisionRequest: {
+        id: 'revision-1',
+        grantId: baseGrant.id,
+        draftVersion: 2,
+        notes: 'Please tighten the budget narrative',
+        requestedAt: '2026-05-21T12:00:00.000Z',
+        requestedBy: 'human',
+        status: 'pending',
+      },
+      approvalRecord: null,
+      submissionRecord: null,
+      followUps: [],
+      workflow: {
+        canGenerateDraft: true,
+        canRequestRevision: true,
+        canApprove: true,
+        canSubmit: false,
+        blockingReason: 'Grant must be approved before submission',
+      },
+    };
 
-      const doneItems = mockGrant.checklist.filter((item) => item.done);
-      const undoneItems = mockGrant.checklist.filter((item) => !item.done);
-
-      expect(doneItems.length).toBe(2);
-      expect(undoneItems.length).toBe(1);
-    });
-
-    it('should show correct checklist item labels', () => {
-      if (!mockGrant.checklist) return;
-
-      const labels = mockGrant.checklist.map((item) => item.label);
-      expect(labels).toContain('501(c)(3) verification + EIN');
-      expect(labels).toContain('SAM.gov registration active');
-      expect(labels).toContain('LOI draft');
-    });
+    const viewModel = buildGrantDrawerViewModel(detail);
+    expect(viewModel.latestDraftVersionLabel).toBe('Version 2');
+    expect(viewModel.latestDraftPreview).toBe('Draft body');
+    expect(viewModel.showApprove).toBe(true);
+    expect(viewModel.showGenerateDraft).toBe(false);
+    expect(viewModel.showSubmit).toBe(true);
   });
 
-  describe('Draft Preview Rendering', () => {
-    it('should show draft content when available', () => {
-      const hasDraft = !!mockGrant.draftContent;
-      expect(hasDraft).toBe(true);
-    });
-
-    it('should not show draft preview when draftContent is missing', () => {
-      const grantWithoutDraft: Grant = {
-        id: 'test',
-        title: 'Test',
-        funder: 'Test',
-        funderShort: 'T',
-        award: '$0',
-        awardSort: 0,
-        deadline: '2026-01-01',
-        daysOut: 0,
-        fit: 0,
-        tags: [],
-        status: 'matched',
-        statusLabel: 'Test',
-      };
-      const hasDraft = !!grantWithoutDraft.draftContent;
-      expect(hasDraft).toBe(false);
-    });
-  });
-
-  describe('Approve/Revision Button Interactions', () => {
-    it('should have approve button available for matched grants', () => {
-      const hasApproveButton = mockGrant.status === 'matched';
-      expect(hasApproveButton).toBe(true);
-    });
-
-    it('should have revision button available', () => {
-      const hasRevisionButton = !!mockGrant;
-      expect(hasRevisionButton).toBe(true);
-    });
-  });
-
-  describe('Drawer State Transitions', () => {
-    it('should be closed when grantId is null', () => {
-      const grantId: string | null = null;
-      const isOpen = !!grantId;
-      expect(isOpen).toBe(false);
-    });
-
-    it('should be open when grantId is set', () => {
-      const grantId = 'nsf-tech';
-      const isOpen = !!grantId;
-      expect(isOpen).toBe(true);
-    });
+  it('returns null-safe defaults when no detail is loaded', () => {
+    const viewModel = buildGrantDrawerViewModel(null);
+    expect(viewModel.grant).toBeNull();
+    expect(viewModel.showGenerateDraft).toBe(false);
+    expect(viewModel.showApprove).toBe(false);
+    expect(viewModel.showSubmit).toBe(false);
   });
 });

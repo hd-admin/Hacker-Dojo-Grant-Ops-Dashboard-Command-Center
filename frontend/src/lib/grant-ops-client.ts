@@ -8,6 +8,7 @@
 import type {
   Source,
   Grant,
+  GrantDetailResponse,
   CrawlRun,
   FollowUp,
   DraftArtifact,
@@ -100,10 +101,10 @@ export const grantsApi = {
   getAll: () => apiFetch<Grant[]>('/api/grants'),
 
   getById: (grantId: string) =>
-    apiFetch<Grant>(`/api/grants/${encodeURIComponent(grantId)}`),
+    apiFetch<GrantDetailResponse>(`/api/grants/${encodeURIComponent(grantId)}`),
 
   update: (grantId: string, updates: Partial<Grant>) =>
-    apiFetch<Grant>(`/api/grants/${encodeURIComponent(grantId)}`, {
+    apiFetch<GrantDetailResponse>(`/api/grants/${encodeURIComponent(grantId)}`, {
       method: 'PATCH',
       body: JSON.stringify(updates),
     }),

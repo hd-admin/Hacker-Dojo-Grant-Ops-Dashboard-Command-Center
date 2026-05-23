@@ -5,9 +5,11 @@
  * and follow-up generation.
  */
 
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect } from 'vitest';
+import { withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import type { Grant, ApprovalRecord } from '../../../../shared/types';
+import * as repository from './repository';
 import * as submissionService from './submission-service';
-import type { Grant } from '../../../../shared/types';
 
 const mockGrant: Grant = {
   id: 'test-grant-1',
@@ -28,11 +30,72 @@ const mockGrant: Grant = {
 };
 
 describe('SubmissionService', () => {
+  let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>> | null = null;
+
+  afterEach(async () => {
+    if (tempDataDir) {
+      await tempDataDir.cleanup();
+      tempDataDir = null;
+    }
+  });
+
   describe('canSubmit', () => {
     it('returns false for non-existent grant', async () => {
       const result = await submissionService.canSubmit('non-existent');
       expect(result.canSubmit).toBe(false);
       expect(result.reason).toBe('Grant not found');
+    });
+
+    it('returns true when a grant has approval and no submission record', async () => {
+      tempDataDir = await withTempDataDir();
+      const grant: Grant = {
+        ...mockGrant,
+        id: `approved-${Date.now()}`,
+      };
+      await repository.addGrant(grant);
+      const approval: ApprovalRecord = {
+        id: `approval-${Date.now()}`,
+        grantId: grant.id,
+        draftVersion: 1,
+        approvedAt: new Date().toISOString(),
+        approvedBy: 'human',
+      };
+      await repository.addApprovalRecord(approval);
+
+      const result = await submissionService.canSubmit(grant.id);
+      expect(result.canSubmit).toBe(true);
+      expect(result.reason).toBeUndefined();
+    });
+
+    it('returns false when a submission already exists', async () => {
+      tempDataDir = await withTempDataDir();
+      const grant: Grant = {
+        ...mockGrant,
+        id: `submitted-${Date.now()}`,
+      };
+      await repository.addGrant(grant);
+      await repository.addApprovalRecord({
+        id: `approval-${Date.now()}`,
+        grantId: grant.id,
+        draftVersion: 1,
+        approvedAt: new Date().toISOString(),
+        approvedBy: 'human',
+      });
+      await repository.addSubmissionRecord({
+        id: `submission-${Date.now()}`,
+        grantId: grant.id,
+        submittedAt: new Date().toISOString(),
+        method: {
+          type: 'portal',
+          portalUrl: 'https://example.com/submit',
+          submittedBy: 'human',
+        },
+        followUpsCreated: [],
+      });
+
+      const result = await submissionService.canSubmit(grant.id);
+      expect(result.canSubmit).toBe(false);
+      expect(result.reason).toBe('Grant has already been submitted');
     });
   });
 

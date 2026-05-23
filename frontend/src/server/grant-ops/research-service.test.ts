@@ -168,6 +168,14 @@ describe("ResearchService", () => {
 					expect(grant.fit).toBeGreaterThan(0);
 				}
 			}
+
+			const researchedGrant = grants.find((grant) => grant.funder === 'Mock Foundation');
+			expect(researchedGrant?.funderSummary).toContain('Mock Foundation');
+			expect(researchedGrant?.fitBreakdown).toBeDefined();
+			expect(researchedGrant?.sourceCount).toBe(1);
+			expect(researchedGrant?.groundedDocumentCount).toBe(0);
+			expect(researchedGrant?.latestDraftVersion).toBe(0);
+			expect(researchedGrant?.checklist?.length).toBeGreaterThan(0);
 		});
 
 		it("FAILS: runResearch should leave grants with deadline info for deadline sorting", async () => {

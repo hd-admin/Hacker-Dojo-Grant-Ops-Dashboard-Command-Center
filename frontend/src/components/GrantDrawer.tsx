@@ -1,13 +1,59 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { grantsApi, revisionsApi } from '../lib/grant-ops-client';
-import type { Grant, SubmissionMethod } from '../../../shared/types';
+import type { GrantDetailResponse, SubmissionMethod } from '../../../shared/types';
 
 interface GrantDrawerProps {
   grantId: string | null;
   onClose: () => void;
   onRefreshAppState?: () => Promise<void> | void;
+}
+
+export interface GrantDrawerViewModel {
+  grant: GrantDetailResponse['grant'] | null;
+  latestDraftVersionLabel: string;
+  latestDraftPreview: string;
+  showGenerateDraft: boolean;
+  showApprove: boolean;
+  showSubmit: boolean;
+  submitDisabledReason: string | null;
+}
+
+export function buildGrantDrawerViewModel(detail: GrantDetailResponse | null): GrantDrawerViewModel {
+  if (!detail) {
+    return {
+      grant: null,
+      latestDraftVersionLabel: 'No draft yet',
+      latestDraftPreview: '',
+      showGenerateDraft: false,
+      showApprove: false,
+      showSubmit: false,
+      submitDisabledReason: null,
+    };
+  }
+
+  const latestDraftVersionLabel = detail.latestDraft
+    ? `Version ${detail.latestDraft.version}`
+    : detail.grant.latestDraftVersion
+      ? `Version ${detail.grant.latestDraftVersion}`
+      : 'No draft yet';
+
+  const latestDraftPreview = detail.latestDraft?.content || detail.grant.draftContent || '';
+
+  return {
+    grant: detail.grant,
+    latestDraftVersionLabel,
+    latestDraftPreview,
+    showGenerateDraft:
+      detail.workflow.canGenerateDraft &&
+      !detail.latestDraft &&
+      !(detail.grant.latestDraftVersion ?? 0) &&
+      !detail.grant.draftContent,
+    showApprove: detail.workflow.canApprove,
+    showSubmit: !detail.submissionRecord && detail.grant.status !== 'submitted' && detail.grant.status !== 'awarded',
+    submitDisabledReason: detail.workflow.canSubmit ? null : detail.workflow.blockingReason,
+  };
 }
 
 function formatDate(dateStr: string): string {
@@ -20,8 +66,14 @@ function formatDate(dateStr: string): string {
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}, ${year}`;
 }
 
+function previewText(text: string, limit = 280): string {
+  if (!text) return 'No draft has been generated yet.';
+  if (text.length <= limit) return text;
+  return `${text.slice(0, limit).trimEnd()}…`;
+}
+
 export default function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawerProps) {
-  const [grant, setGrant] = useState<Grant | null>(null);
+  const [detail, setDetail] = useState<GrantDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [showRevision, setShowRevision] = useState(false);
   const [revisionNote, setRevisionNote] = useState('');
@@ -31,42 +83,74 @@ export default function GrantDrawer({ grantId, onClose, onRefreshAppState }: Gra
   const [portalUrl, setPortalUrl] = useState('');
   const [submitNotes, setSubmitNotes] = useState('');
 
-  useEffect(() => {
-    async function loadGrant() {
-      if (grantId) {
-        setLoading(true);
-        try {
-          const data = await grantsApi.getById(grantId);
-          setGrant(data);
-        } catch (err) {
-          console.error('Error loading grant:', err);
-          setGrant(null);
-        } finally {
-          setLoading(false);
-        }
-      } else {
-        setGrant(null);
-      }
-      setShowRevision(false);
-      setRevisionNote('');
+  const viewModel = useMemo(() => buildGrantDrawerViewModel(detail), [detail]);
+
+  const loadDetail = async () => {
+    if (!grantId) {
+      setDetail(null);
+      return;
     }
-    loadGrant();
+
+    setLoading(true);
+    try {
+      const data = await grantsApi.getById(grantId);
+      setDetail(data);
+    } catch (error) {
+      console.error('Error loading grant detail:', error);
+      setDetail(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadDetail();
+    setShowRevision(false);
+    setRevisionNote('');
+    setShowSubmitForm(false);
+    setSubmitMethod('portal');
+    setConfirmationId('');
+    setPortalUrl('');
+    setSubmitNotes('');
   }, [grantId]);
 
-  const handleApproveAndLock = async () => {
-    if (!grant) return;
+  const refreshAfterMutation = async () => {
+    await loadDetail();
+    await onRefreshAppState?.();
+  };
+
+  const handleGenerateDraft = async () => {
+    if (!detail) return;
     try {
-      const response = await fetch(`/api/grants/${grant.id}/approval`, {
+      const response = await fetch(`/api/grants/${detail.grant.id}/draft`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ revisionNotes: '' }),
+      });
+
+      if (response.ok) {
+        await refreshAfterMutation();
+      } else {
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('Error generating draft:', error);
+      }
+    } catch (error) {
+      console.error('Error generating draft:', error);
+    }
+  };
+
+  const handleApproveAndLock = async () => {
+    if (!detail) return;
+    try {
+      const response = await fetch(`/api/grants/${detail.grant.id}/approval`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ approvedBy: 'human' }),
       });
       if (response.ok) {
-        const updatedGrant = await grantsApi.getById(grant.id);
-        if (updatedGrant) setGrant(updatedGrant);
-        await onRefreshAppState?.();
+        await refreshAfterMutation();
       } else {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Error approving grant:', error);
       }
     } catch (error) {
@@ -75,7 +159,7 @@ export default function GrantDrawer({ grantId, onClose, onRefreshAppState }: Gra
   };
 
   const handleSubmit = async () => {
-    if (!grant) return;
+    if (!detail) return;
     try {
       const method: SubmissionMethod = {
         type: submitMethod,
@@ -87,17 +171,17 @@ export default function GrantDrawer({ grantId, onClose, onRefreshAppState }: Gra
       if (confirmationId) {
         method.confirmationId = confirmationId;
       }
-      const response = await fetch(`/api/grants/${grant.id}/submit`, {
+      const response = await fetch(`/api/grants/${detail.grant.id}/submit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ method, notes: submitNotes }),
       });
       if (response.ok) {
         setShowSubmitForm(false);
-        await onRefreshAppState?.();
+        await refreshAfterMutation();
         onClose();
       } else {
-        const error = await response.json();
+        const error = await response.json().catch(() => ({ error: 'Unknown error' }));
         console.error('Error submitting grant:', error);
       }
     } catch (error) {
@@ -110,12 +194,10 @@ export default function GrantDrawer({ grantId, onClose, onRefreshAppState }: Gra
   };
 
   const handleConfirmRevision = async () => {
-    if (!grant || !revisionNote.trim()) return;
+    if (!detail || !revisionNote.trim()) return;
     try {
-      await revisionsApi.create(grant.id, revisionNote, 'human');
-      const updatedGrant = await grantsApi.getById(grant.id);
-      if (updatedGrant) setGrant(updatedGrant);
-      await onRefreshAppState?.();
+      await revisionsApi.create(detail.grant.id, revisionNote, 'human');
+      await refreshAfterMutation();
       setShowRevision(false);
       setRevisionNote('');
     } catch (error) {
@@ -129,16 +211,14 @@ export default function GrantDrawer({ grantId, onClose, onRefreshAppState }: Gra
   };
 
   const handleOpenInEditor = () => {
-    if (grant?.externalUrl) {
-      window.open(grant.externalUrl);
-    } else {
-      console.warn('No external URL for this grant');
+    if (detail?.grant.externalUrl) {
+      window.open(detail.grant.externalUrl);
     }
   };
 
   const handleViewOnGrantsGov = () => {
-    if (grant) {
-      window.open(`https://www.grants.gov/search?keyword=${encodeURIComponent(grant.title)}`);
+    if (detail) {
+      window.open(`https://www.grants.gov/search?keyword=${encodeURIComponent(detail.grant.title)}`);
     }
   };
 
@@ -154,23 +234,23 @@ export default function GrantDrawer({ grantId, onClose, onRefreshAppState }: Gra
           <div className="drawer-header">
             <div className="drawer-funder">Loading...</div>
           </div>
-        ) : grant ? (
+        ) : detail ? (
           <>
             <div className="drawer-header">
               <button type="button" className="drawer-close" onClick={onClose}>
                 ×
               </button>
-              <div className="drawer-funder">{grant.funder}</div>
-              <h2 className="drawer-title">{grant.title}</h2>
+              <div className="drawer-funder">{detail.grant.funder}</div>
+              <h2 className="drawer-title">{detail.grant.title}</h2>
               <div className="drawer-meta">
                 <div className="meta-item">
                   <div className="meta-label">Award</div>
-                  <div className="meta-value">{grant.award}</div>
+                  <div className="meta-value">{detail.grant.award}</div>
                 </div>
                 <div className="meta-item">
                   <div className="meta-label">LOI Due</div>
                   <div className="meta-value">
-                    {grant.deadline === 'Rolling' ? 'Rolling' : formatDate(grant.deadline)}
+                    {detail.grant.deadline === 'Rolling' ? 'Rolling' : formatDate(detail.grant.deadline)}
                   </div>
                 </div>
                 <div className="meta-item">
@@ -179,69 +259,112 @@ export default function GrantDrawer({ grantId, onClose, onRefreshAppState }: Gra
                     className="meta-value"
                     style={{
                       color:
-                        grant.fit >= 85
+                        detail.grant.fit >= 85
                           ? 'var(--success)'
-                          : grant.fit >= 70
+                          : detail.grant.fit >= 70
                             ? 'var(--accent)'
                             : 'var(--text)',
                     }}
                   >
-                    {grant.fit}
+                    {detail.grant.fit}
                   </div>
                 </div>
                 <div className="meta-item">
                   <div className="meta-label">Status</div>
-                  <div className="meta-value">{grant.statusLabel}</div>
+                  <div className="meta-value">{detail.grant.statusLabel}</div>
                 </div>
               </div>
             </div>
 
             <div className="drawer-body">
-              {grant.fitBreakdown && (
+              <div className="drawer-section">
+                <h3>Funder summary</h3>
+                <p>{detail.grant.funderSummary}</p>
+                <div className="drawer-note">
+                  Sources: {detail.grant.sourceCount ?? 0} · Grounded docs: {detail.grant.groundedDocumentCount ?? 0}
+                </div>
+              </div>
+
+              {detail.grant.fitBreakdown && (
                 <div className="drawer-section">
-                  <h3>Why it fits</h3>
+                  <h3>Fit breakdown</h3>
                   <div className="fit-breakdown">
-                    <div className="fit-row">
-                      <div className="fit-row-label">Mission alignment</div>
-                      <div className="fit-row-bar"><div style={{ width: `${grant.fitBreakdown.missionAlignment}%` }} /></div>
-                      <div className="fit-row-val">{grant.fitBreakdown.missionAlignment}</div>
-                    </div>
-                    <div className="fit-row">
-                      <div className="fit-row-label">Geographic focus</div>
-                      <div className="fit-row-bar"><div style={{ width: `${grant.fitBreakdown.geographicFocus}%` }} /></div>
-                      <div className="fit-row-val">{grant.fitBreakdown.geographicFocus}</div>
-                    </div>
-                    <div className="fit-row">
-                      <div className="fit-row-label">Program track record</div>
-                      <div className="fit-row-bar"><div style={{ width: `${grant.fitBreakdown.programTrackrecord}%` }} /></div>
-                      <div className="fit-row-val">{grant.fitBreakdown.programTrackrecord}</div>
-                    </div>
-                    <div className="fit-row">
-                      <div className="fit-row-label">Budget capacity</div>
-                      <div className="fit-row-bar"><div style={{ width: `${grant.fitBreakdown.budgetCapacity}%` }} /></div>
-                      <div className="fit-row-val">{grant.fitBreakdown.budgetCapacity}</div>
-                    </div>
-                    <div className="fit-row">
-                      <div className="fit-row-label">Partnership readiness</div>
-                      <div className="fit-row-bar"><div style={{ width: `${grant.fitBreakdown.partnershipReadiness}%` }} /></div>
-                      <div className="fit-row-val">{grant.fitBreakdown.partnershipReadiness}</div>
-                    </div>
+                    {([
+                      ['Mission alignment', detail.grant.fitBreakdown.missionAlignment],
+                      ['Geographic focus', detail.grant.fitBreakdown.geographicFocus],
+                      ['Program track record', detail.grant.fitBreakdown.programTrackrecord],
+                      ['Budget capacity', detail.grant.fitBreakdown.budgetCapacity],
+                      ['Partnership readiness', detail.grant.fitBreakdown.partnershipReadiness],
+                    ] as const).map(([label, score]) => (
+                      <div className="fit-row" key={label}>
+                        <div className="fit-row-label">{label}</div>
+                        <div className="fit-row-bar">
+                          <div style={{ width: `${score}%` }} />
+                        </div>
+                        <div className="fit-row-val">{score}</div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
 
               <div className="drawer-section">
+                <h3>Checklist</h3>
+                <div className="checklist-list">
+                  {(detail.grant.checklist || []).map((item) => (
+                    <div key={item.label} className={`checklist-item ${item.done ? 'done' : ''}`}>
+                      <span>{item.done ? '✓' : '○'}</span>
+                      <div>
+                        <div>{item.label}</div>
+                        <div className="drawer-note">{item.source}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="drawer-section">
+                <h3>Draft preview</h3>
+                <div className="drawer-note">
+                  {viewModel.latestDraftVersionLabel} · {viewModel.latestDraftPreview.length} chars
+                </div>
+                <div className="draft-preview">{previewText(viewModel.latestDraftPreview)}</div>
+                <div className="drawer-note">
+                  Revision requests: {detail.latestRevisionRequest ? detail.latestRevisionRequest.status : 'none'}
+                </div>
+                {detail.latestRevisionRequest && (
+                  <div className="drawer-note">Last revision note: {detail.latestRevisionRequest.notes}</div>
+                )}
+              </div>
+
+              <div className="drawer-section">
                 <h3>Actions</h3>
                 <div className="drawer-actions">
-                  <button type="button" className="btn btn-primary" onClick={handleApproveAndLock}>
-                    Approve &amp; lock
-                  </button>
-                  <button type="button" className="btn" onClick={handleRequestRevision}>
-                    Request revision
-                  </button>
-                  <button type="button" className="btn" onClick={() => setShowSubmitForm(true)}>
-                    Submit
-                  </button>
+                  {viewModel.showGenerateDraft && (
+                    <button type="button" className="btn btn-primary" onClick={handleGenerateDraft}>
+                      Generate draft
+                    </button>
+                  )}
+                  {viewModel.showApprove && (
+                    <button type="button" className="btn btn-primary" onClick={handleApproveAndLock}>
+                      Approve &amp; lock
+                    </button>
+                  )}
+                  {detail.latestDraft && detail.grant.status !== 'submitted' && detail.grant.status !== 'awarded' && (
+                    <button type="button" className="btn" onClick={handleRequestRevision}>
+                      Request revision
+                    </button>
+                  )}
+                  {viewModel.showSubmit && (
+                    <button
+                      type="button"
+                      className="btn"
+                      disabled={!detail.workflow.canSubmit}
+                      onClick={() => setShowSubmitForm(true)}
+                    >
+                      Submit
+                    </button>
+                  )}
                   <button type="button" className="btn btn-ghost" onClick={handleOpenInEditor}>
                     Open in editor
                   </button>
@@ -249,6 +372,9 @@ export default function GrantDrawer({ grantId, onClose, onRefreshAppState }: Gra
                     View on grants.gov
                   </button>
                 </div>
+                {!detail.workflow.canSubmit && viewModel.submitDisabledReason && (
+                  <div className="drawer-note">Submission blocked: {viewModel.submitDisabledReason}</div>
+                )}
               </div>
 
               {showRevision && (
@@ -310,6 +436,23 @@ export default function GrantDrawer({ grantId, onClose, onRefreshAppState }: Gra
                     <button type="button" className="btn" onClick={() => setShowSubmitForm(false)}>
                       Cancel
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {detail.followUps.length > 0 && (
+                <div className="drawer-section">
+                  <h3>Follow-ups</h3>
+                  <div className="drawer-list">
+                    {detail.followUps.map((followUp) => (
+                      <div key={followUp.id} className="drawer-list-item">
+                        <div className="drawer-list-title">{followUp.title}</div>
+                        <div className="drawer-note">
+                          {followUp.type} · {followUp.status}
+                          {followUp.dueDate ? ` · Due ${formatDate(followUp.dueDate.slice(0, 10))}` : ''}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

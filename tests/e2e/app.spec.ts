@@ -28,6 +28,17 @@ test.describe('Grant Operations Center smoke', () => {
     await expect(page.locator('#view-settings')).toHaveClass(/active/);
   });
 
+  test('drawer surfaces prototype detail sections for a grant', async ({ page }) => {
+    await page.click('[data-view="discovery"]');
+    await page.locator('.grants-row').nth(1).click();
+
+    await expect(page.locator('.drawer-title')).toBeVisible();
+    await expect(page.locator('.drawer')).toContainText('Funder summary');
+    await expect(page.locator('.drawer')).toContainText('Checklist');
+    await expect(page.locator('.drawer')).toContainText('Draft preview');
+    await expect(page.locator('.drawer-actions')).toContainText('Open in editor');
+  });
+
   test('discovery exposes source-intake controls', async ({ page }) => {
     await page.click('[data-view="discovery"]');
     await expect(page.locator('button:has-text("+ Add source")')).toBeVisible();
@@ -63,7 +74,7 @@ test.describe('Grant Operations Center smoke', () => {
     const getResponse = await request.get(`http://localhost:3000/api/grants/${firstGrant.id}`);
     expect(getResponse.ok()).toBeTruthy();
     const updatedGrant = await getResponse.json();
-    expect(updatedGrant.status).toBe(nextStatus);
+    expect(updatedGrant.grant.status).toBe(nextStatus);
 
     await request.patch(`http://localhost:3000/api/grants/${firstGrant.id}`, {
       headers: { 'Content-Type': 'application/json' },

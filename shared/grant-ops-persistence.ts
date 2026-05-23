@@ -23,6 +23,7 @@ import {
 } from './grant-ops-sqlite';
 import {
   defaultOpencodeSettings,
+  normalizeGrantDetailFields,
 } from './seed-data';
 import type {
   ApprovalRecord,
@@ -119,16 +120,17 @@ export async function loadGrants(): Promise<Grant[]> {
     return [...cachedGrants];
   }
 
-  const grants = await readGrantsFromSqlite(getSqliteState());
+  const grants = (await readGrantsFromSqlite(getSqliteState())).map((grant) => normalizeGrantDetailFields(grant));
   grantsCache.set(dataDir, grants);
   return [...grants];
 }
 
 export async function saveGrants(grants: Grant[]): Promise<void> {
   const dataDir = getDATA_DIR();
-  grantsCache.set(dataDir, grants);
+  const normalizedGrants = grants.map((grant) => normalizeGrantDetailFields(grant));
+  grantsCache.set(dataDir, normalizedGrants);
   dataCache.delete(dataDir);
-  await writeGrantsToSqlite(getSqliteState(), grants);
+  await writeGrantsToSqlite(getSqliteState(), normalizedGrants);
 }
 
 export async function loadProfile(): Promise<OrganizationProfile> {

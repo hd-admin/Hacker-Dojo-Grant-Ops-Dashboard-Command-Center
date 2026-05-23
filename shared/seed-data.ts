@@ -9,6 +9,8 @@
  */
 
 import type {
+	ChecklistItem,
+	FitScoreBreakdown,
 	Grant,
 	Notification,
 	OpencodeSettings,
@@ -621,3 +623,69 @@ export const seedTasks: Task[] = [
 		completed: true,
 	},
 ];
+
+export function createDefaultFunderSummary(grant: Pick<Grant, 'funder' | 'title' | 'tags'>): string {
+	const theme = grant.tags[0] || 'the organization mission';
+	return `${grant.funder} is a strong fit for ${grant.title} because it aligns with ${theme}.`;
+}
+
+export function createDefaultFitBreakdown(fit: number): FitScoreBreakdown {
+	const boundedFit = Math.max(0, Math.min(100, fit));
+	return {
+		missionAlignment: Math.min(100, boundedFit + 8),
+		geographicFocus: Math.min(100, boundedFit + 4),
+		programTrackrecord: Math.max(0, boundedFit - 2),
+		budgetCapacity: Math.max(0, boundedFit - 6),
+		partnershipReadiness: Math.max(0, boundedFit - 10),
+	};
+}
+
+export function createDefaultGrantChecklist(grant: Pick<Grant, 'fit' | 'status' | 'draftContent' | 'funderSummary' | 'latestDraftVersion' | 'groundedDocumentCount' | 'sourceCount'>): ChecklistItem[] {
+	const hasDraft = Boolean(grant.draftContent) || (grant.latestDraftVersion ?? 0) > 0;
+	const hasGrounding = (grant.groundedDocumentCount ?? 0) > 0 || (grant.sourceCount ?? 0) > 0;
+
+	return [
+		{
+			label: 'Funder summary captured',
+			done: Boolean(grant.funderSummary),
+			source: 'Prototype detail view',
+		},
+		{
+			label: 'Fit review documented',
+			done: grant.fit >= 70,
+			source: 'Research scoring',
+		},
+		{
+			label: 'Draft preview ready',
+			done: hasDraft,
+			source: 'Drafting workflow',
+		},
+		{
+			label: 'Grounded documents counted',
+			done: hasGrounding,
+			source: 'Document grounding',
+		},
+		{
+			label: 'Submission path reviewed',
+			done: grant.status === 'review' || grant.status === 'submitted' || grant.status === 'awarded',
+			source: 'Workflow gate',
+		},
+	];
+}
+
+export function normalizeGrantDetailFields(grant: Grant): Grant {
+	const normalized: Grant = {
+		...grant,
+		fitBreakdown: grant.fitBreakdown ?? createDefaultFitBreakdown(grant.fit),
+		funderSummary: grant.funderSummary ?? createDefaultFunderSummary(grant),
+		latestDraftVersion: grant.latestDraftVersion ?? (grant.draftContent ? 1 : 0),
+		groundedDocumentCount: grant.groundedDocumentCount ?? 0,
+		sourceCount: grant.sourceCount ?? 0,
+	};
+
+	if (!normalized.checklist || normalized.checklist.length === 0) {
+		normalized.checklist = createDefaultGrantChecklist(normalized);
+	}
+
+	return normalized;
+}

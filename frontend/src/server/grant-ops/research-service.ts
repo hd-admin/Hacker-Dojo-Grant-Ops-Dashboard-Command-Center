@@ -14,6 +14,11 @@ import type {
   OrganizationProfile,
   Source,
 } from '../../../../shared/types';
+import {
+  createDefaultFitBreakdown,
+  createDefaultFunderSummary,
+  createDefaultGrantChecklist,
+} from '../../../../shared/seed-data';
 import { getDependencies, type Clock, type IdGenerator } from './dependencies';
 
 export interface ResearchOptions {
@@ -175,11 +180,40 @@ async function performResearch(
               status: 'matched',
               statusLabel: 'Matched',
               matchedAt: clock.now().toISOString(),
+              fitBreakdown: createDefaultFitBreakdown(grantData.fit || 70),
+              funderSummary: createDefaultFunderSummary({
+                title: grantData.title!,
+                funder: grantData.funder!,
+                tags: grantData.tags || profile.searchThemes.slice(0, 2),
+              }),
+              checklist: createDefaultGrantChecklist({
+                fit: grantData.fit || 70,
+                status: 'matched',
+                latestDraftVersion: 0,
+                groundedDocumentCount: 0,
+                sourceCount: 1,
+              }),
+              latestDraftVersion: 0,
+              groundedDocumentCount: 0,
+              sourceCount: 1,
             };
 
             await deps.repository.addGrant(newGrant);
             existingGrants.push(newGrant);
             totalGrantsMatched++;
+          } else {
+            const updatedSourceCount = (existing.sourceCount ?? 0) + 1;
+            const updatedGrant: Partial<Grant> = {
+              sourceCount: updatedSourceCount,
+              fitBreakdown: existing.fitBreakdown ?? createDefaultFitBreakdown(existing.fit),
+              funderSummary: existing.funderSummary ?? createDefaultFunderSummary(existing),
+              checklist: existing.checklist ?? createDefaultGrantChecklist({
+                ...existing,
+                sourceCount: updatedSourceCount,
+              }),
+            };
+            await deps.repository.updateGrant(existing.id, updatedGrant);
+            Object.assign(existing, updatedGrant);
           }
         }
 

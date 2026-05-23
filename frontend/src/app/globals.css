@@ -1311,3 +1311,205 @@ body {
   outline: none;
   border-color: var(--accent);
 }
+
+/* === GRANT DRAWER === */
+.drawer-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(18, 16, 13, 0.72);
+  border: 0;
+  padding: 0;
+  z-index: 40;
+}
+
+.drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: min(540px, 100vw);
+  height: 100vh;
+  background: var(--bg-2);
+  border-left: 1px solid var(--border);
+  box-shadow: -20px 0 48px rgba(0, 0, 0, 0.35);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.drawer-header {
+  padding: 24px 24px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.drawer-close {
+  float: right;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.drawer-funder {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.drawer-title {
+  font-family: var(--serif);
+  font-size: 28px;
+  line-height: 1.1;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+
+.drawer-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.meta-item {
+  padding: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.meta-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.meta-value {
+  font-size: 14px;
+  color: var(--text);
+}
+
+.drawer-body {
+  padding: 16px 24px 24px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.drawer-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+}
+
+.drawer-section h3 {
+  font-family: var(--serif);
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+
+.drawer-section p {
+  color: var(--text-dim);
+}
+
+.drawer-note {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+  margin-top: 8px;
+}
+
+.draft-preview {
+  margin-top: 10px;
+  padding: 12px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.12);
+  white-space: pre-wrap;
+  color: var(--text-dim);
+}
+
+.drawer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.drawer-actions .btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.fit-breakdown {
+  display: grid;
+  gap: 10px;
+}
+
+.fit-row {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr) 42px;
+  gap: 10px;
+  align-items: center;
+}
+
+.fit-row-label {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.fit-row-bar {
+  height: 8px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.fit-row-bar > div {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), rgba(212, 169, 67, 0.45));
+  border-radius: inherit;
+}
+
+.fit-row-val {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: right;
+}
+
+.checklist-list,
+.drawer-list {
+  display: grid;
+  gap: 8px;
+}
+
+.checklist-item,
+.drawer-list-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 10px;
+  padding: 10px 12px;
+  background: rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.checklist-item.done {
+  border-color: rgba(138, 171, 111, 0.45);
+}
+
+.drawer-list-title {
+  font-weight: 600;
+  color: var(--text);
+}

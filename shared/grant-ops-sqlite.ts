@@ -2,7 +2,7 @@ import Database from 'better-sqlite3';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { defaultOpencodeSettings, defaultProfile, seedGrants, seedNotifications, seedTasks } from './seed-data';
+import { defaultOpencodeSettings, defaultProfile, normalizeGrantDetailFields, seedGrants, seedNotifications, seedTasks } from './seed-data';
 import type {
   ApprovalRecord,
   CrawlRun,
@@ -217,7 +217,7 @@ function loadMeta(db: SqliteDatabase, key: string): string | null {
 }
 
 function seedDefaultState(db: SqliteDatabase): void {
-  replaceTable<Grant>(db, 'grants', [...seedGrants]);
+  replaceTable<Grant>(db, 'grants', seedGrants.map((grant) => normalizeGrantDetailFields(grant)));
   saveSingleton<OrganizationProfile>(db, 'profile', 'profile', defaultProfile);
   replaceTable<Notification>(db, 'notifications', [...seedNotifications]);
   replaceTable<Task>(db, 'tasks', [...seedTasks]);
@@ -235,7 +235,7 @@ function seedDefaultState(db: SqliteDatabase): void {
 
 function bootstrapFromLegacy(db: SqliteDatabase, legacy: Awaited<ReturnType<typeof readLegacyBootstrap>>): void {
   if (legacy.grants) {
-    replaceTable<Grant>(db, 'grants', legacy.grants);
+    replaceTable<Grant>(db, 'grants', legacy.grants.map((grant) => normalizeGrantDetailFields(grant)));
   }
 
   if (legacy.profile) {
@@ -333,12 +333,12 @@ export async function writePersistedData(state: SqliteBootstrapState, data: Pers
 
 export async function readGrants(state: SqliteBootstrapState): Promise<Grant[]> {
   const db = await getBootstrappedDatabase(state);
-  return loadTable<Grant>(db, 'grants');
+  return loadTable<Grant>(db, 'grants').map((grant) => normalizeGrantDetailFields(grant));
 }
 
 export async function writeGrants(state: SqliteBootstrapState, grants: Grant[]): Promise<void> {
   const db = await getBootstrappedDatabase(state);
-  replaceTable<Grant>(db, 'grants', grants);
+  replaceTable<Grant>(db, 'grants', grants.map((grant) => normalizeGrantDetailFields(grant)));
 }
 
 export async function readProfile(state: SqliteBootstrapState): Promise<OrganizationProfile> {

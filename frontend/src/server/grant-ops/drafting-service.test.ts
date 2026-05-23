@@ -152,9 +152,18 @@ describe("DraftingService", () => {
 			expect(drafts.some((d) => d.id === draft.id)).toBe(true);
 		});
 
-		it("updates grant status to drafting", async () => {
+		it("updates grant status and draft preview metadata", async () => {
 			const mockGrant = createMockGrant(`draft-test-6-${Date.now()}`);
 			await repository.addGrant(mockGrant);
+			await repository.addDocument({
+				id: `doc-${Date.now()}`,
+				name: 'Program Summary',
+				type: 'PDF',
+				audited: true,
+				extractionStatus: 'extracted',
+				contentSnippet: 'Grounded program summary',
+				extractedText: 'Grounded program summary for the grant drawer.',
+			});
 
 			await draftingService.generateDraft(mockGrant, mockProfile, {
 				_providerType: "fake",
@@ -163,6 +172,10 @@ describe("DraftingService", () => {
 			const updatedGrant = await repository.getGrant(mockGrant.id);
 			expect(updatedGrant?.status).toBe("draft");
 			expect(updatedGrant?.statusLabel).toBe("Drafting");
+			expect(updatedGrant?.latestDraftVersion).toBe(1);
+			expect(updatedGrant?.groundedDocumentCount).toBe(1);
+			expect(updatedGrant?.sourceCount).toBe(1);
+			expect(updatedGrant?.funderSummary).toContain(mockGrant.funder);
 		});
 
 		it("includes revision notes when provided", async () => {
@@ -227,6 +240,7 @@ describe("DraftingService", () => {
 
 			const updatedGrant = await repository.getGrant(mockGrant.id);
 			expect(updatedGrant?.status).toBe("draft");
+			expect(updatedGrant?.statusLabel).toBe("Revision requested");
 		});
 	});
 

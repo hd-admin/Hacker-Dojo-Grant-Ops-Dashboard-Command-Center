@@ -139,6 +139,15 @@ export async function addSubmissionRecord(record: SubmissionRecord): Promise<voi
   await savePersistedData(data);
 }
 
+export async function updateSubmissionRecord(record: SubmissionRecord): Promise<void> {
+  const data = await loadPersistedData();
+  const index = data.submissionRecords.findIndex((existing: SubmissionRecord) => existing.id === record.id);
+  if (index !== -1) {
+    data.submissionRecords[index] = record;
+    await savePersistedData(data);
+  }
+}
+
 // FollowUp operations
 export async function getFollowUps(): Promise<FollowUp[]> {
   const data = await loadPersistedData();

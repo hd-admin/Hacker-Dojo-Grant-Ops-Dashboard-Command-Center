@@ -33,6 +33,10 @@ export interface Grant {
   checklist?: ChecklistItem[];
   draftContent?: string;
   externalUrl?: string;
+  funderSummary?: string;
+  latestDraftVersion?: number;
+  groundedDocumentCount?: number;
+  sourceCount?: number;
 }
 
 export interface OrganizationProfile {
@@ -209,6 +213,24 @@ export interface FollowUp {
   status: 'pending' | 'completed' | 'overdue';
   completedAt?: string;
   createdAt: string;
+}
+
+export interface GrantDetailWorkflow {
+  canGenerateDraft: boolean;
+  canRequestRevision: boolean;
+  canApprove: boolean;
+  canSubmit: boolean;
+  blockingReason: string | null;
+}
+
+export interface GrantDetailResponse {
+  grant: Grant;
+  latestDraft: DraftArtifact | null;
+  latestRevisionRequest: RevisionRequest | null;
+  approvalRecord: ApprovalRecord | null;
+  submissionRecord: SubmissionRecord | null;
+  followUps: FollowUp[];
+  workflow: GrantDetailWorkflow;
 }
 
 export interface OpencodeSettings {

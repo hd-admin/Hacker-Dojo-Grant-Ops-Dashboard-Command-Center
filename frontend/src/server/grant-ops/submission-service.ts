@@ -66,6 +66,11 @@ export async function canSubmit(grantId: string): Promise<{ canSubmit: boolean; 
     return { canSubmit: false, reason: 'Grant has already been awarded' };
   }
 
+  const existingSubmission = await deps.repository.getSubmissionRecord(grantId);
+  if (existingSubmission) {
+    return { canSubmit: false, reason: 'Grant has already been submitted' };
+  }
+
   // Check if there's an approval record
   const approval = await deps.repository.getApprovalRecord(grantId);
   if (!approval) {
@@ -91,6 +96,21 @@ export async function approveGrant(input: ApprovalInput): Promise<ApprovalResult
     const clock = deps.clock;
 
     const { grant, approvedBy, lockedUntil } = input;
+
+    const existingSubmission = await deps.repository.getSubmissionRecord(grant.id);
+    if (existingSubmission || grant.status === 'submitted') {
+      return {
+        success: false,
+        error: 'Grant has already been submitted',
+      };
+    }
+
+    if (grant.status === 'awarded') {
+      return {
+        success: false,
+        error: 'Grant has already been awarded',
+      };
+    }
 
     // Get latest draft
     const drafts = await deps.repository.getDraftArtifacts(grant.id);
@@ -166,8 +186,9 @@ export async function recordSubmission(input: SubmissionInput): Promise<Submissi
     // Generate follow-up tasks
     const followUps = await generateFollowUps(grant, submissionRecord, submittedBy, deps);
 
-    // Update submission record with follow-up IDs
+    // Update submission record with follow-up IDs and persist the linkage
     submissionRecord.followUpsCreated = followUps.map((f) => f.id);
+    await deps.repository.updateSubmissionRecord(submissionRecord);
 
     // Email submission: create notification and task for human follow-up
     if (method.type === 'email') {
