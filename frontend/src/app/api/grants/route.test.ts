@@ -2,102 +2,268 @@
  * Grants API Route Tests
  *
  * Tests the /api/grants endpoint for listing grants.
- * The route delegates to repository.getGrants(), so we test the route
- * behavior by calling the underlying repository through the route composition.
+ * These tests exercise the actual route handler to verify the route contract
+ * and assert the exact required ID order for fit, deadline with Rolling last, and award.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { invalidateCache } from '../../../../../shared/grant-ops-persistence';
-import { getDependencies } from '@/server/grant-ops/dependencies';
+import type { NextResponse } from "next/server";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-describe('Grants API Route', () => {
-  beforeEach(() => {
-    invalidateCache();
-  });
+// Mock the entire dependencies module before importing the route
+vi.mock("@/server/grant-ops/dependencies", () => ({
+	getDependencies: vi.fn(),
+	setDependencies: vi.fn(),
+	resetDependencies: vi.fn(),
+	createDependencies: vi.fn(),
+	systemClock: { now: () => new Date() },
+	cryptoIdGenerator: { generateId: (prefix: string) => `${prefix}-test` },
+	cwdPersistenceRoot: { getBaseDir: () => "/tmp/test" },
+}));
 
-  afterEach(() => {
-    invalidateCache();
-  });
+import { getDependencies } from "@/server/grant-ops/dependencies";
+import { invalidateCache } from "../../../../../shared/grant-ops-persistence";
+// Import route after mocking
+import { GET } from "./route";
 
-  describe('GET /api/grants', () => {
-    it('returns an array of grants through route composition', async () => {
-      // Test through the same dependency chain the route uses
-      const deps = getDependencies();
-      const grants = await deps.repository.getGrants();
-      expect(Array.isArray(grants)).toBe(true);
-    });
+// Mock NextRequest
+vi.mock("next/server", async () => {
+	const actual =
+		await vi.importActual<typeof import("next/server")>("next/server");
+	return {
+		...actual,
+		NextRequest: class MockNextRequest {
+			url: string;
+			constructor(url: string | URL) {
+				this.url = url.toString();
+			}
+		},
+	};
+});
 
-    it('returns grants with required fields', async () => {
-      const deps = getDependencies();
-      const grants = await deps.repository.getGrants();
-      if (grants.length > 0) {
-        const grant = grants[0]!;
-        expect(grant).toHaveProperty('id');
-        expect(grant).toHaveProperty('title');
-        expect(grant).toHaveProperty('funder');
-        expect(grant).toHaveProperty('award');
-        expect(grant).toHaveProperty('deadline');
-        expect(grant).toHaveProperty('fit');
-        expect(grant).toHaveProperty('status');
-      }
-    });
+describe("Grants API Route", () => {
+	// Mock grants in UNSORTED order to verify route sorting
+	// This ensures the route is actually sorting, not just returning mock data in order
+	const mockGrants = [
+		{
+			id: "dell-equality",
+			title: "Dell Equality Initiative",
+			funder: "Dell Technologies",
+			funderShort: "Dell",
+			award: "$150,000",
+			awardSort: 150000,
+			deadline: "2026-07-15",
+			daysOut: 54,
+			fit: 76,
+			tags: ["Equality"],
+			status: "matched",
+			statusLabel: "Matched",
+			matchedAt: "2026-05-01",
+		},
+		{
+			id: "google-cs",
+			title: "Google CS Research",
+			funder: "Google",
+			funderShort: "Google",
+			award: "$100,000",
+			awardSort: 100000,
+			deadline: "2026-06-01",
+			daysOut: 10,
+			fit: 79,
+			tags: ["CS", "Research"],
+			status: "matched",
+			statusLabel: "Matched",
+			matchedAt: "2026-05-01",
+		},
+		{
+			id: "svcf-community",
+			title: "SVCF Community Grants",
+			funder: "Silicon Valley Community Foundation",
+			funderShort: "SVCF",
+			award: "$75,000",
+			awardSort: 75000,
+			deadline: "Rolling",
+			daysOut: 999,
+			fit: 82,
+			tags: ["Community"],
+			status: "matched",
+			statusLabel: "Matched",
+			matchedAt: "2026-05-01",
+		},
+		{
+			id: "nsf-tech",
+			title: "NSF Technology Innovation",
+			funder: "National Science Foundation",
+			funderShort: "NSF",
+			award: "$350,000",
+			awardSort: 350000,
+			deadline: "2026-06-15",
+			daysOut: 24,
+			fit: 88,
+			tags: ["Technology", "Innovation"],
+			status: "matched",
+			statusLabel: "Matched",
+			matchedAt: "2026-05-01",
+		},
+	];
 
-    it('returns grants with fit scores that are numbers', async () => {
-      const deps = getDependencies();
-      const grants = await deps.repository.getGrants();
-      for (const grant of grants) {
-        expect(typeof grant.fit).toBe('number');
-      }
-    });
+	beforeEach(() => {
+		invalidateCache();
+		vi.clearAllMocks();
 
-    it('can be sorted by fit score descending with exact order', async () => {
-      const deps = getDependencies();
-      const grants = await deps.repository.getGrants();
-      if (grants.length > 1) {
-        // Sort by fit descending - same logic DiscoveryView uses
-        const sorted = [...grants].sort((a, b) => b.fit - a.fit);
-        // Verify descending order
-        for (let i = 0; i < sorted.length - 1; i++) {
-          expect(sorted[i]!.fit).toBeGreaterThanOrEqual(sorted[i + 1]!.fit);
-        }
-      }
-    });
+		// Setup mock dependencies
+		const mockRepo = {
+			getGrants: vi.fn().mockResolvedValue(mockGrants),
+			getGrant: vi.fn(),
+			addGrant: vi.fn(),
+			updateGrant: vi.fn(),
+			deleteGrant: vi.fn(),
+			getDraftArtifacts: vi.fn(),
+			addDraftArtifact: vi.fn(),
+			getRevisionRequests: vi.fn(),
+			addRevisionRequest: vi.fn(),
+			getApprovalRecord: vi.fn(),
+			addApprovalRecord: vi.fn(),
+			getSubmissionRecord: vi.fn(),
+			addSubmissionRecord: vi.fn(),
+			getFollowUps: vi.fn(),
+			addFollowUp: vi.fn(),
+		};
 
-    it('can be sorted by deadline with Rolling grants at the end with exact order', async () => {
-      const deps = getDependencies();
-      const grants = await deps.repository.getGrants();
-      if (grants.length > 1) {
-        // Sort by deadline soonest with Rolling last - same logic DiscoveryView uses
-        const sorted = [...grants].sort((a, b) => {
-          if (a.deadline === 'Rolling') return 1;
-          if (b.deadline === 'Rolling') return -1;
-          return a.daysOut - b.daysOut;
-        });
-        
-        // Find Rolling position - must be at the end if present
-        const rollingIndices = sorted.map((g, i) => g.deadline === 'Rolling' ? i : -1).filter(i => i !== -1);
-        const lastRollingIndex = rollingIndices.length > 0 ? Math.max(...rollingIndices) : -1;
-        
-        // All Rolling grants must be at the end
-        if (lastRollingIndex !== -1) {
-          for (let i = lastRollingIndex + 1; i < sorted.length; i++) {
-            expect(sorted[i]!.deadline).not.toBe('Rolling');
-          }
-        }
-      }
-    });
+		(getDependencies as ReturnType<typeof vi.fn>).mockReturnValue({
+			repository: mockRepo,
+			sourceService: {
+				getAllSources: vi.fn(),
+				getSource: vi.fn(),
+				addSource: vi.fn(),
+				updateSource: vi.fn(),
+				deleteSource: vi.fn(),
+			},
+			createOpencodeAdapter: vi.fn(),
+			clock: { now: () => new Date() },
+			idGenerator: {
+				generateId: (prefix: string) => `${prefix}-${Date.now()}-test`,
+			},
+			persistenceRoot: { getBaseDir: () => "/tmp/test" },
+		});
+	});
 
-    it('can be sorted by award amount descending with exact order', async () => {
-      const deps = getDependencies();
-      const grants = await deps.repository.getGrants();
-      if (grants.length > 1) {
-        // Sort by award descending - same logic DiscoveryView uses
-        const sorted = [...grants].sort((a, b) => b.awardSort - a.awardSort);
-        // Verify descending order
-        for (let i = 0; i < sorted.length - 1; i++) {
-          expect(sorted[i]!.awardSort).toBeGreaterThanOrEqual(sorted[i + 1]!.awardSort);
-        }
-      }
-    });
-  });
+	afterEach(() => {
+		invalidateCache();
+		vi.restoreAllMocks();
+	});
+
+	describe("GET /api/grants", () => {
+		it("returns grants through the route handler", async () => {
+			// Create mock request with default sortBy=fit
+			const { NextRequest } = require("next/server");
+			const mockRequest = new NextRequest("http://localhost:3000/api/grants");
+
+			const response = await GET(mockRequest);
+			const data = await (response as NextResponse).json();
+
+			// Verify the handler called getDependencies
+			expect(getDependencies).toHaveBeenCalled();
+
+			// Verify the grants are returned
+			expect(data.length).toBe(4);
+		});
+
+		it("returns grants with required fields from route", async () => {
+			const { NextRequest } = require("next/server");
+			const mockRequest = new NextRequest(
+				"http://localhost:3000/api/grants?sortBy=fit",
+			);
+
+			const response = await GET(mockRequest);
+			const data = await (response as NextResponse).json();
+
+			expect(data.length).toBe(4);
+
+			// Verify each grant has required fields
+			for (const grant of data) {
+				expect(grant).toHaveProperty("id");
+				expect(grant).toHaveProperty("title");
+				expect(grant).toHaveProperty("funder");
+				expect(grant).toHaveProperty("award");
+				expect(grant).toHaveProperty("awardSort");
+				expect(grant).toHaveProperty("deadline");
+				expect(grant).toHaveProperty("daysOut");
+				expect(grant).toHaveProperty("fit");
+				expect(grant).toHaveProperty("status");
+			}
+		});
+
+		it("returns grants sorted by fit descending (default)", async () => {
+			const { NextRequest } = require("next/server");
+			const mockRequest = new NextRequest(
+				"http://localhost:3000/api/grants?sortBy=fit",
+			);
+
+			const response = await GET(mockRequest);
+			const data = await (response as NextResponse).json();
+
+			// Mock data order: dell-equality (76), google-cs (79), svcf-community (82), nsf-tech (88)
+			// Expected sorted order by fit descending: nsf-tech (88), svcf-community (82), google-cs (79), dell-equality (76)
+			const expectedOrder = [
+				"nsf-tech",
+				"svcf-community",
+				"google-cs",
+				"dell-equality",
+			];
+			const actualOrder = data.map((g: { id: string }) => g.id);
+			expect(actualOrder).toEqual(expectedOrder);
+
+			// Also verify fit scores are in descending order
+			const fitScores = data.map((g: { fit: number }) => g.fit);
+			expect(fitScores).toEqual([88, 82, 79, 76]);
+		});
+
+		it("returns grants sorted by deadline soonest with Rolling last", async () => {
+			const { NextRequest } = require("next/server");
+			const mockRequest = new NextRequest(
+				"http://localhost:3000/api/grants?sortBy=deadline",
+			);
+
+			const response = await GET(mockRequest);
+			const data = await (response as NextResponse).json();
+
+			// Expected order by daysOut: google-cs (10d), nsf-tech (24d), dell-equality (54d), svcf-community (Rolling)
+			const expectedOrder = [
+				"google-cs",
+				"nsf-tech",
+				"dell-equality",
+				"svcf-community",
+			];
+			const actualOrder = data.map((g: { id: string }) => g.id);
+			expect(actualOrder).toEqual(expectedOrder);
+
+			// Verify Rolling is last
+			const rollingIndex = actualOrder.indexOf("svcf-community");
+			expect(rollingIndex).toBe(actualOrder.length - 1);
+		});
+
+		it("returns grants sorted by award descending", async () => {
+			const { NextRequest } = require("next/server");
+			const mockRequest = new NextRequest(
+				"http://localhost:3000/api/grants?sortBy=award",
+			);
+
+			const response = await GET(mockRequest);
+			const data = await (response as NextResponse).json();
+
+			// Expected order by awardSort descending: nsf-tech ($350k), dell-equality ($150k), google-cs ($100k), svcf-community ($75k)
+			const expectedOrder = [
+				"nsf-tech",
+				"dell-equality",
+				"google-cs",
+				"svcf-community",
+			];
+			const actualOrder = data.map((g: { id: string }) => g.id);
+			expect(actualOrder).toEqual(expectedOrder);
+
+			// Verify award amounts are in descending order
+			const awardAmounts = data.map((g: { awardSort: number }) => g.awardSort);
+			expect(awardAmounts).toEqual([350000, 150000, 100000, 75000]);
+		});
+	});
 });

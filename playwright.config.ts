@@ -14,8 +14,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'pnpm next dev -p 3000',
-    cwd: './frontend',
+    command: './playwright-start.sh',
     port: 3000,
     reuseExistingServer: true,
     timeout: 300000,

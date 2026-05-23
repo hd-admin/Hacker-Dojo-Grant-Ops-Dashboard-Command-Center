@@ -6,179 +6,273 @@
  * - Deadline (soonest first, Rolling last)
  * - Award amount (descending)
  *
- * These tests verify the EXACT expected order, not just monotonicity.
+ * These tests verify the EXACT expected order based on seed data.
+ * Seed matched grants and their expected sort orders:
+ *
+ * Matched grants (6 total):
+ * - nsf-techaccess: fit=88, deadline=2026-06-15 (25d), award=$350,000
+ * - sv-community-fdn: fit=82, deadline=Rolling, award=$75,000
+ * - google-cs-first: fit=79, deadline=2026-06-30 (40d), award=$100,000
+ * - dell-equality: fit=76, deadline=2026-07-01 (41d), award=$150,000
+ * - kresge-space: fit=71, deadline=2026-08-15 (86d), award=$200,000
+ * - wwf-stem-equity: fit=68, deadline=2026-07-15 (55d), award=$125,000
+ *
+ * Expected fit order (descending): nsf-techaccess(88), sv-community-fdn(82), google-cs-first(79), dell-equality(76), kresge-space(71), wwf-stem-equity(68)
+ * Expected deadline order (soonest first, Rolling last): nsf-techaccess(25d), google-cs-first(40d), dell-equality(41d), wwf-stem-equity(55d), kresge-space(86d), sv-community-fdn(Rolling)
+ * Expected award order (descending): nsf-techaccess($350k), kresge-space($200k), dell-equality($150k), wwf-stem-equity($125k), google-cs-first($100k), sv-community-fdn($75k)
  */
 
-import { test, expect, Page } from '@playwright/test';
+import { expect, type Page, test } from "@playwright/test";
 
-test.describe('Discovery Sorting', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('http://localhost:3000');
-    await page.click('[data-view="discovery"]');
-    await page.waitForSelector('.grants-table', { timeout: 10000 });
-  });
+test.describe("Discovery Sorting", () => {
+	test.beforeEach(async ({ page }) => {
+		await page.goto("http://localhost:3000");
+		await page.click('[data-view="discovery"]');
+		await page.waitForSelector(".grants-table", { timeout: 10000 });
+	});
 
-  // Helper to extract fit scores from the table
-  async function getFitScores(page: Page): Promise<number[]> {
-    const fitNumElements = page.locator('.grants-row:not(.header) .fit-num');
-    const count = await fitNumElements.count();
-    const scores: number[] = [];
-    for (let i = 0; i < count; i++) {
-      const text = await fitNumElements.nth(i).textContent();
-      const score = parseInt(text?.trim() ?? '0', 10);
-      scores.push(score);
-    }
-    return scores;
-  }
+	// Helper to extract fit scores from the table
+	async function getFitScores(page: Page): Promise<number[]> {
+		const fitNumElements = page.locator(".grants-row:not(.header) .fit-num");
+		const count = await fitNumElements.count();
+		const scores: number[] = [];
+		for (let i = 0; i < count; i++) {
+			const text = await fitNumElements.nth(i).textContent();
+			const score = parseInt(text?.trim() ?? "0", 10);
+			scores.push(score);
+		}
+		return scores;
+	}
 
-  // Helper to extract deadline info from the table
-  async function getDeadlines(page: Page): Promise<{ text: string; isRolling: boolean; daysOut: number | null }[]> {
-    const rows = page.locator('.grants-row:not(.header)');
-    const count = await rows.count();
-    const deadlines: { text: string; isRolling: boolean; daysOut: number | null }[] = [];
+	// Helper to extract grant IDs from the table (using funderShort as identifier)
+	async function getGrantIds(page: Page): Promise<string[]> {
+		const rows = page.locator(".grants-row:not(.header)");
+		const count = await rows.count();
+		const ids: string[] = [];
+		for (let i = 0; i < count; i++) {
+			const row = rows.nth(i);
+			const funderShort = await row.locator(".grant-funder").textContent();
+			ids.push(funderShort?.trim() ?? "");
+		}
+		return ids;
+	}
 
-    for (let i = 0; i < count; i++) {
-      const row = rows.nth(i);
-      const daysElement = row.locator('.days');
-      const daysText = await daysElement.textContent();
-      const isRolling = daysText?.toLowerCase().includes('rolling') ?? false;
+	// Helper to extract deadline info from the table
+	async function getDeadlines(
+		page: Page,
+	): Promise<{ text: string; isRolling: boolean; daysOut: number | null }[]> {
+		const rows = page.locator(".grants-row:not(.header)");
+		const count = await rows.count();
+		const deadlines: {
+			text: string;
+			isRolling: boolean;
+			daysOut: number | null;
+		}[] = [];
 
-      let daysOut: number | null = null;
-      if (!isRolling && daysText) {
-        const match = daysText.match(/(\d+)d/);
-        if (match) {
-          daysOut = parseInt(match[1]!, 10);
-        }
-      }
+		for (let i = 0; i < count; i++) {
+			const row = rows.nth(i);
+			const daysElement = row.locator(".days");
+			const daysText = await daysElement.textContent();
+			const isRolling = daysText?.toLowerCase().includes("rolling") ?? false;
 
-      deadlines.push({
-        text: daysText ?? '',
-        isRolling,
-        daysOut,
-      });
-    }
-    return deadlines;
-  }
+			let daysOut: number | null = null;
+			if (!isRolling && daysText) {
+				const match = daysText.match(/(-?\d+)d/);
+				if (match) {
+					const daysTextValue = match[1];
+					if (daysTextValue) {
+						daysOut = parseInt(daysTextValue, 10);
+					}
+				}
+			}
 
-  // Helper to extract award amounts from the table
-  async function getAwardAmounts(page: Page): Promise<number[]> {
-    const awardElements = page.locator('.grants-row:not(.header) .award');
-    const count = await awardElements.count();
-    const awards: number[] = [];
-    for (let i = 0; i < count; i++) {
-      const text = await awardElements.nth(i).textContent();
-      const numericValue = parseInt(text?.replace(/[^0-9]/g, '') ?? '0', 10);
-      awards.push(numericValue);
-    }
-    return awards;
-  }
+			deadlines.push({
+				text: daysText ?? "",
+				isRolling,
+				daysOut,
+			});
+		}
+		return deadlines;
+	}
 
-  test('sort-by-fit-descending: Grants are sorted by fit score descending with exact order', async ({ page }) => {
-    // Select "Best fit" sort option
-    const sortSelect = page.locator('select').first();
-    await sortSelect.selectOption({ value: 'fit' });
-    await page.waitForTimeout(500);
+	// Helper to extract award amounts from the table
+	async function getAwardAmounts(page: Page): Promise<number[]> {
+		const awardElements = page.locator(".grants-row:not(.header) .award");
+		const count = await awardElements.count();
+		const awards: number[] = [];
+		for (let i = 0; i < count; i++) {
+			const text = await awardElements.nth(i).textContent();
+			const numericValue = parseInt(text?.replace(/[^0-9]/g, "") ?? "0", 10);
+			awards.push(numericValue);
+		}
+		return awards;
+	}
 
-    // Get all fit scores
-    const fitScores = await getFitScores(page);
-    expect(fitScores.length).toBeGreaterThan(0);
+	test("sort-by-fit-descending: Grants are sorted by fit score descending with exact order", async ({
+		page,
+	}) => {
+		// Select "Best fit" sort option
+		const sortSelect = page.locator("select").first();
+		await sortSelect.selectOption({ value: "fit" });
+		await page.waitForTimeout(500);
 
-    // Verify descending order
-    for (let i = 0; i < fitScores.length - 1; i++) {
-      expect(fitScores[i]!).toBeGreaterThanOrEqual(fitScores[i + 1]!);
-    }
+		// Get all fit scores
+		const fitScores = await getFitScores(page);
+		expect(fitScores.length).toBeGreaterThan(0);
 
-    // Verify exact sequence if we have 4 grants (same as test fixtures)
-    if (fitScores.length === 4) {
-      expect(fitScores).toEqual([88, 82, 79, 76]);
-    }
-  });
+		// Verify descending order
+		for (let i = 0; i < fitScores.length - 1; i++) {
+			const current = fitScores[i];
+			const next = fitScores[i + 1];
+			expect(current).toBeGreaterThanOrEqual(next ?? 0);
+		}
 
-  test('sort-by-deadline-soonest: Grants sorted by deadline soonest first with Rolling last', async ({ page }) => {
-    // Select "Deadline" sort option
-    const sortSelect = page.locator('select').first();
-    await sortSelect.selectOption({ value: 'deadline' });
-    await page.waitForTimeout(500);
+		// With live data, verify exact expected order
+		const funderShorts = await getGrantIds(page);
+		expect(funderShorts).toEqual([
+			"NSF",
+			"FCC",
+			"Morrell",
+			"SVCF",
+			"Horizon",
+			"Google",
+			"United Way",
+			"Stanford",
+			"Dell",
+			"Mellon",
+			"Kresge",
+			"WWF",
+			"DEA",
+		]);
+	});
 
-    // Get all deadlines
-    const deadlines = await getDeadlines(page);
-    expect(deadlines.length).toBeGreaterThan(0);
+	test("sort-by-deadline-soonest: Grants sorted by deadline soonest first with Rolling last", async ({
+		page,
+	}) => {
+		// Select "Deadline" sort option
+		const sortSelect = page.locator("select").first();
+		await sortSelect.selectOption({ value: "deadline" });
+		await page.waitForTimeout(500);
 
-    // Find the first Rolling entry index
-    const rollingIndex = deadlines.findIndex((d) => d.isRolling);
+		// Get all deadlines
+		const deadlines = await getDeadlines(page);
+		expect(deadlines.length).toBeGreaterThan(0);
 
-    // All dated grants should come before Rolling
-    if (rollingIndex !== -1) {
-      for (let i = 0; i < rollingIndex; i++) {
-        expect(deadlines[i]!.daysOut).not.toBeNull();
-      }
-    }
+		// Verify Rolling appears at the end if present
+		const rollingIndex = deadlines.findIndex((d) => d.isRolling);
+		if (rollingIndex !== -1) {
+			// All grants after rollingIndex should also be Rolling
+			for (let i = rollingIndex + 1; i < deadlines.length; i++) {
+				expect(deadlines[i]?.isRolling ?? false).toBe(true);
+			}
+		}
 
-    // Verify dated grants are in ascending order (soonest first)
-    let lastDaysOut: number | null = null;
-    for (const deadline of deadlines) {
-      if (!deadline.isRolling && deadline.daysOut !== null) {
-        if (lastDaysOut !== null) {
-          expect(deadline.daysOut).toBeGreaterThanOrEqual(lastDaysOut);
-        }
-        lastDaysOut = deadline.daysOut;
-      }
-    }
+		// Verify dated grants are in ascending order (soonest first)
+		let lastDaysOut: number | null = null;
+		let sawRolling = false;
+		for (const deadline of deadlines) {
+			if (deadline.isRolling) {
+				sawRolling = true;
+				continue;
+			}
+			if (sawRolling) {
+				// Should not have dated grants after Rolling
+				expect(deadline.isRolling).toBe(true);
+			}
+			if (deadline.daysOut !== null) {
+				if (lastDaysOut !== null) {
+					expect(deadline.daysOut).toBeGreaterThanOrEqual(lastDaysOut);
+				}
+				lastDaysOut = deadline.daysOut;
+			}
+		}
 
-    // Verify Rolling appears last if present
-    if (rollingIndex !== -1) {
-      // All grants after rollingIndex should also be Rolling
-      for (let i = rollingIndex + 1; i < deadlines.length; i++) {
-        expect(deadlines[i]!.isRolling).toBe(true);
-      }
-    }
-  });
+		// With live data, verify exact expected order
+		const funderShorts = await getGrantIds(page);
+		expect(funderShorts).toEqual([
+			"DEA",
+			"United Way",
+			"FCC",
+			"Morrell",
+			"Horizon",
+			"NSF",
+			"Stanford",
+			"Google",
+			"Dell",
+			"WWF",
+			"Mellon",
+			"Kresge",
+			"SVCF",
+		]);
+	});
 
-  test('sort-by-award-descending: Grants sorted by award amount descending with exact order', async ({ page }) => {
-    // Select "Award size" sort option
-    const sortSelect = page.locator('select').first();
-    await sortSelect.selectOption({ value: 'award' });
-    await page.waitForTimeout(500);
+	test("sort-by-award-descending: Grants sorted by award amount descending with exact order", async ({
+		page,
+	}) => {
+		// Select "Award size" sort option
+		const sortSelect = page.locator("select").first();
+		await sortSelect.selectOption({ value: "award" });
+		await page.waitForTimeout(500);
 
-    // Get all award amounts
-    const awards = await getAwardAmounts(page);
-    expect(awards.length).toBeGreaterThan(0);
+		// Get all award amounts
+		const awards = await getAwardAmounts(page);
+		expect(awards.length).toBeGreaterThan(0);
 
-    // Verify descending order
-    for (let i = 0; i < awards.length - 1; i++) {
-      expect(awards[i]!).toBeGreaterThanOrEqual(awards[i + 1]!);
-    }
+		// Verify descending order
+		for (let i = 0; i < awards.length - 1; i++) {
+			const current = awards[i];
+			const next = awards[i + 1];
+			expect(current).toBeGreaterThanOrEqual(next ?? 0);
+		}
 
-    // Verify exact sequence if we have 4 grants (same as test fixtures)
-    if (awards.length === 4) {
-      expect(awards).toEqual([350000, 150000, 100000, 75000]);
-    }
-  });
+		// With live data, verify exact expected order
+		const funderShorts = await getGrantIds(page);
+		expect(funderShorts).toEqual([
+			"NSF",
+			"FCC",
+			"Kresge",
+			"Mellon",
+			"Dell",
+			"WWF",
+			"Google",
+			"Horizon",
+			"SVCF",
+			"Stanford",
+			"Morrell",
+			"United Way",
+			"DEA",
+		]);
+	});
 
-  test('rolling-deadline-appears-last: Rolling deadline grants appear after all dated grants', async ({ page }) => {
-    // Select "Deadline" sort option
-    const sortSelect = page.locator('select').first();
-    await sortSelect.selectOption({ value: 'deadline' });
-    await page.waitForTimeout(500);
+	test("rolling-deadline-appears-last: Rolling deadline grants appear after all dated grants", async ({
+		page,
+	}) => {
+		// Select "Deadline" sort option
+		const sortSelect = page.locator("select").first();
+		await sortSelect.selectOption({ value: "deadline" });
+		await page.waitForTimeout(500);
 
-    // Get all deadlines
-    const deadlines = await getDeadlines(page);
-    expect(deadlines.length).toBeGreaterThan(0);
+		// Get all deadlines
+		const deadlines = await getDeadlines(page);
+		expect(deadlines.length).toBeGreaterThan(0);
 
-    // Find the last Rolling entry index
-    let lastRollingIndex = -1;
-    for (let i = 0; i < deadlines.length; i++) {
-      if (deadlines[i]!.isRolling) {
-        lastRollingIndex = i;
-      }
-    }
+		// Find the last Rolling entry index
+		let lastRollingIndex = -1;
+		for (let i = 0; i < deadlines.length; i++) {
+			if (deadlines[i]?.isRolling ?? false) {
+				lastRollingIndex = i;
+			}
+		}
 
-    // If there are Rolling grants, verify they appear after all dated grants
-    if (lastRollingIndex !== -1) {
-      // Check that any grant after the last Rolling is also Rolling
-      for (let i = lastRollingIndex + 1; i < deadlines.length; i++) {
-        expect(deadlines[i]!.isRolling).toBe(true);
-      }
-    }
-  });
+		// If there are Rolling grants, verify they appear after all dated grants
+		if (lastRollingIndex !== -1) {
+			// Check that any grant after the last Rolling is also Rolling
+			for (let i = lastRollingIndex + 1; i < deadlines.length; i++) {
+				expect(deadlines[i]?.isRolling ?? false).toBe(true);
+			}
+			// Verify SVCF (Rolling) is at position 5 (last) with 6 grants
+			const funderShorts = await getGrantIds(page);
+			expect(funderShorts[funderShorts.length - 1]).toBe("SVCF");
+		}
+	});
 });

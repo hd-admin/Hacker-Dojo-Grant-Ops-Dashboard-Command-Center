@@ -5,274 +5,327 @@
  * - Email submission creates notification artifacts
  * - Email submission creates follow-up tasks
  * - Human notification is created via notifyEmail
+ *
+ * These tests are DETERMINISTIC - they find and use grants in draft state
+ * regardless of their specific IDs. No conditional skips.
  */
 
-import { test, expect, type APIRequestContext } from '@playwright/test';
+import { type APIRequestContext, expect, test } from "@playwright/test";
 
-test.describe('Submission Notification', () => {
-  // Use a single API context for the entire test suite
-  let apiContext: APIRequestContext;
+test.describe("Submission Notification", () => {
+	// Use a single API context for the entire test suite
+	let apiContext: APIRequestContext;
 
-  test.beforeEach(async ({ request }) => {
-    // The request fixture is already an APIRequestContext - use it directly
-    apiContext = request;
-  });
+	function requireDraftGrant(
+		grant: { id: string; funder: string } | undefined,
+	): { id: string; funder: string } {
+		if (!grant) {
+			throw new Error('Expected a draft grant for submission workflow tests');
+		}
+		return grant;
+	}
 
-  test('notify-email-is-configured: notifyEmail is set in profile', async () => {
-    const profileResponse = await apiContext.get('/api/profile');
-    expect(profileResponse.ok()).toBeTruthy();
+	function requireNotification(
+		notification: { dot: string } | undefined,
+	): { dot: string } {
+		if (!notification) {
+			throw new Error('Expected a submission notification');
+		}
+		return notification;
+	}
 
-    const profile = await profileResponse.json();
-    expect(profile.agentBehavior).toBeDefined();
-    expect(profile.agentBehavior.notifyEmail).toBeDefined();
-    expect(profile.agentBehavior.notifyEmail.length).toBeGreaterThan(0);
+	test.beforeEach(async ({ request }) => {
+		// The request fixture is already an APIRequestContext - use it directly
+		apiContext = request;
+		await request.patch("/api/grants/nsf-techaccess", {
+			data: {
+				status: "draft",
+				statusLabel: "Drafting",
+			},
+		});
+	});
 
-    // Should be a valid email format
-    expect(profile.agentBehavior.notifyEmail).toMatch(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
-  });
+	test("notify-email-is-configured: notifyEmail is set in profile", async () => {
+		const profileResponse = await apiContext.get("/api/profile");
+		expect(profileResponse.ok()).toBeTruthy();
 
-  test('email-submission-creates-notification: Email submission creates notification', async ({
-    _page,
-  }) => {
-    // First ensure we have a grant with draft content
-    const grantsResponse = await apiContext.get('/api/grants');
-    expect(grantsResponse.ok()).toBeTruthy();
-    const grants: Array<{
-      id: string;
-      status: string;
-      title: string;
-      funder: string;
-      draftContent?: string;
-    }> = await grantsResponse.json();
+		const profile = await profileResponse.json();
+		expect(profile.agentBehavior).toBeDefined();
+		expect(profile.agentBehavior.notifyEmail).toBeDefined();
+		expect(profile.agentBehavior.notifyEmail.length).toBeGreaterThan(0);
 
-    // Find a grant in draft state that we can work with
-    const draftGrant = grants.find(
-      (g) => g.status === 'draft' && g.draftContent,
-    );
+		// Should be a valid email format
+		expect(profile.agentBehavior.notifyEmail).toMatch(
+			/^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+		);
+	});
 
-    if (!draftGrant) {
-      // Skip if no draft grant available - this is a data dependency issue
-      test.skip();
-      return;
-    }
+	test("email-submission-creates-notification: Email submission creates notification", async () => {
+		// Get grants - find any grant in draft state with draftContent
+		const grantsResponse = await apiContext.get("/api/grants");
+		expect(grantsResponse.ok()).toBeTruthy();
+		const grants: Array<{
+			id: string;
+			status: string;
+			title: string;
+			funder: string;
+			draftContent?: string;
+		}> = await grantsResponse.json();
 
-    // Get initial notification count
-    const initialNotificationsResponse = await apiContext.get('/api/notifications');
-    const initialNotifications: Array<{ id: string }> =
-      await initialNotificationsResponse.json();
-    const initialCount = initialNotifications.length;
+		// Find ANY grant in draft state that we can work with
+		const draftGrant = grants.find(
+			(g) => g.status === "draft" && g.draftContent,
+		);
 
-    // Approve the grant first
-    await apiContext.post(
-      `/api/grants/${draftGrant.id}/approval`,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        data: { approvedBy: 'test-user' },
-      },
-    );
+		// There should be draft grants from seed data
+		expect(draftGrant).toBeDefined();
+		const draftGrantChecked = requireDraftGrant(draftGrant);
+		expect(draftGrantChecked.id).toBeDefined();
 
-    // Submit via email
-    await apiContext.post(
-      `/api/grants/${draftGrant.id}/submit`,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          method: {
-            type: 'email',
-            confirmationId: `TEST-EMAIL-${Date.now()}`,
-            submittedBy: 'test-user',
-          },
-          notes: 'Test email submission',
-          submittedBy: 'test-user',
-        },
-      },
-    );
+		// Get initial notification count
+		const initialNotificationsResponse =
+			await apiContext.get("/api/notifications");
+		const initialNotifications: Array<{ id: string }> =
+			await initialNotificationsResponse.json();
+		const initialCount = initialNotifications.length;
 
-    // Check notifications API for new notification
-    const finalNotificationsResponse = await apiContext.get('/api/notifications');
-    const finalNotifications: Array<{ id: string; text: string; grantId?: string }> =
-      await finalNotificationsResponse.json();
+		// Approve the grant first
+		const approveResponse = await apiContext.post(
+			`/api/grants/${draftGrantChecked.id}/approval`,
+			{
+				headers: { "Content-Type": "application/json" },
+				data: { approvedBy: "test-user" },
+			},
+		);
+		expect(approveResponse.ok()).toBeTruthy();
 
-    // There should be more notifications than before
-    expect(finalNotifications.length).toBeGreaterThan(initialCount);
+		// Submit via email
+		const submitResponse = await apiContext.post(
+			`/api/grants/${draftGrantChecked.id}/submit`,
+			{
+				headers: { "Content-Type": "application/json" },
+				data: {
+					method: {
+						type: "email",
+						confirmationId: `TEST-EMAIL-${Date.now()}`,
+						submittedBy: "test-user",
+					},
+					notes: "Test email submission",
+					submittedBy: "test-user",
+				},
+			},
+		);
+		expect(submitResponse.ok()).toBeTruthy();
 
-    // Find notification for this grant
-    const grantNotification = finalNotifications.find(
-      (n) => n.grantId === draftGrant.id,
-    );
-    expect(grantNotification).toBeDefined();
-  });
+		// Check notifications API for new notification
+		const finalNotificationsResponse =
+			await apiContext.get("/api/notifications");
+		const finalNotifications: Array<{ id: string; text: string; dot: string }> =
+			await finalNotificationsResponse.json();
 
-  test('email-submission-creates-follow-ups: Email submission creates follow-up tasks', async () => {
-    // Get grants
-    const grantsResponse = await apiContext.get('/api/grants');
-    expect(grantsResponse.ok()).toBeTruthy();
-    const grants: Array<{
-      id: string;
-      status: string;
-      title: string;
-      funder: string;
-      draftContent?: string;
-    }> = await grantsResponse.json();
+		// There should be more notifications than before
+		expect(finalNotifications.length).toBeGreaterThan(initialCount);
 
-    // Find a grant in draft state
-    const draftGrant = grants.find(
-      (g) => g.status === 'draft' && g.draftContent,
-    );
+		// Find notification with submission-related text (contains the funder name)
+		const submissionNotification = finalNotifications.find(
+			(n) =>
+				n.text.includes(draftGrantChecked.funder) &&
+				n.text.includes("Email submission"),
+		);
+		expect(submissionNotification).toBeDefined();
+		const submissionNotificationChecked = requireNotification(submissionNotification);
+		expect(submissionNotificationChecked.dot).toBe("blue");
+	});
 
-    if (!draftGrant) {
-      test.skip();
-      return;
-    }
+	test("email-submission-creates-follow-ups: Email submission creates follow-up tasks", async () => {
+		// Get grants - find any grant in draft state
+		const grantsResponse = await apiContext.get("/api/grants");
+		expect(grantsResponse.ok()).toBeTruthy();
+		const grants: Array<{
+			id: string;
+			status: string;
+			title: string;
+			funder: string;
+			draftContent?: string;
+		}> = await grantsResponse.json();
 
-    // Approve the grant
-    await apiContext.post(
-      `/api/grants/${draftGrant.id}/approval`,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        data: { approvedBy: 'test-user' },
-      },
-    );
+		// Find ANY grant in draft state with draftContent
+		const draftGrant = grants.find(
+			(g) => g.status === "draft" && g.draftContent,
+		);
 
-    // Submit via email
-    const submitResponse = await apiContext.post(
-      `/api/grants/${draftGrant.id}/submit`,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          method: {
-            type: 'email',
-            confirmationId: `TEST-EMAIL-${Date.now()}`,
-            submittedBy: 'test-user',
-          },
-          notes: 'Test email submission',
-          submittedBy: 'test-user',
-        },
-      },
-    );
-    expect(submitResponse.ok()).toBeTruthy();
+		// There should be draft grants from seed data
+		expect(draftGrant).toBeDefined();
+		const draftGrantChecked = requireDraftGrant(draftGrant);
+		expect(draftGrantChecked.id).toBeDefined();
 
-    // Check follow-ups were created
-    const finalFollowUpsResponse = await apiContext.get('/api/follow-ups');
-    const finalFollowUps: Array<{ id: string; grantId: string }> =
-      await finalFollowUpsResponse.json();
+		// Get initial follow-ups count
+		const initialFollowUpsResponse = await apiContext.get("/api/follow-ups");
+		const initialFollowUps: Array<{ id: string }> =
+			await initialFollowUpsResponse.json();
+		const initialCount = initialFollowUps.length;
 
-    // Should have follow-ups for this grant
-    const newFollowUps = finalFollowUps.filter(
-      (f) => f.grantId === draftGrant.id,
-    );
-    expect(newFollowUps.length).toBeGreaterThan(0);
-  });
+		// Approve the grant
+		const approveResponse = await apiContext.post(
+			`/api/grants/${draftGrantChecked.id}/approval`,
+			{
+				headers: { "Content-Type": "application/json" },
+				data: { approvedBy: "test-user" },
+			},
+		);
+		expect(approveResponse.ok()).toBeTruthy();
 
-  test('submission-creates-task: Submission creates task for human review', async () => {
-    // Get grants
-    const grantsResponse = await apiContext.get('/api/grants');
-    expect(grantsResponse.ok()).toBeTruthy();
-    const grants: Array<{
-      id: string;
-      status: string;
-      draftContent?: string;
-    }> = await grantsResponse.json();
+		// Submit via email
+		const submitResponse = await apiContext.post(
+			`/api/grants/${draftGrantChecked.id}/submit`,
+			{
+				headers: { "Content-Type": "application/json" },
+				data: {
+					method: {
+						type: "email",
+						confirmationId: `TEST-EMAIL-${Date.now()}`,
+						submittedBy: "test-user",
+					},
+					notes: "Test email submission",
+					submittedBy: "test-user",
+				},
+			},
+		);
+		expect(submitResponse.ok()).toBeTruthy();
 
-    const draftGrant = grants.find(
-      (g) => g.status === 'draft' && g.draftContent,
-    );
+		// Check follow-ups were created
+		const finalFollowUpsResponse = await apiContext.get("/api/follow-ups");
+		const finalFollowUps: Array<{ id: string; grantId?: string }> =
+			await finalFollowUpsResponse.json();
 
-    if (!draftGrant) {
-      test.skip();
-      return;
-    }
+		// Should have more follow-ups than before
+		expect(finalFollowUps.length).toBeGreaterThan(initialCount);
 
-    // Approve
-    await apiContext.post(
-      `/api/grants/${draftGrant.id}/approval`,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        data: { approvedBy: 'test-user' },
-      },
-    );
+		// Find follow-ups for this grant
+		const grantFollowUps = finalFollowUps.filter(
+			(f) => f.grantId === draftGrantChecked.id,
+		);
+		expect(grantFollowUps.length).toBeGreaterThan(0);
+	});
 
-    // Submit
-    const submitResponse = await apiContext.post(
-      `/api/grants/${draftGrant.id}/submit`,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          method: {
-            type: 'email',
-            confirmationId: `TEST-${Date.now()}`,
-            submittedBy: 'test-user',
-          },
-          submittedBy: 'test-user',
-        },
-      },
-    );
-    expect(submitResponse.ok()).toBeTruthy();
+	test("submission-creates-task: Submission creates task for human review", async () => {
+		// Get grants - find any grant in draft state
+		const grantsResponse = await apiContext.get("/api/grants");
+		expect(grantsResponse.ok()).toBeTruthy();
+		const grants: Array<{
+			id: string;
+			status: string;
+			title: string;
+			draftContent?: string;
+		}> = await grantsResponse.json();
 
-    // Check tasks were created for this grant
-    const finalTasksResponse = await apiContext.get('/api/tasks');
-    const finalTasks: Array<{ id: string; grantId?: string }> =
-      await finalTasksResponse.json();
+		// Find ANY grant in draft state
+		const draftGrant = grants.find(
+			(g) => g.status === "draft" && g.draftContent,
+		);
 
-    // Find task for this grant
-    const grantTask = finalTasks.find((t) => t.grantId === draftGrant.id);
-    expect(grantTask).toBeDefined();
-  });
+		// There should be draft grants from seed data
+		expect(draftGrant).toBeDefined();
+		const draftGrantChecked = requireDraftGrant(draftGrant);
+		expect(draftGrantChecked.id).toBeDefined();
 
-  test('submission-record-has-email-method: Submission records method.type as email', async () => {
-    // Get grants
-    const grantsResponse = await apiContext.get('/api/grants');
-    expect(grantsResponse.ok()).toBeTruthy();
-    const grants: Array<{
-      id: string;
-      status: string;
-      draftContent?: string;
-    }> = await grantsResponse.json();
+		// Get initial task count
+		const initialTasksResponse = await apiContext.get("/api/tasks");
+		const initialTasks: Array<{ id: string }> =
+			await initialTasksResponse.json();
+		const initialCount = initialTasks.length;
 
-    const draftGrant = grants.find(
-      (g) => g.status === 'draft' && g.draftContent,
-    );
+		// Approve
+		const approveResponse = await apiContext.post(
+			`/api/grants/${draftGrantChecked.id}/approval`,
+			{
+				headers: { "Content-Type": "application/json" },
+				data: { approvedBy: "test-user" },
+			},
+		);
+		expect(approveResponse.ok()).toBeTruthy();
 
-    if (!draftGrant) {
-      test.skip();
-      return;
-    }
+		// Submit
+		const submitResponse = await apiContext.post(
+			`/api/grants/${draftGrantChecked.id}/submit`,
+			{
+				headers: { "Content-Type": "application/json" },
+				data: {
+					method: {
+						type: "email",
+						confirmationId: `TEST-${Date.now()}`,
+						submittedBy: "test-user",
+					},
+					submittedBy: "test-user",
+				},
+			},
+		);
+		expect(submitResponse.ok()).toBeTruthy();
 
-    // Approve
-    await apiContext.post(
-      `/api/grants/${draftGrant.id}/approval`,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        data: { approvedBy: 'test-user' },
-      },
-    );
+		// Check tasks were created
+		const finalTasksResponse = await apiContext.get("/api/tasks");
+		const finalTasks: Array<{ id: string }> = await finalTasksResponse.json();
 
-    // Submit via email
-    const submitResponse = await apiContext.post(
-      `/api/grants/${draftGrant.id}/submit`,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          method: {
-            type: 'email',
-            confirmationId: `TEST-${Date.now()}`,
-            submittedBy: 'test-user',
-          },
-          submittedBy: 'test-user',
-        },
-      },
-    );
+		// Should have more tasks than before
+		expect(finalTasks.length).toBeGreaterThan(initialCount);
+	});
 
-    expect(submitResponse.ok()).toBeTruthy();
+	test("submission-record-has-email-method: Submission records method.type as email", async () => {
+		// Get grants - find any grant in draft state
+		const grantsResponse = await apiContext.get("/api/grants");
+		expect(grantsResponse.ok()).toBeTruthy();
+		const grants: Array<{
+			id: string;
+			status: string;
+			draftContent?: string;
+		}> = await grantsResponse.json();
 
-    // Verify submission record has email method
-    const submissionGetResponse = await apiContext.get(
-      `/api/grants/${draftGrant.id}/submit`,
-    );
-    const submission = await submissionGetResponse.json();
+		// Find ANY grant in draft state
+		const draftGrant = grants.find(
+			(g) => g.status === "draft" && g.draftContent,
+		);
 
-    expect(submission).toBeDefined();
-    expect(submission.method).toBeDefined();
-    expect(submission.method.type).toBe('email');
-  });
+		// There should be draft grants from seed data
+		expect(draftGrant).toBeDefined();
+		const draftGrantChecked = requireDraftGrant(draftGrant);
+		expect(draftGrantChecked.id).toBeDefined();
+
+		// Approve
+		const approveResponse = await apiContext.post(
+			`/api/grants/${draftGrantChecked.id}/approval`,
+			{
+				headers: { "Content-Type": "application/json" },
+				data: { approvedBy: "test-user" },
+			},
+		);
+		expect(approveResponse.ok()).toBeTruthy();
+
+		// Submit via email
+		const submitResponse = await apiContext.post(
+			`/api/grants/${draftGrantChecked.id}/submit`,
+			{
+				headers: { "Content-Type": "application/json" },
+				data: {
+					method: {
+						type: "email",
+						confirmationId: `TEST-${Date.now()}`,
+						submittedBy: "test-user",
+					},
+					submittedBy: "test-user",
+				},
+			},
+		);
+
+		expect(submitResponse.ok()).toBeTruthy();
+
+		// Verify submission record has email method
+		const submissionGetResponse = await apiContext.get(
+			`/api/grants/${draftGrantChecked.id}/submit`,
+		);
+		const submission = await submissionGetResponse.json();
+
+		expect(submission).toBeDefined();
+		expect(submission.method).toBeDefined();
+		expect(submission.method.type).toBe("email");
+	});
 });
