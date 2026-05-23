@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import { OrganizationProfileSchema } from '../../../../../shared/schemas';
+
 export const dynamic = 'force-dynamic';
 
 
@@ -17,11 +19,25 @@ export async function GET() {
   }
 }
 
+
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => null);
+
+    // Validate body against schema
+    const parsed = OrganizationProfileSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid profile data',
+          details: parsed.error.flatten().fieldErrors,
+        },
+        { status: 400 },
+      );
+    }
+
     const deps = getDependencies();
-    await deps.repository.updateOrgProfile(body);
+    await deps.repository.updateOrgProfile(parsed.data);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating profile:', error);

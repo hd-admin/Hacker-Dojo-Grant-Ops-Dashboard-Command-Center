@@ -1,23 +1,23 @@
 import { z } from 'zod';
 import type {
-  Grant,
+  Grant as _Grant,
   GrantStatus,
-  OrganizationProfile,
+  OrganizationProfile as _OrganizationProfile,
   ActivityEvent,
   FitScoreBreakdown,
   ChecklistItem,
   CrawlStatus,
   Notification,
   Task,
-  DocumentMetadata,
-  Source,
-  CrawlRun,
-  DraftArtifact,
+  DocumentMetadata as _DocumentMetadata,
+  Source as _Source,
+  CrawlRun as _CrawlRun,
+  DraftArtifact as _DraftArtifact,
   RevisionRequest,
-  ApprovalRecord,
-  SubmissionRecord,
-  FollowUp,
-  OpencodeSettings,
+  ApprovalRecord as _ApprovalRecord,
+  SubmissionRecord as _SubmissionRecord,
+  FollowUp as _FollowUp,
+  OpencodeSettings as _OpencodeSettings,
   WorkflowState,
   DocumentExtractionStatus,
 } from './types';
@@ -45,7 +45,7 @@ export const ChecklistItemSchema: z.ZodType<ChecklistItem> = z.object({
   source: z.string(),
 });
 
-export const GrantSchema: z.ZodType<Grant> = z.object({
+export const GrantSchema = z.object({
   id: z.string(),
   title: z.string(),
   funder: z.string(),
@@ -65,7 +65,7 @@ export const GrantSchema: z.ZodType<Grant> = z.object({
   externalUrl: z.string().optional(),
 });
 
-export const OrganizationProfileSchema: z.ZodType<OrganizationProfile> = z.object({
+export const OrganizationProfileSchema = z.object({
   legalName: z.string(),
   ein: z.string(),
   samUEI: z.string(),
@@ -111,7 +111,7 @@ export const DocumentExtractionStatusSchema: z.ZodType<DocumentExtractionStatus>
   'failed',
 ]);
 
-export const DocumentMetadataSchema: z.ZodType<DocumentMetadata> = z.object({
+export const DocumentMetadataSchema = z.object({
   id: z.string(),
   name: z.string(),
   type: z.string(),
@@ -142,7 +142,7 @@ export const WorkflowStateSchema: z.ZodType<WorkflowState> = z.enum([
   'awarded',
 ]);
 
-export const SourceSchema: z.ZodType<Source> = z.object({
+export const SourceSchema = z.object({
   id: z.string(),
   name: z.string(),
   url: z.string(),
@@ -152,7 +152,7 @@ export const SourceSchema: z.ZodType<Source> = z.object({
   isActive: z.boolean(),
 });
 
-export const CrawlRunSchema: z.ZodType<CrawlRun> = z.object({
+export const CrawlRunSchema = z.object({
   id: z.string(),
   startedAt: z.string(),
   completedAt: z.string().optional(),
@@ -181,7 +181,7 @@ export const RankingRationaleSchema = z.object({
   justification: z.string(),
 });
 
-export const DraftArtifactSchema: z.ZodType<DraftArtifact> = z.object({
+export const DraftArtifactSchema = z.object({
   id: z.string(),
   grantId: z.string(),
   version: z.number(),
@@ -201,7 +201,7 @@ export const RevisionRequestSchema: z.ZodType<RevisionRequest> = z.object({
   status: z.enum(['pending', 'addressed', 'superseded']),
 });
 
-export const ApprovalRecordSchema: z.ZodType<ApprovalRecord> = z.object({
+export const ApprovalRecordSchema = z.object({
   id: z.string(),
   grantId: z.string(),
   draftVersion: z.number(),
@@ -217,7 +217,7 @@ export const SubmissionMethodSchema = z.object({
   submittedBy: z.string(),
 });
 
-export const SubmissionRecordSchema: z.ZodType<SubmissionRecord> = z.object({
+export const SubmissionRecordSchema = z.object({
   id: z.string(),
   grantId: z.string(),
   submittedAt: z.string(),
@@ -226,7 +226,7 @@ export const SubmissionRecordSchema: z.ZodType<SubmissionRecord> = z.object({
   followUpsCreated: z.array(z.string()),
 });
 
-export const FollowUpSchema: z.ZodType<FollowUp> = z.object({
+export const FollowUpSchema = z.object({
   id: z.string(),
   grantId: z.string().optional(),
   submissionId: z.string().optional(),
@@ -239,7 +239,7 @@ export const FollowUpSchema: z.ZodType<FollowUp> = z.object({
   createdAt: z.string(),
 });
 
-export const OpencodeSettingsSchema: z.ZodType<OpencodeSettings> = z.object({
+export const OpencodeSettingsSchema = z.object({
   binaryPath: z.string(),
   workingDirectory: z.string(),
   timeoutMs: z.number(),
