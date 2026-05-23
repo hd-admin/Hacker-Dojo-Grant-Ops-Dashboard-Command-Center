@@ -1,20 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import type { Grant, OrganizationProfile, ActivityEvent } from '../../../shared/types';
-import { client } from '../lib/grant-ops-client';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
 interface DashboardViewProps {
   onGrantSelect: (grantId: string) => void;
   onNavigate?: (view: ViewType) => void;
+  grants: Grant[];
+  profile: OrganizationProfile | null;
 }
 
 function formatDate(dateStr: string): { day: string; month: string } {
   if (dateStr === 'Rolling') return { day: '—', month: '' };
   const parts = dateStr.split('-');
-  const _year = parts[0] ?? '';
   const month = parts[1] ?? '';
   const day = parts[2] ?? '';
   const months = [
@@ -75,64 +74,29 @@ function getDefaultActivity(): ActivityEvent[] {
   ];
 }
 
-export default function DashboardView({ onGrantSelect, onNavigate }: DashboardViewProps) {
-  const [grants, setGrants] = useState<Grant[]>([]);
-  const [profile, setProfile] = useState<OrganizationProfile | null>(null);
-  const [activity, setActivity] = useState<ActivityEvent[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-
-    async function load() {
-      try {
-        const [grantsData, profileData] = await Promise.all([
-          client.grants.getAll(),
-          client.profile.get(),
-        ]);
-        setGrants(grantsData);
-        setProfile(profileData);
-        setActivity(getDefaultActivity());
-      } catch (error) {
-        console.error('Error loading dashboard data:', error);
-        setGrants([]);
-        setProfile(null);
-        setActivity(getDefaultActivity());
-      } finally {
-        setLoading(false);
-      }
-    }
-    load();
-  }, []);
+export default function DashboardView({ onGrantSelect, onNavigate, grants, profile }: DashboardViewProps) {
+  const activity = getDefaultActivity();
 
   const handleRefreshCrawl = async () => {
     try {
-      await client.research.trigger();
-      // Refresh grants after research completes
-      const grantsData = await client.grants.getAll();
-      setGrants(grantsData);
+      const response = await fetch('/api/research', { method: 'POST' });
+      if (!response.ok) {
+        throw new Error(`Failed to trigger research: ${response.status}`);
+      }
+      // The parent shell already owns the canonical grants state; a full refresh
+      // happens through the normal app navigation / data reload path.
     } catch (error) {
       console.error('Error triggering research:', error);
     }
   };
 
   const handleNewSearch = () => {
-    if (onNavigate) {
-      onNavigate('discovery');
-    }
+    onNavigate?.('discovery');
   };
 
-  if (loading) {
-    return <div className="header-title">Loading...</div>;
-  }
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  // Dynamic time-of-day greeting
-  const hour = isMounted ? new Date().getHours() : null;
-  const greeting =
-    hour === null ? 'Welcome' : hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-
-  // KPI calculations
   const activeGrants = grants.filter((g) => g.status !== 'awarded');
   const activePipeline = activeGrants.reduce((sum, g) => sum + g.awardSort, 0);
 
@@ -142,51 +106,37 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
 
   const draftedReady = grants.filter((g) => g.status === 'review').length;
 
-  // New Matches 7d - grants with matchedAt within 7 days of TODAY
-  const today = isMounted ? new Date() : null;
-  const sevenDaysAgo = today ? new Date(today) : null;
-  if (sevenDaysAgo) sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-  const newMatches7d =
-    today && sevenDaysAgo
-      ? grants.filter((g) => {
-          if (!g.matchedAt || g.status !== 'matched') return false;
-          const matchedDate = new Date(g.matchedAt);
-          return matchedDate >= sevenDaysAgo && matchedDate <= today;
-        }).length
-      : 0;
+  const today = new Date();
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const newMatches7d = grants.filter((g) => {
+    if (!g.matchedAt || g.status !== 'matched') return false;
+    const matchedDate = new Date(g.matchedAt);
+    return matchedDate >= sevenDaysAgo && matchedDate <= today;
+  }).length;
 
-  // KPI delta: grants added this month
-  const firstOfMonth = today ? new Date(today.getFullYear(), today.getMonth(), 1) : null;
-  const grantsThisMonth =
-    today && firstOfMonth
-      ? grants.filter((g) => {
-          if (!g.matchedAt) return false;
-          const matchedDate = new Date(g.matchedAt);
-          return matchedDate >= firstOfMonth && matchedDate <= today;
-        }).length
-      : 0;
+  const firstOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const grantsThisMonth = grants.filter((g) => {
+    if (!g.matchedAt) return false;
+    const matchedDate = new Date(g.matchedAt);
+    return matchedDate >= firstOfMonth && matchedDate <= today;
+  }).length;
 
-  // High-fit count: matched grants with fit >= 85
   const highFitCount = grants.filter((g) => g.fit >= 85 && g.status === 'matched').length;
 
-  // Upcoming deadlines (next 90 days, not rolling)
   const upcomingDeadlines = grants
     .filter((g) => g.daysOut < 90 && g.daysOut > 0 && g.deadline !== 'Rolling')
     .sort((a, b) => a.daysOut - b.daysOut)
     .slice(0, 5);
 
-  // Review queue
   const reviewQueue = grants.filter((g) => g.status === 'review');
 
-  // Header sub text
-  const dayName = today ? today.toLocaleDateString('en-US', { weekday: 'long' }) : '';
-  const dateStr = today
-    ? today.toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : '';
+  const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
+  const dateStr = today.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
   return (
     <>
@@ -194,13 +144,10 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
         <div>
           <h1 className="header-title">
             {greeting},{' '}
-            <span className="accent">
-              {profile?.agentBehavior.notifyEmail.split('@')[0] ?? 'there'}
-            </span>
-            .
+            <span className="accent">{profile?.agentBehavior.notifyEmail.split('@')[0] ?? 'there'}</span>.
           </h1>
           <div className="header-sub">
-            {(dayName || 'Grant operations') + (dateStr ? ` · ${dateStr}` : '')} · {activeGrants.length} grants in pipeline
+            {dayName} · {dateStr} · {activeGrants.length} grants in pipeline
           </div>
         </div>
         <div className="header-actions">
@@ -219,8 +166,7 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
           <div className="kpi-label">Active Pipeline</div>
           <div className="kpi-value">{formatCurrency(activePipeline)}</div>
           <div className="kpi-meta">
-            {activeGrants.length} applications ·{' '}
-            <span className="delta-up">+{grantsThisMonth} this month</span>
+            {activeGrants.length} applications · <span className="delta-up">+{grantsThisMonth} this month</span>
           </div>
         </div>
         <div className="kpi-card warning">
@@ -260,8 +206,7 @@ export default function DashboardView({ onGrantSelect, onNavigate }: DashboardVi
           <div className="deadline-list">
             {upcomingDeadlines.map((grant) => {
               const { day, month } = formatDate(grant.deadline);
-              const urgency =
-                grant.daysOut < 30 ? 'urgent' : grant.daysOut < 60 ? 'review' : 'draft';
+              const urgency = grant.daysOut < 30 ? 'urgent' : grant.daysOut < 60 ? 'review' : 'draft';
               return (
                 <div
                   key={grant.id}

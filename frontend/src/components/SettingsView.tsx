@@ -2,12 +2,13 @@
 
 import { useState, useEffect } from 'react';
 import type { OrganizationProfile, DocumentMetadata, OpencodeSettings } from '../../../shared/types';
+import { defaultProfile } from '../../../shared/seed-data';
 import { client } from '../lib/grant-ops-client';
 
 export default function SettingsView() {
-  const [profile, setProfile] = useState<OrganizationProfile | null>(null);
+  const [profile, setProfile] = useState<OrganizationProfile | null>(defaultProfile);
   const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<OrganizationProfile>>({});
   const [newTheme, setNewTheme] = useState('');

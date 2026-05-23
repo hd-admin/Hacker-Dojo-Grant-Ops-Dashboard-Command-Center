@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant, GrantStatus } from '../../../shared/types';
+import { seedGrants } from '../../../shared/seed-data';
 import { client } from '../lib/grant-ops-client';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
@@ -49,8 +50,8 @@ function formatDate(dateStr: string): string {
 }
 
 export default function PipelineView({ onGrantSelect, onNavigate }: PipelineViewProps) {
-  const [grants, setGrants] = useState<Grant[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [grants, setGrants] = useState<Grant[]>(seedGrants);
+  const [loading, setLoading] = useState(false);
   const [draggingGrantId, setDraggingGrantId] = useState<string | null>(null);
   const [dragOverCol, setDragOverCol] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');

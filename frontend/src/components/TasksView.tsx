@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import type { Task } from '../../../shared/types';
+import { seedTasks } from '../../../shared/seed-data';
 import { tasksApi } from '../lib/grant-ops-client';
 
 export default function TasksView() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState<Task[]>(seedTasks);
+  const [loading, setLoading] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);

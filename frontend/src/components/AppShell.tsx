@@ -9,6 +9,7 @@ import NotificationsView from './NotificationsView';
 import TasksView from './TasksView';
 import GrantDrawer from './GrantDrawer';
 import type { Grant, OrganizationProfile, CrawlStatus } from '../../../shared/types';
+import { seedGrants, defaultProfile, seedNotifications } from '../../../shared/seed-data';
 import { client } from '../lib/grant-ops-client';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
@@ -36,13 +37,13 @@ export default function AppShell() {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
   const [appVersion] = useState('0.1.0');
-  const [grants, setGrants] = useState<Grant[]>([]);
-  const [profile, setProfile] = useState<OrganizationProfile | null>(null);
+  const [grants, setGrants] = useState<Grant[]>(seedGrants);
+  const [profile, setProfile] = useState<OrganizationProfile | null>(defaultProfile);
   const [crawlStatus, setCrawlStatus] = useState<CrawlStatus>({
     online: true,
     lastSync: '',
   });
-  const [notifications, setNotifications] = useState<{ id: string }[]>([]);
+  const [notifications, setNotifications] = useState<{ id: string }[]>(seedNotifications);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
@@ -50,16 +51,27 @@ export default function AppShell() {
 
     async function loadInitialData() {
       try {
-        const [grantsData, profileData, notificationsData] = await Promise.all([
-          client.grants.getAll(),
-          client.profile.get(),
-          client.notifications.getAll(),
-        ]);
+        const grantsData = await client.grants.getAll();
         setGrants(grantsData);
-        setProfile(profileData);
-        setNotifications(notificationsData);
+      } catch (error) {
+        console.error('Error loading grants:', error);
+      }
 
-        // Get crawl runs to determine status
+      try {
+        const profileData = await client.profile.get();
+        setProfile(profileData);
+      } catch (error) {
+        console.error('Error loading profile:', error);
+      }
+
+      try {
+        const notificationsData = await client.notifications.getAll();
+        setNotifications(notificationsData);
+      } catch (error) {
+        console.error('Error loading notifications:', error);
+      }
+
+      try {
         const runsResponse = await client.research.getRuns();
         if (runsResponse.latestRun) {
           setCrawlStatus({
@@ -68,7 +80,7 @@ export default function AppShell() {
           });
         }
       } catch (error) {
-        console.error('Error loading initial data:', error);
+        console.error('Error loading crawl status:', error);
       }
     }
     loadInitialData();
@@ -163,7 +175,12 @@ export default function AppShell() {
       {/* Main content */}
       <main className="main">
         <div id="view-dashboard" className={`view ${activeView === 'dashboard' ? 'active' : ''}`}>
-          <DashboardView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} />
+          <DashboardView
+            onGrantSelect={handleGrantSelect}
+            onNavigate={handleNavigate}
+            grants={grants}
+            profile={profile}
+          />
         </div>
         <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`}>
           <DiscoveryView onGrantSelect={handleGrantSelect} />

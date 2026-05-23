@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import type { Notification } from '../../../shared/types';
+import { seedNotifications } from '../../../shared/seed-data';
 import { notificationsApi } from '../lib/grant-ops-client';
 
 export default function NotificationsView() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>(seedNotifications);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     async function load() {

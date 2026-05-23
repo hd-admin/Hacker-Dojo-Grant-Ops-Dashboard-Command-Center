@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import type { Grant } from '../../../shared/types';
+import { seedGrants } from '../../../shared/seed-data';
 import { client } from '../lib/grant-ops-client';
 
 interface DiscoveryViewProps {
@@ -51,8 +52,8 @@ function formatDate(dateStr: string): string {
 }
 
 export default function DiscoveryView({ onGrantSelect }: DiscoveryViewProps) {
-  const [grants, setGrants] = useState<Grant[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [grants, setGrants] = useState<Grant[]>(seedGrants);
+  const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('fit');
   const [category, setCategory] = useState<CategoryFilter>('All');

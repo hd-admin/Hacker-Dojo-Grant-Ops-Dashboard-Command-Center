@@ -1,0 +1,38 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - text: Hacker Dojo
+          - emphasis [ref=e6]: Grant Ops
+        - generic [ref=e7]: v0.1.0
+      - generic [ref=e8]:
+        - generic [ref=e9]: Workspace
+        - generic [ref=e10] [cursor=pointer]:
+          - generic [ref=e11]: ◐
+          - text: Dashboard
+        - generic [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: ◇
+          - text: Discovery
+        - generic [ref=e14] [cursor=pointer]:
+          - generic [ref=e15]: ▤
+          - text: Pipeline
+        - generic [ref=e16] [cursor=pointer]:
+          - generic [ref=e17]: ◯
+          - text: Settings
+      - generic [ref=e18]:
+        - generic [ref=e19]: Activity
+        - generic [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: ✉
+          - text: Notifications
+        - generic [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: ⌖
+          - text: Tasks
+      - generic [ref=e24]:
+        - text: Crawler online
+        - text: "Last sync: —"
+        - text: Logged in as
+        - strong [ref=e26]: ed@hackerdojo.com
+    - main [ref=e27]:
+      - generic [ref=e29]: Loading...
+  - alert [ref=e30]

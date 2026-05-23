@@ -1,0 +1,151 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - complementary [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - text: Hacker Dojo
+          - emphasis [ref=e6]: Grant Ops
+        - generic [ref=e7]: v0.1.0
+      - generic [ref=e8]:
+        - generic [ref=e9]: Workspace
+        - generic [ref=e10] [cursor=pointer]:
+          - generic [ref=e11]: ◐
+          - text: Dashboard
+        - generic [ref=e12] [cursor=pointer]:
+          - generic [ref=e13]: ◇
+          - text: Discovery
+        - generic [ref=e14] [cursor=pointer]:
+          - generic [ref=e15]: ▤
+          - text: Pipeline
+        - generic [ref=e16] [cursor=pointer]:
+          - generic [ref=e17]: ◯
+          - text: Settings
+      - generic [ref=e18]:
+        - generic [ref=e19]: Activity
+        - generic [ref=e20] [cursor=pointer]:
+          - generic [ref=e21]: ✉
+          - text: Notifications
+        - generic [ref=e22] [cursor=pointer]:
+          - generic [ref=e23]: ⌖
+          - text: Tasks
+      - generic [ref=e24]:
+        - text: Crawler online
+        - text: "Last sync: —"
+        - text: Logged in as
+        - strong [ref=e26]: ed@hackerdojo.com
+    - main [ref=e27]:
+      - generic [ref=e28]:
+        - generic [ref=e29]:
+          - generic [ref=e30]:
+            - heading "Good evening, ed." [level=1] [ref=e31]
+            - generic [ref=e32]: Friday · May 22, 2026 · 12 grants in pipeline
+          - generic [ref=e33]:
+            - button "↻ Refresh crawl" [ref=e34] [cursor=pointer]
+            - button "+ New search" [ref=e35] [cursor=pointer]
+        - generic [ref=e36]:
+          - generic [ref=e37]:
+            - generic [ref=e38]: Active Pipeline
+            - generic [ref=e39]: $1.7M
+            - generic [ref=e40]:
+              - text: 12 applications ·
+              - generic [ref=e41]: +9 this month
+          - generic [ref=e42]:
+            - generic [ref=e43]: Next Deadline
+            - generic [ref=e44]: 11d
+            - generic [ref=e45]: Morrell Family Foundation Gene...
+          - generic [ref=e46]:
+            - generic [ref=e47]: Drafted & Ready
+            - generic [ref=e48]: "2"
+            - generic [ref=e49]: awaiting your review
+          - generic [ref=e50]:
+            - generic [ref=e51]: New Matches 7d
+            - generic [ref=e52]: "1"
+            - generic [ref=e53]: 0 high-fit (> 85)
+        - generic [ref=e54]:
+          - generic [ref=e55]:
+            - generic [ref=e56]:
+              - generic [ref=e57]: Upcoming Deadlines
+              - generic [ref=e58] [cursor=pointer]: View all
+            - generic [ref=e59]:
+              - generic [ref=e60] [cursor=pointer]:
+                - generic [ref=e61]:
+                  - generic [ref=e62]: "01"
+                  - generic [ref=e63]: Jun
+                - generic [ref=e64]:
+                  - generic [ref=e65]: Morrell Family Foundation General Support
+                  - generic [ref=e66]: Morrell Family Foundation · $50,000
+                - generic [ref=e67]: Submitted
+              - generic [ref=e68] [cursor=pointer]:
+                - generic [ref=e69]:
+                  - generic [ref=e70]: "10"
+                  - generic [ref=e71]: Jun
+                - generic [ref=e72]:
+                  - generic [ref=e73]: Horizon Education Grants
+                  - generic [ref=e74]: Horizon Therapeutics · $90,000
+                - generic [ref=e75]: Review
+              - generic [ref=e76] [cursor=pointer]:
+                - generic [ref=e77]:
+                  - generic [ref=e78]: "15"
+                  - generic [ref=e79]: Jun
+                - generic [ref=e80]:
+                  - generic [ref=e81]: NSF Technology Access and Adoption Program
+                  - generic [ref=e82]: National Science Foundation · $350,000
+                - generic [ref=e83]: Submitted
+              - generic [ref=e84] [cursor=pointer]:
+                - generic [ref=e85]:
+                  - generic [ref=e86]: "20"
+                  - generic [ref=e87]: Jun
+                - generic [ref=e88]:
+                  - generic [ref=e89]: Stanford Recovery Act Community Grants
+                  - generic [ref=e90]: Stanford University · $60,000
+                - generic [ref=e91]: Submitted
+              - generic [ref=e92] [cursor=pointer]:
+                - generic [ref=e93]:
+                  - generic [ref=e94]: "30"
+                  - generic [ref=e95]: Jun
+                - generic [ref=e96]:
+                  - generic [ref=e97]: Google CS First Expansion Grant
+                  - generic [ref=e98]: Google.org · $100,000
+                - generic [ref=e99]: Drafting
+          - generic [ref=e100]:
+            - generic [ref=e102]: Agent Activity
+            - generic [ref=e103]:
+              - generic [ref=e106]:
+                - generic [ref=e107]: <strong>3 new grants</strong> matched from Candid weekly crawl
+                - generic [ref=e108]: 2h ago
+              - generic [ref=e111]:
+                - generic [ref=e112]: Draft completed for <strong>SVCF Community Innovation Fund</strong> · awaiting review
+                - generic [ref=e113]: 4h ago
+              - generic [ref=e116]:
+                - generic [ref=e117]: Crawled 47 sources · 12 federal, 28 foundation, 7 corporate
+                - generic [ref=e118]: 6h ago
+              - generic [ref=e121]:
+                - generic [ref=e122]: NSF TechAccess LOI deadline in <strong>26 days</strong> — checklist 4/7 complete
+                - generic [ref=e123]: yesterday
+              - generic [ref=e126]:
+                - generic [ref=e127]: "Submitted: <strong>Wiener Family Foundation</strong> · confirmation #WFF-2026-0341"
+                - generic [ref=e128]: 2d ago
+              - generic [ref=e131]:
+                - generic [ref=e132]: Org profile updated · Impact Report v2.1 indexed
+                - generic [ref=e133]: 3d ago
+        - generic [ref=e134]:
+          - generic [ref=e135]:
+            - generic [ref=e136]: Awaiting Review
+            - generic [ref=e137] [cursor=pointer]: 2 drafts
+          - generic [ref=e138] [cursor=pointer]:
+            - generic [ref=e139]:
+              - generic [ref=e140]: "10"
+              - generic [ref=e141]: Jun
+            - generic [ref=e142]:
+              - generic [ref=e143]: Horizon Education Grants
+              - generic [ref=e144]: Horizon Therapeutics · $90,000 · Fit 81
+            - button "Review draft" [ref=e145]
+          - generic [ref=e146] [cursor=pointer]:
+            - generic [ref=e147]:
+              - generic [ref=e148]: "30"
+              - generic [ref=e149]: Jul
+            - generic [ref=e150]:
+              - generic [ref=e151]: Mellon Foundation Humanities & Justice Grants
+              - generic [ref=e152]: Andrew W. Mellon Foundation · $175,000 · Fit 73
+            - button "Review draft" [ref=e153]
+  - alert [ref=e154]

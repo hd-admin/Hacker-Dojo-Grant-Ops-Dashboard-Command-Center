@@ -14,9 +14,9 @@
     "test:all": "vitest run && playwright test",
     "test:e2e": "playwright test",
     "test:ui": "vitest --ui",
-    "typecheck": "tsc --noEmit -p frontend/tsconfig.json",
-    "typecheck:frontend": "tsc --noEmit -p frontend/tsconfig.json",
-    "verify": "pnpm lint && pnpm typecheck && pnpm test && pnpm build && pnpm test:e2e"
+    "typecheck": "pnpm build && tsc --noEmit -p frontend/tsconfig.json",
+    "typecheck:frontend": "pnpm build && tsc --noEmit -p frontend/tsconfig.json",
+    "verify": "pnpm lint && pnpm build && pnpm typecheck && pnpm test && pnpm test:e2e"
   },
   "dependencies": {
     "zod": "^3.24.2"

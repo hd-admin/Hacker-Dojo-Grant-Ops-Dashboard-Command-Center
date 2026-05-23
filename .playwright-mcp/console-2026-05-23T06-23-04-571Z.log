@@ -1,0 +1,10 @@
+[     150ms] [ERROR] Failed to load resource: the server responded with a status of 404 (Not Found) @ http://localhost:3000/_next/static/chunks/app/page-4d099e266747541a.js:0
+[     226ms] ChunkLoadError: Loading chunk 974 failed.
+(error: http://localhost:3000/_next/static/chunks/app/page-4d099e266747541a.js)
+    at Object.j (http://localhost:3000/_next/static/chunks/webpack-318fe92d535c1cf7.js:1:2739)
+    at http://localhost:3000/_next/static/chunks/webpack-318fe92d535c1cf7.js:1:1138
+    at Array.reduce (<anonymous>)
+    at r.e (http://localhost:3000/_next/static/chunks/webpack-318fe92d535c1cf7.js:1:1117)
+    at c (http://localhost:3000/_next/static/chunks/538-7d40c97bc8102849.js:1:95424)
+    at http://localhost:3000/_next/static/chunks/538-7d40c97bc8102849.js:1:110189
+    at t (http://localhost:3000/_next/static/chunks/538-7d40c97bc8102849.js:1:111647)
