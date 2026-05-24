@@ -1,0 +1,575 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e4]:
+      - generic [ref=e5]:
+        - generic [ref=e6]:
+          - link "DuckDuckGo home" [ref=e7] [cursor=pointer]:
+            - /url: /
+            - generic [ref=e9]: DuckDuckGo
+          - generic [ref=e15]:
+            - combobox "Search privately" [ref=e17]: makerspace grant foundation nonprofit
+            - button "search" [ref=e19] [cursor=pointer]:
+              - img [ref=e20]
+        - generic [ref=e22]:
+          - generic [ref=e23]:
+            - generic [ref=e25]:
+              - banner [ref=e26]:
+                - img [ref=e27]
+                - paragraph [ref=e28]: Upgrade to our browser.
+              - generic [ref=e29]:
+                - generic [ref=e30]:
+                  - img [ref=e31]
+                  - generic [ref=e32]:
+                    - img [ref=e33]
+                    - img [ref=e34]
+                - paragraph [ref=e35]:
+                  - generic [ref=e36]:
+                    - text: Try the
+                    - strong [ref=e37]: DuckDuckGo Browser.
+                    - text: Fast. Free. Private.
+                - link "Download Browser" [ref=e38] [cursor=pointer]:
+                  - /url: https://duckduckgo.com/mac?origin=funnel_browser_searchresults__popover
+                  - img [ref=e39]
+                  - generic [ref=e41]: Download Browser
+              - paragraph [ref=e44]:
+                - generic [ref=e45]: Free
+            - button [ref=e47] [cursor=pointer]:
+              - img [ref=e48]
+          - button "Open menu" [ref=e50] [cursor=pointer]:
+            - generic [ref=e51]: Open menu
+            - img [ref=e52]
+      - navigation [ref=e58]:
+        - list [ref=e59]:
+          - listitem [ref=e60]:
+            - link "All" [ref=e61] [cursor=pointer]:
+              - /url: /?q=makerspace+grant+foundation+nonprofit&ia=web
+              - img [ref=e62]
+              - text: All
+          - listitem [ref=e64]:
+            - link "Images" [ref=e65] [cursor=pointer]:
+              - /url: /?q=makerspace+grant+foundation+nonprofit&ia=images&iax=images
+          - listitem [ref=e66]:
+            - link "Videos" [ref=e67] [cursor=pointer]:
+              - /url: /?q=makerspace+grant+foundation+nonprofit&ia=videos&iax=videos
+          - listitem [ref=e68]:
+            - link "News" [ref=e69] [cursor=pointer]:
+              - /url: /?q=makerspace+grant+foundation+nonprofit&ia=news&iar=news
+          - listitem [ref=e70]:
+            - generic [ref=e71]:
+              - generic [ref=e72] [cursor=pointer]:
+                - generic [ref=e74]: More
+                - img [ref=e75]: ▼
+              - generic:
+                - generic:
+                  - generic:
+                    - generic:
+                      - generic:
+                        - link "Maps":
+                          - /url: /?q=makerspace+grant+foundation+nonprofit&iaxm=maps
+                  - generic:
+                    - generic:
+                      - generic:
+                        - link "Shopping":
+                          - /url: /?q=makerspace+grant+foundation+nonprofit&ia=shopping&iax=shopping
+        - list [ref=e77]:
+          - listitem [ref=e78]:
+            - link "Search Assist" [ref=e81] [cursor=pointer]:
+              - /url: /?q=makerspace+grant+foundation+nonprofit&ia=web&assist=true
+              - img [ref=e82]
+              - generic [ref=e85]: Search Assist
+          - listitem [ref=e86]:
+            - link "Duck.ai" [ref=e88] [cursor=pointer]:
+              - /url: /?q=makerspace+grant+foundation+nonprofit&ia=chat
+              - img [ref=e89]
+              - text: Duck.ai
+          - listitem [ref=e92]:
+            - button "Search Settings ✀" [ref=e94] [cursor=pointer]:
+              - img [ref=e95]
+              - generic [ref=e97]: Search Settings
+              - generic [ref=e100]: ✀
+    - generic [ref=e105]:
+      - navigation [ref=e107]:
+        - generic [ref=e110] [cursor=pointer]:
+          - generic [ref=e118]: Protected
+          - img [ref=e119]: ▼
+        - generic [ref=e123] [cursor=pointer]:
+          - generic [ref=e127]: All regions
+          - img [ref=e128]: ▼
+        - generic [ref=e132] [cursor=pointer]:
+          - generic [ref=e133]: "Safe search: moderate"
+          - img [ref=e134]: ▼
+        - generic [ref=e138] [cursor=pointer]:
+          - generic [ref=e139]: Any time
+          - img [ref=e140]: ▼
+      - generic [ref=e143]:
+        - list [ref=e144]:
+          - listitem [ref=e145]:
+            - article [ref=e146] [cursor=pointer]:
+              - button [ref=e148]:
+                - img [ref=e149]
+              - link "Swyft Filings https://mkt.swyftfilings.com › nonprofit" [ref=e155]:
+                - /url: https://duckduckgo.com/y.js?ad_domain=swyftfilings.com&ad_provider=bingv7aa&ad_type=txad&click_metadata=L_fDnNkVAi0nCbHIVyJelwq27vlkYACj8jo2%2DiXXQiMNQuac1HQkw9QYQQ%2DlvreeTcHQe71N%2DsbvmBgN8HnqPoqq%2DJDYBB%2D5mUkcANu%2Dewo50lQcAx2osgsYTzb_gtTV9WP7wXSeJeEMvg3KJa5Rmg.wR6pwAFrIfNNc2UOyG6xdw&eddgt=mbEKYcpJTeXdv3%2DYGkGOXQ%3D%3D&rut=2f49b840a9fece9640dfff34337a1f51447e585f9ce66d0c8a1e83733424104e&u3=https%3A%2F%2Fwww.bing.com%2Faclick%3Fld%3De8U9KWfOlMskECESz2HwOs4jVUCUwNSVtMbat5ftE_yHWKsETAwLMPXTyPTqPZygMG44C%2D7H3fAJa5asRdSTJ708VY64i1skJSEK0h19%2D2qb5aOQvG_YQSLqbOYQFc7lrQrLyoicO4e_6_b3wsVpmqOq8Atia6oeOqL8CQMPyRdPgdq2WJlf0IL6jy7MpCAwJIEiRGxBEvPSetDIQuqXq2Z7lsovY%26u%3DaHR0cHMlM2ElMmYlMmZta3Quc3d5ZnRmaWxpbmdzLmNvbSUyZm1rdCUyZm5vbnByb2ZpdCUyZiUzZm1zY2xraWQlM2QzY2VjOGJjYzBkMTMxZTYxOTJiZmUxZGViODEwNzNhMSUyNnV0bV9zb3VyY2UlM2RiaW5nJTI2dXRtX21lZGl1bSUzZGNwYyUyNnV0bV9jYW1wYWlnbiUzZFNXRiUyNTIwJTI1N0MlMjUyMFVTJTI1MjAlMjU3QyUyNTIwQmluZyUyNTIwJTI1N0MlMjUyMFNlYXJjaCUyNTIwJTI1N0MlMjUyME5CJTI1MjAlMjU3QyUyNTIwTmF0aW9uYWwlMjUyMCUyNTdDJTI1MjBOb25Qcm9maXQlMjZ1dG1fdGVybSUzZG5vbnByb2ZpdCUyNnV0bV9jb250ZW50JTNkTm9ucHJvZml0JTI1MjAtJTI1MjBHZW5lcmlj%26rlid%3D3cec8bcc0d131e6192bfe1deb81073a1&vqd=4-86517248441975192542016987229052415708&iurl=%7B1%7DIG%3D69C0C528AA5C455EB33A01C19C58FFDC%26CID%3D2BD236F9F54465E22111219AF4C86463%26ID%3DDevEx%2C5039.1
+                - img [ref=e158]
+                - generic [ref=e159]:
+                  - paragraph [ref=e160]: Swyft Filings
+                  - paragraph [ref=e161]:
+                    - generic [ref=e162]: https://mkt.swyftfilings.com
+                    - generic [ref=e163]: › nonprofit
+              - heading "$0 - Apply for a Nonprofit - 1-Day Processing Available Ad" [level=2] [ref=e165]:
+                - link "$0 - Apply for a Nonprofit - 1-Day Processing Available" [ref=e166]:
+                  - /url: https://duckduckgo.com/y.js?ad_domain=swyftfilings.com&ad_provider=bingv7aa&ad_type=txad&click_metadata=L_fDnNkVAi0nCbHIVyJelwq27vlkYACj8jo2%2DiXXQiMNQuac1HQkw9QYQQ%2DlvreeTcHQe71N%2DsbvmBgN8HnqPoqq%2DJDYBB%2D5mUkcANu%2Dewo50lQcAx2osgsYTzb_gtTV9WP7wXSeJeEMvg3KJa5Rmg.wR6pwAFrIfNNc2UOyG6xdw&eddgt=mbEKYcpJTeXdv3%2DYGkGOXQ%3D%3D&rut=2f49b840a9fece9640dfff34337a1f51447e585f9ce66d0c8a1e83733424104e&u3=https%3A%2F%2Fwww.bing.com%2Faclick%3Fld%3De8U9KWfOlMskECESz2HwOs4jVUCUwNSVtMbat5ftE_yHWKsETAwLMPXTyPTqPZygMG44C%2D7H3fAJa5asRdSTJ708VY64i1skJSEK0h19%2D2qb5aOQvG_YQSLqbOYQFc7lrQrLyoicO4e_6_b3wsVpmqOq8Atia6oeOqL8CQMPyRdPgdq2WJlf0IL6jy7MpCAwJIEiRGxBEvPSetDIQuqXq2Z7lsovY%26u%3DaHR0cHMlM2ElMmYlMmZta3Quc3d5ZnRmaWxpbmdzLmNvbSUyZm1rdCUyZm5vbnByb2ZpdCUyZiUzZm1zY2xraWQlM2QzY2VjOGJjYzBkMTMxZTYxOTJiZmUxZGViODEwNzNhMSUyNnV0bV9zb3VyY2UlM2RiaW5nJTI2dXRtX21lZGl1bSUzZGNwYyUyNnV0bV9jYW1wYWlnbiUzZFNXRiUyNTIwJTI1N0MlMjUyMFVTJTI1MjAlMjU3QyUyNTIwQmluZyUyNTIwJTI1N0MlMjUyMFNlYXJjaCUyNTIwJTI1N0MlMjUyME5CJTI1MjAlMjU3QyUyNTIwTmF0aW9uYWwlMjUyMCUyNTdDJTI1MjBOb25Qcm9maXQlMjZ1dG1fdGVybSUzZG5vbnByb2ZpdCUyNnV0bV9jb250ZW50JTNkTm9ucHJvZml0JTI1MjAtJTI1MjBHZW5lcmlj%26rlid%3D3cec8bcc0d131e6192bfe1deb81073a1&vqd=4-86517248441975192542016987229052415708&iurl=%7B1%7DIG%3D69C0C528AA5C455EB33A01C19C58FFDC%26CID%3D2BD236F9F54465E22111219AF4C86463%26ID%3DDevEx%2C5039.1
+                - button "Ad" [ref=e169]
+              - generic [ref=e172]:
+                - link "Easily file your nonprofit in any state for as little as $0 + state fees. Turn your cause into an official nonprofit. Do what you love, we'll handle the paperwork." [ref=e173]:
+                  - /url: https://duckduckgo.com/y.js?ad_domain=swyftfilings.com&ad_provider=bingv7aa&ad_type=txad&click_metadata=L_fDnNkVAi0nCbHIVyJelwq27vlkYACj8jo2%2DiXXQiMNQuac1HQkw9QYQQ%2DlvreeTcHQe71N%2DsbvmBgN8HnqPoqq%2DJDYBB%2D5mUkcANu%2Dewo50lQcAx2osgsYTzb_gtTV9WP7wXSeJeEMvg3KJa5Rmg.wR6pwAFrIfNNc2UOyG6xdw&eddgt=mbEKYcpJTeXdv3%2DYGkGOXQ%3D%3D&rut=2f49b840a9fece9640dfff34337a1f51447e585f9ce66d0c8a1e83733424104e&u3=https%3A%2F%2Fwww.bing.com%2Faclick%3Fld%3De8U9KWfOlMskECESz2HwOs4jVUCUwNSVtMbat5ftE_yHWKsETAwLMPXTyPTqPZygMG44C%2D7H3fAJa5asRdSTJ708VY64i1skJSEK0h19%2D2qb5aOQvG_YQSLqbOYQFc7lrQrLyoicO4e_6_b3wsVpmqOq8Atia6oeOqL8CQMPyRdPgdq2WJlf0IL6jy7MpCAwJIEiRGxBEvPSetDIQuqXq2Z7lsovY%26u%3DaHR0cHMlM2ElMmYlMmZta3Quc3d5ZnRmaWxpbmdzLmNvbSUyZm1rdCUyZm5vbnByb2ZpdCUyZiUzZm1zY2xraWQlM2QzY2VjOGJjYzBkMTMxZTYxOTJiZmUxZGViODEwNzNhMSUyNnV0bV9zb3VyY2UlM2RiaW5nJTI2dXRtX21lZGl1bSUzZGNwYyUyNnV0bV9jYW1wYWlnbiUzZFNXRiUyNTIwJTI1N0MlMjUyMFVTJTI1MjAlMjU3QyUyNTIwQmluZyUyNTIwJTI1N0MlMjUyMFNlYXJjaCUyNTIwJTI1N0MlMjUyME5CJTI1MjAlMjU3QyUyNTIwTmF0aW9uYWwlMjUyMCUyNTdDJTI1MjBOb25Qcm9maXQlMjZ1dG1fdGVybSUzZG5vbnByb2ZpdCUyNnV0bV9jb250ZW50JTNkTm9ucHJvZml0JTI1MjAtJTI1MjBHZW5lcmlj%26rlid%3D3cec8bcc0d131e6192bfe1deb81073a1&vqd=4-86517248441975192542016987229052415708&iurl=%7B1%7DIG%3D69C0C528AA5C455EB33A01C19C58FFDC%26CID%3D2BD236F9F54465E22111219AF4C86463%26ID%3DDevEx%2C5039.1
+                  - generic [ref=e174]: Easily file your nonprofit in any state for as little as $0 + state fees. Turn your cause into an official nonprofit. Do what you love, we'll handle the paperwork.
+                - generic [ref=e177]:
+                  - link "File An LLC Today - $0.00 - Protect Personal Assets •" [ref=e178]:
+                    - /url: https://duckduckgo.com/y.js?ad_domain=swyftfilings.com&ad_provider=bing&ad_type=pcadext&click_metadata=I1D%2DScZd7%2DpV7ZS5vlDm%2DeOssRMWrjPQS68U2adqtLA.U6aR9BUxc57iHZxu3rYJMw&eddgt=mbEKYcpJTeXdv3%2DYGkGOXQ%3D%3D&rut=b9e4381c0b26f30e52821c0603e5f3dae583a3e50e3a758fcb5a8fd3b507579d&u3=https%3A%2F%2Fwww.bing.com%2Faclick%3Fld%3De8NuJMCP0gFdVcYiVv3oI00DVUCUwBZrNjTQT584Z6BQQjocpH%2DkmRY7Eewgiji_0kRjNdzKtgTX11jDthse1zh7HeoXWhMq7p9ybMHVtW2YJbn3RGgJtq259qN0LFECMYpJopuHSBPOxsLmW40IhGU0XHd7OZnfK1sLPTcCJnvyxM03%2DQ1uo1IUWz78ZiQaRZ6zxWNg6YJtUVS_gXLD2tyh3KhuQ%26u%3DaHR0cHMlM2ElMmYlMmZ3d3cuc3d5ZnRmaWxpbmdzLmNvbSUyZmxsYyUzZm1zY2xraWQlM2Q5NThmOGIzMDQ3ODUxOGI4MGM0MWUxMjJmMjg2NTdkZCUyNnV0bV9zb3VyY2UlM2RiaW5nJTI2dXRtX21lZGl1bSUzZGNwYyUyNnV0bV9jYW1wYWlnbiUzZFNXRiUyNTIwJTI1N0MlMjUyMFVTJTI1MjAlMjU3QyUyNTIwQmluZyUyNTIwJTI1N0MlMjUyMFNlYXJjaCUyNTIwJTI1N0MlMjUyME5CJTI1MjAlMjU3QyUyNTIwTmF0aW9uYWwlMjUyMCUyNTdDJTI1MjBOb25Qcm9maXQlMjZ1dG1fdGVybSUzZG5vbnByb2ZpdCUyNnV0bV9jb250ZW50JTNkTm9ucHJvZml0JTI1MjAtJTI1MjBHZW5lcmlj%26rlid%3D958f8b30478518b80c41e122f28657dd&vqd=4-125099433464889149051134475961000991802&iurl=%7B1%7DIG%3D69C0C528AA5C455EB33A01C19C58FFDC%26CID%3D2BD236F9F54465E22111219AF4C86463%26ID%3DDevEx%2C5044.1
+                  - button "View more items" [ref=e179]:
+                    - generic [ref=e180]: View more items
+                    - generic [ref=e181]: v
+              - list [ref=e184]:
+                - listitem [ref=e185]:
+                  - link "Business Type Comparison" [ref=e186]:
+                    - /url: https://duckduckgo.com/y.js?ad_domain=swyftfilings.com&ad_provider=bingv7aa&ad_type=txad&click_metadata=wI%2DkQyuYahBMeGqFk9nFjYtPW4EDhqiRr0AfbYcGfvkuJgpbrBjNPE9nstD7ui6sV6UX65rL1gBcpVYq4Z%2DRkzd6MJdkkrVS2ISEtk3XjArLsbLrbdJpE6KHi2G63Tj3mkC4uxsq4mVf7RKpyvjeNw.RsWaPTrXTlxJA31obA0TZg&eddgt=mbEKYcpJTeXdv3%2DYGkGOXQ%3D%3D&rut=0121475d08b40b51a23a888fee2eacc886738d4a105b823aaeed32469bbdc20f&u3=https%3A%2F%2Fwww.bing.com%2Faclick%3Fld%3De8RjvMgDTw0dVjU%2DBb3pF66DVUCUzx1%2DmnYqShaqjDWIWhn9PCKr2SQk4eU9e3DtyPFH1E1QxqHtfnE7q_gZI5UvBNh8nIPGq7QdxmK6Ntgoz0FEzwS7jsCL1M%2D_xcA1PJFa2E8Te6MUn8jDm9EudETcKEX%2D20T5eZS91OiGXMrEklBFOORSwI1FLAYE1PE1i6RcDkHoozmpok1JN_GvNv9n93gas%26u%3DaHR0cHMlM2ElMmYlMmZ3d3cuc3d5ZnRmaWxpbmdzLmNvbSUyZmxlYXJuaW5nLWNlbnRlciUyZnRoZS11bHRpbWF0ZS1ndWlkZS10by11bmRlcnN0YW5kaW5nLWFuZC1jb21wYXJpbmctYnVzaW5lc3Mtc3RydWN0dXJlcyUzZm1zY2xraWQlM2QwYzUxNzlhMzI1NDAxZWI0OTE4ZjEzYjE5MDQzNDYwMyUyNnV0bV9zb3VyY2UlM2RiaW5nJTI2dXRtX21lZGl1bSUzZGNwYyUyNnV0bV9jYW1wYWlnbiUzZFNXRiUyNTIwJTI1N0MlMjUyMFVTJTI1MjAlMjU3QyUyNTIwQmluZyUyNTIwJTI1N0MlMjUyMFNlYXJjaCUyNTIwJTI1N0MlMjUyME5CJTI1MjAlMjU3QyUyNTIwTmF0aW9uYWwlMjUyMCUyNTdDJTI1MjBOb25Qcm9maXQlMjZ1dG1fdGVybSUzZG5vbnByb2ZpdCUyNnV0bV9jb250ZW50JTNkTm9ucHJvZml0JTI1MjAtJTI1MjBHZW5lcmlj%26rlid%3D0c5179a325401eb4918f13b190434603&vqd=4-115901132177576659718573550432493066769&iurl=%7B1%7DIG%3D69C0C528AA5C455EB33A01C19C58FFDC%26CID%3D2BD236F9F54465E22111219AF4C86463%26ID%3DDevEx%2C5053.1
+                - listitem [ref=e187]:
+                  - text: ‧
+                  - link "About Us" [ref=e188]:
+                    - /url: https://duckduckgo.com/y.js?ad_domain=swyftfilings.com&ad_provider=bingv7aa&ad_type=txad&click_metadata=a0pmeNA0iqD5QLsdvYFOlebOom5zR1zIBPgHMfjJFvdYvNftYv_CVwFGQWurloomB25zUItbYM6OViqhR1P6mehVzhPkhtpTVHGJqmttcyP5K8tC8ztLwDsHgeBFSi87rWCXHmYT9tlyYouH0ELLNA.CauaNZaccJCkFf4xKjRK1A&eddgt=mbEKYcpJTeXdv3%2DYGkGOXQ%3D%3D&rut=ff279c4dd2a579783f24046b72156fb469890d4e5be9a896b24df634ee1961a3&u3=https%3A%2F%2Fwww.bing.com%2Faclick%3Fld%3De8aLkOQcg33ZhID32xFMlIEjVUCUwf668NkIO1solEoXEGlrCmYnLLOyLRno4DGBGsuyiwjl0Spze7F40woO9xx6PyBJR3elWTC%2DJTeBk7u3hOrhdAcWQsn_RRAoVwKJbSvrUgPTJkDc0bC7zpFvyuraHyP5k3gWl9jnyhNo31kBq%2DkYNfGadeMF6%2DK%2D61dC1OMV6TeEExl7aQ5WZ3162Vn9_E5zM%26u%3DaHR0cHMlM2ElMmYlMmZ3d3cuc3d5ZnRmaWxpbmdzLmNvbSUyZmFib3V0LXVzJTJmJTNmbXNjbGtpZCUzZDNmNGFkZjVkNzA3YTEzNGJhM2NhYjU0ZmM1NzkwMTI0JTI2dXRtX3NvdXJjZSUzZGJpbmclMjZ1dG1fbWVkaXVtJTNkY3BjJTI2dXRtX2NhbXBhaWduJTNkU1dGJTI1MjAlMjU3QyUyNTIwVVMlMjUyMCUyNTdDJTI1MjBCaW5nJTI1MjAlMjU3QyUyNTIwU2VhcmNoJTI1MjAlMjU3QyUyNTIwTkIlMjUyMCUyNTdDJTI1MjBOYXRpb25hbCUyNTIwJTI1N0MlMjUyME5vblByb2ZpdCUyNnV0bV90ZXJtJTNkbm9ucHJvZml0JTI2dXRtX2NvbnRlbnQlM2ROb25wcm9maXQlMjUyMC0lMjUyMEdlbmVyaWM%26rlid%3D3f4adf5d707a134ba3cab54fc5790124&vqd=4-213212323746045209812112553953558221041&iurl=%7B1%7DIG%3D69C0C528AA5C455EB33A01C19C58FFDC%26CID%3D2BD236F9F54465E22111219AF4C86463%26ID%3DDevEx%2C5055.1
+                - listitem [ref=e189]:
+                  - text: ‧
+                  - link "Resource Hub" [ref=e190]:
+                    - /url: https://duckduckgo.com/y.js?ad_domain=swyftfilings.com&ad_provider=bingv7aa&ad_type=txad&click_metadata=_8z3HvfrtpQTm47ZpZoa05ZZoUWuzzzjG5XM6o08JMjWvA7lOjeDmhRmHmrY5w%2DB%2DMlIsqQ0o9hq%2D4ql1O%2D4lndqpVcb0J6EJcVR523Zb9WMZhButDcoHOFoTt51g1XE7q1dRk9m0%2DBeKzWRq6UYNQ.V8niC%2D1yr_H4DOV47rp52g&eddgt=mbEKYcpJTeXdv3%2DYGkGOXQ%3D%3D&rut=317c04235b226cb592f9713b6607cdd04e9ffb1aecaf1a10431c563ac88c6763&u3=https%3A%2F%2Fwww.bing.com%2Faclick%3Fld%3De8Cm3F8cvtMY15WMT2PR9RdDVUCUz145wdbss3ZHxhyi6B%2DHq%2DAJqC80ClNnFBPGK9x5f_tTHBIDDK1NYS1PFV7Wkm64MDkGjjUkZhtmW0KqBiD7GSJhCcvzJ8qu4u1xjQHDNh23AFw7jeR5498eLtPe1qHLVXiIhKTf9rnGT7VzT_5cP9zMYcAF3aneDYNA2czwc9T5d1QBpjdhhnK4RDrkeVcoM%26u%3DaHR0cHMlM2ElMmYlMmZ3d3cuc3d5ZnRmaWxpbmdzLmNvbSUyZnJlc291cmNlLWh1YiUyZiUzZm1zY2xraWQlM2QwMjU3NWNhNTdmMWQxNzFkYjAxYjM2YjdjYTFlMWE3NCUyNnV0bV9zb3VyY2UlM2RiaW5nJTI2dXRtX21lZGl1bSUzZGNwYyUyNnV0bV9jYW1wYWlnbiUzZFNXRiUyNTIwJTI1N0MlMjUyMFVTJTI1MjAlMjU3QyUyNTIwQmluZyUyNTIwJTI1N0MlMjUyMFNlYXJjaCUyNTIwJTI1N0MlMjUyME5CJTI1MjAlMjU3QyUyNTIwTmF0aW9uYWwlMjUyMCUyNTdDJTI1MjBOb25Qcm9maXQlMjZ1dG1fdGVybSUzZG5vbnByb2ZpdCUyNnV0bV9jb250ZW50JTNkTm9ucHJvZml0JTI1MjAtJTI1MjBHZW5lcmlj%26rlid%3D02575ca57f1d171db01b36b7ca1e1a74&vqd=4-119023340663571659305965982111054566863&iurl=%7B1%7DIG%3D69C0C528AA5C455EB33A01C19C58FFDC%26CID%3D2BD236F9F54465E22111219AF4C86463%26ID%3DDevEx%2C5057.1
+          - listitem [ref=e191]:
+            - generic [ref=e199]:
+              - generic [ref=e200]:
+                - generic [ref=e202]:
+                  - text: Generate answer for
+                  - strong [ref=e203]: makerspace grant foundation nonprofit
+                - generic [ref=e204]:
+                  - button "Learn More About Assist" [ref=e205] [cursor=pointer]:
+                    - img [ref=e206]
+                  - button "Assist Settings" [ref=e209] [cursor=pointer]:
+                    - img [ref=e210]
+              - button "Assist" [ref=e212] [cursor=pointer]:
+                - img [ref=e213]
+                - text: Search Assist
+          - listitem [ref=e216]:
+            - article [ref=e217] [cursor=pointer]:
+              - button [ref=e219]:
+                - img [ref=e220]
+              - generic [ref=e224]:
+                - link "Search domain 1stmakerspace.com" [ref=e226]:
+                  - /url: /?q=makerspace%20grant%20foundation%20nonprofit+site:1stmakerspace.com
+                  - img [ref=e228]
+                - generic [ref=e229]:
+                  - paragraph [ref=e230]: 1st Maker Space
+                  - link "https://1stmakerspace.com › grants" [ref=e231]:
+                    - /url: https://1stmakerspace.com/grants/
+                    - paragraph [ref=e233]:
+                      - generic [ref=e234]: https://1stmakerspace.com
+                      - generic [ref=e235]: › grants
+              - heading "How To Fund Your Makerspace With Grants - 1st Maker Space" [level=2] [ref=e237]:
+                - link "How To Fund Your Makerspace With Grants - 1st Maker Space" [ref=e238]:
+                  - /url: https://1stmakerspace.com/grants/
+                  - generic [ref=e239]: How To Fund Your Makerspace With Grants - 1st Maker Space
+              - generic [ref=e244]: A comprehensive guide to funding your makerspace or STEM lab that simplifies funding by exploring various education grants and funding opportunities with links to each.
+          - listitem [ref=e245]:
+            - article [ref=e246] [cursor=pointer]:
+              - button [ref=e248]:
+                - img [ref=e249]
+              - generic [ref=e253]:
+                - link "Search domain stemgeek.com" [ref=e255]:
+                  - /url: /?q=makerspace%20grant%20foundation%20nonprofit+site:stemgeek.com
+                  - img [ref=e257]
+                - generic [ref=e258]:
+                  - paragraph [ref=e259]: STEM Geek
+                  - link "https://stemgeek.com › makerspace-grants-for-libraries" [ref=e260]:
+                    - /url: https://stemgeek.com/makerspace-grants-for-libraries/
+                    - paragraph [ref=e262]:
+                      - generic [ref=e263]: https://stemgeek.com
+                      - generic [ref=e264]: › makerspace-grants-for-libraries
+              - heading "Makerspace Grants For Libraries | Where & How To Get Funding" [level=2] [ref=e266]:
+                - link "Makerspace Grants For Libraries | Where & How To Get Funding" [ref=e267]:
+                  - /url: https://stemgeek.com/makerspace-grants-for-libraries/
+                  - generic [ref=e268]: Makerspace Grants For Libraries | Where & How To Get Funding
+              - generic [ref=e273]: To build or grow a makerspace, you'll need funding! Here's a comprehensive list of makerspace grants for libraries, plus tips on how to get funded!
+              - generic [ref=e275]:
+                - list [ref=e276]:
+                  - listitem [ref=e277]:
+                    - link [ref=e278]:
+                      - /url: https://stemgeek.com/makerspace-grants-for-libraries/
+                  - listitem [ref=e279]:
+                    - link [ref=e280]:
+                      - /url: https://stemgeek.com/makerspace-grants-for-libraries/
+                  - listitem [ref=e281]:
+                    - link [ref=e282]:
+                      - /url: https://stemgeek.com/makerspace-grants-for-libraries/
+                  - listitem [ref=e283]:
+                    - link [ref=e284]:
+                      - /url: https://stemgeek.com/makerspace-grants-for-libraries/
+                  - listitem [ref=e285]:
+                    - link [ref=e286]:
+                      - /url: https://stemgeek.com/makerspace-grants-for-libraries/
+                - button "Next page" [ref=e287]:
+                  - img [ref=e288]
+          - listitem [ref=e290]:
+            - article [ref=e291] [cursor=pointer]:
+              - button [ref=e293]:
+                - img [ref=e294]
+              - generic [ref=e298]:
+                - link "Search domain firstmakerspace.squarespace.com" [ref=e300]:
+                  - /url: /?q=makerspace%20grant%20foundation%20nonprofit+site:firstmakerspace.squarespace.com
+                  - img [ref=e302]
+                - generic [ref=e303]:
+                  - paragraph [ref=e304]: firstmakerspace.squarespace.com
+                  - link "https://firstmakerspace.squarespace.com › s › How-To-Fund-Your-Makerspace-with-Grants-1st-Make-Space.pdf" [ref=e305]:
+                    - /url: https://firstmakerspace.squarespace.com/s/How-To-Fund-Your-Makerspace-with-Grants-1st-Make-Space.pdf
+                    - paragraph [ref=e307]:
+                      - generic [ref=e308]: https://firstmakerspace.squarespace.com
+                      - generic [ref=e309]: › s › How-To-Fund-Your-Makerspace-with-Grants-1st-Make-Space.pdf
+              - heading "PDF How To Fund Your Makerspace with Grants" [level=2] [ref=e311]:
+                - link "PDF How To Fund Your Makerspace with Grants" [ref=e312]:
+                  - /url: https://firstmakerspace.squarespace.com/s/How-To-Fund-Your-Makerspace-with-Grants-1st-Make-Space.pdf
+                  - generic [ref=e313]:
+                    - generic [ref=e314]: PDF
+                    - text: How To Fund Your Makerspace with Grants
+              - generic [ref=e319]: How To Fund Your Makerspace with Grants Finding funding for makerspaces, STEM labs, professional development, etc., can be daunting, but this detailed guide simplifies the process. We will explore various grant opportunities, from government programs to private grants, delving into the specifics of each option and specific contributions you can apply for to help you fund your makerspace or ...
+          - listitem [ref=e320]:
+            - article [ref=e321] [cursor=pointer]:
+              - button [ref=e323]:
+                - img [ref=e324]
+              - generic [ref=e328]:
+                - link "Search domain cdn.sparkfun.com" [ref=e330]:
+                  - /url: /?q=makerspace%20grant%20foundation%20nonprofit+site:cdn.sparkfun.com
+                  - img [ref=e332]
+                - generic [ref=e333]:
+                  - paragraph [ref=e334]: SparkFun
+                  - link "https://cdn.sparkfun.com › assets › e › 1 › 7 › c › 1 › MakerSpace_in_Library_-_Funding_Resources.pdf" [ref=e335]:
+                    - /url: https://cdn.sparkfun.com/assets/e/1/7/c/1/MakerSpace_in_Library_-_Funding_Resources.pdf
+                    - paragraph [ref=e337]:
+                      - generic [ref=e338]: https://cdn.sparkfun.com
+                      - generic [ref=e339]: › assets › e › 1 › 7 › c › 1 › MakerSpace_in_Library_-_Funding_Resources.pdf
+              - 'heading "PDF MakerSpace in the Library: Funding Resources MakerS" [level=2] [ref=e341]':
+                - 'link "PDF MakerSpace in the Library: Funding Resources MakerS" [ref=e342]':
+                  - /url: https://cdn.sparkfun.com/assets/e/1/7/c/1/MakerSpace_in_Library_-_Funding_Resources.pdf
+                  - generic [ref=e343]:
+                    - generic [ref=e344]: PDF
+                    - text: "MakerSpace in the Library: Funding Resources MakerS"
+              - generic [ref=e349]: This is a guide of funding and grant resources to help purchase materials, supplies, and equipment for the MakerSpace in your Library. This is not an exhaustive list, but it is a place to get started. We suggest that you create your space/program as a STEM (Science, Technology, Engineering and Math) or STEAM (Science, Technology, Engineering, Arts and Math) endeavor to allow access to a range ...
+          - listitem [ref=e350]:
+            - article [ref=e351] [cursor=pointer]:
+              - button [ref=e353]:
+                - img [ref=e354]
+              - generic [ref=e358]:
+                - link "Search domain stemfinity.com" [ref=e360]:
+                  - /url: /?q=makerspace%20grant%20foundation%20nonprofit+site:stemfinity.com
+                  - img [ref=e362]
+                - generic [ref=e363]:
+                  - paragraph [ref=e364]: stemfinity.com
+                  - link "https://stemfinity.com › pages › stem-grants-california" [ref=e365]:
+                    - /url: https://stemfinity.com/pages/stem-grants-california
+                    - paragraph [ref=e367]:
+                      - generic [ref=e368]: https://stemfinity.com
+                      - generic [ref=e369]: › pages › stem-grants-california
+              - 'heading "STEM Grants: California - STEMfinity" [level=2] [ref=e371]':
+                - 'link "STEM Grants: California - STEMfinity" [ref=e372]':
+                  - /url: https://stemfinity.com/pages/stem-grants-california
+                  - generic [ref=e373]: "STEM Grants: California - STEMfinity"
+              - generic [ref=e378]: STEMfinity has put together a list of STEM grants to get your next makerspace, classroom, or afterschool project up and running. These are California grants.
+          - listitem [ref=e379]:
+            - article [ref=e380] [cursor=pointer]:
+              - button [ref=e382]:
+                - img [ref=e383]
+              - generic [ref=e387]:
+                - link "Search domain stem-supplies.com" [ref=e389]:
+                  - /url: /?q=makerspace%20grant%20foundation%20nonprofit+site:stem-supplies.com
+                  - img [ref=e391]
+                - generic [ref=e392]:
+                  - paragraph [ref=e393]: STEM Supplies
+                  - link "https://stem-supplies.com › funding-finder" [ref=e394]:
+                    - /url: https://stem-supplies.com/funding-finder
+                    - paragraph [ref=e396]:
+                      - generic [ref=e397]: https://stem-supplies.com
+                      - generic [ref=e398]: › funding-finder
+              - heading "STEM Funding - STEM Supplies" [level=2] [ref=e400]:
+                - link "STEM Funding - STEM Supplies" [ref=e401]:
+                  - /url: https://stem-supplies.com/funding-finder
+                  - generic [ref=e402]: STEM Funding - STEM Supplies
+              - generic [ref=e407]: STEM Grant & Funding Finder Use this free tool to help you locate STEM funding and grant opportunities available in your community. Funds may be used for a variety of learning activities, such a technology, robotics kits, engineering kits, science kits, makerspaces, or other items that aid in expanding STEM education.
+          - listitem [ref=e408]:
+            - article [ref=e409] [cursor=pointer]:
+              - button [ref=e411]:
+                - img [ref=e412]
+              - generic [ref=e416]:
+                - link "Search domain grants.ca.gov" [ref=e418]:
+                  - /url: /?q=makerspace%20grant%20foundation%20nonprofit+site:www.grants.ca.gov
+                  - img [ref=e420]
+                - generic [ref=e421]:
+                  - paragraph [ref=e422]: California Grants Portal
+                  - link "https://www.grants.ca.gov" [ref=e423]:
+                    - /url: https://www.grants.ca.gov/
+                    - paragraph [ref=e425]:
+                      - generic [ref=e426]: https://www.grants.ca.gov
+              - heading "Home - California Grants Portal" [level=2] [ref=e428]:
+                - link "Home - California Grants Portal" [ref=e429]:
+                  - /url: https://www.grants.ca.gov/
+                  - generic [ref=e430]: Home - California Grants Portal
+              - generic [ref=e435]: The California Grants Portal (a project by the California State Library) is your one destination to find all grants and loans offered on a competitive or first-come basis by California state agencies. By The Numbers
+          - listitem [ref=e436]:
+            - article [ref=e437] [cursor=pointer]:
+              - button [ref=e439]:
+                - img [ref=e440]
+              - generic [ref=e444]:
+                - link "Search domain ghaasfoundation.org" [ref=e446]:
+                  - /url: /?q=makerspace%20grant%20foundation%20nonprofit+site:www.ghaasfoundation.org
+                  - img [ref=e448]
+                - generic [ref=e449]:
+                  - paragraph [ref=e450]: ghaasfoundation.org
+                  - link "https://www.ghaasfoundation.org › apply-now" [ref=e451]:
+                    - /url: https://www.ghaasfoundation.org/apply-now
+                    - paragraph [ref=e453]:
+                      - generic [ref=e454]: https://www.ghaasfoundation.org
+                      - generic [ref=e455]: › apply-now
+              - heading "APPLY NOW - Gene Haas Foundation" [level=2] [ref=e457]:
+                - link "APPLY NOW - Gene Haas Foundation" [ref=e458]:
+                  - /url: https://www.ghaasfoundation.org/apply-now
+                  - generic [ref=e459]: APPLY NOW - Gene Haas Foundation
+              - generic [ref=e464]: Explore education grants, scholarships, and student competitions in CNC technology through the Gene Haas Foundation. Apply now and advance manufacturing education.
+          - listitem [ref=e465]:
+            - article [ref=e466] [cursor=pointer]:
+              - button [ref=e468]:
+                - img [ref=e469]
+              - generic [ref=e473]:
+                - link "Search domain imls.gov" [ref=e475]:
+                  - /url: /?q=makerspace%20grant%20foundation%20nonprofit+site:www.imls.gov
+                  - img [ref=e477]
+                - generic [ref=e478]:
+                  - paragraph [ref=e479]: Institute of Museum and Library Services
+                  - link "https://www.imls.gov › our-work › priority-areas › making" [ref=e480]:
+                    - /url: https://www.imls.gov/our-work/priority-areas/making
+                    - paragraph [ref=e482]:
+                      - generic [ref=e483]: https://www.imls.gov
+                      - generic [ref=e484]: › our-work › priority-areas › making
+              - heading "Making | Institute of Museum and Library Services - IMLS" [level=2] [ref=e486]:
+                - link "Making | Institute of Museum and Library Services - IMLS" [ref=e487]:
+                  - /url: https://www.imls.gov/our-work/priority-areas/making
+                  - generic [ref=e488]: Making | Institute of Museum and Library Services - IMLS
+              - generic [ref=e492]: The Maker Movement is a global community of inventors, designers, engineers, artists, programmers, hackers, tinkerers, craftsmen, and DIYers. It emphasizes self-directed learning that is informal, self-directed, iterative, and collaborative. Museums and libraries have long been recognized as community leaders in providing engaging, participatory learning experiences. IMLS invests in making by ...
+          - listitem [ref=e493]:
+            - article [ref=e494] [cursor=pointer]:
+              - button [ref=e496]:
+                - img [ref=e497]
+              - generic [ref=e501]:
+                - link "Search domain humanmade.org" [ref=e503]:
+                  - /url: /?q=makerspace%20grant%20foundation%20nonprofit+site:www.humanmade.org
+                  - img [ref=e505]
+                - generic [ref=e506]:
+                  - paragraph [ref=e507]: humanmade.org
+                  - link "https://www.humanmade.org" [ref=e508]:
+                    - /url: https://www.humanmade.org/
+                    - paragraph [ref=e510]:
+                      - generic [ref=e511]: https://www.humanmade.org
+              - heading "HUMANMADE" [level=2] [ref=e513]:
+                - link "HUMANMADE" [ref=e514]:
+                  - /url: https://www.humanmade.org/
+                  - generic [ref=e515]: HUMANMADE
+              - generic [ref=e520]: Humanmade is a registered 501c3 non-profit organization and, with your support, we create life-changing impact for people in our community. Please considering making a tax deductible donation!
+          - listitem [ref=e521]:
+            - generic [ref=e523]:
+              - paragraph [ref=e524]: Searches related to makerspace grant foundation nonprofit
+              - generic [ref=e525]:
+                - list [ref=e526]:
+                  - listitem [ref=e527]:
+                    - link "funding for makerspace" [ref=e528] [cursor=pointer]:
+                      - /url: "?q=funding%20for%20makerspace"
+                      - generic [ref=e530]: funding for makerspace
+                  - listitem [ref=e531]:
+                    - link "makerspace grants for libraries" [ref=e532] [cursor=pointer]:
+                      - /url: "?q=makerspace%20grants%20for%20libraries"
+                      - generic [ref=e534]: makerspace grants for libraries
+                  - listitem [ref=e535]:
+                    - link "maker grant" [ref=e536] [cursor=pointer]:
+                      - /url: "?q=maker%20grant"
+                      - generic [ref=e538]: maker grant
+                  - listitem [ref=e539]:
+                    - link "makerspace in the library funding" [ref=e540] [cursor=pointer]:
+                      - /url: "?q=makerspace%20in%20the%20library%20funding"
+                      - generic [ref=e542]: makerspace in the library funding
+                - list [ref=e543]:
+                  - listitem [ref=e544]:
+                    - link "makerspace in the library grant" [ref=e545] [cursor=pointer]:
+                      - /url: "?q=makerspace%20in%20the%20library%20grant"
+                      - generic [ref=e547]: makerspace in the library grant
+                  - listitem [ref=e548]:
+                    - link "sparkfun makerspace library" [ref=e549] [cursor=pointer]:
+                      - /url: "?q=sparkfun%20makerspace%20library"
+                      - generic [ref=e551]: sparkfun makerspace library
+                  - listitem [ref=e552]:
+                    - link "makerspace in the library" [ref=e553] [cursor=pointer]:
+                      - /url: "?q=makerspace%20in%20the%20library"
+                      - generic [ref=e555]: makerspace in the library
+                  - listitem [ref=e556]:
+                    - link "the makerspace foundation" [ref=e557] [cursor=pointer]:
+                      - /url: "?q=the%20makerspace%20foundation"
+                      - generic [ref=e559]: the makerspace foundation
+        - button "More results" [ref=e562] [cursor=pointer]
+    - list [ref=e565]:
+      - button "Close menu" [ref=e566] [cursor=pointer]:
+        - generic [ref=e567]: Close menu
+        - img [ref=e568]
+      - list [ref=e570]:
+        - listitem [ref=e571]: Search
+        - listitem [ref=e572]:
+          - link "Homepage" [ref=e573] [cursor=pointer]:
+            - /url: https://start.duckduckgo.com/
+        - listitem [ref=e574]:
+          - link "Themes" [ref=e575] [cursor=pointer]:
+            - /url: /settings#appearance
+        - listitem [ref=e576]:
+          - link "Settings" [ref=e577] [cursor=pointer]:
+            - /url: /settings
+      - list [ref=e578]:
+        - listitem [ref=e579]: Share Feedback
+        - listitem [ref=e580]:
+          - generic [ref=e583]:
+            - button "Positive feedback" [ref=e584] [cursor=pointer]:
+              - img [ref=e585]
+            - button "Negative feedback" [ref=e588] [cursor=pointer]:
+              - img [ref=e589]
+      - list [ref=e592]:
+        - listitem [ref=e593]: Downloads
+        - listitem [ref=e594]:
+          - link "iOS Browser" [ref=e595] [cursor=pointer]:
+            - /url: https://apps.apple.com/app/duckduckgo-private-browser/id663592361?platform=iphone&pt=866401&mt=8&ct=serp-atb-serp
+        - listitem [ref=e596]:
+          - link "Android Browser" [ref=e597] [cursor=pointer]:
+            - /url: https://play.google.com/store/apps/details?id=com.duckduckgo.mobile.android&referrer=utm_campaign%3Dserp-atb-serp%26origin%3Dfunnel_playstore_searchresults
+        - listitem [ref=e598]:
+          - link "Mac Browser" [ref=e599] [cursor=pointer]:
+            - /url: /mac?origin=funnel_browser_searchresults
+        - listitem [ref=e600]:
+          - link "Windows Browser" [ref=e601] [cursor=pointer]:
+            - /url: /windows?origin=funnel_browser_searchresults
+        - listitem [ref=e602]: Browser Extensions
+      - list [ref=e603]:
+        - listitem [ref=e604]: More From DuckDuckGo
+        - listitem [ref=e605]:
+          - generic [ref=e608]:
+            - button "Dismiss promotion" [ref=e609] [cursor=pointer]:
+              - img [ref=e610]
+            - generic [ref=e612]:
+              - paragraph [ref=e614]:
+                - img [ref=e615]
+                - text: Upgrade to our Private Browser
+              - paragraph [ref=e626]: Fast. Secure. Free.
+            - link "Install Mac Browser" [ref=e627] [cursor=pointer]:
+              - /url: /mac
+              - img [ref=e628]
+              - text: Install Mac Browser
+        - listitem [ref=e630]:
+          - link "DuckDuckGo Subscription" [ref=e631] [cursor=pointer]:
+            - /url: /pro?origin=funnel_pro_searchresults
+        - listitem [ref=e632]:
+          - link "Duck.ai" [ref=e633] [cursor=pointer]:
+            - /url: https://duck.ai
+        - listitem [ref=e634]:
+          - link "Email Protection" [ref=e635] [cursor=pointer]:
+            - /url: /email
+        - listitem [ref=e636]:
+          - link "Newsletter" [ref=e637] [cursor=pointer]:
+            - /url: /newsletter
+        - listitem [ref=e638]:
+          - link "Blog" [ref=e639] [cursor=pointer]:
+            - /url: /blog
+        - listitem [ref=e640]:
+          - link "Podcast" [ref=e641] [cursor=pointer]:
+            - /url: https://insideduckduckgo.substack.com/?showWelcome=true
+        - listitem [ref=e642]:
+          - link "Collaborations" [ref=e643] [cursor=pointer]:
+            - /url: /collaborations
+      - list [ref=e644]:
+        - listitem [ref=e645]: Learn More
+        - listitem [ref=e646]:
+          - link "What’s New" [ref=e647] [cursor=pointer]:
+            - /url: /updates
+        - listitem [ref=e648]:
+          - link "Compare Privacy" [ref=e649] [cursor=pointer]:
+            - /url: /compare-privacy
+        - listitem [ref=e650]:
+          - link "About Our Browser" [ref=e651] [cursor=pointer]:
+            - /url: /app
+        - listitem [ref=e652]:
+          - link "About DuckDuckGo" [ref=e653] [cursor=pointer]:
+            - /url: /about
+      - list [ref=e654]:
+        - listitem [ref=e655]: Other Resources
+        - listitem [ref=e656]:
+          - link "Help" [ref=e657] [cursor=pointer]:
+            - /url: /duckduckgo-help-pages
+        - listitem [ref=e658]:
+          - link "Community" [ref=e659] [cursor=pointer]:
+            - /url: https://www.reddit.com/r/duckduckgo/
+        - listitem [ref=e660]:
+          - link "Careers" [ref=e661] [cursor=pointer]:
+            - /url: /careers
+        - listitem [ref=e662]:
+          - link "Privacy Policy" [ref=e663] [cursor=pointer]:
+            - /url: /privacy
+        - listitem [ref=e664]:
+          - link "Terms of Service" [ref=e665] [cursor=pointer]:
+            - /url: /terms
+        - listitem [ref=e666]:
+          - link "Press Kit" [ref=e667] [cursor=pointer]:
+            - /url: /press
+        - listitem [ref=e668]:
+          - link "Advertise on Search" [ref=e669] [cursor=pointer]:
+            - /url: /duckduckgo-help-pages/company/advertise-on-duckduckgo-search
+  - generic [ref=e673]:
+    - generic [ref=e675]:
+      - img [ref=e676]
+      - generic [ref=e692]:
+        - heading "Get Our Mac Browser" [level=3] [ref=e693]
+        - paragraph [ref=e694]: Protect your data as you search, browse, and use AI.
+      - link "Download" [ref=e695] [cursor=pointer]:
+        - /url: https://duckduckgo.com/mac?origin=funnel_browser_searchresults__footercard
+        - img [ref=e696]
+        - text: Download
+    - generic [ref=e699]:
+      - generic [ref=e700]:
+        - heading "Learn More" [level=3] [ref=e701]
+        - list [ref=e702]:
+          - listitem [ref=e703]:
+            - link "What's New" [ref=e704] [cursor=pointer]:
+              - /url: https://duckduckgo.com/updates
+          - listitem [ref=e705]:
+            - link "About Browser" [ref=e706] [cursor=pointer]:
+              - /url: https://duckduckgo.com/app
+          - listitem [ref=e707]:
+            - link "Compare Privacy" [ref=e708] [cursor=pointer]:
+              - /url: https://duckduckgo.com/compare-privacy
+          - listitem [ref=e709]:
+            - link "Help Pages" [ref=e710] [cursor=pointer]:
+              - /url: https://duckduckgo.com/duckduckgo-help-pages/
+      - generic [ref=e711]:
+        - heading "Get More" [level=3] [ref=e712]
+        - list [ref=e713]:
+          - listitem [ref=e714]:
+            - link "Subscription" [ref=e715] [cursor=pointer]:
+              - /url: https://duckduckgo.com/pro
+          - listitem [ref=e716]:
+            - link "Email Protection" [ref=e717] [cursor=pointer]:
+              - /url: https://duckduckgo.com/email
+          - listitem [ref=e718]:
+            - generic [ref=e719]:
+              - link "Podcast" [ref=e721] [cursor=pointer]:
+                - /url: https://insideduckduckgo.substack.com/?showWelcome=true
+              - generic [ref=e722]:
+                - text: "&"
+                - link "Newsletter" [ref=e723] [cursor=pointer]:
+                  - /url: https://duckduckgo.com/newsletter
+          - listitem [ref=e724]:
+            - link "Collaborations" [ref=e725] [cursor=pointer]:
+              - /url: https://duckduckgo.com/collaborations
+  - button "Share Feedback" [ref=e730] [cursor=pointer]

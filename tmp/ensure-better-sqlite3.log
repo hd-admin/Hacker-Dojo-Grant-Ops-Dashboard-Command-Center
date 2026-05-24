@@ -1,0 +1,3 @@
+[ensure-better-sqlite3] rebuilding better-sqlite3 for v25.9.0
+npm warn Unknown env config "python". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+rebuilt dependencies successfully

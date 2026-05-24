@@ -1,0 +1,5 @@
+[     664ms] [LOG] JQMIGRATE: Migrate is installed, version 3.4.1 @ https://www.grants.ca.gov/wp-includes/js/jquery/jquery-migrate.min.js?ver=3.4.1:1
+[    1095ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://www.grants.ca.gov/wp-content/themes/grantsportal/dist/images/site.webmanifest:0
+[    1126ms] [ERROR] Manifest fetch from https://www.grants.ca.gov/wp-content/themes/grantsportal/dist/images/site.webmanifest failed, code 404 @ https://www.grants.ca.gov/:0
+[    2109ms] [ERROR] Failed to load resource: the server responded with a status of 404 () @ https://www.grants.ca.gov/wp-content/themes/grantsportal/dist/images/site.webmanifest:0
+[    2165ms] [ERROR] Manifest fetch from https://www.grants.ca.gov/wp-content/themes/grantsportal/dist/images/site.webmanifest failed, code 404 @ https://www.grants.ca.gov/:0

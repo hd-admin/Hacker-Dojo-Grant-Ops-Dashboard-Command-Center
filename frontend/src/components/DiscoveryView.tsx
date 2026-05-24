@@ -105,13 +105,13 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
         url: newSourceUrl.trim(),
         type: 'website',
       });
-      await client.research.trigger();
-      await onRefreshAppState?.();
-      const data = await client.grants.getAll();
-      setGrants(data);
       setNewSourceName('');
       setNewSourceUrl('');
       setShowAddSourceForm(false);
+      await client.research.trigger();
+      const data = await client.grants.getAll();
+      setGrants(data);
+      void onRefreshAppState?.();
     } catch (error) {
       console.error('Error adding source:', error);
     } finally {

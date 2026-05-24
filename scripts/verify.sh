@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-cd /Users/mistlight/Projects/Experiments/HackerDojoGrantApp
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT_DIR"
 
 echo "Starting verification..."
 
@@ -15,6 +16,9 @@ trap cleanup EXIT
 bash ./scripts/ensure-better-sqlite3.sh
 cleanup
 sleep 1
+
+pnpm verify:persistence-root >/dev/null 2>&1
+echo "✓ persistence root verified"
 
 pnpm lint >/dev/null 2>&1
 echo "✓ lint passed"
@@ -59,6 +63,8 @@ echo "✓ targeted playwright smoke passed"
 pnpm exec playwright test >/dev/null 2>&1
 echo "✓ playwright suite passed"
 
+cleanup
+sleep 2
 pnpm test:e2e >/dev/null 2>&1
 echo "✓ test:e2e passed"
 

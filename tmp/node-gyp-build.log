@@ -1,0 +1,35 @@
+gyp info it worked if it ends with ok
+gyp info using node-gyp@12.3.0
+gyp info using node@24.12.0 | darwin | arm64
+gyp info spawn make
+gyp info spawn args [ 'BUILDTYPE=Release', '-C', 'build' ]
+  TOUCH 4292fa9a667d77b27488aa109b010a85bce8e4e7a1c7aa0370cea902395c3866.intermediate
+  ACTION deps_sqlite3_gyp_locate_sqlite3_target_copy_builtin_sqlite3 4292fa9a667d77b27488aa109b010a85bce8e4e7a1c7aa0370cea902395c3866.intermediate
+  CC(target) Release/obj.target/sqlite3/gen/sqlite3/sqlite3.o   LIBTOOL-STATIC Release/sqlite3.a
+  CXX(target) Release/obj.target/better_sqlite3/src/better_sqlite3.o
+../src/better_sqlite3.cpp:48:1: warning: cast from 'void (*)(v8::Local<v8::Object>, v8::Local<v8::Value>, v8::Local<v8::Context>)' to 'node::addon_context_register_func' (aka 'void (*)(v8::Local<v8::Object>, v8::Local<v8::Value>, v8::Local<v8::Context>, void *)') converts to incompatible function type [-Wcast-function-type-mismatch]
+   48 | NODE_MODULE_INIT(/* exports, context */) {
+      | ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/mistlight/Library/Caches/node-gyp/25.9.0/include/node/node.h:1371:3: note: expanded from macro 'NODE_MODULE_INIT'
+ 1371 |   NODE_MODULE_CONTEXT_AWARE(NODE_GYP_MODULE_NAME,                     \
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ 1372 |                             NODE_MODULE_INITIALIZER)                  \
+      |                             ~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/mistlight/Library/Caches/node-gyp/25.9.0/include/node/node.h:1340:3: note: expanded from macro 'NODE_MODULE_CONTEXT_AWARE'
+ 1340 |   NODE_MODULE_CONTEXT_AWARE_X(modname, regfunc, NULL, 0)
+      |   ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+/Users/mistlight/Library/Caches/node-gyp/25.9.0/include/node/node.h:1322:7: note: expanded from macro 'NODE_MODULE_CONTEXT_AWARE_X'
+ 1322 |       (node::addon_context_register_func) (regfunc),                  \
+      |       ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 warning generated.
+  SOLINK_MODULE(target) Release/better_sqlite3.node
+  SOLINK_MODULE(target) Release/test_extension.node
+gyp ERR! UNCAUGHT EXCEPTION 
+gyp ERR! stack Error: ENOENT: no such file or directory, lstat '/Users/mistlight/Projects/Experiments/HackerDojoGrantApp/node_modules/.pnpm/better-sqlite3@12.10.0/node_modules/better-sqlite3/build/node_gyp_bins'
+gyp ERR! System Darwin 24.6.0
+gyp ERR! command "/Users/mistlight/.nvm/versions/node/v24.12.0/bin/node" "/Users/mistlight/Projects/Experiments/HackerDojoGrantApp/node_modules/node-gyp/bin/node-gyp.js" "build" "--release"
+gyp ERR! cwd /Users/mistlight/Projects/Experiments/HackerDojoGrantApp/node_modules/.pnpm/better-sqlite3@12.10.0/node_modules/better-sqlite3
+gyp ERR! node -v v24.12.0
+gyp ERR! node-gyp -v v12.3.0
+gyp ERR! Node-gyp failed to build your package.
+gyp ERR! Try to update npm and/or node-gyp and if it does not help file an issue with the package author.

@@ -1,0 +1,30 @@
+[2m[WebServer] [22m[ensure-better-sqlite3] rebuilding better-sqlite3 for v24.12.0
+[2m[WebServer] [22mnpm warn Unknown env config "verify-deps-before-run". This will stop working in the next major version of npm.
+[2m[WebServer] [22mrebuilt dependencies successfully
+[2m[WebServer] [22m   [1m[38;2;173;127;168m▲ Next.js 15.5.18[39m[22m
+[2m[WebServer] [22m   - Local:        http://localhost:3000
+[2m[WebServer] [22m   - Network:      http://10.43.10.15:3000
+[2m[WebServer] [22m
+[2m[WebServer] [22m [32m[1m✓[22m[39m Starting...
+
+Running 14 tests using 1 worker
+
+[2m[WebServer] [22m [32m[1m✓[22m[39m Ready in 1050ms
+  ✓   1 [chromium] › tests/e2e/app.spec.ts:11:6 › Grant Operations Center smoke › shell loads with nav badges and footer (915ms)
+  ✓   2 [chromium] › tests/e2e/app.spec.ts:22:6 › Grant Operations Center smoke › navigation switches between core views (887ms)
+  ✓   3 [chromium] › tests/e2e/app.spec.ts:35:6 › Grant Operations Center smoke › drawer surfaces prototype detail sections and action gates for an unrated matched grant (1.2s)
+  ✓   4 [chromium] › tests/e2e/app.spec.ts:83:6 › Grant Operations Center smoke › discovery exposes source-intake controls (1.0s)
+  ✓   5 [chromium] › tests/e2e/app.spec.ts:89:6 › Grant Operations Center smoke › pipeline and settings sections render expected controls (1.0s)
+  ✓   6 [chromium] › tests/e2e/app.spec.ts:103:6 › Grant Operations Center smoke › grant updates persist through the API (974ms)
+  ✓   7 [chromium] › tests/e2e/discovery-sorting.spec.ts:124:6 › Discovery Sorting › sort-by-fit-descending: Grants are sorted by fit score descending with exact order (2.8s)
+  ✓   8 [chromium] › tests/e2e/discovery-sorting.spec.ts:162:6 › Discovery Sorting › sort-by-deadline-soonest: Grants sorted by deadline soonest first with Rolling last (2.1s)
+  ✓   9 [chromium] › tests/e2e/discovery-sorting.spec.ts:222:6 › Discovery Sorting › sort-by-award-descending: Grants sorted by award amount descending with exact order (1.9s)
+  ✓  10 [chromium] › tests/e2e/discovery-sorting.spec.ts:260:6 › Discovery Sorting › rolling-deadline-appears-last: Rolling deadline grants appear after all dated grants (1.5s)
+[2m[WebServer] [22m(node:51230) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+[2m[WebServer] [22m(Use `node --trace-deprecation ...` to show where the warning was created)
+  ✓  11 [chromium] › tests/e2e/document-grounded-drafting.spec.ts:139:5 › document-grounded-drafting: generate, revise, approve, and submit through the drawer (2.5s)
+  ✓  12 [chromium] › tests/e2e/simple-discovery.spec.ts:39:5 › simple-discovery: add source and refresh crawl state (2.2s)
+  ✓  13 [chromium] › tests/e2e/submission-notification.spec.ts:70:6 › Submission Notification › notify-email-is-configured: notifyEmail is set in profile (614ms)
+  ✓  14 [chromium] › tests/e2e/submission-notification.spec.ts:87:6 › Submission Notification › draft grant drawer surfaces the submission gate (1.6s)
+
+  14 passed (25.9s)

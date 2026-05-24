@@ -1,0 +1,10 @@
+[ensure-better-sqlite3] rebuilding better-sqlite3 for v24.12.0
+rebuilt dependencies successfully
+   ▲ Next.js 15.5.18
+   - Local:        http://localhost:3000
+   - Network:      http://10.43.10.15:3000
+
+ ✓ Starting...
+ ✓ Ready in 1174ms
+(node:86567) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)

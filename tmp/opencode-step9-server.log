@@ -1,0 +1,22 @@
+[ensure-better-sqlite3] rebuilding better-sqlite3 for v24.12.0
+rebuilt dependencies successfully
+ ⨯ Failed to start server
+Error: listen EADDRINUSE: address already in use :::3000
+    at <unknown> (Error: listen EADDRINUSE: address already Error adding document: Error: The module '/Users/mistlight/Projects/Experiments/HackerDojoGrantApp/node_modules/.pnpm/better-sqlite3@12.10.0/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 141. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+    at <unknown> (.next/server/chunks/916.js:1:15662) {
+  code: 'ERR_DLOPEN_FAILED'
+}
+(node:88400) [DEP0005] DeprecationWarning: Buffer() is deprecated due to security and usability issues. Please use the Buffer.alloc(), Buffer.allocUnsafe(), or Buffer.from() methods instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+Error updating opencode settings: Error: The module '/Users/mistlight/Projects/Experiments/HackerDojoGrantApp/node_modules/.pnpm/better-sqlite3@12.10.0/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 141. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+    at <unknown> (.next/server/chunks/916.js:1:15662) {
+  code: 'ERR_DLOPEN_FAILED'
+}
