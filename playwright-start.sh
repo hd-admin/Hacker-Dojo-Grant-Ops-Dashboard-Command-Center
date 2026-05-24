@@ -4,7 +4,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 export DATA_DIR="$ROOT_DIR/.grant-ops-data"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 
-bash "$ROOT_DIR/scripts/ensure-better-sqlite3.sh"
+if ! node -e "const Database=require('better-sqlite3');const db=new Database(':memory:');db.prepare('select 1').get();db.close();"; then
+  bash "$ROOT_DIR/scripts/ensure-better-sqlite3.sh"
+fi
 
 cd "$FRONTEND_DIR"
 # Ensure a valid production build exists by checking for the server build output

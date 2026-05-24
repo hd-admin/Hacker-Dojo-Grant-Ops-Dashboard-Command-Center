@@ -4,7 +4,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
-node -e "const Database=require('better-sqlite3');const db=new Database(':memory:');db.prepare('select 1').get();db.close();"
+if ! node -e "const Database=require('better-sqlite3');const db=new Database(':memory:');db.prepare('select 1').get();db.close();"; then
+  bash "$ROOT_DIR/scripts/ensure-better-sqlite3.sh"
+  node -e "const Database=require('better-sqlite3');const db=new Database(':memory:');db.prepare('select 1').get();db.close();"
+fi
 
 export OPENCODE_BIN="$(command -v opencode || true)"
 if [ -z "$OPENCODE_BIN" ]; then

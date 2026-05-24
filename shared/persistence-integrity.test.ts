@@ -10,12 +10,13 @@ import {
   loadOpencodeSettings,
   loadPersistedData,
   loadProfile,
+  resetPersistentStateForTests,
   saveGrants,
   saveOpencodeSettings,
   saveProfile,
   withTempDataDir,
 } from './grant-ops-persistence';
-import { defaultProfile, defaultOpencodeSettings } from './seed-data';
+import { defaultOpencodeSettings, defaultProfile } from './seed-data';
 
 function createTestGrant(id: string) {
   return {
@@ -139,6 +140,25 @@ describe('Shared Persistence Integrity', () => {
       expect(persisted.sources).toEqual([]);
       expect(persisted.documents).toEqual([]);
       expect(persisted.opencodeSettings?.binaryPath).toBe('/bin/opencode');
+      expect(persisted.lastSync).toBeTruthy();
+    });
+
+    it('resetPersistentStateForTests reboots a clean sqlite state that still reads and writes', async () => {
+      tempDataDir = await withTempDataDir();
+      const grant = createTestGrant('reset-grant');
+
+      await saveGrants([grant]);
+      await saveProfile({ ...defaultProfile, legalName: 'Reset Test Org' });
+      await resetPersistentStateForTests();
+
+      const profile = await loadProfile();
+      const grants = await loadGrants();
+      const persisted = await loadPersistedData();
+
+      expect(profile.legalName).toBe(defaultProfile.legalName);
+      expect(grants.length).toBeGreaterThan(0);
+      expect(persisted.sources).toEqual([]);
+      expect(persisted.crawlRuns).toEqual([]);
       expect(persisted.lastSync).toBeTruthy();
     });
   });

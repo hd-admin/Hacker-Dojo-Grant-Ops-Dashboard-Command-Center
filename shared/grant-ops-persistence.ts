@@ -233,4 +233,5 @@ export async function copyPersistedData(
 export async function resetPersistentStateForTests(): Promise<void> {
   await clearDatabase(getSqliteState());
   invalidateCache();
+  await loadPersistedData();
 }

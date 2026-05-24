@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import path from 'path';
+import path from 'node:path';
 import { defineConfig } from 'vitest/config';
 
 const require = createRequire(import.meta.url);
@@ -9,6 +9,7 @@ export default defineConfig({
     globals: true,
     include: ['tests/**/*.test.ts', 'frontend/src/**/*.test.ts', 'frontend/src/**/*.test.tsx', 'shared/**/*.test.ts'],
     environment: 'jsdom',
+    setupFiles: [path.resolve(__dirname, './tests/vitest-setup.ts')],
   },
   resolve: {
     alias: {
