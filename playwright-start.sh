@@ -13,4 +13,4 @@ if [ ! -f ".next/BUILD_ID" ] || [ ! -d ".next/server" ] || [ ! -f ".next/server/
   "$ROOT_DIR/node_modules/.bin/next" build
 fi
 
-exec env PORT=3000 HOSTNAME=0.0.0.0 "$ROOT_DIR/node_modules/.bin/next" start
+exec env DATA_DIR="$DATA_DIR" PORT=3000 HOSTNAME=0.0.0.0 "$ROOT_DIR/node_modules/.bin/next" start

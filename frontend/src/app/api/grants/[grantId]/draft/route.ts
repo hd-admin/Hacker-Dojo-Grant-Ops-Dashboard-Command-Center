@@ -1,11 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import * as draftingService from '@/server/grant-ops/drafting-service';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import * as draftingService from '@/server/grant-ops/drafting-service';
 export const dynamic = 'force-dynamic';
 
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
 ) {
   try {
@@ -24,7 +25,8 @@ export async function POST(
 ) {
   try {
     const { grantId } = await params;
-    const body = await request.json();
+    const rawBody = await request.text();
+    const body = rawBody.trim() ? JSON.parse(rawBody) as { revisionNotes?: string } : {};
     const deps = getDependencies();
 
     const grant = await deps.repository.getGrant(grantId);
@@ -49,9 +51,11 @@ export async function POST(
       );
     }
 
-    const draft = await draftingService.generateDraft(grant, profile, {
-      revisionNotes: body.revisionNotes,
-    });
+    const draft = await draftingService.generateDraft(
+      grant,
+      profile,
+      body.revisionNotes ? { revisionNotes: body.revisionNotes } : {},
+    );
 
     return NextResponse.json(draft);
   } catch (error) {

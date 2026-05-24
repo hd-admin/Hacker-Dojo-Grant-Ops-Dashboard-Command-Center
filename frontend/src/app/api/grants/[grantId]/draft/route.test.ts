@@ -1,12 +1,14 @@
 // @vitest-environment node
 import fs from 'node:fs/promises';
 import path from 'node:path';
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
-import type { Grant, OrganizationProfile, OpencodeSettings } from '../../../../../../../shared/types';
+
+import { POST as documentPOST } from '../../../documents/route';
 import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
 import * as repository from '../../../../../server/grant-ops/repository';
-import { POST as documentPOST } from '../../../documents/route';
+import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import type { Grant, OrganizationProfile, OpencodeSettings } from '../../../../../../../shared/types';
 import { POST as draftPOST } from './route';
 
 const fixturePath = path.join(
@@ -108,7 +110,7 @@ describe('/api/grants/[grantId]/draft route', () => {
     expect(data.error).toMatch(/Grant not found/i);
   });
 
-  it('grounds draft generation from extracted PDF content only', async () => {
+  it('accepts empty draft requests and grounds draft generation from extracted PDF content only', async () => {
     const payload = await buildMultipartRequest(
       { name: 'Hacker Dojo Program Summary', type: 'PDF' },
       {
@@ -131,7 +133,6 @@ describe('/api/grants/[grantId]/draft route', () => {
       new Request(`http://localhost/api/grants/${grant.id}/draft`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ revisionNotes: 'Please improve the budget section' }),
       }) as never,
       { params: Promise.resolve({ grantId: grant.id }) },
     );
