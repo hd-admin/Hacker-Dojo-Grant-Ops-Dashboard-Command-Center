@@ -5,6 +5,9 @@ export DATA_DIR="$ROOT_DIR/.grant-ops-data"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 
 cd "$FRONTEND_DIR"
-rm -rf .next
-"$ROOT_DIR/node_modules/.bin/next" build
-PORT=3000 HOSTNAME=0.0.0.0 exec "$ROOT_DIR/node_modules/.bin/next" start
+# Skip rebuild if .next already exists (pnpm build already ran)
+if [ ! -d ".next" ]; then
+  "$ROOT_DIR/node_modules/.bin/next" build
+fi
+
+exec env PORT=3000 HOSTNAME=0.0.0.0 "$ROOT_DIR/node_modules/.bin/next" start

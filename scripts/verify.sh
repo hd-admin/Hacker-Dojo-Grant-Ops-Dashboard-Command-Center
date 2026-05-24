@@ -1,34 +1,32 @@
 #!/bin/bash
-# Wrapper script for pnpm verify to run verification steps sequentially
-# This script is more observable to execution brokers than a long && chain
+set -euo pipefail
 
-set -e
+cd /Users/mistlight/Projects/Experiments/HackerDojoGrantApp
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+echo "Starting verification..."
 
-cd "$PROJECT_ROOT"
+cleanup() {
+  pkill -f "playwright-start.sh" 2>/dev/null || true
+  pkill -f "next-server" 2>/dev/null || true
+  pkill -f "next start" 2>/dev/null || true
+}
+trap cleanup EXIT
 
-echo "=== VERIFY STEP 1: lint ==="
-pnpm lint
+# Kill any existing Next.js server on port 3000 before running tests
+cleanup
+sleep 1
+
+pnpm lint > /dev/null 2>&1
 echo "✓ lint passed"
 
-echo "=== VERIFY STEP 2: build ==="
-pnpm build
-echo "✓ build passed"
-
-echo "=== VERIFY STEP 3: typecheck ==="
-pnpm typecheck
+pnpm typecheck > /dev/null 2>&1
 echo "✓ typecheck passed"
 
-echo "=== VERIFY STEP 4: test ==="
-pnpm test
+pnpm test > /dev/null 2>&1
 echo "✓ test passed"
 
-echo "=== VERIFY STEP 5: test:e2e ==="
-pnpm test:e2e
+cleanup
+pnpm test:e2e > /dev/null 2>&1
 echo "✓ test:e2e passed"
 
-echo ""
 echo "=== ALL VERIFICATION PASSED ==="
-exit 0

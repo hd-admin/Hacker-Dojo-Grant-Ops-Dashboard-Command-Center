@@ -4,9 +4,9 @@
   "private": true,
   "description": "Hacker Dojo Grant Operations Center - Web App",
   "scripts": {
-    "dev": "cd frontend && next dev",
-    "build": "cd frontend && node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && next build",
-    "start": "cd frontend && PORT=3000 HOSTNAME=0.0.0.0 next start",
+    "dev": "cd frontend && ../node_modules/.bin/next dev",
+    "build": "cd frontend && node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && ../node_modules/.bin/next build",
+    "start": "cd frontend && PORT=3000 HOSTNAME=0.0.0.0 ../node_modules/.bin/next start",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "vitest run",
     "test:watch": "vitest",
