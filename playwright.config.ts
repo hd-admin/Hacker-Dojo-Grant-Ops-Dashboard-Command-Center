@@ -15,7 +15,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: './playwright-start.sh',
+    command: 'bash ./playwright-start.sh',
     port: 3000,
     reuseExistingServer: !process.env.CI,
     timeout: 300000,

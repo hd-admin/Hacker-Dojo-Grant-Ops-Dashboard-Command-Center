@@ -3,8 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "predev": "bash ../scripts/ensure-better-sqlite3.sh",
     "dev": "next dev",
+    "prebuild": "bash ../scripts/ensure-better-sqlite3.sh",
     "build": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && next build",
+    "prestart": "bash ../scripts/ensure-better-sqlite3.sh",
     "start": "PORT=3000 HOSTNAME=0.0.0.0 next start"
   },
   "devDependencies": {

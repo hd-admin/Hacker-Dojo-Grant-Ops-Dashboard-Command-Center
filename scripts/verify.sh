@@ -12,6 +12,9 @@ cleanup() {
 }
 trap cleanup EXIT
 
+# Keep the native module aligned with the active Node runtime before any test gate.
+bash ./scripts/ensure-better-sqlite3.sh
+
 # Kill any existing Next.js server on port 3000 before running tests
 cleanup
 sleep 1
