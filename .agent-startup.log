@@ -1,0 +1,22 @@
+   ▲ Next.js 15.5.18
+   - Local:        http://localhost:3000
+   - Network:      http://10.43.10.15:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.9s
+Error updating profile: Error: The module '/Users/mistlight/Projects/Experiments/HackerDojoGrantApp/node_modules/.pnpm/better-sqlite3@12.10.0/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 141. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+    at <unknown> (.next/server/chunks/916.js:1:15662) {
+  code: 'ERR_DLOPEN_FAILED'
+}
+Error updating opencode settings: Error: The module '/Users/mistlight/Projects/Experiments/HackerDojoGrantApp/node_modules/.pnpm/better-sqlite3@12.10.0/node_modules/better-sqlite3/build/Release/better_sqlite3.node'
+was compiled against a different Node.js version using
+NODE_MODULE_VERSION 137. This version of Node.js requires
+NODE_MODULE_VERSION 141. Please try re-compiling or re-installing
+the module (for instance, using `npm rebuild` or `npm install`).
+    at <unknown> (.next/server/chunks/916.js:1:15662) {
+  code: 'ERR_DLOPEN_FAILED'
+}
