@@ -5,9 +5,9 @@
  * and follow-up generation.
  */
 
-import { afterEach, describe, it, expect } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect } from 'vitest';
 import { withTempDataDir } from '../../../../shared/grant-ops-persistence';
-import type { Grant, ApprovalRecord } from '../../../../shared/types';
+import type { Grant, ApprovalRecord, OrganizationProfile } from '../../../../shared/types';
 import * as repository from './repository';
 import * as submissionService from './submission-service';
 
@@ -159,6 +159,61 @@ describe('SubmissionService', () => {
     it('returns array', async () => {
       const followUps = await submissionService.getFollowUps();
       expect(Array.isArray(followUps)).toBe(true);
+    });
+  });
+
+  describe('notification HTML escaping', () => {
+    beforeEach(async () => {
+      tempDataDir = await withTempDataDir();
+    });
+
+    it('escapes HTML special characters in grant.funder, grant.title, confirmationId, and notifyEmail in email submission notification', async () => {
+      const htmlGrant: Grant = {
+        ...mockGrant,
+        id: `escape-${Date.now()}`,
+        title: 'NSF <Technology> Grant & Award',
+        funder: 'National & Science Foundation',
+        status: 'review',
+      };
+      await repository.addGrant(htmlGrant);
+      const profile: OrganizationProfile = {
+        legalName: 'Hacker Dojo',
+        ein: '12-3456789',
+        samUEI: 'XyxabC123AB',
+        mission: 'Test mission',
+        docTypes: [],
+        searchThemes: [],
+        agentBehavior: {
+          autoDraftThreshold: 80,
+          submissionPolicy: 'human-review-required',
+          notifyEmail: 'test<user>@example.com',
+          voiceAndTone: 'professional',
+        },
+      };
+      await repository.updateOrgProfile(profile);
+
+      await submissionService.approveGrant({ grant: htmlGrant, approvedBy: 'test-user' });
+      const result = await submissionService.recordSubmission({
+        grant: htmlGrant,
+        method: { type: 'email', submittedBy: 'test-user', confirmationId: '<CONF-123>' },
+        submittedBy: 'test-user',
+      });
+
+      expect(result.success).toBe(true);
+      const notifications = await repository.getNotifications();
+      expect(notifications.length).toBeGreaterThan(0);
+      const notif = notifications[0]!;
+
+      // Assert HTML-escaped values are present
+      expect(notif.text).toContain('NSF &lt;Technology&gt; Grant &amp; Award');
+      expect(notif.text).toContain('National &amp; Science Foundation');
+      expect(notif.text).toContain('&lt;CONF-123&gt;');
+      expect(notif.text).toContain('test&lt;user&gt;@example.com');
+
+      // Assert raw HTML-hostile values are absent
+      expect(notif.text).not.toContain('<Technology>');
+      expect(notif.text).not.toContain('National & Science Foundation');
+      expect(notif.text).not.toContain('<CONF-123>');
     });
   });
 });

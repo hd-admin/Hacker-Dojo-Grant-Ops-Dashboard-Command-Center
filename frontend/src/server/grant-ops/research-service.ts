@@ -11,6 +11,7 @@
 import type {
   CrawlRun,
   Grant,
+  Notification,
   OrganizationProfile,
   Source,
 } from '../../../../shared/types';
@@ -242,6 +243,16 @@ async function performResearch(
     updatedCrawlRun.grantsFound = totalGrantsFound;
     updatedCrawlRun.grantsMatched = totalGrantsMatched;
     await deps.repository.updateCrawlRun(updatedCrawlRun);
+
+    const notifications = await deps.repository.getNotifications();
+    const researchNotification: Notification = {
+      id: idGenerator.generateId('notification'),
+      dot: 'success',
+      time: clock.now().toISOString(),
+      text: `Research completed: ${totalGrantsMatched} new grant(s) matched across ${sources.length} source(s)`,
+    };
+    notifications.unshift(researchNotification);
+    await deps.repository.updateNotifications(notifications);
   }
 
   const finalCrawlRun = (await deps.repository.getLatestCrawlRun()) ?? initialCrawlRun;

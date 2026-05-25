@@ -70,7 +70,7 @@ export default function NotificationsView({ notifications: notificationsProp }: 
           <div key={notification.id} className="notification-item">
             <div className={`notification-dot ${notification.dot}`} />
             <div className="notification-content">
-              <div className="notification-text">{notification.text}</div>
+              <div className="notification-text" dangerouslySetInnerHTML={{ __html: notification.text }} />
               <div className="notification-time">{notification.time}</div>
             </div>
           </div>

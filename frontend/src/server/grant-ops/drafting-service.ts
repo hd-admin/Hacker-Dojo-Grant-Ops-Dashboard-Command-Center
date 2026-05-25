@@ -7,6 +7,7 @@
 import type {
   DraftArtifact,
   Grant,
+  Notification,
   RevisionRequest,
   OrganizationProfile,
   DocumentMetadata,
@@ -15,6 +16,7 @@ import {
   createDefaultFunderSummary,
   createDefaultGrantChecklist,
 } from '../../../../shared/seed-data';
+import { escapeForHtml } from '../../lib/sanitize-html';
 import { getDependencies } from './dependencies';
 
 export interface GenerateDraftOptions {
@@ -115,6 +117,17 @@ export async function generateDraft(
       sourceCount: nextSourceCount,
     }),
   });
+
+  const existingNotifications = await deps.repository.getNotifications();
+  const safeTitle = escapeForHtml(grant.title);
+  const draftNotification: Notification = {
+    id: idGenerator.generateId('notification'),
+    dot: 'accent',
+    time: clock.now().toISOString(),
+    text: `Draft generated for <strong>${safeTitle}</strong> (v${draftArtifact.version}) · awaiting review`,
+  };
+  existingNotifications.unshift(draftNotification);
+  await deps.repository.updateNotifications(existingNotifications);
 
   return draftArtifact;
 }

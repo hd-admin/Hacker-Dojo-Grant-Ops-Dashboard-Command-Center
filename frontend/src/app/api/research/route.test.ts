@@ -1,8 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { OrganizationProfile, OpencodeSettings } from '../../../../../shared/types';
+import type { CrawlRun, OrganizationProfile, OpencodeSettings } from '../../../../../shared/types';
 import { invalidateCache, withTempDataDir } from '../../../../../shared/grant-ops-persistence';
 import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
 import * as repository from '@/server/grant-ops/repository';
+import * as researchService from '@/server/grant-ops/research-service';
 import { GET, POST } from './route';
 import { POST as createSource } from '../sources/route';
 
@@ -113,5 +114,23 @@ describe('/api/research route', () => {
 
     expect(response.status).toBe(400);
     expect(data.error).toMatch(/Opencode is not configured/i);
+  });
+
+  describe('null crawlRun guard', () => {
+    it('returns 500 with persisted-crawlRun error when crawlRun is null', async () => {
+      const spy = vi.spyOn(researchService, 'runResearch').mockResolvedValueOnce({
+        crawlRun: null as unknown as CrawlRun,
+        grantsFound: 0,
+        grantsMatched: 0,
+      });
+
+      const response = await POST(new Request('http://localhost/api/research', { method: 'POST' }) as never);
+      const data = await response.json();
+
+      expect(response.status).toBe(500);
+      expect(data.error).toMatch(/crawlRun|persisted/i);
+
+      spy.mockRestore();
+    });
   });
 });

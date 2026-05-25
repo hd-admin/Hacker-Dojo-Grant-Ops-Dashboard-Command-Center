@@ -1,4 +1,6 @@
-import { describe, it, expect } from 'vitest';
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { Notification } from '../../../shared/types';
 
 const mockNotifications: Notification[] = [
@@ -21,6 +23,19 @@ const mockNotifications: Notification[] = [
     dot: 'info',
   },
 ];
+
+const { notificationsGetAll } = vi.hoisted(() => ({
+  notificationsGetAll: vi.fn(),
+}));
+
+vi.mock('../lib/grant-ops-client', () => ({
+  notificationsApi: { getAll: notificationsGetAll },
+}));
+
+import NotificationsView from './NotificationsView';
+
+let container: HTMLDivElement;
+let root: ReturnType<typeof createRoot>;
 
 describe('NotificationsView', () => {
   describe('Notification data', () => {
@@ -72,6 +87,46 @@ describe('NotificationsView', () => {
     it('should show empty state when notifications array is empty', () => {
       const emptyNotifications: Notification[] = [];
       expect(emptyNotifications.length).toBe(0);
+    });
+  });
+
+  describe('render tests', () => {
+    beforeEach(() => {
+      notificationsGetAll.mockResolvedValue([]);
+      container = document.createElement('div');
+      document.body.appendChild(container);
+      root = createRoot(container);
+    });
+
+    afterEach(() => {
+      root.unmount();
+      container.remove();
+      vi.restoreAllMocks();
+    });
+
+    it('renders notification text as HTML markup', async () => {
+      const notifications: Notification[] = [
+        { id: 'n1', text: '<strong>3 new grants</strong> matched', time: '2h ago', dot: 'success' },
+      ];
+      root.render(React.createElement(NotificationsView, { notifications }));
+      await new Promise((r) => setTimeout(r, 0));
+      expect(container.querySelector('.notification-text strong')).not.toBeNull();
+    });
+
+    it('renders empty state when notifications array is empty', async () => {
+      root.render(React.createElement(NotificationsView, { notifications: [] }));
+      await new Promise((r) => setTimeout(r, 0));
+      expect(container.querySelector('.empty-state')).not.toBeNull();
+    });
+
+    it('renders all notification items', async () => {
+      const notifications: Notification[] = [
+        { id: 'n1', text: 'First notification', time: '1h ago', dot: 'info' },
+        { id: 'n2', text: 'Second notification', time: '2h ago', dot: 'warning' },
+      ];
+      root.render(React.createElement(NotificationsView, { notifications }));
+      await new Promise((r) => setTimeout(r, 0));
+      expect(container.querySelectorAll('.notification-item').length).toBe(2);
     });
   });
 });

@@ -246,7 +246,7 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
               <div key={idx} className="activity-item">
                 <div className={`activity-dot ${item.dot}`} />
                 <div>
-                  <div className="activity-text">{item.text}</div>
+                  <div className="activity-text" dangerouslySetInnerHTML={{ __html: item.text }} />
                   <div className="activity-time">{item.time}</div>
                 </div>
               </div>

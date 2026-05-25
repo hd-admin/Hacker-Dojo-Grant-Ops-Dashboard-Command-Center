@@ -185,6 +185,7 @@ export default function AppShell() {
             onRefreshAppState={refreshAppState}
             grants={grants}
             profile={profile}
+            notifications={notifications}
           />
         </div>
         <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`}>

@@ -23,17 +23,30 @@ vi.mock('../lib/grant-ops-client', () => ({
   },
 }));
 
+let capturedDashboardNotifications: Notification[] | undefined;
+
 vi.mock('./DashboardView', () => ({
-  default: ({ onGrantSelect, onRefreshAppState }: { onGrantSelect: (id: string) => void; onRefreshAppState?: () => Promise<void> | void }) => (
-    <div>
-      <button type="button" onClick={() => onGrantSelect('grant-1')}>
-        select grant
-      </button>
-      <button type="button" onClick={() => onRefreshAppState?.()}>
-        refresh dashboard
-      </button>
-    </div>
-  ),
+  default: ({
+    onGrantSelect,
+    onRefreshAppState,
+    notifications,
+  }: {
+    onGrantSelect: (id: string) => void;
+    onRefreshAppState?: () => Promise<void> | void;
+    notifications?: Notification[];
+  }) => {
+    capturedDashboardNotifications = notifications;
+    return (
+      <div>
+        <button type="button" onClick={() => onGrantSelect('grant-1')}>
+          select grant
+        </button>
+        <button type="button" onClick={() => onRefreshAppState?.()}>
+          refresh dashboard
+        </button>
+      </div>
+    );
+  },
 }));
 
 vi.mock('./DiscoveryView', () => ({
@@ -161,6 +174,7 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<void
 }
 
 beforeEach(() => {
+  capturedDashboardNotifications = undefined;
   grantsGetAll.mockReset();
   profileGet.mockReset();
   notificationsGetAll.mockReset();
@@ -215,5 +229,11 @@ describe('AppShell', () => {
 
     expect(researchGetRuns).toHaveBeenCalledTimes(3);
     expect(container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent).toBe('2');
+  });
+
+  it('passes backend notifications to DashboardView after refreshAppState resolves', async () => {
+    root.render(React.createElement(AppShell));
+    await waitFor(() => capturedDashboardNotifications !== undefined && capturedDashboardNotifications.length > 0);
+    expect(capturedDashboardNotifications).toEqual(notifications);
   });
 });

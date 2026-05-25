@@ -588,19 +588,19 @@ export const seedNotifications: Notification[] = [
 		id: "notif-1",
 		text: "NSF Technology Access grant deadline in 25 days",
 		time: "2 hours ago",
-		dot: "NSF",
+		dot: "info",
 	},
 	{
 		id: "notif-2",
 		text: "Morrell Family Foundation deadline approaching: 11 days remaining",
 		time: "4 hours ago",
-		dot: "Morrell",
+		dot: "warning",
 	},
 	{
 		id: "notif-3",
 		text: "New high-fit grant discovered: Horizon Education Grants (81% fit)",
 		time: "1 day ago",
-		dot: "New",
+		dot: "accent",
 	},
 ];
 

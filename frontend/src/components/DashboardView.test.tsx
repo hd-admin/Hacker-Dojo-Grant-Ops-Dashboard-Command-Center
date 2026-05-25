@@ -1,5 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import type { Grant, OrganizationProfile } from '../../../shared/types';
+import React from 'react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createRoot } from 'next/dist/compiled/react-dom/client';
+import type { Grant, OrganizationProfile, Notification } from '../../../shared/types';
 
 const mockGrants: Grant[] = [
   {
@@ -78,6 +80,11 @@ const _mockProfile: OrganizationProfile = {
     voiceAndTone: 'Plain-spoken',
   },
 };
+
+import DashboardView from './DashboardView';
+
+let container: HTMLDivElement;
+let root: ReturnType<typeof createRoot>;
 
 describe('DashboardView', () => {
   describe('KPI Calculations', () => {
@@ -158,6 +165,55 @@ describe('DashboardView', () => {
       const reviewQueue = mockGrants.filter((g) => g.status === 'review');
       expect(reviewQueue.length).toBe(1);
       expect(reviewQueue[0]?.id).toBe('grant-3');
+    });
+  });
+
+  describe('render tests', () => {
+    const requiredProps = {
+      onGrantSelect: vi.fn(),
+      onNavigate: vi.fn(),
+      onRefreshAppState: vi.fn(),
+      grants: [] as Grant[],
+      profile: null,
+    };
+
+    beforeEach(() => {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+      root = createRoot(container);
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({}) } as Response);
+    });
+
+    afterEach(() => {
+      root.unmount();
+      container.remove();
+      vi.restoreAllMocks();
+    });
+
+    it('renders default activity feed with HTML markup when no notifications prop provided', async () => {
+      root.render(React.createElement(DashboardView, requiredProps));
+      await new Promise((r) => setTimeout(r, 0));
+      expect(container.querySelectorAll('.activity-item').length).toBeGreaterThanOrEqual(1);
+      expect(container.querySelector('.activity-text strong')).not.toBeNull();
+    });
+
+    it('uses notifications prop for activity feed when notifications are provided', async () => {
+      const testNotification: Notification = {
+        id: 'n1',
+        dot: 'success',
+        text: '<strong>Grant matched</strong>',
+        time: '1h ago',
+      };
+      root.render(React.createElement(DashboardView, { ...requiredProps, notifications: [testNotification] }));
+      await new Promise((r) => setTimeout(r, 0));
+      expect(container.querySelector('.activity-text strong')).not.toBeNull();
+      expect(container.querySelector('.activity-text')?.innerHTML).toContain('Grant matched');
+    });
+
+    it('falls back to getDefaultActivity when notifications is empty array', async () => {
+      root.render(React.createElement(DashboardView, { ...requiredProps, notifications: [] }));
+      await new Promise((r) => setTimeout(r, 0));
+      expect(container.querySelectorAll('.activity-item').length).toBeGreaterThanOrEqual(1);
     });
   });
 });

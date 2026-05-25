@@ -309,7 +309,7 @@ describe("ResearchService", () => {
 	});
 });
   describe('notification emission', () => {
-    let tempDataDir: ReturnType<typeof withTempDataDir>;
+    let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
     beforeEach(async () => { tempDataDir = await withTempDataDir(); });
     afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
     it('emits a notification after runResearch completes', async () => {

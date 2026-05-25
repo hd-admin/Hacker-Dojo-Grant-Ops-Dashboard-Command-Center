@@ -18,6 +18,7 @@ import type {
   Notification,
   Task,
 } from '../../../../shared/types';
+import { escapeForHtml } from '../../lib/sanitize-html';
 import { getDependencies } from './dependencies';
 
 export interface ApprovalInput {
@@ -284,7 +285,7 @@ async function createEmailSubmissionArtifacts(
   // Create notification for the submission
   const notification: Notification = {
     id: idGenerator.generateId('notification'),
-    text: `Email submission sent to ${grant.funder} for "${grant.title}". Confirmation: ${confirmationId || 'N/A'}. Sent to: ${notifyEmail}`,
+    text: `Email submission sent to ${escapeForHtml(grant.funder)} for "${escapeForHtml(grant.title)}". Confirmation: ${escapeForHtml(confirmationId ?? 'N/A')}. Sent to: ${escapeForHtml(notifyEmail)}`,
     time: clock.now().toISOString(),
     dot: 'blue',
   };

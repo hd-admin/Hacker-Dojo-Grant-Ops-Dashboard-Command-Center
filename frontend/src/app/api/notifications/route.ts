@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
 
     const newNotification: Notification = {
       id: body.id || idGenerator.generateId('notif'),
-      text: body.text,
+      text: sanitizeNotificationText(body.text ?? ''),
       time: body.time || clock.now().toISOString(),
       dot: body.dot || 'info',
     };
