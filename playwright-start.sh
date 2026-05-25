@@ -30,6 +30,7 @@ cleanup() {
   pkill -9 -f "next start" 2>/dev/null || true
 }
 trap cleanup EXIT INT TERM
+trap '' HUP
 
 if ! node -e "const Database=require('better-sqlite3');const db=new Database(':memory:');db.prepare('select 1').get();db.close();"; then
   bash "$ROOT_DIR/scripts/ensure-better-sqlite3.sh"

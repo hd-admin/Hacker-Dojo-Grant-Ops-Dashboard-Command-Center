@@ -3,6 +3,8 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
+export TMPDIR="$ROOT_DIR/.agent/tmp"
+mkdir -p "$TMPDIR"
 
 echo "Starting verification..."
 
@@ -51,11 +53,16 @@ echo "✓ next types present"
 pnpm typecheck >/dev/null 2>&1
 echo "✓ typecheck passed"
 
-DATA_DIR="$(mktemp -d)" pnpm exec playwright test tests/e2e/app.spec.ts tests/e2e/discovery-sorting.spec.ts tests/e2e/document-grounded-drafting.spec.ts tests/e2e/submission-notification.spec.ts tests/e2e/simple-discovery.spec.ts >/dev/null 2>&1
+PLAYWRIGHT_DATA_DIR="$(mktemp -d "$ROOT_DIR/.agent/tmp/playwright-data.XXXXXX")"
+DATA_DIR="$PLAYWRIGHT_DATA_DIR" pnpm exec playwright test tests/e2e/app.spec.ts tests/e2e/discovery-sorting.spec.ts tests/e2e/document-grounded-drafting.spec.ts tests/e2e/submission-notification.spec.ts tests/e2e/simple-discovery.spec.ts >/dev/null 2>&1
 echo "✓ playwright suite passed"
 
 pnpm test >/dev/null 2>&1
 echo "✓ test passed"
+
+wait_for_port_3000_clear
+sleep 20
+echo "✓ port 3000 cleared"
 
 bash ./scripts/verify-opencode-backend.sh >/dev/null 2>&1
 echo "✓ real backend proof passed"

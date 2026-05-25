@@ -18,7 +18,7 @@ export OPENCODE_PURE=1
 PROOF_BINARY_PATH="$ROOT_DIR/scripts/opencode-real-wrapper.sh"
 
 APP_LOG="${TMPDIR:-/tmp}/grant-ops-opencode-proof.log"
-REQUEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/grant-ops-opencode-proof.XXXXXX")"
+REQUEST_DIR="$(mktemp -d "$ROOT_DIR/.agent/tmp/grant-ops-opencode-proof.XXXXXX")"
 export DATA_DIR="$REQUEST_DIR/data"
 PID_FILE="$DATA_DIR/playwright-start.pid"
 SERVER_PID=""
