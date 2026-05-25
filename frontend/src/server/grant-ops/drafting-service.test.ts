@@ -277,3 +277,18 @@ describe("DraftingService", () => {
 		});
 	});
 });
+  
+  describe('notification emission', () => {
+    let tempDataDir: ReturnType<typeof withTempDataDir>;
+    beforeEach(async () => { tempDataDir = await withTempDataDir(); });
+    afterEach(async () => { await tempDataDir.cleanup(); });
+    it('emits a notification after generateDraft completes', async () => {
+      const mockGrant = createMockGrant('notif-test-' + Date.now());
+      await repository.addGrant(mockGrant);
+      await draftingService.generateDraft(mockGrant, mockProfile, { _providerType: 'fake' });
+      const notifications = await repository.getNotifications();
+      expect(notifications.length).toBeGreaterThan(0);
+      expect(notifications[0]!.dot).toBe('accent');
+      expect(notifications[0]!.text).toContain(mockGrant.title);
+    });
+  });

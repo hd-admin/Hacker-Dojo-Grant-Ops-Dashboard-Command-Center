@@ -88,7 +88,7 @@ export async function runResearch(
     // Create Opencode adapter using DI
     const adapter = deps.createOpencodeAdapter(settings!, providerType);
 
-    const result = await performResearch(profile, sources, adapter, deps, clock, idGenerator);
+    const result = await performResearch(profile, sources, adapter, deps, clock, idGenerator, crawlRun);
     return result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -115,6 +115,7 @@ async function performResearch(
   deps: ReturnType<typeof getDependencies>,
   clock: Clock,
   idGenerator: IdGenerator,
+  initialCrawlRun: CrawlRun,
 ): Promise<ResearchResult> {
   let totalGrantsFound = 0;
   let totalGrantsMatched = 0;
@@ -243,8 +244,9 @@ async function performResearch(
     await deps.repository.updateCrawlRun(updatedCrawlRun);
   }
 
+  const finalCrawlRun = (await deps.repository.getLatestCrawlRun()) ?? initialCrawlRun;
   return {
-    crawlRun: updatedCrawlRun!,
+    crawlRun: finalCrawlRun,
     grantsFound: totalGrantsFound,
     grantsMatched: totalGrantsMatched,
   };

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import { sanitizeNotificationText } from '@/lib/sanitize-html';
 import type { Notification } from '../../../../../shared/types';
 export const dynamic = 'force-dynamic';
 
@@ -53,7 +54,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: 'Notifications array is required' }, { status: 400 });
     }
 
-    await deps.repository.updateNotifications(body.notifications as Notification[]);
+      const sanitized = (body.notifications as Notification[]).map((n) => ({
+        ...n,
+        text: sanitizeNotificationText(n.text ?? ''),
+      }));
+      await deps.repository.updateNotifications(sanitized);
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error updating notifications:', error);

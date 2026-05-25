@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import type { Grant, OrganizationProfile, ActivityEvent } from '../../../shared/types';
+import type { Grant, OrganizationProfile, ActivityEvent, Notification } from '../../../shared/types';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
@@ -11,6 +11,7 @@ interface DashboardViewProps {
   onRefreshAppState?: () => Promise<void> | void;
   grants: Grant[];
   profile: OrganizationProfile | null;
+  notifications?: Notification[];
 }
 
 function formatDate(dateStr: string): { day: string; month: string } {
@@ -76,8 +77,10 @@ function getDefaultActivity(): ActivityEvent[] {
   ];
 }
 
-export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile }: DashboardViewProps) {
-  const activity = getDefaultActivity();
+export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications }: DashboardViewProps) {
+  const activity: ActivityEvent[] = (notifications && notifications.length > 0)
+    ? notifications.slice(0, 6).map((n) => ({ dot: n.dot, text: n.text, time: n.time }))
+    : getDefaultActivity();
 
   const handleRefreshCrawl = async () => {
     try {

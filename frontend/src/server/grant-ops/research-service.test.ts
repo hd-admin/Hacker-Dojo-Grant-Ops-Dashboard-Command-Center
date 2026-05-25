@@ -308,3 +308,17 @@ describe("ResearchService", () => {
 		});
 	});
 });
+  describe('notification emission', () => {
+    let tempDataDir: ReturnType<typeof withTempDataDir>;
+    beforeEach(async () => { tempDataDir = await withTempDataDir(); });
+    afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
+    it('emits a notification after runResearch completes', async () => {
+      await sourceService.addSource({ name: 'Test', url: 'https://example.com', type: 'website' });
+      await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+      const notifications = await repository.getNotifications();
+      expect(notifications.length).toBeGreaterThan(0);
+      expect(notifications[0]!.dot).toBeDefined();
+      expect(notifications[0]!.text).toMatch(/research|grant/i);
+    });
+  });
+

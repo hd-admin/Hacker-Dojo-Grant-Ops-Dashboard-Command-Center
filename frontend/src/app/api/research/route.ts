@@ -26,6 +26,10 @@ export async function POST(_request: NextRequest) {
 
     const result = await researchService.runResearch(profile);
 
+    if (!result.crawlRun) {
+      return NextResponse.json({ error: 'Research completed but crawlRun was not persisted' }, { status: 500 });
+    }
+
     return NextResponse.json({
       success: true,
       crawlRun: result.crawlRun,
