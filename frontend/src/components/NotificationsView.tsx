@@ -5,11 +5,20 @@ import type { Notification } from '../../../shared/types';
 import { seedNotifications } from '../../../shared/seed-data';
 import { notificationsApi } from '../lib/grant-ops-client';
 
-export default function NotificationsView() {
-  const [notifications, setNotifications] = useState<Notification[]>(seedNotifications);
+interface NotificationsViewProps {
+  notifications?: Notification[];
+}
+
+export default function NotificationsView({ notifications: notificationsProp }: NotificationsViewProps) {
+  const [notifications, setNotifications] = useState<Notification[]>(notificationsProp ?? seedNotifications);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (notificationsProp) {
+      setNotifications(notificationsProp);
+      return;
+    }
+
     async function load() {
       try {
         const data = await notificationsApi.getAll();
@@ -22,7 +31,7 @@ export default function NotificationsView() {
       }
     }
     load();
-  }, []);
+  }, [notificationsProp]);
 
   if (loading) {
     return <div className="header-title">Loading...</div>;

@@ -64,7 +64,12 @@ export function getSqliteState(
 function openDatabase(state: SqliteBootstrapState): SqliteDatabase {
 	const existing = dbCache.get(state.dataDir);
 	if (existing) {
-		return existing;
+		try {
+			existing.prepare('SELECT 1').get();
+			return existing;
+		} catch {
+			dbCache.delete(state.dataDir);
+		}
 	}
 
 	mkdirSync(state.dataDir, { recursive: true });

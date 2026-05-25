@@ -122,7 +122,7 @@ test("simple-discovery: add source and refresh crawl state", async ({
 
 	// Crawl status subtitle check
 	await page.click('[data-view="discovery"]');
-	await expect(page.locator('.header-sub')).toContainText('crawled');
+	await expect(page.locator('#view-discovery .header-sub')).toContainText('crawled');
 
 	await expect(page.locator(".sidebar-footer")).toContainText("Crawler");
 });

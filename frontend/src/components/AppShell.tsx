@@ -203,10 +203,10 @@ export default function AppShell() {
           id="view-notifications"
           className={`view ${activeView === 'notifications' ? 'active' : ''}`}
         >
-          <NotificationsView />
+          <NotificationsView notifications={notifications} />
         </div>
         <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`}>
-          <TasksView onRefreshAppState={refreshAppState} />
+          <TasksView onRefreshAppState={refreshAppState} tasks={tasks} />
         </div>
       </main>
 

@@ -7,15 +7,22 @@ import { tasksApi, followUpsApi } from '../lib/grant-ops-client';
 
 interface TasksViewProps {
   onRefreshAppState?: () => Promise<void> | void;
+  tasks?: Task[];
 }
 
-export default function TasksView({ onRefreshAppState }: TasksViewProps) {
-  const [tasks, setTasks] = useState<Task[]>(seedTasks);
+export default function TasksView({ onRefreshAppState, tasks: tasksProp }: TasksViewProps) {
+  const [tasks, setTasks] = useState<Task[]>(tasksProp ?? seedTasks);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
+
+  useEffect(() => {
+    if (tasksProp) {
+      setTasks(tasksProp);
+    }
+  }, [tasksProp]);
 
   useEffect(() => {
     async function load() {
@@ -50,11 +57,16 @@ export default function TasksView({ onRefreshAppState }: TasksViewProps) {
     const followUp = followUps.find((fu) => fu.id === id);
     if (!followUp) return;
     const isNowComplete = followUp.status !== 'completed';
-    const updated: FollowUp = {
-      ...followUp,
-      status: isNowComplete ? 'completed' : 'pending',
-      completedAt: isNowComplete ? new Date().toISOString() : undefined,
-    };
+    const updated: FollowUp = isNowComplete
+      ? {
+          ...followUp,
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+        }
+      : {
+          ...followUp,
+          status: 'pending',
+        };
     setFollowUps((prev) => prev.map((fu) => (fu.id === id ? updated : fu)));
     try {
       await followUpsApi.update(updated);
