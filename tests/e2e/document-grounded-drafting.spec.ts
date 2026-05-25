@@ -155,7 +155,8 @@ test("document-grounded-drafting: generate, revise, approve, and submit through 
 	await expect(page.locator('button:has-text("Generate draft")')).toBeVisible();
 	await page.getByRole("button", { name: "Generate draft" }).click();
 	await expect(page.locator(".draft-preview")).toContainText(exactSentence);
-	await expect(page.locator(".drawer")).toContainText("Version 1");
+	await expect(page.locator(".ai-badge")).toContainText("Drafted by agent");
+	await expect(page.locator(".drawer")).toContainText(/\d+ words · \d+ pages/);
 
 	await page.getByRole("button", { name: "Request revision" }).click();
 	await page
