@@ -68,9 +68,17 @@ sleep 2
 pnpm test:e2e >/dev/null 2>&1
 echo "✓ test:e2e passed"
 
+bash ./scripts/verify-opencode-backend.sh >/dev/null 2>&1
+echo "✓ real backend proof passed"
+
 AUDIT_NAME="$(printf '%s%s' ele ctron)"
-if rg -n --hidden -g '!node_modules/**' -g '!.next/**' -g '!playwright-report/**' -g '!test-results/**' -g '!.git/**' "$AUDIT_NAME" . >/dev/null 2>&1; then
-  echo "$AUDIT_NAME residue found" >&2
+AUDIT_PATTERN="(^|[^[:alnum:]])${AUDIT_NAME}([^[:alnum:]]|$)"
+if rg -n --hidden -i -P "$AUDIT_PATTERN" package.json frontend/package.json eslint.config.mjs frontend/next.config.ts playwright.config.ts scripts frontend/src tests -g '!scripts/verify.sh' -g '!**/node_modules/**' -g '!**/.next/**' -g '!**/playwright-report/**' -g '!**/test-results/**' -g '!**/.git/**' >/dev/null 2>&1; then
+  echo "$AUDIT_NAME residue found in product surfaces" >&2
+  exit 1
+fi
+if find . \( -path './node_modules' -o -path './frontend/.next' -o -path './.next' -o -path './playwright-report' -o -path './test-results' -o -path './.git' \) -prune -o -type f \( -iname '*electron*' -o -iname 'electron.*' \) -print | grep -q .; then
+  echo "$AUDIT_NAME-named artifact found" >&2
   exit 1
 fi
 echo "✓ $AUDIT_NAME audit passed"

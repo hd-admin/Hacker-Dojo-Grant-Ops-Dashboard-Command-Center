@@ -9,6 +9,7 @@ import {
   loadGrants,
   loadOpencodeSettings,
   loadPersistedData,
+  savePersistedData,
   loadProfile,
   resetPersistentStateForTests,
   saveGrants,
@@ -16,7 +17,9 @@ import {
   saveProfile,
   withTempDataDir,
 } from './grant-ops-persistence';
+import { clearDatabase, getSqliteState } from './grant-ops-sqlite';
 import { defaultOpencodeSettings, defaultProfile } from './seed-data';
+import type { PersistedData } from './grant-ops-persistence';
 
 function createTestGrant(id: string) {
   return {
@@ -143,6 +146,17 @@ describe('Shared Persistence Integrity', () => {
       expect(persisted.lastSync).toBeTruthy();
     });
 
+    it('preserves standalone opencode settings when aggregate persisted data omits them', async () => {
+      tempDataDir = await withTempDataDir();
+      await saveOpencodeSettings({ ...defaultOpencodeSettings, isConfigured: true, binaryPath: '/standalone/bin' });
+
+      const staleData = (await loadPersistedData()) as PersistedData;
+      await savePersistedData({ ...staleData, opencodeSettings: null });
+
+      const settings = await loadOpencodeSettings();
+      expect(settings.binaryPath).toBe('/standalone/bin');
+    });
+
     it('resetPersistentStateForTests reboots a clean sqlite state that still reads and writes', async () => {
       tempDataDir = await withTempDataDir();
       const grant = createTestGrant('reset-grant');
@@ -160,6 +174,24 @@ describe('Shared Persistence Integrity', () => {
       expect(persisted.sources).toEqual([]);
       expect(persisted.crawlRuns).toEqual([]);
       expect(persisted.lastSync).toBeTruthy();
+    });
+
+    it('clearDatabase removes sqlite sidecar files before reinitializing', async () => {
+      tempDataDir = await withTempDataDir();
+      const { dataDir } = tempDataDir;
+      const dbPath = path.join(dataDir, 'grant-ops.sqlite');
+
+      await fs.writeFile(dbPath, 'main-db', 'utf8');
+      await fs.writeFile(`${dbPath}-wal`, 'wal-data', 'utf8');
+      await fs.writeFile(`${dbPath}-shm`, 'shm-data', 'utf8');
+      await fs.writeFile(`${dbPath}-journal`, 'journal-data', 'utf8');
+
+      await clearDatabase(getSqliteState(dataDir));
+
+      await expect(fs.access(dbPath)).rejects.toBeDefined();
+      await expect(fs.access(`${dbPath}-wal`)).rejects.toBeDefined();
+      await expect(fs.access(`${dbPath}-shm`)).rejects.toBeDefined();
+      await expect(fs.access(`${dbPath}-journal`)).rejects.toBeDefined();
     });
   });
 });

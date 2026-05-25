@@ -12,6 +12,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { withTempDataDir } from "../../../../shared/grant-ops-persistence";
 import type { OrganizationProfile } from "../../../../shared/types";
+import { createDependencies, resetDependencies, setDependencies } from "./dependencies";
 import * as repository from "./repository";
 import * as researchService from "./research-service";
 import * as sourceService from "./source-service";
@@ -42,6 +43,7 @@ describe("ResearchService", () => {
 
 	afterEach(async () => {
 		// Cleanup temp directory
+		resetDependencies();
 		await tempDataDir.cleanup();
 	});
 
@@ -140,6 +142,32 @@ describe("ResearchService", () => {
 			const sourceAfter = sourcesAfter.find((s) => s.id === source.id);
 			expect(sourceAfter?.lastCrawledAt).toBeDefined();
 			expect(sourceAfter?.lastCrawledAt).not.toBeNull();
+		});
+
+		it("FAILS: runResearch should stamp lastCrawledAt even when a successful crawl returns empty content", async () => {
+			setDependencies(
+				createDependencies({
+					createOpencodeAdapter: () => ({
+						executeResearch: async () => ({ success: true, content: "" }),
+						generateDraft: async () => ({ success: true, content: "" }),
+						isConfigured: () => true,
+					}),
+				}),
+			);
+
+			const source = await sourceService.addSource({
+				name: "Empty Content Source",
+				url: "https://example.com/empty",
+				type: "website",
+			});
+
+			await researchService.runResearch(mockProfile, {
+				_providerType: "fake",
+			});
+
+			const sourcesAfter = await sourceService.getAllSources();
+			const sourceAfter = sourcesAfter.find((s) => s.id === source.id);
+			expect(sourceAfter?.lastCrawledAt).toBeDefined();
 		});
 	});
 

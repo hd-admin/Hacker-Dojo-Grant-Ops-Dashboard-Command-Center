@@ -34,6 +34,8 @@ import {
   saveTasks,
   loadDocuments,
   saveDocuments,
+  loadOpencodeSettings,
+  saveOpencodeSettings,
 } from '../../../../shared/grant-ops-persistence';
 
 import type { DocumentMetadata } from '../../../../shared/types';
@@ -169,16 +171,13 @@ export async function updateFollowUp(followUp: FollowUp): Promise<void> {
   }
 }
 
-// OpencodeSettings operations
+// OpencodeSettings operations - use dedicated singletons to bypass cached aggregate
 export async function getOpencodeSettings(): Promise<OpencodeSettings | null> {
-  const data = await loadPersistedData();
-  return data.opencodeSettings;
+  return loadOpencodeSettings();
 }
 
 export async function updateOpencodeSettings(settings: OpencodeSettings): Promise<void> {
-  const data = await loadPersistedData();
-  data.opencodeSettings = settings;
-  await savePersistedData(data);
+  await saveOpencodeSettings(settings);
 }
 
 // Notification operations

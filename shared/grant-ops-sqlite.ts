@@ -327,7 +327,9 @@ export async function writePersistedData(state: SqliteBootstrapState, data: Pers
   replaceTable<Notification>(db, 'notifications', data.notifications);
   replaceTable<Task>(db, 'tasks', data.tasks);
   replaceTable<DocumentMetadata>(db, 'documents', data.documents);
-  saveSingleton<OpencodeSettings>(db, 'opencode_settings', 'opencode_settings', data.opencodeSettings);
+  if (data.opencodeSettings != null) {
+    saveSingleton<OpencodeSettings>(db, 'opencode_settings', 'opencode_settings', data.opencodeSettings);
+  }
   saveMeta(db, 'lastSync', data.lastSync);
 }
 
@@ -363,6 +365,11 @@ export async function writeOpencodeSettings(state: SqliteBootstrapState, setting
 
 export async function clearDatabase(state: SqliteBootstrapState): Promise<void> {
   resetSqliteCache(state.dataDir);
-  await fs.rm(state.dbPath, { force: true });
+  initialized.delete(state.dataDir);
+  await Promise.all(
+    [state.dbPath, `${state.dbPath}-wal`, `${state.dbPath}-shm`, `${state.dbPath}-journal`].map((filePath) =>
+      fs.rm(filePath, { force: true }),
+    ),
+  );
   await fs.rm(state.documentsDir, { recursive: true, force: true });
 }

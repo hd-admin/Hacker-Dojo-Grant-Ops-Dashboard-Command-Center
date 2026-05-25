@@ -16,3 +16,7 @@ start-server.js
 start-server.sh
 start-server.ts
 .grant-ops-data/
+
+tmp/*
+
+.playwright-mcp/

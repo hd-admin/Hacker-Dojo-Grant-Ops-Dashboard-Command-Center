@@ -23,7 +23,7 @@ set -eu
 all_args="$*"
 json_output=0
 case "$all_args" in
-	*"Research grants for the following organization:"*|*"--output-format json"*)
+	*"Research grants for the following organization:"*|*"--output-format json"*|*"--format json"*)
 		json_output=1
 		;;
 esac

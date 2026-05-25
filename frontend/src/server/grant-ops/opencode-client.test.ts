@@ -10,7 +10,7 @@
 
 import { describe, it, expect } from 'vitest';
 import type { OpencodeSettings } from '../../../../shared/types';
-import { createOpencodeAdapter } from './opencode-client';
+import { createOpencodeAdapter, normalizeOpencodeOutput } from './opencode-client';
 
 const defaultSettings: OpencodeSettings = {
   binaryPath: '/usr/local/bin/opencode',
@@ -105,6 +105,20 @@ describe('OpencodeClient', () => {
       expect(result.success).toBe(true);
       expect(result.content).toBeDefined();
       expect(result.content).toContain('Test Grant');
+    });
+  });
+
+  describe('Output normalization', () => {
+    it('extracts text payloads from Opencode JSON event streams', () => {
+      const output = [
+        '{"type":"step_start","part":{"type":"step-start"}}',
+        '{"type":"text","part":{"text":"first line"}}',
+        '{"type":"text","part":{"text":"second line"}}',
+        '{"type":"step_finish","part":{"type":"step-finish"}}',
+      ].join('\n');
+
+      expect(normalizeOpencodeOutput(output)).toBe('first line\nsecond line');
+      expect(normalizeOpencodeOutput(' plain text ')).toBe('plain text');
     });
   });
 

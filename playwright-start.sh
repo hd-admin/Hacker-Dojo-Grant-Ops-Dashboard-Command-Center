@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export DATA_DIR="$ROOT_DIR/.grant-ops-data"
+export DATA_DIR="${DATA_DIR:-$ROOT_DIR/.grant-ops-data}"
+mkdir -p "$DATA_DIR"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 
 if ! node -e "const Database=require('better-sqlite3');const db=new Database(':memory:');db.prepare('select 1').get();db.close();"; then
@@ -15,4 +16,4 @@ if [ ! -f ".next/BUILD_ID" ] || [ ! -d ".next/server" ] || [ ! -f ".next/server/
   "$ROOT_DIR/node_modules/.bin/next" build
 fi
 
-exec env DATA_DIR="$DATA_DIR" PORT=3000 HOSTNAME=0.0.0.0 "$ROOT_DIR/node_modules/.bin/next" start
+exec env DATA_DIR="$DATA_DIR" PORT=3000 HOSTNAME=0.0.0.0 OPENCODE_BIN="${OPENCODE_BIN:-}" OPENCODE_PURE="${OPENCODE_PURE:-}" "$ROOT_DIR/node_modules/.bin/next" start

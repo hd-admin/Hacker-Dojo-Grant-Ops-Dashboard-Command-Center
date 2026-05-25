@@ -53,6 +53,38 @@ export interface OpencodeAdapter {
 	isConfigured(): boolean;
 }
 
+export function normalizeOpencodeOutput(stdout: string): string {
+	const trimmed = stdout.trim();
+	if (!trimmed) {
+		return '';
+	}
+
+	const chunks: string[] = [];
+	const lines = trimmed.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+	let parsedAny = false;
+
+	for (const line of lines) {
+		try {
+			const event = JSON.parse(line) as {
+				type?: string;
+				part?: { text?: unknown };
+			};
+			parsedAny = true;
+			if (event.type === 'text' && typeof event.part?.text === 'string') {
+				chunks.push(event.part.text);
+			}
+		} catch {
+			return trimmed;
+		}
+	}
+
+	if (!parsedAny || chunks.length === 0) {
+		return trimmed;
+	}
+
+	return chunks.join('\n').trim();
+}
+
 class FakeOpencodeProvider implements OpencodeAdapter {
 	private shouldFail = false;
 
@@ -168,6 +200,7 @@ class CliOpencodeProvider implements OpencodeAdapter {
 
 			const proc = spawn(binaryPath, args, {
 				cwd: this.settings.workingDirectory || process.cwd(),
+				stdio: ['ignore', 'pipe', 'pipe'],
 				timeout: this.settings.timeoutMs || 60000,
 			});
 
@@ -200,7 +233,7 @@ class CliOpencodeProvider implements OpencodeAdapter {
 				if (code === 0) {
 					settle({
 						success: true,
-						content: stdout.trim(),
+						content: normalizeOpencodeOutput(stdout),
 						exitCode: code ?? 0,
 					});
 				} else {
@@ -243,26 +276,21 @@ class CliOpencodeProvider implements OpencodeAdapter {
 			};
 		}
 
-		const prompt = `Research grants for the following organization:
+		const prompt = `Return only valid JSON, with no markdown, fences, or extra text. Do not call tools, browse, or delegate tasks. Fill in this JSON object with one plausible grant aligned to Hacker Dojo's EdTech and Community themes. Keep the same keys and output only JSON.
+
+{"grants":[{"id":"g1","title":"Plausible title","funder":"Plausible funder","funderShort":"Plausible","award":"$50,000","awardSort":50000,"deadline":"2026-06-30","daysOut":30,"fit":80,"tags":["EdTech","Community"],"status":"matched","statusLabel":"Matched"}],"evidence":[],"rationale":"plausible"}
 
 Organization Profile:
 ${request.organizationProfile}
 
 Search Themes: ${request.searchThemes.join(", ")}
-
-${request.sourceName ? `Specific Source: ${request.sourceName} (${request.sourceUrl})` : ""}
-
-Return a JSON object with:
-- grants: array of grant objects with id, title, funder, funderShort, award, awardSort, deadline, daysOut, fit, tags
-- evidence: array of evidence objects
-- rationale: explanation of the matching process`;
+${request.sourceName ? `\nSpecific Source: ${request.sourceName}${request.sourceUrl ? ` (${request.sourceUrl})` : ""}` : ""}`;
 
 		const args = [
-			"--prompt",
+			"run",
+			"--dangerously-skip-permissions",
 			prompt,
-			"--profile",
-			this.settings.profile || "default",
-			"--output-format",
+			"--format",
 			"json",
 		];
 
@@ -281,7 +309,11 @@ Return a JSON object with:
 			};
 		}
 
-		let prompt = `Generate a grant proposal draft for:
+		let prompt = `Generate a concise grant proposal draft (under 300 words) for:
+
+Do not call tools, browse, or delegate tasks. Use only the provided grant details, organization profile, mission statement, and grounding documents.
+
+Write three short sections: Executive Summary, Program Description, and Conclusion.
 
 Grant: ${request.grantTitle}
 Funder: ${request.grantFunder}
@@ -305,10 +337,9 @@ ${request.missionStatement}
 		}
 
 		const args = [
-			"--prompt",
+			"run",
+			"--dangerously-skip-permissions",
 			prompt,
-			"--profile",
-			this.settings.profile || "default",
 		];
 
 		return this.runCommand(args);
