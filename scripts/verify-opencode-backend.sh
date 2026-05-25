@@ -20,6 +20,7 @@ PROOF_BINARY_PATH="$ROOT_DIR/scripts/opencode-real-wrapper.sh"
 APP_LOG="${TMPDIR:-/tmp}/grant-ops-opencode-proof.log"
 REQUEST_DIR="$(mktemp -d "${TMPDIR:-/tmp}/grant-ops-opencode-proof.XXXXXX")"
 export DATA_DIR="$REQUEST_DIR/data"
+PID_FILE="$DATA_DIR/playwright-start.pid"
 SERVER_PID=""
 
 kill_port_3000() {
@@ -42,7 +43,6 @@ sleep 1
 cleanup() {
   if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
     kill "$SERVER_PID" 2>/dev/null || true
-    wait "$SERVER_PID" 2>/dev/null || true
   fi
   kill_port_3000
   rm -rf "$REQUEST_DIR"
@@ -50,7 +50,8 @@ cleanup() {
 trap cleanup EXIT
 
 ./playwright-start.sh >"$APP_LOG" 2>&1 &
-SERVER_PID=$!
+SERVER_LAUNCH_PID=$!
+SERVER_PID="$SERVER_LAUNCH_PID"
 
 READY=0
 for _ in $(seq 1 90); do
@@ -64,6 +65,10 @@ if [ "$READY" -ne 1 ]; then
   echo "Server did not become ready" >&2
   cat "$APP_LOG" >&2
   exit 1
+fi
+SERVER_PID="$(cat "$PID_FILE" 2>/dev/null || true)"
+if [ -z "$SERVER_PID" ]; then
+  SERVER_PID="$SERVER_LAUNCH_PID"
 fi
 
 if grep -E 'ENOENT|MODULE_NOT_FOUND' "$APP_LOG" >/dev/null; then

@@ -170,6 +170,7 @@ describe('Shared Persistence Integrity', () => {
       const persisted = await loadPersistedData();
 
       expect(profile.legalName).toBe(defaultProfile.legalName);
+      expect(grants.some((item) => item.id === grant.id)).toBe(false);
       expect(grants.length).toBeGreaterThan(0);
       expect(persisted.sources).toEqual([]);
       expect(persisted.crawlRuns).toEqual([]);

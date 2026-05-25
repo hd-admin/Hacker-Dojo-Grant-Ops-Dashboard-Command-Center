@@ -288,9 +288,8 @@ ${request.sourceName ? `\nSpecific Source: ${request.sourceName}${request.source
 
 		const args = [
 			"run",
-			"--dangerously-skip-permissions",
 			prompt,
-			"--format",
+			"--output-format",
 			"json",
 		];
 
@@ -338,7 +337,6 @@ ${request.missionStatement}
 
 		const args = [
 			"run",
-			"--dangerously-skip-permissions",
 			prompt,
 		];
 

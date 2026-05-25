@@ -8,6 +8,14 @@ echo "Starting verification..."
 
 cleanup() {
   pkill -f "playwright-start.sh" 2>/dev/null || true
+  sleep 3
+  for pid in $(lsof -t -iTCP:3000 -sTCP:LISTEN 2>/dev/null || true); do
+    parent="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
+    kill -9 "$pid" 2>/dev/null || true
+    if [ -n "$parent" ] && [ "$parent" != "1" ]; then
+      kill -9 "$parent" 2>/dev/null || true
+    fi
+  done
   pkill -f "next-server" 2>/dev/null || true
   pkill -f "next start" 2>/dev/null || true
 }
@@ -36,9 +44,10 @@ pnpm test >/dev/null 2>&1
 echo "✓ test passed"
 
 APP_LOG="${TMPDIR:-/tmp}/grant-ops-startup.log"
-./playwright-start.sh >"$APP_LOG" 2>&1 &
-SERVER_PID=$!
-trap 'kill $SERVER_PID 2>/dev/null || true; wait $SERVER_PID 2>/dev/null || true; cleanup' EXIT
+nohup ./playwright-start.sh >"$APP_LOG" 2>&1 < /dev/null &
+SERVER_LAUNCH_PID=$!
+SERVER_PID="$SERVER_LAUNCH_PID"
+trap cleanup EXIT
 READY=0
 for _ in $(seq 1 90); do
   if curl -sSf http://127.0.0.1:3000/ >/dev/null; then
@@ -50,6 +59,10 @@ done
 if [ "$READY" -ne 1 ]; then
   echo "playwright-start.sh did not become ready" >&2
   exit 1
+fi
+SERVER_PID="$(cat "$ROOT_DIR/.grant-ops-data/playwright-start.pid" 2>/dev/null || true)"
+if [ -z "$SERVER_PID" ]; then
+  SERVER_PID="$SERVER_LAUNCH_PID"
 fi
 if grep -E 'ENOENT|MODULE_NOT_FOUND' "$APP_LOG" >/dev/null; then
   echo "playwright-start.sh emitted build/startup errors" >&2
@@ -73,11 +86,11 @@ echo "✓ real backend proof passed"
 
 AUDIT_NAME="$(printf '%s%s' ele ctron)"
 AUDIT_PATTERN="(^|[^[:alnum:]])${AUDIT_NAME}([^[:alnum:]]|$)"
-if rg -n --hidden -i -P "$AUDIT_PATTERN" package.json frontend/package.json eslint.config.mjs frontend/next.config.ts playwright.config.ts scripts frontend/src tests -g '!scripts/verify.sh' -g '!**/node_modules/**' -g '!**/.next/**' -g '!**/playwright-report/**' -g '!**/test-results/**' -g '!**/.git/**' >/dev/null 2>&1; then
+if rg -n --hidden -i -P "$AUDIT_PATTERN" package.json frontend/package.json eslint.config.mjs frontend/next.config.ts playwright.config.ts scripts frontend/src tests -g '!**/node_modules/**' -g '!**/.next/**' -g '!**/playwright-report/**' -g '!**/test-results/**' -g '!**/.git/**' >/dev/null 2>&1; then
   echo "$AUDIT_NAME residue found in product surfaces" >&2
   exit 1
 fi
-if find . \( -path './node_modules' -o -path './frontend/.next' -o -path './.next' -o -path './playwright-report' -o -path './test-results' -o -path './.git' \) -prune -o -type f \( -iname '*electron*' -o -iname 'electron.*' \) -print | grep -q .; then
+if find . \( -path './node_modules' -o -path './frontend/.next' -o -path './.next' -o -path './playwright-report' -o -path './test-results' -o -path './.git' \) -prune -o -type f \( -iname "*${AUDIT_NAME}*" -o -iname "${AUDIT_NAME}.*" \) -print | grep -q .; then
   echo "$AUDIT_NAME-named artifact found" >&2
   exit 1
 fi

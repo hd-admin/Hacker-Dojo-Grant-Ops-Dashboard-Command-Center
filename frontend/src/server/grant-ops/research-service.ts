@@ -229,24 +229,7 @@ async function performResearch(
   }
 
   if (totalGrantsMatched === 0) {
-    const fallbackGrant = [...existingGrants]
-      .filter((grant) => grant.status === 'matched' && !grant.draftContent)
-      .sort((a, b) => (b.fit ?? 0) - (a.fit ?? 0))[0];
-
-    if (fallbackGrant) {
-      const updatedSourceCount = (fallbackGrant.sourceCount ?? 0) + 1;
-      const updatedGrant: Partial<Grant> = {
-        sourceCount: updatedSourceCount,
-        fitBreakdown: fallbackGrant.fitBreakdown ?? createDefaultFitBreakdown(fallbackGrant.fit),
-        funderSummary: fallbackGrant.funderSummary ?? createDefaultFunderSummary(fallbackGrant),
-        checklist: fallbackGrant.checklist ?? createDefaultGrantChecklist({
-          ...fallbackGrant,
-          sourceCount: updatedSourceCount,
-        }),
-      };
-      await deps.repository.updateGrant(fallbackGrant.id, updatedGrant);
-      Object.assign(fallbackGrant, updatedGrant);
-    }
+    // Leave the existing grant store unchanged when a research run returns no new grants.
   }
 
   // Update crawl run with results and persist

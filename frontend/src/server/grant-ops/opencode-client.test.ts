@@ -8,6 +8,9 @@
  * - Research and draft generation work correctly
  */
 
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { describe, it, expect } from 'vitest';
 import type { OpencodeSettings } from '../../../../shared/types';
 import { createOpencodeAdapter, normalizeOpencodeOutput } from './opencode-client';
@@ -55,6 +58,54 @@ describe('OpencodeClient', () => {
       });
       expect(result.success).toBe(false);
       expect(result.error).toContain('not configured');
+    });
+
+    it('executeResearch uses the wrapper-compatible run prompt --output-format json contract', async () => {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'opencode-client-contract-'));
+      const fakeOpencode = path.join(tempDir, 'opencode-fake.sh');
+      const argsFile = path.join(tempDir, 'args.txt');
+      const expectedJson = JSON.stringify({ grants: [], evidence: [], rationale: 'ok' });
+
+      fs.writeFileSync(
+        fakeOpencode,
+        `#!/bin/sh
+set -eu
+printf '%s\n' "$*" > "$ARGS_FILE"
+cat <<'EOF'
+${expectedJson}
+EOF
+`,
+        'utf8',
+      );
+      fs.chmodSync(fakeOpencode, 0o755);
+
+      const previousArgsFile = process.env.ARGS_FILE;
+      process.env.ARGS_FILE = argsFile;
+
+      try {
+        const settings: OpencodeSettings = {
+          ...defaultSettings,
+          binaryPath: fakeOpencode,
+          workingDirectory: tempDir,
+          isConfigured: true,
+        };
+        const adapter = createOpencodeAdapter(settings, 'cli');
+        const result = await adapter.executeResearch({
+          organizationProfile: 'Test Org',
+          searchThemes: ['EdTech', 'Community'],
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.content).toBe(expectedJson);
+        const args = fs.readFileSync(argsFile, 'utf8').trim();
+        expect(args).toContain('run');
+        expect(args).toContain('--output-format json');
+        expect(args).not.toContain('--format json');
+        expect(args).not.toContain('--dangerously-skip-permissions');
+      } finally {
+        process.env.ARGS_FILE = previousArgsFile;
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
     });
 
     it('generateDraft fails explicitly when not configured', async () => {

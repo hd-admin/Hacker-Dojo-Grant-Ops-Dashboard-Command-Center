@@ -144,6 +144,55 @@ describe("ResearchService", () => {
 			expect(sourceAfter?.lastCrawledAt).not.toBeNull();
 		});
 
+		it("FAILS: runResearch should not mutate existing matched grants when research returns no grants", async () => {
+			const source = await sourceService.addSource({
+				name: "Empty Content Source",
+				url: "https://example.com/empty",
+				type: "website",
+			});
+			const existingGrant = {
+				id: `existing-grant-${Date.now()}`,
+				title: "Existing Grant",
+				funder: "Existing Funder",
+				funderShort: "EF",
+				award: "$10,000",
+				awardSort: 10000,
+				deadline: "2026-12-31",
+				daysOut: 200,
+				fit: 90,
+				tags: ["Community"],
+				status: "matched" as const,
+				statusLabel: "Matched",
+				sourceCount: 2,
+			};
+			await repository.addGrant(existingGrant);
+
+			setDependencies(
+				createDependencies({
+					createOpencodeAdapter: () => ({
+						executeResearch: async () => ({
+							success: true,
+							content: JSON.stringify({ grants: [], evidence: [], rationale: "No new grants" }),
+						}),
+						generateDraft: async () => ({ success: true, content: "" }),
+						isConfigured: () => true,
+					}),
+				}),
+			);
+
+			await researchService.runResearch(mockProfile, {
+				_providerType: "fake",
+			});
+
+			const grantsAfter = await repository.getGrants();
+			const updatedGrant = grantsAfter.find((grant) => grant.id === existingGrant.id);
+			expect(updatedGrant?.sourceCount).toBe(2);
+
+			const sourcesAfter = await sourceService.getAllSources();
+			const sourceAfter = sourcesAfter.find((s) => s.id === source.id);
+			expect(sourceAfter?.lastCrawledAt).toBeDefined();
+		});
+
 		it("FAILS: runResearch should stamp lastCrawledAt even when a successful crawl returns empty content", async () => {
 			setDependencies(
 				createDependencies({
