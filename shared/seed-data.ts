@@ -193,7 +193,6 @@ export const seedGrants: Grant[] = [
 			},
 			{ label: "Impact metrics one-pager", done: true, source: "Complete" },
 		],
-		draftContent: `Dell Technologies' commitment to digital equity aligns perfectly with Hacker Dojo's mission...`,
 	},
 	{
 		id: "google-cs-first",

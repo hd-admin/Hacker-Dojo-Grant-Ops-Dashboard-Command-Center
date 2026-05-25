@@ -158,4 +158,11 @@ describe('SettingsView', () => {
     expect(onRefreshAppState).toHaveBeenCalledTimes(1);
     expect(container.textContent).toContain('grounded');
   });
+
+  it('renders docTypes from profile in the Search Themes card', async () => {
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('PDF') === true);
+    expect(container.textContent).toContain('XLS');
+    expect(container.textContent).toContain('DOC');
+  });
 });

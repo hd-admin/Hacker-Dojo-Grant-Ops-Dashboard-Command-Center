@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import type { Task } from '../../../shared/types';
+import type { Task, FollowUp } from '../../../shared/types';
 import { seedTasks } from '../../../shared/seed-data';
-import { tasksApi } from '../lib/grant-ops-client';
+import { tasksApi, followUpsApi } from '../lib/grant-ops-client';
 
 interface TasksViewProps {
   onRefreshAppState?: () => Promise<void> | void;
@@ -11,6 +11,7 @@ interface TasksViewProps {
 
 export default function TasksView({ onRefreshAppState }: TasksViewProps) {
   const [tasks, setTasks] = useState<Task[]>(seedTasks);
+  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
@@ -19,11 +20,16 @@ export default function TasksView({ onRefreshAppState }: TasksViewProps) {
   useEffect(() => {
     async function load() {
       try {
-        const data = await tasksApi.getAll();
-        setTasks(data);
+        const [tasksData, followUpsData] = await Promise.all([
+          tasksApi.getAll(),
+          followUpsApi.getAll(),
+        ]);
+        setTasks(tasksData);
+        setFollowUps(followUpsData);
       } catch (error) {
         console.error('Error loading tasks:', error);
         setTasks([]);
+        setFollowUps([]);
       } finally {
         setLoading(false);
       }
@@ -38,6 +44,25 @@ export default function TasksView({ onRefreshAppState }: TasksViewProps) {
     setTasks(updatedTasks);
     await tasksApi.update(updatedTasks);
     await onRefreshAppState?.();
+  };
+
+  const handleToggleFollowUp = async (id: string) => {
+    const followUp = followUps.find((fu) => fu.id === id);
+    if (!followUp) return;
+    const isNowComplete = followUp.status !== 'completed';
+    const updated: FollowUp = {
+      ...followUp,
+      status: isNowComplete ? 'completed' : 'pending',
+      completedAt: isNowComplete ? new Date().toISOString() : undefined,
+    };
+    setFollowUps((prev) => prev.map((fu) => (fu.id === id ? updated : fu)));
+    try {
+      await followUpsApi.update(updated);
+      await onRefreshAppState?.();
+    } catch (error) {
+      console.error('Error updating follow-up:', error);
+      setFollowUps((prev) => prev.map((fu) => (fu.id === id ? followUp : fu)));
+    }
   };
 
   const handleAddTask = () => {
@@ -74,7 +99,7 @@ export default function TasksView({ onRefreshAppState }: TasksViewProps) {
     return <div className="header-title">Loading...</div>;
   }
 
-  if (tasks.length === 0) {
+  if (tasks.length === 0 && followUps.length === 0) {
     return (
       <>
         <div className="header">
@@ -151,6 +176,23 @@ export default function TasksView({ onRefreshAppState }: TasksViewProps) {
           </div>
         ))}
       </div>
+
+      {followUps.length > 0 && (
+        <div className="followups-section">
+          <div className="section-heading">Follow-ups</div>
+          {followUps.map((fu) => (
+            <div key={fu.id} className={`followup-item ${fu.status}`}>
+              <input type="checkbox" checked={fu.status === 'completed'} onChange={() => { void handleToggleFollowUp(fu.id); }} className="task-checkbox" />
+              <div className="followup-info">
+                <span className="followup-type">{fu.type.replace(/_/g, ' ')}</span>
+                <div className="followup-title">{fu.title}</div>
+                {fu.dueDate && (<div className="followup-due">Due: {new Date(fu.dueDate).toLocaleDateString()}</div>)}
+              </div>
+              <div className={`followup-status ${fu.status}`}>{fu.status}</div>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }

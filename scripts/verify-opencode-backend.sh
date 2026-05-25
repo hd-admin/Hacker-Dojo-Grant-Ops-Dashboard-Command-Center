@@ -55,11 +55,11 @@ SERVER_PID="$SERVER_LAUNCH_PID"
 
 READY=0
 for _ in $(seq 1 90); do
-  if curl -fsS http://127.0.0.1:3000/ >/dev/null; then
+  if curl -fsS http://127.0.0.1:3000/api/grants >/dev/null; then
     READY=1
     break
   fi
-  sleep 2
+  sleep 3
 done
 if [ "$READY" -ne 1 ]; then
   echo "Server did not become ready" >&2

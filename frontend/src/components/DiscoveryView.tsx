@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import type { Grant } from '../../../shared/types';
+import type { Grant, Source } from '../../../shared/types';
 import { seedGrants } from '../../../shared/seed-data';
 import { client } from '../lib/grant-ops-client';
 
@@ -41,6 +41,8 @@ function formatDate(dateStr: string): string {
 
 export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: DiscoveryViewProps) {
   const [grants, setGrants] = useState<Grant[]>(seedGrants);
+  const [sources, setSources] = useState<Source[]>([]);
+  const [sourcesCrawled, setSourcesCrawled] = useState(0);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState<SortOption>('fit');
@@ -53,10 +55,16 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
   useEffect(() => {
     async function load() {
       try {
-        const data = await client.grants.getAll();
-        setGrants(data);
+        const [grantsData, sourcesData, runsData] = await Promise.all([
+          client.grants.getAll(),
+          client.sources.getAll(),
+          client.research.getRuns(),
+        ]);
+        setGrants(grantsData);
+        setSources(sourcesData);
+        setSourcesCrawled(runsData.latestRun?.sourcesCrawled ?? 0);
       } catch (error) {
-        console.error('Error loading grants:', error);
+        console.error('Error loading discovery data:', error);
       } finally {
         setLoading(false);
       }
@@ -94,6 +102,21 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
     setShowAddSourceForm(true);
   };
 
+  const handleDeleteSource = async (id: string) => {
+    try {
+      await client.sources.remove(id);
+      const [updatedSources, data] = await Promise.all([
+        client.sources.getAll(),
+        client.grants.getAll(),
+      ]);
+      setSources(updatedSources);
+      setGrants(data);
+      void onRefreshAppState?.();
+    } catch (error) {
+      console.error('Error deleting source:', error);
+    }
+  };
+
   const handleSubmitSource = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSourceName.trim() || !newSourceUrl.trim()) return;
@@ -109,7 +132,13 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
       setNewSourceUrl('');
       setShowAddSourceForm(false);
       await client.research.trigger();
-      const data = await client.grants.getAll();
+      const [updatedSources, runsData, data] = await Promise.all([
+        client.sources.getAll(),
+        client.research.getRuns(),
+        client.grants.getAll(),
+      ]);
+      setSources(updatedSources);
+      setSourcesCrawled(runsData.latestRun?.sourcesCrawled ?? 0);
       setGrants(data);
       void onRefreshAppState?.();
     } catch (error) {
@@ -163,7 +192,7 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           <h1 className="header-title">
             Discovery <span className="accent">Find grants</span>
           </h1>
-          <div className="header-sub">{filtered.length} grants</div>
+          <div className="header-sub">{filtered.length} grants · crawled {sourcesCrawled} sources</div>
         </div>
         <div className="header-actions">
           <button type="button" className="btn btn-ghost btn-sm" onClick={handleExportCsv}>
@@ -210,6 +239,21 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           )}
         </div>
       </div>
+
+      {sources.length > 0 && (
+        <div className="sources-panel">
+          <div className="sources-panel-header">Sources ({sources.length})</div>
+          {sources.map((source) => (
+            <div key={source.id} className="source-item">
+              <div className="source-info">
+                <div className="source-name">{source.name}</div>
+                <div className="source-url">{source.url}</div>
+              </div>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { void handleDeleteSource(source.id); }} aria-label={`Delete ${source.name}`}>Delete</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div className="filter-bar">
         <input

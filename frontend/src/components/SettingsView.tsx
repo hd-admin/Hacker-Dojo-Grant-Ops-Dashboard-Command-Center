@@ -16,6 +16,7 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editForm, setEditForm] = useState<Partial<OrganizationProfile>>({});
   const [newTheme, setNewTheme] = useState('');
+  const [newDocType, setNewDocType] = useState('');
   const [opencodeSettings, setOpencodeSettings] = useState<OpencodeSettings | null>(null);
   const [isEditingOpencode, setIsEditingOpencode] = useState(false);
   const [opencodeForm, setOpencodeForm] = useState<Partial<OpencodeSettings>>({});
@@ -139,6 +140,42 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
   const handleThemeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       handleAddTheme();
+    }
+  };
+
+  const handleRemoveDocType = async (type: string) => {
+    if (!profile) return;
+    try {
+      const updatedDocTypes = profile.docTypes.filter((t) => t !== type);
+      const updatedProfile = { ...profile, docTypes: updatedDocTypes };
+      await client.profile.update(updatedProfile);
+      setProfile(updatedProfile);
+      setEditForm(updatedProfile);
+      await onRefreshAppState?.();
+    } catch (error) {
+      console.error('Error removing doc type:', error);
+    }
+  };
+
+  const handleAddDocType = async () => {
+    const type = newDocType.trim();
+    if (!type || !profile) return;
+    try {
+      const updatedDocTypes = [...profile.docTypes, type];
+      const updatedProfile = { ...profile, docTypes: updatedDocTypes };
+      await client.profile.update(updatedProfile);
+      setProfile(updatedProfile);
+      setEditForm(updatedProfile);
+      setNewDocType('');
+      await onRefreshAppState?.();
+    } catch (error) {
+      console.error('Error adding doc type:', error);
+    }
+  };
+
+  const handleDocTypeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      void handleAddDocType();
     }
   };
 
@@ -356,6 +393,40 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
               <button type="button" className="btn btn-sm" onClick={handleAddTheme}>
                 Add
               </button>
+            </div>
+
+            <div className="setting-row" style={{ marginTop: '16px' }}>
+              <div>
+                <div className="setting-label">Document Types</div>
+                <div className="theme-tags">
+                  {profile.docTypes.map((type) => (
+                    <span key={type} className="theme-tag">
+                      {type}
+                      <button
+                        type="button"
+                        className="theme-tag-remove"
+                        onClick={() => { void handleRemoveDocType(type); }}
+                        aria-label={`Remove ${type}`}
+                      >
+                        ×
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="theme-add">
+                  <input
+                    type="text"
+                    className="theme-input"
+                    placeholder="Add document type..."
+                    value={newDocType}
+                    onChange={(e) => setNewDocType(e.target.value)}
+                    onKeyDown={handleDocTypeKeyDown}
+                  />
+                  <button type="button" className="btn btn-sm" onClick={() => { void handleAddDocType(); }}>
+                    Add
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>

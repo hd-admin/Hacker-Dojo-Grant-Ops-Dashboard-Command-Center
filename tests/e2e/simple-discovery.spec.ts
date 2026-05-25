@@ -98,6 +98,10 @@ test("simple-discovery: add source and refresh crawl state", async ({
 		),
 	).toBe(true);
 
+	// Source list display check
+	await expect(page.locator('.source-item')).toBeVisible();
+	await expect(page.locator('.source-item .source-name')).toContainText('Candid');
+
 	let research = null as {
 		latestRun: { status: string; sourcesCrawled: number } | null;
 	} | null;
@@ -115,6 +119,10 @@ test("simple-discovery: add source and refresh crawl state", async ({
 	}
 	expect(research?.latestRun?.status).toBe("completed");
 	expect(research?.latestRun?.sourcesCrawled).toBeGreaterThan(0);
+
+	// Crawl status subtitle check
+	await page.click('[data-view="discovery"]');
+	await expect(page.locator('.header-sub')).toContainText('crawled');
 
 	await expect(page.locator(".sidebar-footer")).toContainText("Crawler");
 });

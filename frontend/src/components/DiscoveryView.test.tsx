@@ -1,12 +1,15 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import type { Grant } from '../../../shared/types';
+import type { Grant, Source } from '../../../shared/types';
 
-const { grantsGetAll, sourcesAdd, researchTrigger, onGrantSelect, onRefreshAppState } = vi.hoisted(() => ({
+const { grantsGetAll, sourcesAdd, sourcesGetAll, sourcesRemove, researchTrigger, researchGetRuns, onGrantSelect, onRefreshAppState } = vi.hoisted(() => ({
   grantsGetAll: vi.fn(),
   sourcesAdd: vi.fn(),
+  sourcesGetAll: vi.fn(),
+  sourcesRemove: vi.fn(),
   researchTrigger: vi.fn(),
+  researchGetRuns: vi.fn(),
   onGrantSelect: vi.fn(),
   onRefreshAppState: vi.fn(),
 }));
@@ -14,8 +17,8 @@ const { grantsGetAll, sourcesAdd, researchTrigger, onGrantSelect, onRefreshAppSt
 vi.mock('../lib/grant-ops-client', () => ({
   client: {
     grants: { getAll: grantsGetAll },
-    sources: { add: sourcesAdd },
-    research: { trigger: researchTrigger },
+    sources: { add: sourcesAdd, getAll: sourcesGetAll, remove: sourcesRemove },
+    research: { trigger: researchTrigger, getRuns: researchGetRuns },
   },
 }));
 
@@ -81,13 +84,22 @@ function setInputValue(input: HTMLInputElement, value: string): void {
 beforeEach(() => {
   grantsGetAll.mockReset();
   sourcesAdd.mockReset();
+  sourcesGetAll.mockReset();
+  sourcesRemove.mockReset();
   researchTrigger.mockReset();
+  researchGetRuns.mockReset();
   onGrantSelect.mockReset();
   onRefreshAppState.mockReset();
 
   grantsGetAll.mockResolvedValueOnce(initialGrants).mockResolvedValue(refreshedGrants);
   sourcesAdd.mockResolvedValue({ success: true, source: { id: 'source-1' } });
+  sourcesGetAll.mockResolvedValue([]);
+  sourcesRemove.mockResolvedValue({ success: true });
   researchTrigger.mockResolvedValue({ success: true, sourcesCrawled: 1 });
+  researchGetRuns.mockResolvedValue({
+    latestRun: { id: 'run-0', status: 'completed', sourcesCrawled: 0, grantsFound: 0, grantsMatched: 0, startedAt: new Date().toISOString() },
+    allRuns: [],
+  });
 
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -127,5 +139,27 @@ describe('DiscoveryView', () => {
 
     container.querySelector('.grants-row:not(.header)')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(onGrantSelect).toHaveBeenCalledWith('nsf-tech');
+  });
+
+  it('deletes a source and updates the UI', async () => {
+    const testSource: Source = {
+      id: 'src-1',
+      name: 'Candid',
+      url: 'https://www.candid.org',
+      type: 'website',
+      createdAt: '',
+      isActive: true,
+    };
+    sourcesGetAll.mockResolvedValueOnce([testSource]).mockResolvedValue([]);
+    grantsGetAll.mockResolvedValueOnce(initialGrants).mockResolvedValue(initialGrants);
+    
+    root.render(React.createElement(DiscoveryView, { onGrantSelect, onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('Candid') === true);
+    
+    const deleteButton = container.querySelector('.source-item button') as HTMLButtonElement;
+    deleteButton.click();
+    
+    await waitFor(() => sourcesRemove.mock.calls.length > 0);
+    expect(sourcesRemove).toHaveBeenCalledWith('src-1');
   });
 });

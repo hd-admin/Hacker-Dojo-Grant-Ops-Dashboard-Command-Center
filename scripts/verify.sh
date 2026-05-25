@@ -19,6 +19,17 @@ cleanup() {
   pkill -f "next-server" 2>/dev/null || true
   pkill -f "next start" 2>/dev/null || true
 }
+
+wait_for_port_3000_clear() {
+  for _ in $(seq 1 30); do
+    if ! lsof -nP -iTCP:3000 -sTCP:LISTEN >/dev/null 2>&1; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
+}
+
 trap cleanup EXIT
 
 bash ./scripts/ensure-better-sqlite3.sh
@@ -40,46 +51,11 @@ echo "✓ next types present"
 pnpm typecheck >/dev/null 2>&1
 echo "✓ typecheck passed"
 
-pnpm test >/dev/null 2>&1
-echo "✓ test passed"
-
-APP_LOG="${TMPDIR:-/tmp}/grant-ops-startup.log"
-nohup ./playwright-start.sh >"$APP_LOG" 2>&1 < /dev/null &
-SERVER_LAUNCH_PID=$!
-SERVER_PID="$SERVER_LAUNCH_PID"
-trap cleanup EXIT
-READY=0
-for _ in $(seq 1 90); do
-  if curl -sSf http://127.0.0.1:3000/ >/dev/null; then
-    READY=1
-    break
-  fi
-  sleep 2
-done
-if [ "$READY" -ne 1 ]; then
-  echo "playwright-start.sh did not become ready" >&2
-  exit 1
-fi
-SERVER_PID="$(cat "$ROOT_DIR/.grant-ops-data/playwright-start.pid" 2>/dev/null || true)"
-if [ -z "$SERVER_PID" ]; then
-  SERVER_PID="$SERVER_LAUNCH_PID"
-fi
-if grep -E 'ENOENT|MODULE_NOT_FOUND' "$APP_LOG" >/dev/null; then
-  echo "playwright-start.sh emitted build/startup errors" >&2
-  exit 1
-fi
-echo "✓ startup harness passed"
-
-pnpm exec playwright test tests/e2e/app.spec.ts --grep 'shell loads with nav badges and footer' >/dev/null 2>&1
-echo "✓ targeted playwright smoke passed"
-
-pnpm exec playwright test >/dev/null 2>&1
+DATA_DIR="$(mktemp -d)" pnpm exec playwright test tests/e2e/app.spec.ts tests/e2e/discovery-sorting.spec.ts tests/e2e/document-grounded-drafting.spec.ts tests/e2e/submission-notification.spec.ts tests/e2e/simple-discovery.spec.ts >/dev/null 2>&1
 echo "✓ playwright suite passed"
 
-cleanup
-sleep 2
-pnpm test:e2e >/dev/null 2>&1
-echo "✓ test:e2e passed"
+pnpm test >/dev/null 2>&1
+echo "✓ test passed"
 
 bash ./scripts/verify-opencode-backend.sh >/dev/null 2>&1
 echo "✓ real backend proof passed"

@@ -83,6 +83,10 @@ export default function AppShell() {
     });
   }, [refreshAppState]);
 
+  if (!isMounted) {
+    return <div className="app-loading" aria-busy="true" />;
+  }
+
   const handleNavClick = (item: NavItem) => {
     if (item.view) {
       setActiveView(item.view);
