@@ -41,6 +41,7 @@ cd "$FRONTEND_DIR"
 # Ensure a valid production build exists by checking for the server build output
 if [ ! -f ".next/BUILD_ID" ] || [ ! -d ".next/server" ] || [ ! -f ".next/server/middleware-manifest.json" ]; then
   echo "[playwright-start.sh] No valid production build found, rebuilding..." >&2
+  rm -rf "$FRONTEND_DIR/.next"
   "$ROOT_DIR/node_modules/.bin/next" build
 fi
 
