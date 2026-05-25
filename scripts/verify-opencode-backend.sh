@@ -41,10 +41,24 @@ kill_port_3000
 sleep 1
 
 cleanup() {
+  # Kill the server process (if still tracked)
   if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
     kill "$SERVER_PID" 2>/dev/null || true
   fi
+  # Kill playwright-start.sh processes (START_PID from sourced script, may be empty)
+  pkill -f "playwright-start.sh" 2>/dev/null || true
+  # Kill any remaining next-server / next start processes aggressively
+  pkill -9 -f "next-server" 2>/dev/null || true
+  pkill -9 -f "next start" 2>/dev/null || true
+  # Clear port 3000
   kill_port_3000
+  # Wait for port 3000 to actually be free before returning
+  for _ in $(seq 1 15); do
+    if ! lsof -nP -iTCP:3000 -sTCP:LISTEN >/dev/null 2>&1; then
+      break
+    fi
+    sleep 1
+  done
   rm -rf "$REQUEST_DIR"
 }
 trap cleanup EXIT
@@ -55,7 +69,7 @@ SERVER_PID="$SERVER_LAUNCH_PID"
 
 READY=0
 for _ in $(seq 1 90); do
-  if curl -fsS http://127.0.0.1:3000/api/grants >/dev/null; then
+  if curl -fsS --max-time 10 http://127.0.0.1:3000/api/grants >/dev/null 2>&1; then
     READY=1
     break
   fi

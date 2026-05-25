@@ -9,8 +9,10 @@ mkdir -p "$TMPDIR"
 echo "Starting verification..."
 
 cleanup() {
-  pkill -f "playwright-start.sh" 2>/dev/null || true
-  sleep 3
+  # Kill all playwright-start.sh processes
+  pkill -9 -f "playwright-start.sh" 2>/dev/null || true
+  sleep 1
+  # Kill any process still holding port 3000
   for pid in $(lsof -t -iTCP:3000 -sTCP:LISTEN 2>/dev/null || true); do
     parent="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
     kill -9 "$pid" 2>/dev/null || true
@@ -18,8 +20,12 @@ cleanup() {
       kill -9 "$parent" 2>/dev/null || true
     fi
   done
-  pkill -f "next-server" 2>/dev/null || true
-  pkill -f "next start" 2>/dev/null || true
+  # Also kill any orphaned next-server / next start processes by name
+  pkill -9 -f "next-server" 2>/dev/null || true
+  pkill -9 -f "next start" 2>/dev/null || true
+  # Kill chrome/chromium processes left by playwright
+  pkill -9 -f "chrome" 2>/dev/null || true
+  pkill -9 -f "chromium" 2>/dev/null || true
 }
 
 wait_for_port_3000_clear() {
@@ -54,15 +60,15 @@ pnpm typecheck >/dev/null 2>&1
 echo "✓ typecheck passed"
 
 PLAYWRIGHT_DATA_DIR="$(mktemp -d "$ROOT_DIR/.agent/tmp/playwright-data.XXXXXX")"
-DATA_DIR="$PLAYWRIGHT_DATA_DIR" pnpm exec playwright test tests/e2e/app.spec.ts tests/e2e/discovery-sorting.spec.ts tests/e2e/document-grounded-drafting.spec.ts tests/e2e/submission-notification.spec.ts tests/e2e/simple-discovery.spec.ts
+export CI=1
+DATA_DIR="$PLAYWRIGHT_DATA_DIR" pnpm exec playwright test tests/e2e/app.spec.ts tests/e2e/discovery-sorting.spec.ts tests/e2e/document-grounded-drafting.spec.ts tests/e2e/submission-notification.spec.ts tests/e2e/simple-discovery.spec.ts >/dev/null 2>&1
 echo "✓ playwright suite passed"
 
 pnpm test >/dev/null 2>&1
 echo "✓ test passed"
 
-wait_for_port_3000_clear
 cleanup
-sleep 60
+wait_for_port_3000_clear
 echo "✓ port 3000 cleared"
 
 bash ./scripts/verify-opencode-backend.sh >/dev/null 2>&1
