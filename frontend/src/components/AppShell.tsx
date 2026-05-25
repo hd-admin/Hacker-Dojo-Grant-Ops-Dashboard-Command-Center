@@ -25,7 +25,7 @@ const workspaceNav: NavItem[] = [
   { view: 'dashboard', label: 'Dashboard', icon: '◐' },
   { view: 'discovery', label: 'Discovery', icon: '◇' },
   { view: 'pipeline', label: 'Pipeline', icon: '▤' },
-  { view: 'settings', label: 'Settings', icon: '◯' },
+  { view: 'settings', label: 'Org Profile', icon: '◯' },
 ];
 
 const activityNav: NavItem[] = [

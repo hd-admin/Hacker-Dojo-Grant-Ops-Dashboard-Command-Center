@@ -251,7 +251,7 @@ describe("ResearchService", () => {
 			expect(researchedGrant?.fitBreakdown).toBeDefined();
 			expect(researchedGrant?.sourceCount).toBe(1);
 			expect(researchedGrant?.groundedDocumentCount).toBe(0);
-			expect(researchedGrant?.latestDraftVersion).toBe(0);
+			expect(researchedGrant?.latestDraftVersion).toBe(1);
 			expect(researchedGrant?.checklist?.length).toBeGreaterThan(0);
 		});
 
@@ -308,7 +308,97 @@ describe("ResearchService", () => {
 		});
 	});
 });
-  describe('notification emission', () => {
+
+describe('auto-draft triggering', () => {
+	let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+	beforeEach(async () => { tempDataDir = await withTempDataDir(); });
+	afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
+
+	it('triggers generateDraft when new grant fit >= autoDraftThreshold', async () => {
+		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
+		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+		const drafts = await repository.getDraftArtifacts('mock-grant-001');
+		expect(drafts.length).toBeGreaterThan(0);
+	});
+
+	it('triggers generateDraft when new grant fit >= autoDraftThreshold (test with low-fit grant for contrast)', async () => {
+		setDependencies(createDependencies({
+			createOpencodeAdapter: () => ({
+				executeResearch: async () => ({
+					success: true,
+					content: JSON.stringify({
+						grants: [{
+							id: 'grant-low-fit',
+							title: 'Low Fit Grant',
+							funder: 'Low Foundation',
+							funderShort: 'LF',
+							award: '$1,000',
+							awardSort: 1000,
+							deadline: '2026-12-31',
+							daysOut: 200,
+							fit: 70,
+							tags: []
+						}]
+					}),
+				}),
+				generateDraft: async () => ({ success: true, content: JSON.stringify({ grants: [], evidence: [], rationale: '' }) }),
+				isConfigured: () => true,
+			}),
+		}));
+		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
+		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+		const drafts = await repository.getDraftArtifacts('grant-low-fit');
+		expect(drafts).toHaveLength(0);
+	});
+
+	it('does not re-draft an already-existing high-fit grant on second research run', async () => {
+		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
+		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+		const draftsAfterFirst = await repository.getDraftArtifacts('mock-grant-001');
+		expect(draftsAfterFirst).toHaveLength(1);
+		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+		const draftsAfterSecond = await repository.getDraftArtifacts('mock-grant-001');
+		expect(draftsAfterSecond).toHaveLength(1);
+	});
+});
+
+describe('per-grant notifications', () => {
+	let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+	beforeEach(async () => { tempDataDir = await withTempDataDir(); });
+	afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
+
+	it('emits accent notification with escaped strong title, award, and fit for each new matching grant AND suppresses auto-draft notification', async () => {
+		await sourceService.addSource({ name: 'Test', url: 'https://example.com', type: 'website' });
+		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+		const notifications = await repository.getNotifications();
+		expect(notifications.some(n => n.dot === 'accent' && /New match/i.test(n.text))).toBe(true);
+		const perGrantNotif = notifications.find(n => n.dot === 'accent' && /New match/i.test(n.text))!;
+		expect(perGrantNotif.text).toContain('<strong>');
+		expect(perGrantNotif.text).toContain('Mock Foundation');
+		expect(perGrantNotif.text).toContain('$50,000');
+		expect(perGrantNotif.text).toContain('fit 82');
+		expect(notifications.some(n => /Draft generated/i.test(n.text))).toBe(false);
+	});
+
+	it('retains prior notifications and orders per-grant before summary before prior', async () => {
+		await repository.updateNotifications([{ id: 'prior-1', dot: 'info', time: '2026-01-01T00:00:00.000Z', text: 'Prior notification' }]);
+		await sourceService.addSource({ name: 'Test', url: 'https://example.com', type: 'website' });
+		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+		const notifications = await repository.getNotifications();
+		expect(notifications.some(n => n.text === 'Prior notification')).toBe(true);
+		const perGrantIdx = notifications.findIndex(n => n.dot === 'accent' && /New match/i.test(n.text));
+		const summaryIdx = notifications.findIndex(n => /research completed/i.test(n.text));
+		const priorIdx = notifications.findIndex(n => n.text === 'Prior notification');
+		expect(perGrantIdx).toBeGreaterThanOrEqual(0);
+		expect(summaryIdx).toBeGreaterThanOrEqual(0);
+		expect(priorIdx).toBeGreaterThanOrEqual(0);
+		expect(perGrantIdx).toBeLessThan(summaryIdx);
+		expect(summaryIdx).toBeLessThan(priorIdx);
+		expect(notifications.some(n => /Draft generated/i.test(n.text))).toBe(false);
+	});
+});
+
+describe('notification emission', () => {
     let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
     beforeEach(async () => { tempDataDir = await withTempDataDir(); });
     afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
@@ -318,7 +408,7 @@ describe("ResearchService", () => {
       const notifications = await repository.getNotifications();
       expect(notifications.length).toBeGreaterThan(0);
       expect(notifications[0]!.dot).toBeDefined();
-      expect(notifications[0]!.text).toMatch(/research|grant/i);
+      expect(notifications.some(n => /research completed/i.test(n.text))).toBe(true);
     });
   });
 

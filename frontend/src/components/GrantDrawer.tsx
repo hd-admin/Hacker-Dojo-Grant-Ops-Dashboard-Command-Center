@@ -320,18 +320,9 @@ export default function GrantDrawer({
 						</div>
 
 						<div className="drawer-body">
-							<div className="drawer-section">
-								<h3>Funder summary</h3>
-								<p>{detail.grant.funderSummary}</p>
-								<div className="drawer-note">
-									Sources: {detail.grant.sourceCount ?? 0} · Grounded docs:{" "}
-									{detail.grant.groundedDocumentCount ?? 0}
-								</div>
-							</div>
-
 							{detail.grant.fitBreakdown && (
 								<div className="drawer-section">
-									<h3>Fit breakdown</h3>
+									<h3>Why it fits</h3>
 									<div className="fit-breakdown">
 										{(
 											[
@@ -370,7 +361,16 @@ export default function GrantDrawer({
 							)}
 
 							<div className="drawer-section">
-								<h3>Checklist</h3>
+								<h3>Funder summary (agent-generated)</h3>
+								<p>{detail.grant.funderSummary}</p>
+								<div className="drawer-note">
+									Sources: {detail.grant.sourceCount ?? 0} · Grounded docs:{" "}
+									{detail.grant.groundedDocumentCount ?? 0}
+								</div>
+							</div>
+
+							<div className="drawer-section">
+								<h3>Requirements checklist</h3>
 								<div className="checklist-list">
 									{(detail.grant.checklist || []).map((item) => (
 										<div
@@ -388,11 +388,23 @@ export default function GrantDrawer({
 							</div>
 
 							<div className="drawer-section">
-								<h3>Draft preview</h3>
-								<div className="drawer-note">
-									{viewModel.latestDraftVersionLabel} ·{" "}
-									{viewModel.latestDraftPreview.length} chars
-								</div>
+								<h3>Drafted Letter of Intent — preview</h3>
+								{viewModel.latestDraftPreview ? (
+									<div className="draft-meta">
+										<span className="ai-badge">
+											{`Drafted by agent · grounded in ${detail.grant.groundedDocumentCount} org documents · ${detail.grant.sourceCount} funder sources`}
+										</span>
+										<span>
+											{(() => {
+												const words = viewModel.latestDraftPreview.split(/\s+/).filter(w => w.length > 0).length;
+												const pages = Math.max(1, Math.ceil(words / 500));
+												return `${words.toLocaleString()} words · ${pages} pages`;
+											})()}
+										</span>
+									</div>
+								) : (
+									<div className="drawer-note">{viewModel.latestDraftVersionLabel}</div>
+								)}
 								<div className="draft-preview">
 									{previewText(viewModel.latestDraftPreview)}
 								</div>

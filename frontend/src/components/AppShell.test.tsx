@@ -204,6 +204,7 @@ describe('AppShell', () => {
     root.render(React.createElement(AppShell));
     await waitFor(() => container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent === '1');
 
+    expect(container.querySelector('.nav-item[data-view="settings"]')?.textContent).toContain('Org Profile');
     expect(container.querySelector('.nav-item[data-view="notifications"] .nav-count')?.textContent).toBe('1');
     expect(container.querySelector('.nav-item[data-view="tasks"] .nav-count')?.textContent).toBe('1');
     expect(container.textContent).toContain('Crawler offline');

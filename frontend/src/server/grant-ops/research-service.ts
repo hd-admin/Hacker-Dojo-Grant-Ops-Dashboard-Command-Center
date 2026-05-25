@@ -20,6 +20,8 @@ import {
   createDefaultFunderSummary,
   createDefaultGrantChecklist,
 } from '../../../../shared/seed-data';
+import { escapeForHtml } from '../../lib/sanitize-html';
+import { generateDraft } from './drafting-service';
 import { getDependencies, type Clock, type IdGenerator } from './dependencies';
 
 export interface ResearchOptions {
@@ -89,7 +91,7 @@ export async function runResearch(
     // Create Opencode adapter using DI
     const adapter = deps.createOpencodeAdapter(settings!, providerType);
 
-    const result = await performResearch(profile, sources, adapter, deps, clock, idGenerator, crawlRun);
+    const result = await performResearch(profile, sources, adapter, deps, clock, idGenerator, crawlRun, providerType);
     return result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -117,10 +119,12 @@ async function performResearch(
   clock: Clock,
   idGenerator: IdGenerator,
   initialCrawlRun: CrawlRun,
+  providerType: 'cli' | 'fake',
 ): Promise<ResearchResult> {
   let totalGrantsFound = 0;
   let totalGrantsMatched = 0;
   const existingGrants = await deps.repository.getGrants();
+  const perGrantNotifications: Notification[] = [];
 
   // Process each source
   for (const source of sources) {
@@ -204,6 +208,21 @@ async function performResearch(
               await deps.repository.addGrant(newGrant);
               existingGrants.push(newGrant);
               totalGrantsMatched++;
+
+              perGrantNotifications.push({
+                id: idGenerator.generateId('notification'),
+                dot: 'accent',
+                time: clock.now().toISOString(),
+                text: `New match: <strong>${escapeForHtml(newGrant.title)}</strong> · ${escapeForHtml(newGrant.funder)} · ${escapeForHtml(newGrant.award)} · fit ${newGrant.fit}`,
+              });
+
+              if (newGrant.fit >= profile.agentBehavior.autoDraftThreshold) {
+                try {
+                  await generateDraft(newGrant, profile, { _providerType: providerType, suppressNotification: true });
+                } catch (err) {
+                  console.warn('Auto-draft failed for grant', newGrant.id, err);
+                }
+              }
             } else {
               const updatedSourceCount = (existing.sourceCount ?? 0) + 1;
               const updatedGrant: Partial<Grant> = {
@@ -245,14 +264,14 @@ async function performResearch(
     await deps.repository.updateCrawlRun(updatedCrawlRun);
 
     const notifications = await deps.repository.getNotifications();
-    const researchNotification: Notification = {
+    const summaryNotification: Notification = {
       id: idGenerator.generateId('notification'),
       dot: 'success',
       time: clock.now().toISOString(),
       text: `Research completed: ${totalGrantsMatched} new grant(s) matched across ${sources.length} source(s)`,
     };
-    notifications.unshift(researchNotification);
-    await deps.repository.updateNotifications(notifications);
+    const updatedNotifications = [...perGrantNotifications, summaryNotification, ...notifications];
+    await deps.repository.updateNotifications(updatedNotifications);
   }
 
   const finalCrawlRun = (await deps.repository.getLatestCrawlRun()) ?? initialCrawlRun;

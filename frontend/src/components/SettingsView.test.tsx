@@ -148,6 +148,8 @@ describe('SettingsView', () => {
     root.render(React.createElement(SettingsView, { onRefreshAppState }));
     await waitFor(() => container.textContent?.includes('Hacker Dojo Program Summary.pdf') === true);
 
+    expect(container.textContent).toContain('Org Profile');
+    expect(container.textContent).toContain('Context the agent uses for matching & drafting');
     expect(container.textContent).toContain('grounded');
     expect(container.textContent).toContain('stored only');
 
@@ -162,6 +164,7 @@ describe('SettingsView', () => {
   it('renders docTypes from profile in the Search Themes card', async () => {
     root.render(React.createElement(SettingsView, { onRefreshAppState }));
     await waitFor(() => container.textContent?.includes('PDF') === true);
+    expect(container.textContent).toContain('Org Profile');
     expect(container.textContent).toContain('XLS');
     expect(container.textContent).toContain('DOC');
   });

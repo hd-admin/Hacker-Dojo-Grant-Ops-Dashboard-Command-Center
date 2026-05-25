@@ -222,9 +222,9 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
       <div className="header">
         <div>
           <h1 className="header-title">
-            Settings <span className="accent">Organization</span>
+            Org <span className="accent">Profile</span>
           </h1>
-          <div className="header-sub">Profile &amp; agent configuration</div>
+          <div className="header-sub">Context the agent uses for matching &amp; drafting</div>
         </div>
         <div className="header-actions">
           {!isEditing && (

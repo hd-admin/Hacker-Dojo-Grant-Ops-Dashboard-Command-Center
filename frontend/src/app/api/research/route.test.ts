@@ -55,7 +55,10 @@ const fakeAdapter = {
       rationale: 'fake',
     }),
   }),
-  generateDraft: vi.fn(),
+  generateDraft: vi.fn().mockResolvedValue({
+    success: true,
+    content: JSON.stringify({ grants: [], evidence: [], rationale: 'auto-draft mock' }),
+  }),
   isConfigured: () => true,
 };
 

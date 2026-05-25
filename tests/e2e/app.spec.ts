@@ -63,9 +63,9 @@ test.describe("Grant Operations Center smoke", () => {
 		await page.locator(".grants-row:not(.header)").nth(selectedIndex).click();
 
 		await expect(page.locator(".drawer-title")).toHaveText(targetGrant.title);
-		await expect(page.locator(".drawer")).toContainText("Funder summary");
-		await expect(page.locator(".drawer")).toContainText("Checklist");
-		await expect(page.locator(".drawer")).toContainText("Draft preview");
+		await expect(page.locator(".drawer")).toContainText("Funder summary (agent-generated)");
+		await expect(page.locator(".drawer")).toContainText("Requirements checklist");
+		await expect(page.locator(".drawer")).toContainText("Drafted Letter of Intent — preview");
 		await expect(
 			page.locator('button:has-text("Generate draft")'),
 		).toBeVisible();
