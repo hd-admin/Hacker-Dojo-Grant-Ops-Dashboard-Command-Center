@@ -195,7 +195,11 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
 
   const handleSaveOpencode = async () => {
     try {
-      await client.opencodeSettings.update(opencodeForm as OpencodeSettings);
+      const nextSettings: OpencodeSettings = {
+        ...(opencodeForm as OpencodeSettings),
+        isConfigured: true,
+      };
+      await client.opencodeSettings.update(nextSettings);
       const updated = await client.opencodeSettings.get();
       setOpencodeSettings(updated);
       setIsEditingOpencode(false);

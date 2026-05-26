@@ -1,16 +1,30 @@
 import { createRoot } from "next/dist/compiled/react-dom/client";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { GrantDetailResponse } from "../../../shared/types";
+import type { GrantDetailResponse, SubmissionMethod } from "../../../shared/types";
 
-const { getGrantDetail, createRevision } = vi.hoisted(() => ({
+const {
+	getGrantDetail,
+	createDraft,
+	createApproval,
+	createSubmission,
+	createRevision,
+} = vi.hoisted(() => ({
 	getGrantDetail: vi.fn(),
+	createDraft: vi.fn(),
+	createApproval: vi.fn(),
+	createSubmission: vi.fn(),
 	createRevision: vi.fn(),
 }));
 
 vi.mock("../lib/grant-ops-client", () => ({
-	grantsApi: { getById: getGrantDetail },
-	revisionsApi: { create: createRevision },
+	client: {
+		grants: { getById: getGrantDetail },
+		drafts: { create: createDraft },
+		approvals: { create: createApproval },
+		submit: { create: createSubmission },
+		revisions: { create: createRevision },
+	},
 }));
 
 import GrantDrawer from "./GrantDrawer";
@@ -187,7 +201,7 @@ function buildSubmittedDetail(): GrantDetailResponse {
 				portalUrl: "https://example.com/portal",
 				submittedBy: "human",
 			},
-			notes: "Submitted from the drawer workflow test.",
+			notes: "",
 			followUpsCreated: ["follow-up-1"],
 		},
 		followUps: [
@@ -217,7 +231,6 @@ function buildSubmittedDetail(): GrantDetailResponse {
 let currentDetail: GrantDetailResponse;
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
-const originalFetch = globalThis.fetch;
 const originalOpen = window.open;
 
 async function waitFor(
@@ -246,6 +259,39 @@ function setTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
 beforeEach(() => {
 	currentDetail = makeGrantDetail();
 	getGrantDetail.mockImplementation(async () => currentDetail);
+	createDraft.mockImplementation(async (_grantId: string, request: { revisionNotes?: string }) => {
+		const generated = buildGeneratedDetail();
+		const latestDraft = {
+			...generated.latestDraft!,
+			revisionNotes: request.revisionNotes ?? "",
+		};
+		currentDetail = {
+			...generated,
+			grant: {
+				...generated.grant,
+				draftContent: latestDraft.content,
+				latestDraftVersion: latestDraft.version,
+			},
+			latestDraft,
+		};
+		return latestDraft;
+	});
+	createApproval.mockImplementation(async () => {
+		currentDetail = buildApprovedDetail();
+		return currentDetail.approvalRecord!;
+	});
+	createSubmission.mockImplementation(async (_grantId: string, request: { method: { type: SubmissionMethod["type"]; portalUrl?: string; confirmationId?: string; submittedBy: string }; notes?: string }) => {
+		const submitted = buildSubmittedDetail();
+		currentDetail = {
+			...submitted,
+			submissionRecord: {
+				...submitted.submissionRecord!,
+				method: request.method,
+				notes: request.notes ?? "",
+			},
+		};
+		return currentDetail.submissionRecord!;
+	});
 	createRevision.mockImplementation(async (_grantId: string, notes: string) => {
 		currentDetail = buildRevisedDetail();
 		currentDetail = {
@@ -263,42 +309,6 @@ beforeEach(() => {
 		return currentDetail.latestRevisionRequest;
 	});
 
-	globalThis.fetch = vi.fn(
-		async (input: RequestInfo | URL, init?: RequestInit) => {
-			const url = String(input);
-			const method = init?.method || "GET";
-
-			if (url.endsWith("/draft") && method === "POST") {
-				currentDetail = buildGeneratedDetail();
-				return new Response(JSON.stringify(currentDetail.latestDraft), {
-					status: 200,
-					headers: { "Content-Type": "application/json" },
-				});
-			}
-
-			if (url.endsWith("/approval") && method === "POST") {
-				currentDetail = buildApprovedDetail();
-				return new Response(JSON.stringify(currentDetail.approvalRecord), {
-					status: 201,
-					headers: { "Content-Type": "application/json" },
-				});
-			}
-
-			if (url.endsWith("/submit") && method === "POST") {
-				currentDetail = buildSubmittedDetail();
-				return new Response(JSON.stringify(currentDetail.submissionRecord), {
-					status: 200,
-					headers: { "Content-Type": "application/json" },
-				});
-			}
-
-			return new Response(JSON.stringify({ error: "Unexpected fetch" }), {
-				status: 500,
-				headers: { "Content-Type": "application/json" },
-			});
-		},
-	) as typeof fetch;
-
 	window.open = vi.fn() as typeof window.open;
 
 	container = document.createElement("div");
@@ -309,7 +319,6 @@ beforeEach(() => {
 afterEach(() => {
 	root.unmount();
 	container.remove();
-	globalThis.fetch = originalFetch;
 	window.open = originalOpen;
 	vi.clearAllMocks();
 });
@@ -359,9 +368,7 @@ describe("GrantDrawer", () => {
 		expect(container.textContent).not.toContain("Submit");
 	});
 
-	it.skip(
-		"supports generate, revise, approve, and submit through the rendered drawer",
-		async () => {
+	it("supports generate, revise, approve, and submit through the rendered drawer", async () => {
 			const onClose = vi.fn();
 			const onRefreshAppState = vi.fn();
 		root.render(
@@ -371,11 +378,13 @@ describe("GrantDrawer", () => {
 		await waitFor(
 			() => container.textContent?.includes("Generate draft") === true,
 		);
-		container
-			.querySelector("button.btn-primary")
-			?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+		(container.querySelector("button.btn-primary") as HTMLButtonElement | null)?.click();
 
-		await waitFor(() => container.textContent?.includes("Version 1") === true);
+		await waitFor(() => createDraft.mock.calls.length === 1);
+		await waitFor(
+			() => container.textContent?.includes("community innovation in Silicon Valley") === true,
+		);
+		expect(container.querySelector(".ai-badge")).not.toBeNull();
 		expect(container.textContent).toContain(
 			"community innovation in Silicon Valley",
 		);
@@ -385,14 +394,14 @@ describe("GrantDrawer", () => {
 
 		Array.from(container.querySelectorAll("button"))
 			.find((button) => button.textContent?.includes("Request revision"))
-			?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+			?.click();
 		await waitFor(() => container.querySelector("textarea") !== null);
 
 		const textarea = container.querySelector("textarea") as HTMLTextAreaElement;
 		setTextareaValue(textarea, "Please tighten the budget narrative.");
 		Array.from(container.querySelectorAll("button"))
 			.find((button) => button.textContent === "Save revision")
-			?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+			?.click();
 
 		await waitFor(
 			() =>
@@ -408,15 +417,16 @@ describe("GrantDrawer", () => {
 
 		Array.from(container.querySelectorAll("button"))
 			.find((button) => button.textContent?.includes("Approve & lock"))
-			?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+			?.click();
 		await waitFor(() => container.textContent?.includes("Submit") === true);
+		expect(createApproval).toHaveBeenCalledWith(grantId, { approvedBy: "human" });
 		expect(container.textContent).not.toContain(
 			"Submission blocked: Grant must be approved before submission",
 		);
 
 		Array.from(container.querySelectorAll("button"))
 			.find((button) => button.textContent === "Submit")
-			?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+			?.click();
 		await waitFor(
 			() => container.textContent?.includes("Submit grant") === true,
 		);
@@ -424,25 +434,19 @@ describe("GrantDrawer", () => {
 		const submitSection = Array.from(
 			container.querySelectorAll(".drawer-section"),
 		).find((section) => section.textContent?.includes("Submit grant"));
-		submitSection
-			?.querySelector("button.btn-primary")
-			?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+		(submitSection?.querySelector("button.btn-primary") as HTMLButtonElement | null)?.click();
 		await waitFor(() => onClose.mock.calls.length === 1);
+		await waitFor(() => createSubmission.mock.calls.length === 1);
 		await waitFor(() => container.textContent?.includes("Follow-ups") === true);
 
 		expect(onRefreshAppState).toHaveBeenCalled();
 		expect(onClose).toHaveBeenCalledTimes(1);
-		expect(fetch).toHaveBeenCalledWith(
-			"/api/grants/nsf-techaccess/draft",
-			expect.objectContaining({ method: "POST" }),
-		);
-		expect(fetch).toHaveBeenCalledWith(
-			"/api/grants/nsf-techaccess/approval",
-			expect.objectContaining({ method: "POST" }),
-		);
-		expect(fetch).toHaveBeenCalledWith(
-			"/api/grants/nsf-techaccess/submit",
-			expect.objectContaining({ method: "POST" }),
+		expect(createSubmission).toHaveBeenCalledWith(
+			grantId,
+			expect.objectContaining({
+				method: expect.objectContaining({ type: "portal", submittedBy: "human" }),
+				notes: "",
+			}),
 		);
 	},
 	{ timeout: 10000 },

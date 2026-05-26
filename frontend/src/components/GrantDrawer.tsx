@@ -5,7 +5,7 @@ import type {
 	GrantDetailResponse,
 	SubmissionMethod,
 } from "../../../shared/types";
-import { grantsApi, revisionsApi } from "../lib/grant-ops-client";
+import { client } from "../lib/grant-ops-client";
 
 interface GrantDrawerProps {
 	grantId: string | null;
@@ -121,7 +121,7 @@ export default function GrantDrawer({
 
 		setLoading(true);
 		try {
-			const data = await grantsApi.getById(grantId);
+			const data = await client.grants.getById(grantId);
 			setDetail(data);
 		} catch (error) {
 			console.error("Error loading grant detail:", error);
@@ -150,20 +150,8 @@ export default function GrantDrawer({
 	const handleGenerateDraft = async () => {
 		if (!detail) return;
 		try {
-			const response = await fetch(`/api/grants/${detail.grant.id}/draft`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ revisionNotes: "" }),
-			});
-
-			if (response.ok) {
-				await refreshAfterMutation();
-			} else {
-				const error = await response
-					.json()
-					.catch(() => ({ error: "Unknown error" }));
-				console.error("Error generating draft:", error);
-			}
+			await client.drafts.create(detail.grant.id, { revisionNotes: "" });
+			await refreshAfterMutation();
 		} catch (error) {
 			console.error("Error generating draft:", error);
 		}
@@ -172,19 +160,8 @@ export default function GrantDrawer({
 	const handleApproveAndLock = async () => {
 		if (!detail) return;
 		try {
-			const response = await fetch(`/api/grants/${detail.grant.id}/approval`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ approvedBy: "human" }),
-			});
-			if (response.ok) {
-				await refreshAfterMutation();
-			} else {
-				const error = await response
-					.json()
-					.catch(() => ({ error: "Unknown error" }));
-				console.error("Error approving grant:", error);
-			}
+			await client.approvals.create(detail.grant.id, { approvedBy: "human" });
+			await refreshAfterMutation();
 		} catch (error) {
 			console.error("Error approving grant:", error);
 		}
@@ -203,21 +180,10 @@ export default function GrantDrawer({
 			if (confirmationId) {
 				method.confirmationId = confirmationId;
 			}
-			const response = await fetch(`/api/grants/${detail.grant.id}/submit`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({ method, notes: submitNotes }),
-			});
-			if (response.ok) {
-				setShowSubmitForm(false);
-				await refreshAfterMutation();
-				onClose();
-			} else {
-				const error = await response
-					.json()
-					.catch(() => ({ error: "Unknown error" }));
-				console.error("Error submitting grant:", error);
-			}
+			await client.submit.create(detail.grant.id, { method, notes: submitNotes });
+			setShowSubmitForm(false);
+			await refreshAfterMutation();
+			onClose();
 		} catch (error) {
 			console.error("Error submitting grant:", error);
 		}
@@ -230,7 +196,7 @@ export default function GrantDrawer({
 	const handleConfirmRevision = async () => {
 		if (!detail || !revisionNote.trim()) return;
 		try {
-			await revisionsApi.create(detail.grant.id, revisionNote, "human");
+			await client.revisions.create(detail.grant.id, revisionNote, "human");
 			await refreshAfterMutation();
 			setShowRevision(false);
 			setRevisionNote("");

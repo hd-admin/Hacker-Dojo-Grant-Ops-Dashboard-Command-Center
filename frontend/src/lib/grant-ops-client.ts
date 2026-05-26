@@ -19,6 +19,7 @@ import type {
 	OpencodeSettings,
 	OrganizationProfile,
 	Source,
+	SubmissionMethod,
 	SubmissionRecord,
 	Task,
 } from "../../../shared/types";
@@ -132,23 +133,32 @@ export const grantsApi = {
 
 // ============ Draft API ============
 
+export interface DraftCreateRequest {
+	revisionNotes?: string;
+}
+
 export const draftApi = {
 	get: (grantId: string) =>
 		apiFetch<DraftArtifact[]>(
 			`/api/grants/${encodeURIComponent(grantId)}/draft`,
 		),
 
-	create: (grantId: string, artifact: Omit<DraftArtifact, "id">) =>
+	create: (grantId: string, request: DraftCreateRequest) =>
 		apiFetch<DraftArtifact>(
 			`/api/grants/${encodeURIComponent(grantId)}/draft`,
 			{
 				method: "POST",
-				body: JSON.stringify(artifact),
+				body: JSON.stringify(request),
 			},
 		),
 };
 
 // ============ Approval API ============
+
+export interface ApprovalCreateRequest {
+	approvedBy?: string;
+	lockedUntil?: string;
+}
 
 export const approvalApi = {
 	get: (grantId: string) =>
@@ -156,17 +166,22 @@ export const approvalApi = {
 			`/api/grants/${encodeURIComponent(grantId)}/approval`,
 		),
 
-	create: (grantId: string, record: Omit<ApprovalRecord, "id">) =>
+	create: (grantId: string, request: ApprovalCreateRequest) =>
 		apiFetch<ApprovalRecord>(
 			`/api/grants/${encodeURIComponent(grantId)}/approval`,
 			{
 				method: "POST",
-				body: JSON.stringify(record),
+				body: JSON.stringify(request),
 			},
 		),
 };
 
 // ============ Submit API ============
+
+export interface SubmitCreateRequest {
+	method: SubmissionMethod;
+	notes?: string;
+}
 
 export const submitApi = {
 	get: (grantId: string) =>
@@ -174,15 +189,12 @@ export const submitApi = {
 			`/api/grants/${encodeURIComponent(grantId)}/submit`,
 		),
 
-	create: (
-		grantId: string,
-		record: Omit<SubmissionRecord, "id" | "followUpsCreated">,
-	) =>
+	create: (grantId: string, request: SubmitCreateRequest) =>
 		apiFetch<SubmissionRecord>(
 			`/api/grants/${encodeURIComponent(grantId)}/submit`,
 			{
 				method: "POST",
-				body: JSON.stringify(record),
+				body: JSON.stringify(request),
 			},
 		),
 };
@@ -234,6 +246,7 @@ export interface OpencodeSettingsRequest {
 	workingDirectory: string;
 	timeoutMs: number;
 	profile?: string;
+	isConfigured?: boolean;
 }
 
 export const opencodeSettingsApi = {

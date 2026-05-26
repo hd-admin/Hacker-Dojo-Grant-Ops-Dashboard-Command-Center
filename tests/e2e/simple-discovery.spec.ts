@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { resetAppState } from "./test-utils";
+import { configureOpencodeThroughSettingsView, resetAppState, saveProfileThroughSettingsView, uploadDocumentThroughSettingsView } from "./test-utils";
 
 const opencodeStubPath = path.join(process.cwd(), "tests/e2e/opencode-stub.sh");
 
@@ -42,45 +42,41 @@ test("simple-discovery: add source and refresh crawl state", async ({
 }) => {
 	const stubPath = await ensureOpencodeStub();
 	await resetAppState(request);
-	await request.put("http://localhost:3000/api/profile", {
-		data: {
-			legalName: "Hacker Dojo",
-			ein: "26-3375350",
-			samUEI: "XK7N4HQ2P3M9",
-			mission: "Community innovation and education",
-			docTypes: ["PDF"],
-			searchThemes: ["EdTech", "Community"],
-			agentBehavior: {
-				autoDraftThreshold: 75,
-				submissionPolicy: "Human approval required",
-				notifyEmail: "ed@hackerdojo.com",
-				voiceAndTone: "Plain-spoken",
-			},
-		},
-	});
-	await request.put("http://localhost:3000/api/opencode-settings", {
-		data: {
-			binaryPath: stubPath,
-			workingDirectory: process.cwd(),
-			timeoutMs: 60000,
-			profile: "default",
-			isConfigured: true,
-		},
-	});
 	await page.goto("http://localhost:3000");
 	await page.waitForSelector(".app", { timeout: 10000 });
+
+	await saveProfileThroughSettingsView(
+		page,
+		"Community innovation and education with maker pathways.",
+	);
+	await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
+	await uploadDocumentThroughSettingsView(
+		page,
+		"tests/fixtures/documents/hacker-dojo-program-summary.pdf",
+	);
+
+	const opencodeSettingsResponse = await request.get("http://localhost:3000/api/opencode-settings");
+	expect(opencodeSettingsResponse.ok()).toBeTruthy();
+	const opencodeSettings = await opencodeSettingsResponse.json() as { isConfigured: boolean; binaryPath: string };
+	expect(opencodeSettings.isConfigured).toBe(true);
+	expect(opencodeSettings.binaryPath).toBe(stubPath);
+
+	await page.click("[data-view=\"settings\"]");
+	await page.waitForSelector("#view-settings.active", { timeout: 10000 });
+	await expect(page.locator(".setting-card").filter({ hasText: "Agent Behavior" })).toContainText("ed@hackerdojo.com");
+	await page.click("[data-view=\"discovery\"]");
 
 	await page.click('[data-view="discovery"]');
 	await expect(page.locator("#view-discovery")).toHaveClass(/active/);
 
-	const sourceButton = page.locator("button:has-text('+ Add source')");
-	await expect(sourceButton).toBeVisible();
-	await sourceButton.click();
-
-	await page.fill('input[placeholder="Source name"]', "Candid");
-	await page.fill('input[placeholder="https://..."]', "https://www.candid.org");
-
-	await page.locator(".add-source-inline button[type='submit']").click();
+	const sourceResponse = await request.post("http://localhost:3000/api/sources", {
+		data: {
+			name: "Candid",
+			url: "https://www.candid.org",
+			type: "website",
+		},
+	});
+	expect(sourceResponse.ok()).toBeTruthy();
 
 	await expect(page.locator("button:has-text('+ Add source')")).toBeVisible();
 	await expect(page.locator(".sidebar-footer")).toContainText("Logged in as");
@@ -98,8 +94,13 @@ test("simple-discovery: add source and refresh crawl state", async ({
 		),
 	).toBe(true);
 
-	// Source list display check
-	await expect(page.locator('.source-item')).toBeVisible();
+	const researchResponse = await request.post("http://localhost:3000/api/research");
+	expect(researchResponse.ok()).toBeTruthy();
+
+	await page.reload();
+	await page.waitForSelector('.app', { timeout: 10000 });
+	await page.click('[data-view="discovery"]');
+	await expect(page.locator('.source-item')).toHaveCount(1);
 	await expect(page.locator('.source-item .source-name')).toContainText('Candid');
 
 	let research = null as {

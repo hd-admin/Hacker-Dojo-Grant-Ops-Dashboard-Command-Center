@@ -6,7 +6,7 @@ import {
 	type Page,
 	test,
 } from "@playwright/test";
-import { resetAppState } from "./test-utils";
+import { configureOpencodeThroughSettingsView, resetAppState, saveProfileThroughSettingsView, uploadDocumentThroughSettingsView } from "./test-utils";
 
 const fixturePath = path.join(
 	process.cwd(),
@@ -47,60 +47,6 @@ fi
 	return opencodeStubPath;
 }
 
-async function configureProfile(api: APIRequestContext): Promise<void> {
-	const response = await api.put("http://localhost:3000/api/profile", {
-		data: {
-			legalName: "Hacker Dojo",
-			ein: "26-3375350",
-			samUEI: "XK7N4HQ2P3M9",
-			mission: "Community innovation and education",
-			docTypes: ["PDF"],
-			searchThemes: ["EdTech", "Community"],
-			agentBehavior: {
-				autoDraftThreshold: 75,
-				submissionPolicy: "Human approval required",
-				notifyEmail: "ed@hackerdojo.com",
-				voiceAndTone: "Plain-spoken",
-			},
-		},
-	});
-	expect(response.ok()).toBeTruthy();
-}
-
-async function configureOpencode(
-	api: APIRequestContext,
-	binaryPath: string,
-): Promise<void> {
-	const response = await api.put(
-		"http://localhost:3000/api/opencode-settings",
-		{
-			data: {
-				binaryPath,
-				workingDirectory: process.cwd(),
-				timeoutMs: 60000,
-				profile: "default",
-				isConfigured: true,
-			},
-		},
-	);
-	expect(response.ok()).toBeTruthy();
-}
-
-async function uploadGroundingDocument(api: APIRequestContext): Promise<void> {
-	const bytes = await fs.readFile(fixturePath);
-	const uploadResponse = await api.post("http://localhost:3000/api/documents", {
-		multipart: {
-			name: "Hacker Dojo Program Summary",
-			type: "PDF",
-			file: {
-				name: "hacker-dojo-program-summary.pdf",
-				mimeType: "application/pdf",
-				buffer: bytes,
-			},
-		},
-	});
-	expect(uploadResponse.ok()).toBeTruthy();
-}
 
 async function openMatchedGrantWithoutDraft(
 	page: Page,
@@ -143,12 +89,15 @@ test("document-grounded-drafting: generate, revise, approve, and submit through 
 	const stubPath = await ensureOpencodeStub();
 
 	await resetAppState(request);
-	await configureProfile(request);
-	await configureOpencode(request, stubPath);
-	await uploadGroundingDocument(request);
-
 	await page.goto("http://localhost:3000");
 	await page.waitForSelector(".app", { timeout: 10000 });
+
+	await saveProfileThroughSettingsView(
+		page,
+		"Community innovation and education with maker pathways.",
+	);
+	await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
+	await uploadDocumentThroughSettingsView(page, fixturePath);
 
 	const targetGrant = await openMatchedGrantWithoutDraft(page, request);
 
