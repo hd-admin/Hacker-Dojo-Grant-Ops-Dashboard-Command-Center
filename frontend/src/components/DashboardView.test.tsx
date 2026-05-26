@@ -3,6 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { Grant, OrganizationProfile, Notification } from '../../../shared/types';
 
+const getRelativeDate = (daysBack: number): string => {
+  const date = new Date();
+  date.setDate(date.getDate() - daysBack);
+  const dateStr = date.toISOString().split('T')[0];
+  return dateStr || '';
+};
+
 const mockGrants: Grant[] = [
   {
     id: 'grant-1',
@@ -17,7 +24,7 @@ const mockGrants: Grant[] = [
     tags: ['Science & Tech', 'Federal'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-19',
+    matchedAt: getRelativeDate(6),
   },
   {
     id: 'grant-2',
@@ -32,7 +39,7 @@ const mockGrants: Grant[] = [
     tags: ['Community', 'Foundation'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-20',
+    matchedAt: getRelativeDate(5),
   },
   {
     id: 'grant-3',
@@ -47,7 +54,7 @@ const mockGrants: Grant[] = [
     tags: ['EdTech'],
     status: 'review',
     statusLabel: 'Review',
-    matchedAt: '2026-05-10',
+    matchedAt: getRelativeDate(15),
   },
   {
     id: 'grant-4',
@@ -62,7 +69,7 @@ const mockGrants: Grant[] = [
     tags: ['Federal'],
     status: 'awarded',
     statusLabel: 'Awarded',
-    matchedAt: '2025-09-01',
+    matchedAt: getRelativeDate(267),
   },
 ];
 
