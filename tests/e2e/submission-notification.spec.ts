@@ -134,10 +134,8 @@ async function openMatchedGrantWithoutDraft(
 
 test.describe('Submission Notification', () => {
 	test.beforeEach(async ({ page, request }) => {
-		await page.goto('http://127.0.0.1:3000');
-		await page.waitForSelector('.app', { timeout: 10000 });
 		await resetAppState(request);
-		await page.reload();
+		await page.goto('http://localhost:3000');
 		await page.waitForSelector('.app', { timeout: 10000 });
 	});
 

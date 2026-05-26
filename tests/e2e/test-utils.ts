@@ -9,7 +9,7 @@ export async function resetAppState(request: APIRequestContext): Promise<void> {
 	for (let attempt = 0; attempt < 10; attempt += 1) {
 		try {
 			const response = await request.post(
-				"http://127.0.0.1:3000/api/testing/reset",
+				"http://localhost:3000/api/testing/reset",
 			);
 			if (response.ok()) {
 				return;
