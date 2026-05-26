@@ -8,7 +8,6 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  clearDatabase,
   getSqliteState,
   readGrants as readGrantsFromSqlite,
   readOpencodeSettings as readOpencodeSettingsFromSqlite,
@@ -23,7 +22,11 @@ import {
 } from './grant-ops-sqlite';
 import {
   defaultOpencodeSettings,
+  defaultProfile,
   normalizeGrantDetailFields,
+  seedGrants,
+  seedNotifications,
+  seedTasks,
 } from './seed-data';
 import type {
   ApprovalRecord,
@@ -120,7 +123,9 @@ export async function loadGrants(): Promise<Grant[]> {
     return [...cachedGrants];
   }
 
-  const grants = (await readGrantsFromSqlite(getSqliteState())).map((grant) => normalizeGrantDetailFields(grant));
+  const grants = (await readGrantsFromSqlite(getSqliteState())).map((grant) =>
+    normalizeGrantDetailFields(grant),
+  );
   grantsCache.set(dataDir, grants);
   return [...grants];
 }
@@ -231,7 +236,29 @@ export async function copyPersistedData(
 }
 
 export async function resetPersistentStateForTests(): Promise<void> {
-  await clearDatabase(getSqliteState());
-  invalidateCache();
+  const dataDir = getDATA_DIR();
+  const emptyPersistedData: PersistedData = {
+    sources: [],
+    crawlRuns: [],
+    draftArtifacts: [],
+    revisionRequests: [],
+    approvalRecords: [],
+    submissionRecords: [],
+    followUps: [],
+    opencodeSettings: null,
+    notifications: [],
+    tasks: [],
+    documents: [],
+    lastSync: new Date().toISOString(),
+  };
+
+  dataCache.delete(dataDir);
+  grantsCache.delete(dataDir);
+  await savePersistedData(emptyPersistedData);
+  await saveGrants(seedGrants);
+  await saveTasks(seedTasks);
+  await saveNotifications(seedNotifications);
+  await saveProfile({ ...defaultProfile });
+  await saveOpencodeSettings({ ...defaultOpencodeSettings });
   await loadPersistedData();
 }

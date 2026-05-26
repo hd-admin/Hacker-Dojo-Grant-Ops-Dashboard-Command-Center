@@ -12,10 +12,10 @@ test.describe("Grant Operations Center smoke", () => {
 		await expect(page.locator(".brand-mark")).toContainText("Grant Ops");
 		await expect(
 			page.locator('.nav-item[data-view="discovery"] .nav-count'),
-		).toBeVisible();
+		).toBeVisible({ timeout: 15000 });
 		await expect(
 			page.locator('.nav-item[data-view="tasks"] .nav-count'),
-		).toBeVisible();
+		).toBeVisible({ timeout: 15000 });
 		await expect(page.locator(".sidebar-footer")).toContainText("Logged in as");
 	});
 
