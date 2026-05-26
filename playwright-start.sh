@@ -6,19 +6,11 @@ APP_PORT="${PORT:-3000}"
 mkdir -p "$DATA_DIR"
 FRONTEND_DIR="$ROOT_DIR/frontend"
 PID_FILE="$DATA_DIR/playwright-start.pid"
-START_PID=""
-SERVER_PID=""
 printf '%s\n' "$$" > "$PID_FILE"
 
 cleanup() {
-  if [ -n "$START_PID" ] && kill -0 "$START_PID" 2>/dev/null; then
-    kill -9 "$START_PID" 2>/dev/null || true
-  fi
-  if [ -n "$SERVER_PID" ] && kill -0 "$SERVER_PID" 2>/dev/null; then
-    kill -9 "$SERVER_PID" 2>/dev/null || true
-  fi
   rm -f "$PID_FILE" 2>/dev/null || true
-  sleep 3
+  sleep 1
   for pid in $(lsof -t -iTCP:"$APP_PORT" -sTCP:LISTEN 2>/dev/null || true); do
     parent="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
     kill -9 "$pid" 2>/dev/null || true
@@ -45,26 +37,4 @@ if [ ! -f ".next/BUILD_ID" ] || [ ! -d ".next/server" ] || [ ! -f ".next/server/
   "$ROOT_DIR/node_modules/.bin/next" build
 fi
 
-env DATA_DIR="$DATA_DIR" PORT="$APP_PORT" HOSTNAME=0.0.0.0 OPENCODE_BIN="${OPENCODE_BIN:-}" OPENCODE_PURE="${OPENCODE_PURE:-}" "$ROOT_DIR/node_modules/.bin/next" start &
-START_PID=$!
-
-READY=0
-for _ in $(seq 1 90); do
-  SERVER_PID="$(lsof -t -iTCP:"$APP_PORT" -sTCP:LISTEN 2>/dev/null | head -n 1 || true)"
-  if [ -n "$SERVER_PID" ]; then
-    READY=1
-    break
-  fi
-  if ! kill -0 "$START_PID" 2>/dev/null; then
-    break
-  fi
-  sleep 1
-done
-if [ "$READY" -ne 1 ]; then
-  echo "[playwright-start.sh] Next server did not become ready" >&2
-  exit 1
-fi
-
-while true; do
-  sleep 60
-done
+exec env DATA_DIR="$DATA_DIR" PORT="$APP_PORT" HOSTNAME=0.0.0.0 OPENCODE_BIN="${OPENCODE_BIN:-}" OPENCODE_PURE="${OPENCODE_PURE:-}" "$ROOT_DIR/node_modules/.bin/next" start
