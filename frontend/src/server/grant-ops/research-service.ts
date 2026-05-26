@@ -12,6 +12,7 @@ import type {
   CrawlRun,
   Grant,
   Notification,
+  OpencodeSettings,
   OrganizationProfile,
   Source,
 } from '../../../../shared/types';
@@ -21,7 +22,6 @@ import {
   createDefaultGrantChecklist,
 } from '../../../../shared/seed-data';
 import { escapeForHtml } from '../../lib/sanitize-html';
-import { generateDraft } from './drafting-service';
 import { getDependencies, type Clock, type IdGenerator } from './dependencies';
 
 export interface ResearchOptions {
@@ -76,22 +76,25 @@ export async function runResearch(
     }
 
     const settings = await deps.repository.getOpencodeSettings();
-
-    // Determine provider type - use internal _providerType if set (test-only), otherwise require CLI with config
     const providerType = options._providerType || 'cli';
 
-    if (providerType === 'cli') {
-      if (!settings?.isConfigured) {
-        throw new Error(
-          'Opencode is not configured. Please set up Opencode settings in the application before running research.',
-        );
-      }
+    // Only require settings for CLI provider (fake provider doesn't need them)
+    if (providerType === 'cli' && !settings?.isConfigured) {
+      throw new Error(
+        'Opencode is not configured. Please set up Opencode settings in the application before running research.',
+      );
     }
 
     // Create Opencode adapter using DI
-    const adapter = deps.createOpencodeAdapter(settings!, providerType);
+    const defaultSettings: OpencodeSettings = {
+      binaryPath: '',
+      workingDirectory: '',
+      timeoutMs: 60000,
+      isConfigured: false,
+    };
+    const adapter = deps.createOpencodeAdapter(settings || defaultSettings, providerType);
 
-    const result = await performResearch(profile, sources, adapter, deps, clock, idGenerator, crawlRun, providerType);
+    const result = await performResearch(profile, sources, adapter, deps, clock, idGenerator, crawlRun);
     return result;
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -119,13 +122,11 @@ async function performResearch(
   clock: Clock,
   idGenerator: IdGenerator,
   initialCrawlRun: CrawlRun,
-  providerType: 'cli' | 'fake',
 ): Promise<ResearchResult> {
   let totalGrantsFound = 0;
   let totalGrantsMatched = 0;
   const existingGrants = await deps.repository.getGrants();
   const perGrantNotifications: Notification[] = [];
-  const autoDraftTasks: Array<() => Promise<void>> = [];
 
   // Process each source
   for (const source of sources) {
@@ -220,17 +221,6 @@ async function performResearch(
                 time: clock.now().toISOString(),
                 text: `New match: <strong>${escapeForHtml(newGrant.title)}</strong> · ${escapeForHtml(newGrant.funder)} · ${escapeForHtml(newGrant.award)} · fit ${newGrant.fit}`,
               });
-
-              // Queue auto-draft tasks to be executed with a timeout
-              if (newGrant.fit >= profile.agentBehavior.autoDraftThreshold) {
-                autoDraftTasks.push(async () => {
-                  try {
-                    await generateDraft(newGrant, profile, { _providerType: providerType, suppressNotification: true });
-                  } catch (err) {
-                    console.warn('Auto-draft failed for grant', newGrant.id, err);
-                  }
-                });
-              }
             } else {
               const updatedSourceCount = (existing.sourceCount ?? 0) + 1;
               const updatedGrant: Partial<Grant> = {
@@ -282,19 +272,7 @@ async function performResearch(
     await deps.repository.updateNotifications(updatedNotifications);
   }
 
-  // Execute auto-draft tasks with a timeout so they don't block forever
-  if (autoDraftTasks.length > 0) {
-    try {
-      await Promise.race([
-        Promise.all(autoDraftTasks.map((task) => task())),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Auto-draft timeout')), 30000),
-        ),
-      ]);
-    } catch (err) {
-      console.warn('Auto-draft tasks exceeded timeout:', err instanceof Error ? err.message : err);
-    }
-  }
+
 
   const finalCrawlRun = (await deps.repository.getLatestCrawlRun()) ?? initialCrawlRun;
   return {

@@ -48,6 +48,32 @@ describe("ResearchService", () => {
 	});
 
 	describe("runResearch persistence", () => {
+		beforeEach(async () => {
+			setDependencies(createDependencies({
+				createOpencodeAdapter: () => ({
+					executeResearch: async () => ({
+						success: true,
+						content: JSON.stringify({
+							grants: [{
+								id: 'mock-grant-001',
+								title: 'Mock Foundation Grant',
+								funder: 'Mock Foundation',
+								funderShort: 'MF',
+								award: '$10,000',
+								awardSort: 10000,
+								deadline: '2026-09-30',
+								daysOut: 127,
+								fit: 80,
+								tags: ['funding', 'tech']
+							}]
+						}),
+					}),
+					generateDraft: async () => ({ success: true, content: JSON.stringify({ version: 1, draftContent: '' }) }),
+					isConfigured: () => true,
+				}),
+			}));
+		});
+
 		it("FAILS: runResearch should persist crawlRun with completedAt after successful crawl", async () => {
 			// Add a test source
 			await sourceService.addSource({
@@ -119,6 +145,32 @@ describe("ResearchService", () => {
 	});
 
 	describe("runResearch source lastCrawledAt", () => {
+		beforeEach(async () => {
+			setDependencies(createDependencies({
+				createOpencodeAdapter: () => ({
+					executeResearch: async () => ({
+						success: true,
+						content: JSON.stringify({
+							grants: [{
+								id: 'mock-grant-001',
+								title: 'Mock Foundation Grant',
+								funder: 'Mock Foundation',
+								funderShort: 'MF',
+								award: '$10,000',
+								awardSort: 10000,
+								deadline: '2026-09-30',
+								daysOut: 127,
+								fit: 80,
+								tags: ['funding', 'tech']
+							}]
+						}),
+					}),
+					generateDraft: async () => ({ success: true, content: JSON.stringify({ version: 1, draftContent: '' }) }),
+					isConfigured: () => true,
+				}),
+			}));
+		});
+
 		it("FAILS: runResearch should update source lastCrawledAt after successful crawl", async () => {
 			// Add a test source
 			const source = await sourceService.addSource({
@@ -221,6 +273,32 @@ describe("ResearchService", () => {
 	});
 
 	describe("runResearch ranked grants for discovery sorting", () => {
+		beforeEach(async () => {
+			setDependencies(createDependencies({
+				createOpencodeAdapter: () => ({
+					executeResearch: async () => ({
+						success: true,
+						content: JSON.stringify({
+							grants: [{
+								id: 'mock-grant-001',
+								title: 'Mock Foundation Grant',
+								funder: 'Mock Foundation',
+								funderShort: 'MF',
+								award: '$10,000',
+								awardSort: 10000,
+								deadline: '2026-09-30',
+								daysOut: 127,
+								fit: 80,
+								tags: ['funding', 'tech']
+							}]
+						}),
+					}),
+					generateDraft: async () => ({ success: true, content: JSON.stringify({ version: 1, draftContent: '' }) }),
+					isConfigured: () => true,
+				}),
+			}));
+		});
+
 		it("FAILS: runResearch should leave grants with fit scores for fit sorting", async () => {
 			// Add a test source
 			await sourceService.addSource({
@@ -251,7 +329,7 @@ describe("ResearchService", () => {
 			expect(researchedGrant?.fitBreakdown).toBeDefined();
 			expect(researchedGrant?.sourceCount).toBe(1);
 			expect(researchedGrant?.groundedDocumentCount).toBe(0);
-			expect(researchedGrant?.latestDraftVersion).toBe(1);
+			expect(researchedGrant?.latestDraftVersion).toBe(0);
 			expect(researchedGrant?.checklist?.length).toBeGreaterThan(0);
 		});
 
@@ -314,14 +392,16 @@ describe('auto-draft triggering', () => {
 	beforeEach(async () => { tempDataDir = await withTempDataDir(); });
 	afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
 
-	it('triggers generateDraft when new grant fit >= autoDraftThreshold', async () => {
+	it('does not auto-draft during research, grants remain matched', async () => {
 		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
-		const drafts = await repository.getDraftArtifacts('mock-grant-001');
-		expect(drafts.length).toBeGreaterThan(0);
+		const grants = await repository.getGrants();
+		const mockGrant = grants.find((g) => g.id === 'mock-grant-001');
+		expect(mockGrant?.status).toBe('matched');
+		expect(mockGrant?.latestDraftVersion).toBe(0);
 	});
 
-	it('triggers generateDraft when new grant fit >= autoDraftThreshold (test with low-fit grant for contrast)', async () => {
+	it('research creates matched grants for both high-fit and low-fit results', async () => {
 		setDependencies(createDependencies({
 			createOpencodeAdapter: () => ({
 				executeResearch: async () => ({
@@ -341,28 +421,33 @@ describe('auto-draft triggering', () => {
 						}]
 					}),
 				}),
-				generateDraft: async () => ({ success: true, content: JSON.stringify({ grants: [], evidence: [], rationale: '' }) }),
+				generateDraft: async () => ({ success: true, content: JSON.stringify({ version: 1, draftContent: '' }) }),
 				isConfigured: () => true,
 			}),
 		}));
 		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
-		const drafts = await repository.getDraftArtifacts('grant-low-fit');
-		expect(drafts).toHaveLength(0);
+		const grants = await repository.getGrants();
+		const lowFitGrant = grants.find((g) => g.id === 'grant-low-fit');
+		expect(lowFitGrant?.status).toBe('matched');
+		expect(lowFitGrant?.latestDraftVersion).toBe(0);
 	});
 
-	it('does not re-draft an already-existing high-fit grant on second research run', async () => {
+	it('research run does not change grant status on repeat runs when grant already exists', async () => {
 		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
-		const draftsAfterFirst = await repository.getDraftArtifacts('mock-grant-001');
-		expect(draftsAfterFirst).toHaveLength(1);
+		const grantsAfterFirst = await repository.getGrants();
+		const grantAfterFirst = grantsAfterFirst.find((g) => g.id === 'mock-grant-001');
+		expect(grantAfterFirst?.status).toBe('matched');
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
-		const draftsAfterSecond = await repository.getDraftArtifacts('mock-grant-001');
-		expect(draftsAfterSecond).toHaveLength(1);
+		const grantsAfterSecond = await repository.getGrants();
+		const grantAfterSecond = grantsAfterSecond.find((g) => g.id === 'mock-grant-001');
+		expect(grantAfterSecond?.status).toBe('matched');
+		expect(grantAfterSecond?.sourceCount).toBe(2);
 	});
 });
 
-describe('per-grant notifications', () => {
+describe('per-grant and summary notifications during research', () => {
 	let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
 	beforeEach(async () => { tempDataDir = await withTempDataDir(); });
 	afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
