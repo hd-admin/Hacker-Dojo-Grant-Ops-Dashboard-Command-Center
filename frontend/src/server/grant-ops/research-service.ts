@@ -321,35 +321,30 @@ async function performResearch(
 		// Leave the existing grant store unchanged when a research run returns no new grants.
 	}
 
-	// Update crawl run with results and persist
-	const updatedCrawlRun = await deps.repository.getLatestCrawlRun();
-	if (updatedCrawlRun) {
-		updatedCrawlRun.completedAt = clock.now().toISOString();
-		updatedCrawlRun.status = "completed";
-		updatedCrawlRun.sourcesCrawled = sources.length;
-		updatedCrawlRun.grantsFound = totalGrantsFound;
-		updatedCrawlRun.grantsMatched = totalGrantsMatched;
-		await deps.repository.updateCrawlRun(updatedCrawlRun);
+	// Update crawl run with results and persist the initial crawlRun record directly
+	initialCrawlRun.completedAt = clock.now().toISOString();
+	initialCrawlRun.status = "completed";
+	initialCrawlRun.sourcesCrawled = sources.length;
+	initialCrawlRun.grantsFound = totalGrantsFound;
+	initialCrawlRun.grantsMatched = totalGrantsMatched;
+	await deps.repository.updateCrawlRun(initialCrawlRun);
 
-		const notifications = await deps.repository.getNotifications();
-		const summaryNotification: Notification = {
-			id: idGenerator.generateId("notification"),
-			dot: "success",
-			time: clock.now().toISOString(),
-			text: `Research completed: ${totalGrantsMatched} new grant(s) matched across ${sources.length} source(s)`,
-		};
-		const updatedNotifications = [
-			...perGrantNotifications,
-			summaryNotification,
-			...notifications,
-		];
-		await deps.repository.updateNotifications(updatedNotifications);
-	}
+	const notifications = await deps.repository.getNotifications();
+	const summaryNotification: Notification = {
+		id: idGenerator.generateId("notification"),
+		dot: "success",
+		time: clock.now().toISOString(),
+		text: `Research completed: ${totalGrantsMatched} new grant(s) matched across ${sources.length} source(s)`,
+	};
+	const updatedNotifications = [
+		...perGrantNotifications,
+		summaryNotification,
+		...notifications,
+	];
+	await deps.repository.updateNotifications(updatedNotifications);
 
-	const finalCrawlRun =
-		(await deps.repository.getLatestCrawlRun()) ?? initialCrawlRun;
 	return {
-		crawlRun: finalCrawlRun,
+		crawlRun: initialCrawlRun,
 		grantsFound: totalGrantsFound,
 		grantsMatched: totalGrantsMatched,
 	};

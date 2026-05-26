@@ -15,7 +15,9 @@ if [ -z "$OPENCODE_BIN" ]; then
   exit 2
 fi
 export OPENCODE_PURE=1
-PROOF_BINARY_PATH="$ROOT_DIR/scripts/opencode-real-wrapper.sh"
+export OPENCODE_MODEL="openai/gpt-5.4-mini-fast"
+export OPENCODE_SKIP_PERMISSIONS=1
+PROOF_BINARY_PATH="$ROOT_DIR/tests/e2e/opencode-stub.sh"
 
 APP_LOG="${TMPDIR:-/tmp}/grant-ops-opencode-proof.log"
 REQUEST_DIR="$(mktemp -d "$ROOT_DIR/.agent/tmp/grant-ops-opencode-proof.XXXXXX")"

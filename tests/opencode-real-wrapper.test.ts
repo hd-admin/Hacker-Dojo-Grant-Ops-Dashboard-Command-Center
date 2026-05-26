@@ -20,7 +20,7 @@ describe('opencode-real-wrapper', () => {
     tempDir = null;
   });
 
-  it('strips wrapper-only flags and preserves JSON payloads for research-service', () => {
+  it('strips wrapper-only flags and preserves the live --format json contract for research-service', () => {
     tempDir = makeTempDir();
     const fakeOpencode = path.join(tempDir, 'opencode-fake.sh');
     const argsFile = path.join(tempDir, 'args.txt');
@@ -61,7 +61,7 @@ EOF
 
     const output = execFileSync(
       'bash',
-      [wrapperPath, 'run', 'Prompt text', '--output-format', 'json', '--profile', 'default'],
+      [wrapperPath, 'run', '--format', 'json', 'Prompt text', '--profile', 'default'],
       {
         env: {
           ...process.env,
@@ -73,6 +73,6 @@ EOF
     );
 
     expect(output.trim()).toBe(expectedJson);
-    expect(fs.readFileSync(argsFile, 'utf8').trim()).toBe('run Prompt text');
+    expect(fs.readFileSync(argsFile, 'utf8').trim()).toBe('run --format json Prompt text');
   });
 });

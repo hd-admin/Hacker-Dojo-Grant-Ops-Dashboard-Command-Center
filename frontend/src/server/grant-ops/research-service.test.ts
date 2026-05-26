@@ -90,6 +90,10 @@ describe("ResearchService", () => {
 			// The crawlRun should have completedAt set
 			expect(result.crawlRun.completedAt).toBeDefined();
 			expect(result.crawlRun.completedAt).not.toBeNull();
+
+			const latestRun = await repository.getLatestCrawlRun();
+			expect(latestRun?.completedAt).toBeDefined();
+			expect(latestRun?.status).toBe("completed");
 		});
 
 		it("FAILS: runResearch should persist crawlRun with status completed", async () => {

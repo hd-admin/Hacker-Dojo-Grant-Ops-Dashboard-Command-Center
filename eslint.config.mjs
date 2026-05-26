@@ -38,6 +38,7 @@ export default [
       'node_modules/**',
       '.next/**',
       'frontend/.next/**',
+      '.agent/tmp/**',
       'playwright-report/**',
       'test-results/**',
     ],
