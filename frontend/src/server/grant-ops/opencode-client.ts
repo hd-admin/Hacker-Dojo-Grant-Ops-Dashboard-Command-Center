@@ -108,24 +108,68 @@ class FakeOpencodeProvider implements OpencodeAdapter {
 			grants: [
 				{
 					id: `mock-grant-001`,
-					title: `${request.searchThemes[0] || "Technology"} Community Grant`,
-					funder: "Mock Foundation",
-					funderShort: "Mock",
-					award: "$50,000",
+					title: `${request.searchThemes[0] || 'Technology'} Community Grant`,
+					funder: 'Mock Foundation',
+					funderShort: 'Mock',
+					award: '$50,000',
 					awardSort: 50000,
 					deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 						.toISOString()
-						.split("T")[0],
+						.split('T')[0],
 					daysOut: 30,
 					fit: 82,
-					tags: ["Community", "Technology"],
-					status: "matched" as const,
-					statusLabel: "Matched",
+					tags: ['Community', 'Technology'],
+					status: 'matched' as const,
+					statusLabel: 'Matched',
+					matchedAt: new Date().toISOString(),
+				},
+				{
+					id: `mock-grant-002`,
+					title: `${request.searchThemes[1] || request.searchThemes[0] || 'Education'} Innovation Grant`,
+					funder: 'Alliance for Learning',
+					funderShort: 'Alliance',
+					award: '$75,000',
+					awardSort: 75000,
+					deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000)
+						.toISOString()
+						.split('T')[0],
+					daysOut: 45,
+					fit: 76,
+					tags: ['Education', 'Innovation'],
+					status: 'matched' as const,
+					statusLabel: 'Matched',
+					matchedAt: new Date().toISOString(),
+				},
+				{
+					id: `mock-grant-003`,
+					title: `${request.searchThemes[2] || request.searchThemes[0] || 'Community'} Capacity Grant`,
+					funder: 'Community Innovation Network',
+					funderShort: 'CIN',
+					award: '$25,000',
+					awardSort: 25000,
+					deadline: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
+						.toISOString()
+						.split('T')[0],
+					daysOut: 60,
+					fit: 71,
+					tags: ['Community', 'Capacity'],
+					status: 'matched' as const,
+					statusLabel: 'Matched',
 					matchedAt: new Date().toISOString(),
 				},
 			],
-			evidence: [],
-			rationale: "Mock research completed successfully",
+			evidence: [
+				{
+					id: 'evidence-001',
+					grantId: 'mock-grant-001',
+					sourceId: 'mock-source-001',
+					sourceName: request.sourceName || 'Mock Source',
+					evidenceType: 'eligibility' as const,
+					content: `${request.searchThemes[0] || 'Technology'} alignment and community impact fit the funder priorities.`,
+					capturedAt: new Date().toISOString(),
+				},
+			],
+			rationale: 'Mock research completed successfully across multiple aligned grants',
 		};
 
 		return {
@@ -289,9 +333,9 @@ class CliOpencodeProvider implements OpencodeAdapter {
 			};
 		}
 
-		const prompt = `Return only valid JSON, with no markdown, fences, or extra text. Do not call tools, browse, or delegate tasks. Fill in this JSON object with one plausible grant aligned to Hacker Dojo's EdTech and Community themes. Keep the same keys and output only JSON.
+		const prompt = `Return only valid JSON, with no markdown, fences, or extra text. Do not call tools, browse, or delegate tasks. Fill in this JSON object with multiple aligned grants (at least 3) for Hacker Dojo's EdTech, community innovation, and science/technology themes. Keep the same keys and output only JSON.
 
-{"grants":[{"id":"g1","title":"Plausible title","funder":"Plausible funder","funderShort":"Plausible","award":"$50,000","awardSort":50000,"deadline":"2026-06-30","daysOut":30,"fit":80,"tags":["EdTech","Community"],"status":"matched","statusLabel":"Matched"}],"evidence":[],"rationale":"plausible"}
+{"grants":[{"id":"g1","title":"Plausible title","funder":"Plausible funder","funderShort":"Plausible","award":"$50,000","awardSort":50000,"deadline":"2026-06-30","daysOut":30,"fit":80,"tags":["EdTech","Community"],"status":"matched","statusLabel":"Matched"}],"evidence":[{"id":"e1","grantId":"g1","sourceId":"s1","sourceName":"Plausible Source","evidenceType":"eligibility","content":"Why this grant fits","capturedAt":"2026-05-01T00:00:00.000Z"}],"rationale":"plausible"}
 
 Organization Profile:
 ${request.organizationProfile}

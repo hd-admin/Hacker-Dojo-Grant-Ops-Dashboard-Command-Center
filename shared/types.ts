@@ -42,6 +42,8 @@ export interface Grant {
 	latestDraftVersion?: number;
 	groundedDocumentCount?: number;
 	sourceCount?: number;
+	researchEvidence?: ResearchEvidence[];
+	researchRationale?: string;
 }
 
 export interface OrganizationProfile {

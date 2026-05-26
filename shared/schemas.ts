@@ -63,6 +63,8 @@ export const GrantSchema = z.object({
   checklist: z.array(ChecklistItemSchema).optional(),
   draftContent: z.string().optional(),
   externalUrl: z.string().optional(),
+  researchEvidence: z.array(z.lazy(() => ResearchEvidenceSchema)).optional(),
+  researchRationale: z.string().optional(),
 });
 
 export const OrganizationProfileSchema = z.object({
@@ -172,6 +174,25 @@ export const ResearchEvidenceSchema = z.object({
   content: z.string(),
   url: z.string().optional(),
   capturedAt: z.string(),
+});
+
+export const ResearchGrantSchema = z.object({
+  id: z.string().optional(),
+  title: z.string(),
+  funder: z.string(),
+  funderShort: z.string().optional(),
+  award: z.string().optional(),
+  awardSort: z.number().optional(),
+  deadline: z.string().optional(),
+  daysOut: z.number().optional(),
+  fit: z.number().optional(),
+  tags: z.array(z.string()).optional(),
+});
+
+export const ResearchResponseSchema = z.object({
+  grants: z.array(ResearchGrantSchema),
+  evidence: z.array(ResearchEvidenceSchema).optional(),
+  rationale: z.string().optional(),
 });
 
 export const RankingRationaleSchema = z.object({

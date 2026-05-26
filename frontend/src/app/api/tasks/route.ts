@@ -3,7 +3,6 @@ import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Task } from '../../../../../shared/types';
 export const dynamic = 'force-dynamic';
 
-
 // GET: Get all tasks
 export async function GET() {
   try {
@@ -23,11 +22,15 @@ export async function POST(request: NextRequest) {
     const deps = getDependencies();
     const idGenerator = deps.idGenerator;
 
+    if (typeof body.text !== 'string' || !body.text.trim()) {
+      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+    }
+
     const tasks = await deps.repository.getTasks();
 
     const newTask: Task = {
       id: body.id || idGenerator.generateId('task'),
-      text: body.text,
+      text: body.text.trim(),
       completed: body.completed || false,
     };
 

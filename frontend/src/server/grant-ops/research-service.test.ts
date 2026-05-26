@@ -401,6 +401,58 @@ describe('auto-draft triggering', () => {
 		expect(mockGrant?.latestDraftVersion).toBe(0);
 	});
 
+	it('persists multiple aligned grants from a single crawl', async () => {
+		setDependencies(createDependencies({
+			createOpencodeAdapter: () => ({
+				executeResearch: async () => ({
+					success: true,
+					content: JSON.stringify({
+						grants: [
+							{
+								id: 'multi-grant-001',
+								title: 'Community Innovation Grant',
+								funder: 'Mock Foundation',
+								funderShort: 'MF',
+								award: '$10,000',
+								awardSort: 10000,
+								deadline: '2026-09-30',
+								daysOut: 127,
+								fit: 84,
+								tags: ['Community'],
+							},
+							{
+								id: 'multi-grant-002',
+								title: 'Education Innovation Grant',
+								funder: 'Alliance for Learning',
+								funderShort: 'Alliance',
+								award: '$25,000',
+								awardSort: 25000,
+								deadline: '2026-10-30',
+								daysOut: 157,
+								fit: 77,
+								tags: ['Education'],
+							},
+						],
+						evidence: [],
+						rationale: 'Multiple aligned grants',
+					}),
+				}),
+				generateDraft: async () => ({ success: true, content: '' }),
+				isConfigured: () => true,
+			}),
+		}));
+
+		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
+		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+		const grants = await repository.getGrants();
+		const mockFoundationGrant = grants.find((g) => g.id === 'multi-grant-001');
+		const allianceGrant = grants.find((g) => g.id === 'multi-grant-002');
+		expect(mockFoundationGrant?.researchRationale).toBe('Multiple aligned grants');
+		expect(allianceGrant?.status).toBe('matched');
+		expect(mockFoundationGrant?.sourceCount).toBe(1);
+		expect(allianceGrant?.sourceCount).toBe(1);
+	});
+
 	it('research creates matched grants for both high-fit and low-fit results', async () => {
 		setDependencies(createDependencies({
 			createOpencodeAdapter: () => ({

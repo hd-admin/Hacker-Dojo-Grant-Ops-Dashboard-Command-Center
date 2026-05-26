@@ -1,121 +1,120 @@
-/**
- * Follow-ups API Route Tests
- *
- * Tests the /api/follow-ups endpoint.
- */
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
+import { invalidateCache, withTempDataDir } from '../../../../../shared/grant-ops-persistence';
+import { GET, PATCH, POST } from './route';
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-	invalidateCache,
-	withTempDataDir,
-} from "../../../../../shared/grant-ops-persistence";
-import type { FollowUp } from "../../../../../shared/types";
-import * as submissionService from "../../../server/grant-ops/submission-service";
+describe('/api/follow-ups route', () => {
+  let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
 
-describe("Follow-ups Route", () => {
-	let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+  beforeEach(async () => {
+    tempDataDir = await withTempDataDir();
+    invalidateCache();
+    setDependencies(createDependencies());
+  });
 
-	beforeEach(async () => {
-		tempDataDir = await withTempDataDir();
-		invalidateCache();
-	});
+  afterEach(async () => {
+    resetDependencies();
+    await tempDataDir.cleanup();
+    invalidateCache();
+  });
 
-	afterEach(async () => {
-		await tempDataDir.cleanup();
-		invalidateCache();
-	});
+  it('GET returns an empty array when no follow-ups exist', async () => {
+    const response = await GET();
+    const followUps = await response.json();
 
-	describe("GET /api/follow-ups", () => {
-		it("returns an array of follow-ups", async () => {
-			const followUps = await submissionService.getFollowUps();
-			expect(Array.isArray(followUps)).toBe(true);
-		});
-	});
+    expect(response.status).toBe(200);
+    expect(followUps).toEqual([]);
+  });
 
-	describe("POST /api/follow-ups", () => {
-		it("creates a follow-up with required fields", async () => {
-			const followUp: FollowUp = {
-				id: "followup-test-1",
-				grantId: "test-grant-1",
-				type: "progress_check",
-				title: "Check on application status",
-				description: "Follow up with funder about our application",
-				dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
-				status: "pending",
-				createdAt: new Date().toISOString(),
-			};
+  it('POST rejects missing id/title', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/follow-ups', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'Missing id' }),
+      }) as never,
+    );
+    const data = await response.json();
 
-			const created = await submissionService.createFollowUp(followUp);
+    expect(response.status).toBe(400);
+    expect(data.error).toMatch(/ID and title are required/i);
+  });
 
-			expect(created.id).toBe(followUp.id);
-			expect(created.title).toBe(followUp.title);
-		});
+  it('POST creates a follow-up and GET reads it back', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/follow-ups', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id: 'followup-1',
+          grantId: 'grant-1',
+          type: 'progress_check',
+          title: 'Check in with funder',
+          description: 'Follow up on the application status',
+          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(),
+        }),
+      }) as never,
+    );
+    const created = await response.json();
 
-		it("creates follow-up with grant association", async () => {
-			const followUp: FollowUp = {
-				id: "followup-test-2",
-				grantId: "test-grant-associated",
-				type: "report_due",
-				title: "Submit progress report",
-				description: "Report due for awarded grant",
-				status: "pending",
-				createdAt: new Date().toISOString(),
-			};
+    expect(response.status).toBe(201);
+    expect(created.id).toBe('followup-1');
+    expect(created.grantId).toBe('grant-1');
 
-			const created = await submissionService.createFollowUp(followUp);
+    const getResponse = await GET();
+    const followUps = await getResponse.json();
+    expect(followUps).toHaveLength(1);
+    expect(followUps[0]?.title).toBe('Check in with funder');
+  });
 
-			expect(created.grantId).toBe("test-grant-associated");
-		});
-	});
+  it('PATCH rejects missing id and updates persisted follow-up fields', async () => {
+    const missingIdResponse = await PATCH(
+      new Request('http://localhost/api/follow-ups', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: 'No id' }),
+      }) as never,
+    );
+    const missingIdData = await missingIdResponse.json();
 
-	describe("PATCH /api/follow-ups", () => {
-		it("updates follow-up status", async () => {
-			const followUp: FollowUp = {
-				id: "followup-test-update-1",
-				type: "progress_check",
-				title: "Test update",
-				status: "pending",
-				createdAt: new Date().toISOString(),
-			};
+    expect(missingIdResponse.status).toBe(400);
+    expect(missingIdData.error).toMatch(/ID is required/i);
 
-			await submissionService.createFollowUp(followUp);
+    await POST(
+      new Request('http://localhost/api/follow-ups', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id: 'followup-2',
+          grantId: 'grant-2',
+          type: 'report_due',
+          title: 'Submit progress report',
+        }),
+      }) as never,
+    );
 
-			// Update the follow-up
-			await submissionService.updateFollowUp({
-				...followUp,
-				status: "completed",
-				completedAt: new Date().toISOString(),
-			});
+    const response = await PATCH(
+      new Request('http://localhost/api/follow-ups', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id: 'followup-2',
+          grantId: 'grant-2',
+          type: 'report_due',
+          title: 'Submit progress report',
+          status: 'completed',
+          completedAt: new Date().toISOString(),
+        }),
+      }) as never,
+    );
+    const data = await response.json();
 
-			const allFollowUps = await submissionService.getFollowUps();
-			const updated = allFollowUps.find((f) => f.id === followUp.id);
+    expect(response.status).toBe(200);
+    expect(data.success).toBe(true);
 
-			expect(updated?.status).toBe("completed");
-		});
-
-		it("updates follow-up with new due date", async () => {
-			const followUp: FollowUp = {
-				id: "followup-test-update-2",
-				type: "next_steps",
-				title: "Review feedback",
-				status: "pending",
-				createdAt: new Date().toISOString(),
-			};
-
-			await submissionService.createFollowUp(followUp);
-
-			const newDueDate = new Date(
-				Date.now() + 30 * 24 * 60 * 60 * 1000,
-			).toISOString();
-			await submissionService.updateFollowUp({
-				...followUp,
-				dueDate: newDueDate,
-			});
-
-			const allFollowUps = await submissionService.getFollowUps();
-			const updated = allFollowUps.find((f) => f.id === followUp.id);
-
-			expect(updated?.dueDate).toBe(newDueDate);
-		});
-	});
+    const getResponse = await GET();
+    const followUps = await getResponse.json();
+    expect(followUps[0]?.status).toBe('completed');
+    expect(followUps[0]?.completedAt).toBeDefined();
+  });
 });

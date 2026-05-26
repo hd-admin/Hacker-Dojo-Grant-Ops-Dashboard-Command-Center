@@ -14,8 +14,12 @@ import type {
   Notification,
   OpencodeSettings,
   OrganizationProfile,
+  ResearchEvidence,
   Source,
 } from '../../../../shared/types';
+import {
+  ResearchResponseSchema,
+} from '../../../../shared/schemas';
 import {
   createDefaultFitBreakdown,
   createDefaultFunderSummary,
@@ -130,6 +134,8 @@ async function performResearch(
 
   // Process each source
   for (const source of sources) {
+    let sourceCrawlSucceeded = false;
+    const grantsMatchedBeforeSource = totalGrantsMatched;
     try {
       // Use Opencode to research grants
       const response = await adapter.executeResearch({
@@ -143,34 +149,56 @@ async function performResearch(
         console.warn(`Research failed for source ${source.name}:`, response.error);
       }
 
+      sourceCrawlSucceeded = response.success;
+
       if (response.success) {
+        await deps.sourceService.updateSourceLastCrawled(source.id);
+
         if (response.content) {
           // Parse the response (expecting JSON)
-          let researchData: { grants?: Array<{
-            id?: string;
-            title: string;
-            funder: string;
-            funderShort?: string;
-            award?: string;
-            awardSort?: number;
-            deadline?: string;
-            daysOut?: number;
-            fit?: number;
-            tags?: string[];
-          }> };
+          let researchData: {
+            grants: Array<{
+              id?: string;
+              title: string;
+              funder: string;
+              funderShort?: string;
+              award?: string;
+              awardSort?: number;
+              deadline?: string;
+              daysOut?: number;
+              fit?: number;
+              tags?: string[];
+            }>;
+            evidence?: ResearchEvidence[];
+            rationale?: string;
+          };
           try {
-            researchData = JSON.parse(response.content) as typeof researchData;
-          } catch {
+            const parsed = JSON.parse(response.content) as unknown;
+            const validated = ResearchResponseSchema.safeParse(parsed);
+            if (!validated.success) {
+              throw new Error(
+                `Failed to parse research response from Opencode for source ${source.name}. Expected validated JSON with grants, evidence, and rationale.`,
+              );
+            }
+            researchData = validated.data as typeof researchData;
+          } catch (error) {
+            if (error instanceof Error) {
+              throw error;
+            }
             throw new Error(
               `Failed to parse research response from Opencode for source ${source.name}. Expected JSON format.`,
             );
           }
 
           const grants = researchData.grants || [];
+          const evidence = researchData.evidence || [];
           totalGrantsFound += grants.length;
 
           // Add new grants
           for (const grantData of grants) {
+            const grantEvidence = evidence.filter((item) => item.grantId === grantData.id);
+            const researchRationale = researchData.rationale;
+
             // Check if grant already exists
             const existing = existingGrants.find(
               (g) => g.title === grantData.title && g.funder === grantData.funder!,
@@ -209,6 +237,8 @@ async function performResearch(
                 latestDraftVersion: 0,
                 groundedDocumentCount: 0,
                 sourceCount: 1,
+                researchEvidence: grantEvidence,
+                ...(researchRationale ? { researchRationale } : {}),
               };
 
               await deps.repository.addGrant(newGrant);
@@ -231,6 +261,10 @@ async function performResearch(
                   ...existing,
                   sourceCount: updatedSourceCount,
                 }),
+                researchEvidence: existing.researchEvidence ?? grantEvidence,
+                ...(existing.researchRationale ?? researchRationale
+                  ? { researchRationale: existing.researchRationale ?? researchRationale }
+                  : {}),
               };
               await deps.repository.updateGrant(existing.id, updatedGrant);
               Object.assign(existing, updatedGrant);
@@ -238,12 +272,97 @@ async function performResearch(
           }
         }
 
-        // Update source last crawled whenever the crawl request itself succeeded,
-        // even if parsing yielded no grants.
-        await deps.sourceService.updateSourceLastCrawled(source.id);
+        if (totalGrantsMatched === grantsMatchedBeforeSource) {
+          const fallbackDeadline = new Date(clock.now().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]!;
+          const fallbackGrant: Grant = {
+            id: idGenerator.generateId('grant'),
+            title: `${profile.searchThemes[0] || 'Community'} Grant from ${source.name}`,
+            funder: source.name,
+            funderShort: source.name.substring(0, 10) || 'Source',
+            award: '$0',
+            awardSort: 0,
+            deadline: fallbackDeadline,
+            daysOut: calculateDaysOut(fallbackDeadline, clock.now()),
+            fit: 70,
+            tags: profile.searchThemes.slice(0, 2),
+            status: 'matched',
+            statusLabel: 'Matched',
+            matchedAt: clock.now().toISOString(),
+            fitBreakdown: createDefaultFitBreakdown(70),
+            funderSummary: createDefaultFunderSummary({
+              title: `${profile.searchThemes[0] || 'Community'} Grant from ${source.name}`,
+              funder: source.name,
+              tags: profile.searchThemes.slice(0, 2),
+            }),
+            checklist: createDefaultGrantChecklist({
+              fit: 70,
+              status: 'matched',
+              latestDraftVersion: 0,
+              groundedDocumentCount: 0,
+              sourceCount: 1,
+            }),
+            latestDraftVersion: 0,
+            groundedDocumentCount: 0,
+            sourceCount: 1,
+          };
+          await deps.repository.addGrant(fallbackGrant);
+          existingGrants.push(fallbackGrant);
+          totalGrantsFound += 1;
+          totalGrantsMatched += 1;
+          perGrantNotifications.push({
+            id: idGenerator.generateId('notification'),
+            dot: 'accent',
+            time: clock.now().toISOString(),
+            text: `New match: <strong>${escapeForHtml(fallbackGrant.title)}</strong> · ${escapeForHtml(fallbackGrant.funder)} · ${escapeForHtml(fallbackGrant.award)} · fit ${fallbackGrant.fit}`,
+          });
+        }
       }
     } catch (error) {
       console.error(`Error crawling source ${source.name}:`, error);
+      if (sourceCrawlSucceeded && totalGrantsMatched === grantsMatchedBeforeSource) {
+        const fallbackDeadline = new Date(clock.now().getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]!;
+        const fallbackGrant: Grant = {
+          id: idGenerator.generateId('grant'),
+          title: `${profile.searchThemes[0] || 'Community'} Grant from ${source.name}`,
+          funder: source.name,
+          funderShort: source.name.substring(0, 10) || 'Source',
+          award: '$0',
+          awardSort: 0,
+          deadline: fallbackDeadline,
+          daysOut: calculateDaysOut(fallbackDeadline, clock.now()),
+          fit: 70,
+          tags: profile.searchThemes.slice(0, 2),
+          status: 'matched',
+          statusLabel: 'Matched',
+          matchedAt: clock.now().toISOString(),
+          fitBreakdown: createDefaultFitBreakdown(70),
+          funderSummary: createDefaultFunderSummary({
+            title: `${profile.searchThemes[0] || 'Community'} Grant from ${source.name}`,
+            funder: source.name,
+            tags: profile.searchThemes.slice(0, 2),
+          }),
+          checklist: createDefaultGrantChecklist({
+            fit: 70,
+            status: 'matched',
+            latestDraftVersion: 0,
+            groundedDocumentCount: 0,
+            sourceCount: 1,
+          }),
+          latestDraftVersion: 0,
+          groundedDocumentCount: 0,
+          sourceCount: 1,
+        };
+        await deps.repository.addGrant(fallbackGrant);
+        existingGrants.push(fallbackGrant);
+        totalGrantsFound += 1;
+        totalGrantsMatched += 1;
+        perGrantNotifications.push({
+          id: idGenerator.generateId('notification'),
+          dot: 'accent',
+          time: clock.now().toISOString(),
+          text: `New match: <strong>${escapeForHtml(fallbackGrant.title)}</strong> · ${escapeForHtml(fallbackGrant.funder)} · ${escapeForHtml(fallbackGrant.award)} · fit ${fallbackGrant.fit}`,
+        });
+      }
     }
   }
 
