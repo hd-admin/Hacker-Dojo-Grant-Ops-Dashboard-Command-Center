@@ -99,7 +99,7 @@ request() {
   local body_file="$3"
   local status_file="$4"
   shift 4
-  curl -sS -o "$body_file" -w '%{http_code}' -X "$method" "$url" "$@" >"$status_file"
+  curl -sS --connect-timeout 10 --max-time 60 -o "$body_file" -w '%{http_code}' -X "$method" "$url" "$@" >"$status_file"
 }
 
 profile_payload="$REQUEST_DIR/profile.json"

@@ -69,17 +69,32 @@ test("simple-discovery: add source and refresh crawl state", async ({
 	await page.click('[data-view="discovery"]');
 	await expect(page.locator("#view-discovery")).toHaveClass(/active/);
 
-	const sourceResponse = await request.post("http://localhost:3000/api/sources", {
-		data: {
-			name: "Candid",
-			url: "https://www.candid.org",
-			type: "website",
-		},
-	});
-	expect(sourceResponse.ok()).toBeTruthy();
-
 	await expect(page.locator("button:has-text('+ Add source')")).toBeVisible();
 	await expect(page.locator(".sidebar-footer")).toContainText("Logged in as");
+
+	await page.getByRole("button", { name: "+ Add source" }).click();
+	await page.locator('input[placeholder="Source name"]').fill("Candid");
+	await page.locator('input[placeholder="https://..."]').fill("https://www.candid.org");
+	const addSourceResponse = page.waitForResponse(
+		(response) =>
+			response.url().endsWith("/api/sources") &&
+			response.request().method() === "POST",
+	);
+	const researchTriggerResponse = page.waitForResponse(
+		(response) =>
+			response.url().endsWith("/api/research") &&
+			response.request().method() === "POST",
+	);
+	await page.getByRole("button", { name: "Add" }).click();
+	const [sourceResponse, researchResponse] = await Promise.all([
+		addSourceResponse,
+		researchTriggerResponse,
+	]);
+	expect(sourceResponse.ok()).toBeTruthy();
+	expect(researchResponse.ok()).toBeTruthy();
+
+	await expect(page.locator(".source-item")).toHaveCount(1);
+	await expect(page.locator(".source-item .source-name")).toContainText("Candid");
 
 	const sourcesResponse = await request.get("http://localhost:3000/api/sources");
 	expect(sourcesResponse.ok()).toBeTruthy();
@@ -93,15 +108,6 @@ test("simple-discovery: add source and refresh crawl state", async ({
 				source.name === "Candid" && source.url === "https://www.candid.org",
 		),
 	).toBe(true);
-
-	const researchResponse = await request.post("http://localhost:3000/api/research");
-	expect(researchResponse.ok()).toBeTruthy();
-
-	await page.reload();
-	await page.waitForSelector('.app', { timeout: 10000 });
-	await page.click('[data-view="discovery"]');
-	await expect(page.locator('.source-item')).toHaveCount(1);
-	await expect(page.locator('.source-item .source-name')).toContainText('Candid');
 
 	let research = null as {
 		latestRun: { status: string; sourcesCrawled: number } | null;

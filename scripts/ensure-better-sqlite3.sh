@@ -16,7 +16,12 @@ cleanup() {
   rmdir "$LOCK_DIR" 2>/dev/null || true
 }
 
+lock_wait_start="$(date +%s)"
 while ! mkdir "$LOCK_DIR" 2>/dev/null; do
+  if [ $(( $(date +%s) - lock_wait_start )) -ge 120 ]; then
+    echo "[ensure-better-sqlite3] timed out waiting for lock: $LOCK_DIR" >&2
+    exit 1
+  fi
   sleep 0.2
 done
 trap cleanup EXIT
