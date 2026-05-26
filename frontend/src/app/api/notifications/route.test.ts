@@ -5,125 +5,186 @@
  * Verifies notifications persistence layer is properly integrated.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { invalidateCache, withTempDataDir } from '../../../../../shared/grant-ops-persistence';
-import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
-import { GET, PATCH, POST } from './route';
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import {
+	createDependencies,
+	resetDependencies,
+	setDependencies,
+} from "@/server/grant-ops/dependencies";
+import {
+	invalidateCache,
+	withTempDataDir,
+} from "../../../../../shared/grant-ops-persistence";
+import { GET, PATCH, POST } from "./route";
 
-describe('/api/notifications route', () => {
-  beforeEach(async () => {
-    invalidateCache();
-  });
+describe("/api/notifications route", () => {
+	beforeEach(async () => {
+		invalidateCache();
+	});
 
-  describe('persistence layer integration', () => {
-    it('invalidateCache clears the persistence cache', async () => {
-      // This test verifies that invalidateCache works without throwing
-      expect(() => invalidateCache()).not.toThrow();
-    });
-  });
+	describe("route handler behavior", () => {
+		it("POST persists a notification and GET returns it", async () => {
+			const request = new Request("http://localhost/api/notifications", {
+				method: "POST",
+				body: JSON.stringify({
+					id: "notification-1",
+					text: "<strong>Research done</strong>",
+					dot: "success",
+					time: "2026-01-01T00:00:00.000Z",
+				}),
+			}) as never;
 
-  describe('Notification type structure', () => {
-    it('Notification type has required fields', () => {
-      const notification = {
-        id: 'test-1',
-        text: 'Test notification <strong>with HTML</strong>',
-        time: '2h ago',
-        dot: 'success' as const,
-      };
-      expect(notification.id).toBe('test-1');
-      expect(notification.text).toContain('<strong>');
-      expect(notification.time).toBe('2h ago');
-      expect(notification.dot).toBe('success');
-    });
+			const postResponse = await POST(request);
+			expect(postResponse.status).toBe(201);
+			const created = await postResponse.json();
+			expect(created.id).toBe("notification-1");
+			expect(created.text).toBe("<strong>Research done</strong>");
 
-    it('valid dot colors are supported', () => {
-      const validDots = ['success', 'warning', 'info', 'error'];
-      validDots.forEach((dot) => {
-        const notification = { id: 'test', text: 'test', time: 'now', dot };
-        expect(notification.dot).toBe(dot);
-      });
-    });
-  });
+			const getResponse = await GET();
+			expect(getResponse.status).toBe(200);
+			const notifications = await getResponse.json();
+			expect(notifications).toEqual(
+				expect.arrayContaining([
+					expect.objectContaining({
+						id: "notification-1",
+						text: "<strong>Research done</strong>",
+						dot: "success",
+						time: "2026-01-01T00:00:00.000Z",
+					}),
+				]),
+			);
+		});
 
-  describe('sanitization', () => {
-    let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+		it("PATCH requires a notifications array", async () => {
+			const request = new Request("http://localhost/api/notifications", {
+				method: "PATCH",
+				body: JSON.stringify({ notifications: "nope" }),
+			}) as never;
 
-    beforeEach(async () => {
-      tempDataDir = await withTempDataDir();
-      setDependencies(createDependencies());
-    });
+			const response = await PATCH(request);
+			expect(response.status).toBe(400);
+			expect(await response.json()).toEqual({
+				error: "Notifications array is required",
+			});
+		});
 
-    afterEach(async () => {
-      resetDependencies();
-      await tempDataDir.cleanup();
-    });
+		it("PATCH replaces the stored notifications batch and sanitizes each entry", async () => {
+			const request = new Request("http://localhost/api/notifications", {
+				method: "PATCH",
+				body: JSON.stringify({
+					notifications: [
+						{
+							id: "n1",
+							text: "<script>x</script><strong>safe</strong>",
+							time: "1h ago",
+							dot: "info",
+						},
+						{
+							id: "n2",
+							text: '<em style="color:red">Urgent</em>',
+							time: "now",
+							dot: "warning",
+						},
+					],
+				}),
+			}) as never;
 
-    it('POST strips <script> tag but preserves allowed <strong> tag', async () => {
-      const request = new Request('http://localhost/api/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          text: '<script>alert(1)</script><strong>Research done</strong>',
-          dot: 'success',
-        }),
-      }) as never;
+			const patchResponse = await PATCH(request);
+			expect(patchResponse.status).toBe(200);
+			expect(await patchResponse.json()).toEqual({ success: true });
 
-      const response = await POST(request);
-      expect(response.status).toBe(201);
+			const getResponse = await GET();
+			const notifications = await getResponse.json();
+			expect(notifications).toHaveLength(2);
+			expect(notifications[0].text).toBe("x<strong>safe</strong>");
+			expect(notifications[1].text).toBe("<em>Urgent</em>");
+		});
+	});
 
-      const notification = await response.json();
-      expect(notification.text).toContain('<strong>Research done</strong>');
-      expect(notification.text).not.toContain('<script>');
-    });
+	describe("sanitization", () => {
+		let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
 
-    it('POST strips onclick attribute from <strong> tag', async () => {
-      const request = new Request('http://localhost/api/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          text: '<strong onclick=alert(1)>Match</strong>',
-          dot: 'info',
-        }),
-      }) as never;
+		beforeEach(async () => {
+			tempDataDir = await withTempDataDir();
+			setDependencies(createDependencies());
+		});
 
-      const response = await POST(request);
-      expect(response.status).toBe(201);
+		afterEach(async () => {
+			resetDependencies();
+			await tempDataDir.cleanup();
+		});
 
-      const notification = await response.json();
-      expect(notification.text).toBe('<strong>Match</strong>');
-    });
+		it("POST strips <script> tag but preserves allowed <strong> tag", async () => {
+			const request = new Request("http://localhost/api/notifications", {
+				method: "POST",
+				body: JSON.stringify({
+					text: "<script>alert(1)</script><strong>Research done</strong>",
+					dot: "success",
+				}),
+			}) as never;
 
-    it('POST strips style attribute from <em> tag', async () => {
-      const request = new Request('http://localhost/api/notifications', {
-        method: 'POST',
-        body: JSON.stringify({
-          text: '<em style="color:red">Urgent</em>',
-          dot: 'warning',
-        }),
-      }) as never;
+			const response = await POST(request);
+			expect(response.status).toBe(201);
 
-      const response = await POST(request);
-      expect(response.status).toBe(201);
+			const notification = await response.json();
+			expect(notification.text).toContain("<strong>Research done</strong>");
+			expect(notification.text).not.toContain("<script>");
+		});
 
-      const notification = await response.json();
-      expect(notification.text).toBe('<em>Urgent</em>');
-    });
+		it("POST strips onclick attribute from <strong> tag", async () => {
+			const request = new Request("http://localhost/api/notifications", {
+				method: "POST",
+				body: JSON.stringify({
+					text: "<strong onclick=alert(1)>Match</strong>",
+					dot: "info",
+				}),
+			}) as never;
 
-    it('PATCH sanitizes all notifications in the batch', async () => {
-      const request = new Request('http://localhost/api/notifications', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          notifications: [
-            { id: 'n1', text: '<script>x</script>safe', time: '1h ago', dot: 'info' },
-          ],
-        }),
-      }) as never;
+			const response = await POST(request);
+			expect(response.status).toBe(201);
 
-      const patchResponse = await PATCH(request);
-      expect(patchResponse.status).toBe(200);
+			const notification = await response.json();
+			expect(notification.text).toBe("<strong>Match</strong>");
+		});
 
-      // Verify the stored notification is sanitized
-      const getResponse = await GET();
-      const notifications = await getResponse.json();
-      expect(notifications[0]?.text).not.toContain('<script>');
-    });
-  });
+		it("POST strips style attribute from <em> tag", async () => {
+			const request = new Request("http://localhost/api/notifications", {
+				method: "POST",
+				body: JSON.stringify({
+					text: '<em style="color:red">Urgent</em>',
+					dot: "warning",
+				}),
+			}) as never;
+
+			const response = await POST(request);
+			expect(response.status).toBe(201);
+
+			const notification = await response.json();
+			expect(notification.text).toBe("<em>Urgent</em>");
+		});
+
+		it("PATCH sanitizes all notifications in the batch", async () => {
+			const request = new Request("http://localhost/api/notifications", {
+				method: "PATCH",
+				body: JSON.stringify({
+					notifications: [
+						{
+							id: "n1",
+							text: "<script>x</script>safe",
+							time: "1h ago",
+							dot: "info",
+						},
+					],
+				}),
+			}) as never;
+
+			const patchResponse = await PATCH(request);
+			expect(patchResponse.status).toBe(200);
+
+			// Verify the stored notification is sanitized
+			const getResponse = await GET();
+			const notifications = await getResponse.json();
+			expect(notifications[0]?.text).not.toContain("<script>");
+		});
+	});
 });

@@ -108,7 +108,7 @@ cat >"$profile_payload" <<'EOF'
 {"legalName":"Hacker Dojo","ein":"26-3375350","samUEI":"XK7N4HQ2P3M9","mission":"Community innovation and education","docTypes":["PDF"],"searchThemes":["EdTech","Community"],"agentBehavior":{"autoDraftThreshold":75,"submissionPolicy":"Human approval required","notifyEmail":"ed@hackerdojo.com","voiceAndTone":"Plain-spoken"}}
 EOF
 
-node -e "const fs=require('node:fs');const p=process.argv[1];const o={binaryPath:process.argv[2],workingDirectory:process.argv[3],timeoutMs:120000,profile:'default',isConfigured:true};fs.writeFileSync(p,JSON.stringify(o));" "$settings_payload" "$PROOF_BINARY_PATH" "$ROOT_DIR"
+node -e "const fs=require('node:fs');const p=process.argv[1];const o={binaryPath:process.argv[2],workingDirectory:process.argv[3],timeoutMs:300000,profile:'default',isConfigured:true};fs.writeFileSync(p,JSON.stringify(o));" "$settings_payload" "$PROOF_BINARY_PATH" "$ROOT_DIR"
 
 reset_body="$REQUEST_DIR/reset.body"
 reset_status="$REQUEST_DIR/reset.status"

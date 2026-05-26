@@ -171,29 +171,51 @@ describe("ResearchService", () => {
 			}));
 		});
 
-		it("FAILS: runResearch should update source lastCrawledAt after successful crawl", async () => {
-			// Add a test source
+		it("sets source lastCrawledAt after a crawl attempt completes", async () => {
 			const source = await sourceService.addSource({
 				name: "Test Source",
 				url: "https://example.com/grants",
 				type: "website",
 			});
 
-			// Verify source has no lastCrawledAt initially
 			const sourcesBefore = await sourceService.getAllSources();
 			const sourceBefore = sourcesBefore.find((s) => s.id === source.id);
 			expect(sourceBefore?.lastCrawledAt).toBeUndefined();
 
-			// Run research
 			await researchService.runResearch(mockProfile, {
 				_providerType: "fake",
 			});
 
-			// Source should now have lastCrawledAt set
 			const sourcesAfter = await sourceService.getAllSources();
 			const sourceAfter = sourcesAfter.find((s) => s.id === source.id);
 			expect(sourceAfter?.lastCrawledAt).toBeDefined();
 			expect(sourceAfter?.lastCrawledAt).not.toBeNull();
+		});
+
+		it("stamps source lastCrawledAt even when a crawl returns no grants", async () => {
+			const source = await sourceService.addSource({
+				name: "No Grant Source",
+				url: "https://example.com/empty",
+				type: "website",
+			});
+
+			setDependencies(
+				createDependencies({
+					createOpencodeAdapter: () => ({
+						executeResearch: async () => ({ success: false, error: "No results" }),
+						generateDraft: async () => ({ success: false, error: "not used" }),
+						isConfigured: () => true,
+					}),
+				}),
+			);
+
+			await researchService.runResearch(mockProfile, {
+				_providerType: "fake",
+			});
+
+			const sourcesAfter = await sourceService.getAllSources();
+			const sourceAfter = sourcesAfter.find((s) => s.id === source.id);
+			expect(sourceAfter?.lastCrawledAt).toBeDefined();
 		});
 
 		it("FAILS: runResearch should not mutate existing matched grants when research returns no grants", async () => {
@@ -509,7 +531,10 @@ describe('per-grant and summary notifications during research', () => {
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
 		const notifications = await repository.getNotifications();
 		expect(notifications.some(n => n.dot === 'accent' && /New match/i.test(n.text))).toBe(true);
-		const perGrantNotif = notifications.find(n => n.dot === 'accent' && /New match/i.test(n.text))!;
+		const perGrantNotif = notifications.find(n => n.dot === 'accent' && /New match/i.test(n.text));
+		if (!perGrantNotif) {
+			throw new Error('Expected per-grant notification');
+		}
 		expect(perGrantNotif.text).toContain('<strong>');
 		expect(perGrantNotif.text).toContain('Mock Foundation');
 		expect(perGrantNotif.text).toContain('$50,000');
@@ -544,7 +569,8 @@ describe('notification emission', () => {
       await researchService.runResearch(mockProfile, { _providerType: 'fake' });
       const notifications = await repository.getNotifications();
       expect(notifications.length).toBeGreaterThan(0);
-      expect(notifications[0]!.dot).toBeDefined();
+      expect(notifications[0]).toBeDefined();
+            expect(notifications[0]?.dot).toBeDefined();
       expect(notifications.some(n => /research completed/i.test(n.text))).toBe(true);
     });
   });

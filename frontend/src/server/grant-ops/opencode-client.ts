@@ -333,21 +333,27 @@ class CliOpencodeProvider implements OpencodeAdapter {
 			};
 		}
 
-		const prompt = `Return only valid JSON, with no markdown, fences, or extra text. Do not call tools, browse, or delegate tasks. Fill in this JSON object with multiple aligned grants (at least 3) for Hacker Dojo's EdTech, community innovation, and science/technology themes. Keep the same keys and output only JSON.
+		const prompt = `Return only JSON.
+Find 1-3 real grant opportunities for Hacker Dojo using the request context below.
+Use the current source URL and the listed themes to return source-backed grants that fit educational technology nonprofits, community innovation, or science/technology funding.
+Do not invent placeholder or "plausible" grants.
+Return a JSON object with grants, evidence, and rationale.
 
-{"grants":[{"id":"g1","title":"Plausible title","funder":"Plausible funder","funderShort":"Plausible","award":"$50,000","awardSort":50000,"deadline":"2026-06-30","daysOut":30,"fit":80,"tags":["EdTech","Community"],"status":"matched","statusLabel":"Matched"}],"evidence":[{"id":"e1","grantId":"g1","sourceId":"s1","sourceName":"Plausible Source","evidenceType":"eligibility","content":"Why this grant fits","capturedAt":"2026-05-01T00:00:00.000Z"}],"rationale":"plausible"}
-
-Organization Profile:
+Organization profile:
 ${request.organizationProfile}
 
-Search Themes: ${request.searchThemes.join(", ")}
-${request.sourceName ? `\nSpecific Source: ${request.sourceName}${request.sourceUrl ? ` (${request.sourceUrl})` : ""}` : ""}`;
+Search themes:
+${request.searchThemes.join(', ')}
+${request.sourceName ? `
+Source name: ${request.sourceName}` : ''}
+${request.sourceUrl ? `
+Source URL: ${request.sourceUrl}` : ''}`;
 
 		const args = [
 			"run",
-			prompt,
-			"--output-format",
+			"--format",
 			"json",
+			prompt,
 		];
 
 		return this.runCommand(args);
@@ -365,11 +371,7 @@ ${request.sourceName ? `\nSpecific Source: ${request.sourceName}${request.source
 			};
 		}
 
-		let prompt = `Generate a concise grant proposal draft (under 300 words) for:
-
-Do not call tools, browse, or delegate tasks. Use only the provided grant details, organization profile, mission statement, and grounding documents.
-
-Write three short sections: Executive Summary, Program Description, and Conclusion.
+		let prompt = `Write a concise grant proposal in Markdown for ${request.grantTitle}. Use these sections: Executive Summary, Program Design, Qualifications, Budget, Closing. Keep it under 350 words and include no preamble.
 
 Grant: ${request.grantTitle}
 Funder: ${request.grantFunder}
