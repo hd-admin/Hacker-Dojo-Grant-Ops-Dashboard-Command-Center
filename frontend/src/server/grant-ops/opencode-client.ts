@@ -197,17 +197,18 @@ class CliOpencodeProvider implements OpencodeAdapter {
 	private async runCommand(args: string[]): Promise<OpencodeResponse> {
 		return new Promise((resolve) => {
 			const binaryPath = this.settings.binaryPath || "opencode";
+			const timeoutMs = this.settings.timeoutMs || 60000;
 
 			const proc = spawn(binaryPath, args, {
 				cwd: this.settings.workingDirectory || process.cwd(),
 				stdio: ['ignore', 'pipe', 'pipe'],
-				timeout: this.settings.timeoutMs || 60000,
 			});
 
 			let stdout = "";
 			let stderr = "";
 			let settled = false;
 			let timeoutHandle: NodeJS.Timeout | null = null;
+			let killTimeoutHandle: NodeJS.Timeout | null = null;
 
 			const settle = (response: OpencodeResponse): void => {
 				if (settled) {
@@ -217,6 +218,10 @@ class CliOpencodeProvider implements OpencodeAdapter {
 				if (timeoutHandle) {
 					clearTimeout(timeoutHandle);
 					timeoutHandle = null;
+				}
+				if (killTimeoutHandle) {
+					clearTimeout(killTimeoutHandle);
+					killTimeoutHandle = null;
 				}
 				resolve(response);
 			};
@@ -254,13 +259,21 @@ class CliOpencodeProvider implements OpencodeAdapter {
 			});
 
 			timeoutHandle = setTimeout(() => {
-				proc.kill();
-				settle({
-					success: false,
-					error: `Opencode timed out after ${this.settings.timeoutMs || 60000}ms`,
-					exitCode: 124,
-				});
-			}, this.settings.timeoutMs || 60000);
+				if (!settled) {
+					proc.kill('SIGTERM');
+					// Set up a harder kill timeout if process doesn't respond
+					killTimeoutHandle = setTimeout(() => {
+						if (!settled && proc.exitCode === null) {
+							proc.kill('SIGKILL');
+						}
+					}, 5000);
+					settle({
+						success: false,
+						error: `Opencode timed out after ${timeoutMs}ms`,
+						exitCode: 124,
+					});
+				}
+			}, timeoutMs)
 		});
 	}
 

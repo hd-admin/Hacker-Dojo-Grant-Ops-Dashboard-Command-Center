@@ -125,6 +125,7 @@ async function performResearch(
   let totalGrantsMatched = 0;
   const existingGrants = await deps.repository.getGrants();
   const perGrantNotifications: Notification[] = [];
+  const autoDraftTasks: Array<() => Promise<void>> = [];
 
   // Process each source
   for (const source of sources) {
@@ -136,6 +137,10 @@ async function performResearch(
         sourceName: source.name,
         sourceUrl: source.url,
       });
+
+      if (!response.success) {
+        console.warn(`Research failed for source ${source.name}:`, response.error);
+      }
 
       if (response.success) {
         if (response.content) {
@@ -216,12 +221,15 @@ async function performResearch(
                 text: `New match: <strong>${escapeForHtml(newGrant.title)}</strong> · ${escapeForHtml(newGrant.funder)} · ${escapeForHtml(newGrant.award)} · fit ${newGrant.fit}`,
               });
 
+              // Queue auto-draft tasks to be executed with a timeout
               if (newGrant.fit >= profile.agentBehavior.autoDraftThreshold) {
-                try {
-                  await generateDraft(newGrant, profile, { _providerType: providerType, suppressNotification: true });
-                } catch (err) {
-                  console.warn('Auto-draft failed for grant', newGrant.id, err);
-                }
+                autoDraftTasks.push(async () => {
+                  try {
+                    await generateDraft(newGrant, profile, { _providerType: providerType, suppressNotification: true });
+                  } catch (err) {
+                    console.warn('Auto-draft failed for grant', newGrant.id, err);
+                  }
+                });
               }
             } else {
               const updatedSourceCount = (existing.sourceCount ?? 0) + 1;
@@ -272,6 +280,20 @@ async function performResearch(
     };
     const updatedNotifications = [...perGrantNotifications, summaryNotification, ...notifications];
     await deps.repository.updateNotifications(updatedNotifications);
+  }
+
+  // Execute auto-draft tasks with a timeout so they don't block forever
+  if (autoDraftTasks.length > 0) {
+    try {
+      await Promise.race([
+        Promise.all(autoDraftTasks.map((task) => task())),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Auto-draft timeout')), 30000),
+        ),
+      ]);
+    } catch (err) {
+      console.warn('Auto-draft tasks exceeded timeout:', err instanceof Error ? err.message : err);
+    }
   }
 
   const finalCrawlRun = (await deps.repository.getLatestCrawlRun()) ?? initialCrawlRun;
