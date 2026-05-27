@@ -44,6 +44,7 @@ function setTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
 beforeEach(() => {
   tasksGetAllMock.mockReset();
   tasksUpdateMock.mockClear();
+  tasksOverrideMock.mockClear();
   followUpsGetAllMock.mockReset();
 
   const tasks: Task[] = [
@@ -83,13 +84,13 @@ describe('TasksView behavior', () => {
     setTextareaValue(textarea, 'Operator reviewed and waived the task.');
 
     Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Save override')?.click();
-    await waitFor(() => tasksUpdateMock.mock.calls.length === 1);
+    await waitFor(() => tasksOverrideMock.mock.calls.length === 1);
 
-    expect(tasksUpdateMock.mock.calls[0]?.[0][0]).toMatchObject({
+    expect(tasksOverrideMock.mock.calls[0]?.[0]).toMatchObject({
       id: 'task-1',
-      taskStatus: 'waived',
-      justification: 'Operator reviewed and waived the task.',
-      completed: false,
+      newValue: 'waived',
+      rationale: 'Operator reviewed and waived the task.',
+      overrideType: 'task',
     });
   });
 });

@@ -110,6 +110,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       }
 
       const existingTask = tasks[taskIndex]!;
+
+      // Security: verify the task belongs to this grant before modifying it
+      if (existingTask.grantId !== grantId) {
+        return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      }
+
       const previousTaskStatus = existingTask.taskStatus ?? (existingTask.completed ? 'completed' : 'blocked');
 
       // Update the task

@@ -214,4 +214,38 @@ describe('/api/grants/[grantId]/override route', () => {
     const data = await response.json();
     expect(data.error).toMatch(/Invalid task status/i);
   });
+
+  it('rejects task override when task belongs to a different grant', async () => {
+    // Create a second grant with its own task
+    const otherGrant = createGrant(`other-grant-${Date.now()}`);
+    await repository.addGrant(otherGrant);
+
+    const otherTask = createTask('task-cross-grant', otherGrant.id);
+    const tasks = await repository.getTasks();
+    tasks.push(otherTask);
+    await repository.updateTasks(tasks);
+
+    // Attempt to override the other grant's task via this grant's override route
+    const response = await POST(new Request(`http://localhost/api/grants/${grant.id}/override`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        field: 'task.task-cross-grant.status',
+        newValue: 'completed',
+        rationale: 'Trying to override another grant\'s task',
+        overrideType: 'task',
+      }),
+    }) as never, {
+      params: Promise.resolve({ grantId: grant.id }),
+    });
+
+    expect(response.status).toBe(404);
+    const data = await response.json();
+    expect(data.error).toMatch(/Task not found/i);
+
+    // Verify the other grant's task was NOT modified
+    const updatedTasks = await repository.getTasks();
+    const untouchedTask = updatedTasks.find((t) => t.id === 'task-cross-grant');
+    expect(untouchedTask?.taskStatus).toBe('blocked');
+  });
 });
