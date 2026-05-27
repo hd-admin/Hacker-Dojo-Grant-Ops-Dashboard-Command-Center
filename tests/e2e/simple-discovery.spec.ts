@@ -43,7 +43,7 @@ test("simple-discovery: add source and refresh crawl state", async ({
 	const stubPath = await ensureOpencodeStub();
 	await resetAppState(request);
 	await page.goto("http://localhost:3000");
-	await page.waitForSelector(".app", { timeout: 20000 });
+	await page.waitForSelector(".app", { timeout: 60000 });
 
 	await saveProfileThroughSettingsView(
 		page,

@@ -55,7 +55,7 @@ describe('/api/sources route', () => {
     const createData = await createResponse.json();
     const sourceId = createData.source.id as string;
 
-    const getResponse = await GET();
+    const getResponse = await GET(new Request('http://localhost/api/sources') as never);
     const sources = await getResponse.json();
     expect(getResponse.status).toBe(200);
     expect(sources).toHaveLength(1);

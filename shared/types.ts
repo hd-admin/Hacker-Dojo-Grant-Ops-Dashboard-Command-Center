@@ -58,9 +58,9 @@ export interface JobQueueItem {
 	completedAt?: string;
 	entityId?: string;
 	retryCount?: number;
-	errorMessage?: string;
+	errorMessage?: string | undefined;
 	resultSummary?: string;
-	failureCategory?: JobFailureCategory;
+	failureCategory?: JobFailureCategory | undefined;
 }
 
 export interface HumanOverride {
@@ -258,6 +258,7 @@ export interface Grant {
 	latestDraftVersion?: number;
 	groundedDocumentCount?: number;
 	sourceCount?: number;
+	responsibilityTag?: ResponsibilityTag;
 	researchEvidence?: ResearchEvidence[];
 	researchRationale?: string;
 	manualSource?: boolean;

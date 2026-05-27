@@ -45,6 +45,24 @@ function getGroundingDocuments(documents: DocumentMetadata[]): string[] {
 		});
 }
 
+function buildGroundingSections(content: string, groundedDocumentCount: number) {
+	const sections = content
+		.split(/^#{1,3}\s+/m)
+		.map((section) => section.trim())
+		.filter(Boolean)
+		.slice(0, 8)
+		.map((section, index) => {
+			const [firstLine] = section.split(/\r?\n/, 1);
+			return {
+				sectionTitle: firstLine?.slice(0, 80) || `Section ${index + 1}`,
+				evidence: groundedDocumentCount > 0 ? [`Grounded in ${groundedDocumentCount} documents`] : [],
+				isGrounded: groundedDocumentCount > 0,
+			};
+		});
+
+	return sections;
+}
+
 export async function generateDraft(
 	grant: Grant,
 	profile: OrganizationProfile,
@@ -109,6 +127,7 @@ export async function generateDraft(
 		createdAt: clock.now().toISOString(),
 		createdBy: "agent",
 		revisionNotes: options.revisionNotes || "",
+		groundingSections: buildGroundingSections(response.content, groundedDocuments.length),
 	};
 
 	await deps.repository.addDraftArtifact(draftArtifact);

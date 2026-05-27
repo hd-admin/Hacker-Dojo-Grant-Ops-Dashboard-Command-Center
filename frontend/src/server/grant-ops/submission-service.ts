@@ -78,6 +78,11 @@ export async function canSubmit(grantId: string): Promise<{ canSubmit: boolean; 
     return { canSubmit: false, reason: 'Grant must be approved before submission' };
   }
 
+  const manifests = await deps.repository.getSubmissionManifests(grantId);
+  if (manifests.length === 0) {
+    return { canSubmit: false, reason: 'Submission manifest is required before submission' };
+  }
+
   const blockedItems = (grant.checklist || []).filter((item) => item.required === true && item.done === false);
   if (blockedItems.length > 0) {
     return {

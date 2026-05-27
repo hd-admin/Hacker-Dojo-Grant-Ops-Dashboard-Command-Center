@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useEffect, useState } from 'react';
 import type { Notification } from '../../../shared/types';
-import { seedNotifications } from '../../../shared/seed-data';
 import { notificationsApi } from '../lib/grant-ops-client';
 
 interface NotificationsViewProps {
@@ -10,7 +10,7 @@ interface NotificationsViewProps {
 }
 
 export default function NotificationsView({ notifications: notificationsProp }: NotificationsViewProps) {
-  const [notifications, setNotifications] = useState<Notification[]>(notificationsProp ?? seedNotifications);
+  const [notifications, setNotifications] = useState<Notification[]>(notificationsProp ?? []);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {

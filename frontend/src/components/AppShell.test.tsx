@@ -3,12 +3,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { CrawlRun, Grant, Notification, OrganizationProfile, Task } from '../../../shared/types';
 
-const { grantsGetAll, profileGet, notificationsGetAll, tasksGetAll, researchGetRuns } = vi.hoisted(
+const { grantsGetAll, profileGet, notificationsGetAll, tasksGetAll, sourcesGetAll, researchGetRuns } = vi.hoisted(
   () => ({
     grantsGetAll: vi.fn(),
     profileGet: vi.fn(),
     notificationsGetAll: vi.fn(),
     tasksGetAll: vi.fn(),
+    sourcesGetAll: vi.fn(),
     researchGetRuns: vi.fn(),
   }),
 );
@@ -19,6 +20,7 @@ vi.mock('../lib/grant-ops-client', () => ({
     profile: { get: profileGet },
     notifications: { getAll: notificationsGetAll },
     tasks: { getAll: tasksGetAll },
+    sources: { getAll: sourcesGetAll },
     research: { getRuns: researchGetRuns },
   },
 }));
@@ -162,6 +164,7 @@ const refreshedRun: CrawlRun = {
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
+let fetchMock: ReturnType<typeof vi.fn>;
 
 async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<void> {
   const start = Date.now();
@@ -179,12 +182,32 @@ beforeEach(() => {
   profileGet.mockReset();
   notificationsGetAll.mockReset();
   tasksGetAll.mockReset();
+  sourcesGetAll.mockReset();
   researchGetRuns.mockReset();
+
+  fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input.toString();
+    if (url === '/api/health') {
+      return new Response(JSON.stringify({
+        storage: 'ok',
+        opencode: 'ok',
+        opencodeVersion: '1.0.0',
+        crawlerStatus: 'ok',
+        documentIndexer: 'ok',
+      }), { headers: { 'content-type': 'application/json' } });
+    }
+    if (url === '/api/crawl/scheduled?trigger=true') {
+      return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+    }
+    return new Response(JSON.stringify({}), { headers: { 'content-type': 'application/json' } });
+  });
+  vi.stubGlobal('fetch', fetchMock);
 
   grantsGetAll.mockResolvedValueOnce(initialGrants).mockResolvedValue(refreshedGrants);
   profileGet.mockResolvedValue(profile);
   notificationsGetAll.mockResolvedValue(notifications);
   tasksGetAll.mockResolvedValue(tasks);
+  sourcesGetAll.mockResolvedValue([]);
   researchGetRuns
     .mockResolvedValueOnce({ latestRun: initialRun, allRuns: [initialRun] })
     .mockResolvedValue({ latestRun: refreshedRun, allRuns: [initialRun, refreshedRun] });
@@ -197,6 +220,7 @@ beforeEach(() => {
 afterEach(() => {
   root.unmount();
   container.remove();
+  vi.unstubAllGlobals();
 });
 
 describe('AppShell', () => {
@@ -204,6 +228,7 @@ describe('AppShell', () => {
     root.render(React.createElement(AppShell));
     await waitFor(() => container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent === '1');
 
+    expect(fetchMock).toHaveBeenCalledWith('/api/crawl/scheduled?trigger=true');
     expect(container.querySelector('.nav-item[data-view="settings"]')?.textContent).toContain('Org Profile');
     expect(container.querySelector('.nav-item[data-view="notifications"] .nav-count')?.textContent).toBe('1');
     expect(container.querySelector('.nav-item[data-view="tasks"] .nav-count')?.textContent).toBe('1');
@@ -230,6 +255,77 @@ describe('AppShell', () => {
 
     expect(researchGetRuns).toHaveBeenCalledTimes(3);
     expect(container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent).toBe('2');
+  });
+
+  it('shows a storage-blocked screen and hides navigation when storage health fails', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/health') {
+        return new Response(JSON.stringify({
+          storage: 'error',
+          storageError: 'Disk unavailable',
+          opencode: 'ok',
+          crawlerStatus: 'never-run',
+          documentIndexer: 'ok',
+        }), { headers: { 'content-type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+    });
+
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('[data-testid="storage-blocked-banner"]') !== null);
+
+    expect(container.querySelector('.sidebar')).toBeNull();
+    expect(container.querySelector('[data-view="dashboard"]')).toBeNull();
+    expect(container.textContent).toContain('Storage unavailable: Disk unavailable');
+  });
+
+  it('shows opencode degraded guidance when the AI runtime is unavailable', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/health') {
+        return new Response(JSON.stringify({
+          storage: 'ok',
+          opencode: 'not-installed',
+          crawlerStatus: 'never-run',
+          documentIndexer: 'ok',
+        }), { headers: { 'content-type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+    });
+
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null);
+
+    expect(container.querySelector('[data-testid="opencode-degraded-banner"]')).not.toBeNull();
+  });
+
+  it('shows first-run guidance when storage is healthy but no persisted data exists', async () => {
+    grantsGetAll.mockReset();
+    profileGet.mockReset();
+    notificationsGetAll.mockReset();
+    tasksGetAll.mockReset();
+    sourcesGetAll.mockReset();
+    researchGetRuns.mockReset();
+
+    grantsGetAll.mockResolvedValue([]);
+    profileGet.mockResolvedValue(profile);
+    notificationsGetAll.mockResolvedValue([]);
+    tasksGetAll.mockResolvedValue([]);
+    sourcesGetAll.mockResolvedValue([]);
+    researchGetRuns.mockResolvedValue({ latestRun: null, allRuns: [] });
+
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('[data-testid="first-run-guidance-card"]') !== null);
+
+    expect(container.querySelector('[data-testid="first-run-guidance-card"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="first-run-add-source-btn"]')).not.toBeNull();
+
+    Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Add Your First Source'),
+    )?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    await waitFor(() => container.querySelector('#view-sources')?.classList.contains('active') === true);
   });
 
   it('passes backend notifications to DashboardView after refreshAppState resolves', async () => {

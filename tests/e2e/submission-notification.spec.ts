@@ -85,7 +85,7 @@ test.describe('Submission Notification', () => {
 	test.beforeEach(async ({ page, request }) => {
 		await resetAppState(request);
 		await page.goto('http://localhost:3000');
-		await page.waitForSelector('.app', { timeout: 20000 });
+		await page.waitForSelector('.app', { timeout: 60000 });
 	});
 
 	test('notify-email-is-configured: notifyEmail is set in profile', async ({

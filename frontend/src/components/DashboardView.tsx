@@ -1,7 +1,7 @@
 'use client';
 
-import React from 'react';
-import type { Grant, OrganizationProfile, ActivityEvent, Notification } from '../../../shared/types';
+import React, { useEffect, useState } from 'react';
+import type { Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem } from '../../../shared/types';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
@@ -12,6 +12,7 @@ interface DashboardViewProps {
   grants: Grant[];
   profile: OrganizationProfile | null;
   notifications?: Notification[];
+  recentGrantIds?: string[];
 }
 
 function formatDate(dateStr: string): { day: string; month: string } {
@@ -77,7 +78,8 @@ function getDefaultActivity(): ActivityEvent[] {
   ];
 }
 
-export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications }: DashboardViewProps) {
+export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications, recentGrantIds }: DashboardViewProps) {
+  const [jobs, setJobs] = useState<JobQueueItem[]>([]);
   const activity: ActivityEvent[] = (notifications && notifications.length > 0)
     ? notifications.slice(0, 6).map((n) => ({ dot: n.dot, text: n.text, time: n.time }))
     : getDefaultActivity();
@@ -97,6 +99,32 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
   const handleNewSearch = () => {
     onNavigate?.('discovery');
   };
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadJobs = async () => {
+      try {
+        const response = await fetch('/api/jobs');
+        const data = (await response.json()) as JobQueueItem[];
+        if (!cancelled) {
+          setJobs(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error('Error loading jobs:', error);
+        if (!cancelled) {
+          setJobs([]);
+        }
+      }
+    };
+    void loadJobs();
+    const interval = window.setInterval(() => {
+      void loadJobs();
+    }, jobs.some((job) => job.status === 'queued' || job.status === 'running') ? 5000 : 15000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [jobs]);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -254,6 +282,62 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
           </div>
         </div>
       </div>
+
+      {recentGrantIds && recentGrantIds.length > 0 && (
+        <div className="panel" data-testid="recent-grants-widget">
+          <div className="panel-header">
+            <div className="panel-title">Recently Viewed</div>
+          </div>
+          <div className="activity-list">
+            {recentGrantIds.map((grantId) => {
+              const grant = grants.find((item) => item.id === grantId);
+              if (!grant) return null;
+              return (
+                <button key={grant.id} type="button" className="deadline-item" onClick={() => onGrantSelect(grant.id)}>
+                  <div>
+                    <div className="deadline-info-title">{grant.title}</div>
+                    <div className="deadline-info-meta">{grant.funder} · {grant.statusLabel}</div>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Job Queue */}
+      {jobs.length > 0 && (
+        <div className="panel" data-testid="job-queue-widget">
+          <div className="panel-header">
+            <div className="panel-title">Job Queue</div>
+          </div>
+          <div className="activity-list">
+            {jobs.slice(0, 8).map((job) => {
+              const failureMessage = job.failureCategory === 'rate-limit'
+                ? 'Service rate limited — wait before retrying'
+                : job.failureCategory === 'quota-exhausted'
+                  ? 'Quota exhausted — action required to restore service'
+                  : job.failureCategory === 'timeout'
+                    ? 'Operation timed out — retry or check opencode settings'
+                    : job.failureCategory === 'capacity'
+                      ? 'Service temporarily unavailable — retry later'
+                      : job.failureCategory === 'connectivity'
+                        ? 'Cannot reach opencode — check path and settings in Org Profile'
+                        : '';
+              return (
+              <div key={job.id} className="activity-item">
+                <div>
+                  <div className="activity-text"><strong>{job.jobType}</strong> · {job.status}{job.failureCategory ? ` · ${job.failureCategory}` : ''}</div>
+                  <div className="activity-time">{job.stage ?? 'queued'} · {job.lastUpdate ?? job.createdAt}</div>
+                  {failureMessage && <div className="drawer-note">{failureMessage}</div>}
+                  {job.errorMessage && <div className="drawer-note">{job.errorMessage}</div>}
+                </div>
+              </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Review Queue */}
       {reviewQueue.length > 0 && (

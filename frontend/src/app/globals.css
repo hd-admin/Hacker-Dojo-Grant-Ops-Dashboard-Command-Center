@@ -61,6 +61,7 @@ body {
   padding: 24px 0;
   position: sticky;
   top: 0;
+  z-index: 60;
   height: 100vh;
   display: flex;
   flex-direction: column;
@@ -1315,7 +1316,10 @@ body {
 /* === GRANT DRAWER === */
 .drawer-overlay {
   position: fixed;
-  inset: 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 220px;
   background: rgba(18, 16, 13, 0.72);
   border: 0;
   padding: 0;

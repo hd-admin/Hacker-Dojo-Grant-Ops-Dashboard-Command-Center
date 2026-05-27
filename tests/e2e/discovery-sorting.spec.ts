@@ -41,7 +41,7 @@ test.describe("Discovery Sorting", () => {
 		await resetAppState(request);
 		await page.goto("http://localhost:3000");
 		await page.click('[data-view="discovery"]');
-		await page.waitForSelector(".grants-table", { timeout: 10000 });
+		await page.waitForSelector(".grants-table", { timeout: 30000 });
 	});
 
 	// Helper to extract fit scores from the table

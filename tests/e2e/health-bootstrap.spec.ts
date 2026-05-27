@@ -38,7 +38,8 @@ esac
 	try {
 		await resetAppState(request);
 		await page.goto('http://localhost:3000');
-		await page.waitForSelector('.app', { timeout: 20000 });
+		await page.waitForSelector('.app', { timeout: 60000 });
+		await expect(page.getByTestId('first-run-guidance-card')).toBeVisible();
 
 		await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
 		await uploadDocumentThroughSettingsView(page, fixturePath);

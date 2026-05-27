@@ -1,23 +1,39 @@
-'use client';
+"use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import DashboardView from './DashboardView';
-import DiscoveryView from './DiscoveryView';
-import PipelineView from './PipelineView';
-import SettingsView from './SettingsView';
-import NotificationsView from './NotificationsView';
-import TasksView from './TasksView';
-import GrantDrawer from './GrantDrawer';
-import type { Grant, OrganizationProfile, CrawlStatus, Notification, Task } from '../../../shared/types';
-import { seedGrants, defaultProfile, seedNotifications, seedTasks } from '../../../shared/seed-data';
-import { client } from '../lib/grant-ops-client';
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import type {
+  CrawlStatus,
+  Grant,
+  HealthCheckResult,
+  Notification,
+  OrganizationProfile,
+  Source,
+  Task,
+} from "../../../shared/types";
+import { client } from "../lib/grant-ops-client";
+import DashboardView from "./DashboardView";
+import DiscoveryView from "./DiscoveryView";
+import GrantDrawer from "./GrantDrawer";
+import NotificationsView from "./NotificationsView";
+import PipelineView from "./PipelineView";
+import SettingsView from "./SettingsView";
+import SourcesView from "./SourcesView";
+import TasksView from "./TasksView";
+import AuditView from "./AuditView";
 
-type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
+type ViewType =
+  | "dashboard"
+  | "discovery"
+  | "pipeline"
+  | "sources"
+  | "settings"
+  | "notifications"
+  | "tasks"
+  | "audit";
 
 interface NavItem {
   view?: ViewType;
   label: string;
-  decorative?: boolean;
   icon?: string;
 }
 
@@ -25,41 +41,86 @@ const workspaceNav: NavItem[] = [
   { view: 'dashboard', label: 'Dashboard', icon: '◐' },
   { view: 'discovery', label: 'Discovery', icon: '◇' },
   { view: 'pipeline', label: 'Pipeline', icon: '▤' },
+  { view: 'sources', label: 'Sources', icon: '◈' },
   { view: 'settings', label: 'Org Profile', icon: '◯' },
 ];
 
 const activityNav: NavItem[] = [
   { view: 'notifications', label: 'Notifications', icon: '✉' },
   { view: 'tasks', label: 'Tasks', icon: '⌶' },
+  { view: 'audit', label: 'Audit', icon: '✎' },
 ];
+
+const WORKING_CONTEXT_KEY = 'grantops.workingContext';
+
+function getWorkingContextStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  const storage = window.localStorage;
+  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function' ? storage : null;
+}
 
 export default function AppShell() {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
   const [selectedGrantRefreshKey, setSelectedGrantRefreshKey] = useState(0);
   const [appVersion] = useState('0.1.0');
-  const [grants, setGrants] = useState<Grant[]>(seedGrants);
-  const [profile, setProfile] = useState<OrganizationProfile | null>(defaultProfile);
+  const [grants, setGrants] = useState<Grant[]>([]);
+  const [sources, setSources] = useState<Source[]>([]);
+  const [profile, setProfile] = useState<OrganizationProfile | null>(null);
   const [crawlStatus, setCrawlStatus] = useState<CrawlStatus>({ online: true, lastSync: '' });
-  const [notifications, setNotifications] = useState<Notification[]>(seedNotifications);
-  const [tasks, setTasks] = useState<Task[]>(seedTasks);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [recentGrantIds, setRecentGrantIds] = useState<string[]>([]);
+  const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
   const unreadTaskCount = useMemo(() => tasks.filter((task) => !task.completed).length, [tasks]);
+  const pendingSourcesCount = useMemo(
+    () => sources.filter((source) => source.reviewStatus === 'pending-review').length,
+    [sources],
+  );
+
+  const saveWorkingContext = useCallback((next: {
+    activeView?: ViewType;
+    selectedGrantId?: string | null;
+    recentGrantIds?: string[];
+  }) => {
+    const storage = getWorkingContextStorage();
+    if (!storage) return;
+    const current = readWorkingContext();
+    const merged = {
+      ...current,
+      ...next,
+    };
+    storage.setItem(WORKING_CONTEXT_KEY, JSON.stringify(merged));
+  }, []);
+
+  const refreshHealth = useCallback(async (): Promise<void> => {
+    try {
+      const response = await fetch('/api/health');
+      const data = (await response.json()) as HealthCheckResult;
+      setHealthResult(data);
+    } catch (error) {
+      console.error('Error loading health:', error);
+      setHealthResult({ storage: 'error', opencode: 'error', crawlerStatus: 'never-run', documentIndexer: 'error', storageError: 'Unable to load health' });
+    }
+  }, []);
 
   const refreshAppState = useCallback(async (): Promise<void> => {
-    const [grantsData, profileData, notificationsData, tasksData, runsResponse] = await Promise.all([
+    const [grantsData, profileData, notificationsData, tasksData, sourcesData, runsResponse] = await Promise.all([
       client.grants.getAll(),
-      client.profile.get(),
-      client.notifications.getAll(),
-      client.tasks.getAll(),
-      client.research.getRuns(),
+      client.profile.get().catch(() => null),
+      client.notifications.getAll().catch(() => []),
+      client.tasks.getAll().catch(() => []),
+      client.sources.getAll().catch(() => []),
+      client.research.getRuns().catch(() => ({ latestRun: null, allRuns: [] })),
     ]);
 
     setGrants(grantsData);
     setProfile(profileData);
     setNotifications(notificationsData);
     setTasks(tasksData);
+    setSources(sourcesData);
 
     const latestRun = runsResponse.latestRun;
     setCrawlStatus({
@@ -78,14 +139,55 @@ export default function AppShell() {
 
   useEffect(() => {
     setIsMounted(true);
-    void refreshAppState().catch((error) => {
+    const context = readWorkingContext();
+    if (context.activeView) setActiveView(context.activeView as ViewType);
+    if (context.selectedGrantId !== undefined) setSelectedGrantId(context.selectedGrantId);
+    if (Array.isArray(context.recentGrantIds)) setRecentGrantIds(context.recentGrantIds.slice(0, 5));
+    void Promise.all([refreshAppState(), refreshHealth()]).catch((error) => {
       console.error('Error loading app state:', error);
     });
-  }, [refreshAppState]);
+  }, [refreshAppState, refreshHealth]);
 
-  if (!isMounted) {
-    return <div className="app-loading" aria-busy="true" />;
-  }
+  useEffect(() => {
+    const triggerScheduledCrawls = async (): Promise<void> => {
+      try {
+        await fetch('/api/crawl/scheduled?trigger=true');
+      } catch (error) {
+        console.error('Error checking scheduled crawls:', error);
+      }
+    };
+
+    void triggerScheduledCrawls();
+    const scheduler = window.setInterval(() => {
+      void triggerScheduledCrawls();
+    }, 60_000);
+
+    return () => {
+      window.clearInterval(scheduler);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isMounted) return;
+    saveWorkingContext({ activeView });
+  }, [activeView, isMounted, saveWorkingContext]);
+
+  useEffect(() => {
+    if (!isMounted) return;
+    saveWorkingContext({ selectedGrantId });
+    if (selectedGrantId) {
+      setRecentGrantIds((current) => {
+        const next = [selectedGrantId, ...current.filter((id) => id !== selectedGrantId)].slice(0, 5);
+        saveWorkingContext({ recentGrantIds: next });
+        return next;
+      });
+    }
+  }, [selectedGrantId, isMounted, saveWorkingContext]);
+
+  useEffect(() => {
+    if (!isMounted) return;
+    saveWorkingContext({ recentGrantIds });
+  }, [recentGrantIds, isMounted, saveWorkingContext]);
 
   const handleNavClick = (item: NavItem) => {
     if (item.view) {
@@ -105,6 +207,34 @@ export default function AppShell() {
     setSelectedGrantId(null);
   };
 
+  const isFirstRun = grants.length === 0 && sources.length === 0 && tasks.length === 0 && notifications.length === 0;
+  const hasStorageError = healthResult?.storage === 'error';
+
+  if (!isMounted) {
+    return <div className="app-loading" aria-busy="true" />;
+  }
+
+  if (hasStorageError) {
+    return (
+      <div className="app app-blocked">
+        <div className="storage-blocked-panel">
+          <div data-testid="storage-blocked-banner">
+            Storage unavailable: {healthResult.storageError ?? 'Unknown error'}
+          </div>
+          <button
+            type="button"
+            data-testid="rerun-health-check-btn"
+            onClick={() => {
+              void refreshHealth();
+            }}
+          >
+            Re-run Health Check
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <aside className="sidebar">
@@ -123,7 +253,9 @@ export default function AppShell() {
                 ? grants.filter((g) => g.status === 'matched').length
                 : item.view === 'pipeline'
                   ? grants.filter((g) => g.status !== 'awarded').length
-                  : 0;
+                  : item.view === 'sources'
+                    ? pendingSourcesCount
+                    : 0;
             return (
               <button
                 key={item.label}
@@ -166,7 +298,7 @@ export default function AppShell() {
           <span className={`status-dot ${crawlStatus.online ? '' : 'offline'}`} />
           Crawler {crawlStatus.online ? 'online' : 'offline'}
           <br />
-          Last sync: {isMounted && crawlStatus.lastSync ? getRelativeTime(crawlStatus.lastSync) : '—'}
+          Last sync: {crawlStatus.lastSync ? getRelativeTime(crawlStatus.lastSync) : '—'}
           <br />
           <br />
           Logged in as
@@ -178,6 +310,22 @@ export default function AppShell() {
       </aside>
 
       <main className="main">
+        <div className="shell-banner-row">
+          {hasStorageError && (
+            <div data-testid="storage-blocked-banner">Storage unavailable: {healthResult?.storageError ?? 'Unknown error'}</div>
+          )}
+          {(healthResult?.opencode === 'not-installed' || healthResult?.opencode === 'not-reachable') && (
+            <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
+          )}
+          {isFirstRun && (
+            <div data-testid="first-run-guidance-card">
+              Welcome to Hacker Dojo Grant Ops
+              <button type="button" data-testid="first-run-add-source-btn" onClick={() => handleNavigate('sources')}>Add Your First Source</button>
+            </div>
+          )}
+          <button type="button" data-testid="rerun-health-check-btn" onClick={() => { void refreshHealth(); }}>Re-run Health Check</button>
+        </div>
+
         <div id="view-dashboard" className={`view ${activeView === 'dashboard' ? 'active' : ''}`}>
           <DashboardView
             onGrantSelect={handleGrantSelect}
@@ -186,28 +334,29 @@ export default function AppShell() {
             grants={grants}
             profile={profile}
             notifications={notifications}
+            recentGrantIds={recentGrantIds}
           />
         </div>
         <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`}>
-          <DiscoveryView
-            onGrantSelect={handleGrantSelect}
-            onRefreshAppState={refreshAppState}
-          />
+          <DiscoveryView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} />
         </div>
         <div id="view-pipeline" className={`view ${activeView === 'pipeline' ? 'active' : ''}`}>
           <PipelineView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} />
         </div>
+        <div id="view-sources" className={`view ${activeView === 'sources' ? 'active' : ''}`}>
+          <SourcesView onRefreshAppState={refreshAppState} />
+        </div>
         <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`}>
           <SettingsView onRefreshAppState={refreshAppState} />
         </div>
-        <div
-          id="view-notifications"
-          className={`view ${activeView === 'notifications' ? 'active' : ''}`}
-        >
+        <div id="view-notifications" className={`view ${activeView === 'notifications' ? 'active' : ''}`}>
           <NotificationsView notifications={notifications} />
         </div>
         <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`}>
           <TasksView onRefreshAppState={refreshAppState} tasks={tasks} />
+        </div>
+        <div id="view-audit" className={`view ${activeView === 'audit' ? 'active' : ''}`}>
+          <AuditView />
         </div>
       </main>
 
@@ -219,6 +368,24 @@ export default function AppShell() {
       />
     </div>
   );
+}
+
+function readWorkingContext(): {
+  activeView?: string;
+  selectedGrantId?: string | null;
+  recentGrantIds?: string[];
+} {
+  const storage = getWorkingContextStorage();
+  if (!storage) return {};
+  try {
+    return JSON.parse(storage.getItem(WORKING_CONTEXT_KEY) || '{}') as {
+      activeView?: string;
+      selectedGrantId?: string | null;
+      recentGrantIds?: string[];
+    };
+  } catch {
+    return {};
+  }
 }
 
 function getRelativeTime(isoString: string): string {

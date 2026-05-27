@@ -47,7 +47,10 @@ describe('NotificationsView', () => {
     });
 
     it('should render notification text with HTML content', () => {
-      const notification = mockNotifications[0]!;
+      const notification = mockNotifications[0];
+      if (!notification) {
+        throw new Error('Expected mockNotifications[0] to exist');
+      }
       expect(notification.text).toContain('<strong>3 new grants</strong>');
       expect(notification.text).toContain('matched from Candid weekly crawl');
     });

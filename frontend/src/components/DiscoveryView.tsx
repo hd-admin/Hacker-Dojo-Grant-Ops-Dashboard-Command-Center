@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Grant, Source } from '../../../shared/types';
-import { seedGrants } from '../../../shared/seed-data';
 import { client } from '../lib/grant-ops-client';
 
 interface DiscoveryViewProps {
@@ -11,24 +11,32 @@ interface DiscoveryViewProps {
 }
 
 type SortOption = 'fit' | 'deadline' | 'award' | 'recently-added';
-type CategoryFilter =
-  | 'All'
-  | 'EdTech'
-  | 'Community'
-  | 'Science & Tech'
-  | 'Federal'
-  | 'Foundation'
-  | 'Corporate';
+type CategoryFilter = 'All' | 'EdTech' | 'Community' | 'Science & Tech' | 'Federal' | 'Foundation' | 'Corporate';
 
-const categoryFilters: CategoryFilter[] = [
-  'All',
-  'EdTech',
-  'Community',
-  'Science & Tech',
-  'Federal',
-  'Foundation',
-  'Corporate',
-];
+const WORKING_CONTEXT_KEY = 'grantops.workingContext';
+
+function getWorkingContextStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  const storage = window.localStorage;
+  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function' ? storage : null;
+}
+
+function readWorkingContext(): Record<string, unknown> {
+  const storage = getWorkingContextStorage();
+  if (!storage) return {};
+  try {
+    return JSON.parse(storage.getItem(WORKING_CONTEXT_KEY) || '{}') as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function saveWorkingContextField(field: string, value: unknown): void {
+  const storage = getWorkingContextStorage();
+  if (!storage) return;
+  const next = { ...readWorkingContext(), [field]: value };
+  storage.setItem(WORKING_CONTEXT_KEY, JSON.stringify(next));
+}
 
 function formatDate(dateStr: string): string {
   if (dateStr === 'Rolling') return 'Rolling';
@@ -40,7 +48,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: DiscoveryViewProps) {
-  const [grants, setGrants] = useState<Grant[]>(seedGrants);
+  const [grants, setGrants] = useState<Grant[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
   const [sourcesCrawled, setSourcesCrawled] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -48,9 +56,23 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
   const [sortBy, setSortBy] = useState<SortOption>('fit');
   const [category, setCategory] = useState<CategoryFilter>('All');
   const [showAddSourceForm, setShowAddSourceForm] = useState(false);
+  const [showManualIntake, setShowManualIntake] = useState(false);
+  const [manualTitle, setManualTitle] = useState('');
+  const [manualFunder, setManualFunder] = useState('');
   const [newSourceName, setNewSourceName] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [isAddingSource, setIsAddingSource] = useState(false);
+
+  useEffect(() => {
+    const context = readWorkingContext();
+    setSortBy((context.discoverySort as SortOption) ?? 'fit');
+    setCategory((context.discoveryCategory as CategoryFilter) ?? 'All');
+    setSearch((context.discoverySearch as string) ?? '');
+  }, []);
+
+  useEffect(() => { saveWorkingContextField('discoverySort', sortBy); }, [sortBy]);
+  useEffect(() => { saveWorkingContextField('discoveryCategory', category); }, [category]);
+  useEffect(() => { saveWorkingContextField('discoverySearch', search); }, [search]);
 
   useEffect(() => {
     async function load() {
@@ -72,75 +94,49 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
     load();
   }, []);
 
-  if (loading) {
-    return <div className="header-title">Loading...</div>;
-  }
+  const pendingReviewCount = sources.filter((source) => source.reviewStatus === 'pending-review').length;
 
-  const handleExportCsv = () => {
-    const headers = ['Title', 'Funder', 'Award', 'Deadline', 'Fit', 'Status'];
-    const rows = filtered.map((g) => [
-      `"${g.title}"`,
-      `"${g.funder}"`,
-      g.award,
-      g.deadline,
-      g.fit.toString(),
-      g.statusLabel,
-    ]);
-    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = window.document.createElement('a');
-    a.href = url;
-    a.download = `grants-export-${new Date().toISOString().split('T')[0]}.csv`;
-    window.document.body.appendChild(a);
-    a.click();
-    window.document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const filtered = useMemo(() => {
+    const searchLower = search.toLowerCase();
+    return [...grants]
+      .filter((g) => !search || g.title.toLowerCase().includes(searchLower) || g.funder.toLowerCase().includes(searchLower) || g.tags.some((t) => t.toLowerCase().includes(searchLower)))
+      .filter((g) => category === 'All' || g.tags.some((t) => t === category || t.includes(category)))
+      .sort((a, b) => {
+        switch (sortBy) {
+          case 'fit': return b.fit - a.fit;
+          case 'deadline': return a.deadline === 'Rolling' ? 1 : b.deadline === 'Rolling' ? -1 : a.daysOut - b.daysOut;
+          case 'award': return b.awardSort - a.awardSort;
+          case 'recently-added': return (b.matchedAt || '').localeCompare(a.matchedAt || '');
+          default: return 0;
+        }
+      });
+  }, [grants, search, category, sortBy]);
+
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualTitle.trim() || !manualFunder.trim()) return;
+    await fetch('/api/grants', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ title: manualTitle, funder: manualFunder, notes: 'Manual intake' }),
+    });
+    setManualTitle('');
+    setManualFunder('');
+    setShowManualIntake(false);
+    await Promise.all([client.grants.getAll().then(setGrants), onRefreshAppState?.()]);
   };
 
-  const handleAddSource = () => {
-    setShowAddSourceForm(true);
-  };
-
-  const handleDeleteSource = async (id: string) => {
-    try {
-      await client.sources.remove(id);
-      const [updatedSources, data] = await Promise.all([
-        client.sources.getAll(),
-        client.grants.getAll(),
-      ]);
-      setSources(updatedSources);
-      setGrants(data);
-      void onRefreshAppState?.();
-    } catch (error) {
-      console.error('Error deleting source:', error);
-    }
-  };
-
-  const handleSubmitSource = async (e: React.FormEvent) => {
+  const handleAddSource = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSourceName.trim() || !newSourceUrl.trim()) return;
-
     setIsAddingSource(true);
     try {
-      await client.sources.add({
-        name: newSourceName.trim(),
-        url: newSourceUrl.trim(),
-        type: 'website',
-      });
+      await client.sources.add({ name: newSourceName.trim(), url: newSourceUrl.trim(), type: 'website' });
+      await client.research.trigger();
       setNewSourceName('');
       setNewSourceUrl('');
       setShowAddSourceForm(false);
-      await client.research.trigger();
-      const [updatedSources, runsData, data] = await Promise.all([
-        client.sources.getAll(),
-        client.research.getRuns(),
-        client.grants.getAll(),
-      ]);
-      setSources(updatedSources);
-      setSourcesCrawled(runsData.latestRun?.sourcesCrawled ?? 0);
-      setGrants(data);
-      void onRefreshAppState?.();
+      await Promise.all([client.grants.getAll().then(setGrants), client.sources.getAll().then(setSources), onRefreshAppState?.()]);
     } catch (error) {
       console.error('Error adding source:', error);
     } finally {
@@ -148,42 +144,25 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
     }
   };
 
-  const handleCancelSource = () => {
-    setNewSourceName('');
-    setNewSourceUrl('');
-    setShowAddSourceForm(false);
+  const handleExportCsv = () => {
+    const rows = ['title,funder,award,deadline,fit', ...filtered.map((grant) => [grant.title, grant.funder, grant.award, grant.deadline, String(grant.fit)].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))];
+    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'grant-ops-discovery.csv';
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
-  let filtered = grants.filter((g) => {
-    const searchLower = search.toLowerCase();
-    const matchesSearch =
-      !search ||
-      g.title.toLowerCase().includes(searchLower) ||
-      g.funder.toLowerCase().includes(searchLower) ||
-      g.tags.some((t) => t.toLowerCase().includes(searchLower));
+  if (loading) {
+    return <div className="header-title">Loading...</div>;
+  }
 
-    const matchesCategory =
-      category === 'All' || g.tags.some((t) => t === category || t.includes(category));
-
-    return matchesSearch && matchesCategory;
-  });
-
-  filtered = [...filtered].sort((a, b) => {
-    switch (sortBy) {
-      case 'fit':
-        return b.fit - a.fit;
-      case 'deadline':
-        if (a.deadline === 'Rolling') return 1;
-        if (b.deadline === 'Rolling') return -1;
-        return a.daysOut - b.daysOut;
-      case 'award':
-        return b.awardSort - a.awardSort;
-      case 'recently-added':
-        return (b.matchedAt || '').localeCompare(a.matchedAt || '');
-      default:
-        return 0;
-    }
-  });
+  const handleDeleteSource = async (sourceId: string) => {
+    await client.sources.remove(sourceId);
+    await Promise.all([client.sources.getAll().then(setSources), onRefreshAppState?.()]);
+  };
 
   return (
     <>
@@ -195,95 +174,62 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           <div className="header-sub">{filtered.length} grants · crawled {sourcesCrawled} sources</div>
         </div>
         <div className="header-actions">
-          <button type="button" className="btn btn-ghost btn-sm" onClick={handleExportCsv}>
+          <button type="button" data-testid="add-manually-btn" onClick={() => setShowManualIntake((value) => !value)}>
+            + Add manually
+          </button>
+          <button type="button" onClick={() => { void handleExportCsv(); }}>
             Export CSV
           </button>
-          {showAddSourceForm ? (
-            <span className="add-source-form">
-              <form onSubmit={handleSubmitSource} className="add-source-inline">
-                <input
-                  type="text"
-                  placeholder="Source name"
-                  value={newSourceName}
-                  onChange={(e) => setNewSourceName(e.target.value)}
-                  disabled={isAddingSource}
-                />
-                <input
-                  type="url"
-                  placeholder="https://..."
-                  value={newSourceUrl}
-                  onChange={(e) => setNewSourceUrl(e.target.value)}
-                  disabled={isAddingSource}
-                />
-                <button
-                  type="submit"
-                  className="btn btn-primary btn-sm"
-                  disabled={isAddingSource || !newSourceName.trim() || !newSourceUrl.trim()}
-                >
-                  {isAddingSource ? 'Adding...' : 'Add'}
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-ghost btn-sm"
-                  onClick={handleCancelSource}
-                  disabled={isAddingSource}
-                >
-                  Cancel
-                </button>
-              </form>
-            </span>
-          ) : (
-            <button type="button" className="btn btn-primary" onClick={handleAddSource}>
-              + Add source
-            </button>
-          )}
+          <button type="button" className="btn btn-primary" onClick={() => setShowAddSourceForm((value) => !value)}>
+            + Add source
+          </button>
         </div>
       </div>
 
-      {sources.length > 0 && (
-        <div className="sources-panel">
-          <div className="sources-panel-header">Sources ({sources.length})</div>
-          {sources.map((source) => (
-            <div key={source.id} className="source-item">
-              <div className="source-info">
-                <div className="source-name">{source.name}</div>
-                <div className="source-url">{source.url}</div>
-              </div>
-              <button type="button" className="btn btn-ghost btn-sm" onClick={() => { void handleDeleteSource(source.id); }} aria-label={`Delete ${source.name}`}>Delete</button>
-            </div>
-          ))}
+      {pendingReviewCount > 0 && (
+        <div>
+          <button type="button" onClick={() => window.dispatchEvent(new Event('grantops:navigate-sources'))}>
+            {pendingReviewCount} sources awaiting review
+          </button>
         </div>
       )}
 
+      {showManualIntake && (
+        <form onSubmit={handleManualSubmit} className="manual-intake-form">
+          <input data-testid="manual-title" value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} placeholder="Title" />
+          <input data-testid="manual-funder" value={manualFunder} onChange={(e) => setManualFunder(e.target.value)} placeholder="Funder" />
+          <button type="submit" data-testid="manual-submit-btn">Save grant</button>
+        </form>
+      )}
+
+      {showAddSourceForm && (
+        <form onSubmit={handleAddSource} className="add-source-inline">
+          <input type="text" placeholder="Source name" value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)} disabled={isAddingSource} />
+          <input type="url" placeholder="https://..." value={newSourceUrl} onChange={(e) => setNewSourceUrl(e.target.value)} disabled={isAddingSource} />
+          <button type="submit" className="btn btn-primary btn-sm" disabled={isAddingSource || !newSourceName.trim() || !newSourceUrl.trim()}>
+            {isAddingSource ? 'Adding...' : 'Add'}
+          </button>
+        </form>
+      )}
+
       <div className="filter-bar">
-        <input
-          type="text"
-          placeholder="Search grants, funders, tags..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-        />
+        <input type="text" placeholder="Search grants, funders, tags..." value={search} onChange={(e) => setSearch(e.target.value)} />
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)}>
           <option value="fit">Best fit</option>
           <option value="deadline">Deadline</option>
           <option value="award">Award size</option>
           <option value="recently-added">Recently added</option>
         </select>
-        {categoryFilters.map((cat) => {
-          const count =
-            cat === 'All'
-              ? grants.length
-              : grants.filter((g) => g.tags.some((t) => t === cat || t.includes(cat))).length;
-          return (
-            <button
-              key={cat}
-              type="button"
-              className={`filter-pill ${category === cat ? 'active' : ''}`}
-              onClick={() => setCategory(cat)}
-            >
-              {cat} {count > 0 && `(${count})`}
-            </button>
-          );
-        })}
+        {['All', 'EdTech', 'Community', 'Science & Tech', 'Federal', 'Foundation', 'Corporate'].map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            className={`filter-pill ${category === cat ? 'active' : ''}`}
+            onClick={() => setCategory(cat as CategoryFilter)}
+          >
+            {cat}
+          </button>
+        ))}
       </div>
 
       <div className="grants-table">
@@ -294,38 +240,36 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           <div>Deadline</div>
           <div>Fit</div>
         </div>
-        {filtered.map((grant) => {
-          const fitClass = grant.fit >= 85 ? 'high' : grant.fit >= 70 ? 'med' : 'low';
-          const dayClass = grant.daysOut < 30 ? 'urgent' : grant.daysOut < 60 ? 'soon' : '';
-          return (
-            <button type="button" key={grant.id} className="grants-row" onClick={() => onGrantSelect(grant.id)}>
-              <div>
-                <div className="grant-title">{grant.title}</div>
-                <div className="grant-tags">
-                  {grant.tags.map((tag) => (
-                    <span key={tag} className="grant-tag">
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="grant-funder">{grant.funderShort}</div>
-              <div className="award">{grant.award}</div>
-              <div className="deadline-cell">
-                {formatDate(grant.deadline)}
-                <div className={`days ${dayClass}`}>
-                  {grant.deadline === 'Rolling' ? 'rolling' : `${grant.daysOut}d out`}
-                </div>
-              </div>
-              <div className="fit-score">
-                <div className="fit-bar">
-                  <div className={`fit-fill ${fitClass}`} style={{ width: `${grant.fit}%` }} />
-                </div>
-                <div className="fit-num">{grant.fit}</div>
-              </div>
+        {filtered.map((grant) => (
+          <button key={grant.id} type="button" className="grants-row" onClick={() => onGrantSelect(grant.id)}>
+            <div>
+              {grant.title}
+              {grant.humanOverrides?.some((override) => override.field === 'fit' || override.field === 'category') && (
+                <span data-testid="human-confirmed-chip" className="ai-badge">Human-confirmed</span>
+              )}
+            </div>
+            <div className="grant-funder">{grant.funderShort}</div>
+            <div className="award">{grant.award}</div>
+            <div className="days">{formatDate(grant.deadline)}</div>
+            <div className="fit-num">{grant.fit}</div>
+          </button>
+        ))}
+      </div>
+
+      <div className="sources-panel">
+        <div className="sources-panel-header">Sources ({sources.length})</div>
+        {sources.map((source) => (
+          <div key={source.id} className="source-item">
+            <div className="source-info">
+              <div className="source-name">{source.name}</div>
+              <div className="source-url">{source.url}</div>
+              {source.reviewStatus === 'pending-review' && <div data-testid="sources-pending-review-section">pending review</div>}
+            </div>
+            <button type="button" onClick={() => void handleDeleteSource(source.id)}>
+              Delete
             </button>
-          );
-        })}
+          </div>
+        ))}
       </div>
     </>
   );

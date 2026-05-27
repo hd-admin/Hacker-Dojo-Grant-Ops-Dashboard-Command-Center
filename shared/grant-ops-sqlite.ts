@@ -30,6 +30,8 @@ import type {
 	SubmissionManifest,
 	SubmissionRecord,
 	Task,
+	BackupFreshnessStatus,
+	BackupVerificationRecord,
 } from "./types";
 
 export interface SqliteBootstrapState {
@@ -101,6 +103,7 @@ function openDatabase(state: SqliteBootstrapState): SqliteDatabase {
 	const db = new Database(state.dbPath);
 	db.pragma("journal_mode = WAL");
 	db.pragma("foreign_keys = ON");
+	ensureSchema(db);
 	dbCache.set(state.dataDir, db);
 	return db;
 }
@@ -762,9 +765,18 @@ export function writeJobQueueItem(state: SqliteBootstrapState, item: JobQueueIte
 		`INSERT OR REPLACE INTO job_queue (id, job_type, status, stage, last_update, created_at, started_at, completed_at, entity_id, retry_count, error_message, result_summary, failure_category)
 		 VALUES (@id, @jobType, @status, @stage, @lastUpdate, @createdAt, @startedAt, @completedAt, @entityId, @retryCount, @errorMessage, @resultSummary, @failureCategory)`,
 	).run({
-		...item,
+		id: item.id,
 		jobType: item.jobType,
+		status: item.status,
+		stage: item.stage ?? null,
+		lastUpdate: item.lastUpdate ?? null,
+		createdAt: item.createdAt,
+		startedAt: item.startedAt ?? null,
+		completedAt: item.completedAt ?? null,
+		entityId: item.entityId ?? null,
 		retryCount: item.retryCount ?? 0,
+		errorMessage: item.errorMessage ?? null,
+		resultSummary: item.resultSummary ?? null,
 		failureCategory: item.failureCategory ?? null,
 	});
 }
@@ -805,8 +817,15 @@ export function saveDuplicateCandidate(state: SqliteBootstrapState, item: Duplic
 		`INSERT OR REPLACE INTO duplicate_candidates (id, grant_id1, grant_id2, confidence_score, status, detected_at, conflicting_fields, resolved_at, resolved_by)
 		 VALUES (@id, @grantId1, @grantId2, @confidenceScore, @status, @detectedAt, @conflictingFields, @resolvedAt, @resolvedBy)`,
 	).run({
-		...item,
+		id: item.id,
+		grantId1: item.grantId1,
+		grantId2: item.grantId2,
+		confidenceScore: item.confidenceScore,
+		status: item.status,
+		detectedAt: item.detectedAt,
 		conflictingFields: JSON.stringify(item.conflictingFields),
+		resolvedAt: item.resolvedAt ?? null,
+		resolvedBy: item.resolvedBy ?? null,
 	});
 }
 
@@ -840,8 +859,13 @@ export function saveConflictRecord(state: SqliteBootstrapState, item: ConflictRe
 		`INSERT OR REPLACE INTO conflict_records (id, grant_id, field_name, values_json, canonical_value, resolved_at, resolved_by)
 		 VALUES (@id, @grantId, @fieldName, @valuesJson, @canonicalValue, @resolvedAt, @resolvedBy)`,
 	).run({
-		...item,
+		id: item.id,
+		grantId: item.grantId,
+		fieldName: item.fieldName,
 		valuesJson: JSON.stringify(item.values),
+		canonicalValue: item.canonicalValue ?? null,
+		resolvedAt: item.resolvedAt ?? null,
+		resolvedBy: item.resolvedBy ?? null,
 	});
 }
 
@@ -879,8 +903,17 @@ export function saveSubmissionManifest(state: SqliteBootstrapState, item: Submis
 		`INSERT OR REPLACE INTO submission_manifests (id, grant_id, version, created_at, updated_at, instructions, portal_url, file_constraints, due_date, material_refs, notes)
 		 VALUES (@id, @grantId, @version, @createdAt, @updatedAt, @instructions, @portalUrl, @fileConstraints, @dueDate, @materialRefs, @notes)`,
 	).run({
-		...item,
+		id: item.id,
+		grantId: item.grantId,
+		version: item.version,
+		createdAt: item.createdAt,
+		updatedAt: item.updatedAt,
+		instructions: item.instructions ?? null,
+		portalUrl: item.portalUrl ?? null,
+		fileConstraints: item.fileConstraints ?? null,
+		dueDate: item.dueDate ?? null,
 		materialRefs: JSON.stringify(item.materialRefs),
+		notes: item.notes ?? null,
 	});
 }
 
@@ -906,4 +939,50 @@ export function deleteCrawlSchedule(state: SqliteBootstrapState, id: string): vo
 	const db = openDatabase(state);
 	const schedules = readCrawlSchedules(state).filter((schedule) => schedule.id !== id);
 	replaceTable<CrawlSchedule>(db, 'crawl_schedules', schedules);
+}
+
+function readJsonMeta<T>(db: SqliteDatabase, key: string): T | null {
+	const raw = loadMeta(db, key);
+	if (!raw) return null;
+	try {
+		return JSON.parse(raw) as T;
+	} catch {
+		return null;
+	}
+}
+
+export function readBackupFreshness(state: SqliteBootstrapState): BackupFreshnessStatus {
+	const db = openDatabase(state);
+	return {
+		lastBackupAt: loadMeta(db, 'lastBackupAt') || null,
+		isStale: loadMeta(db, 'backupIsStale') === 'true',
+		lastBackupVerification: readJsonMeta<BackupVerificationRecord>(db, 'lastBackupVerification'),
+		lastRestoreVerification: readJsonMeta<BackupVerificationRecord>(db, 'lastRestoreVerification'),
+	};
+}
+
+export function saveBackupVerificationRecord(state: SqliteBootstrapState, record: BackupVerificationRecord): void {
+	const db = openDatabase(state);
+	const key = record.type === 'backup' ? 'lastBackupVerification' : 'lastRestoreVerification';
+	saveMeta(db, key, JSON.stringify(record));
+	if (record.type === 'backup') {
+		saveMeta(db, 'lastBackupAt', record.checkedAt);
+		saveMeta(db, 'backupIsStale', 'false');
+	}
+}
+
+export function saveBackupFreshness(state: SqliteBootstrapState, freshness: BackupFreshnessStatus): void {
+	const db = openDatabase(state);
+	if (freshness.lastBackupAt === null) {
+		saveMeta(db, 'lastBackupAt', '');
+	} else {
+		saveMeta(db, 'lastBackupAt', freshness.lastBackupAt);
+	}
+	saveMeta(db, 'backupIsStale', freshness.isStale ? 'true' : 'false');
+	if (freshness.lastBackupVerification) {
+		saveMeta(db, 'lastBackupVerification', JSON.stringify(freshness.lastBackupVerification));
+	}
+	if (freshness.lastRestoreVerification) {
+		saveMeta(db, 'lastRestoreVerification', JSON.stringify(freshness.lastRestoreVerification));
+	}
 }

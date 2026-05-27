@@ -1,5 +1,7 @@
 import type { APIRequestContext, Page } from "@playwright/test";
 
+export const BASE_URL = "http://127.0.0.1:3000";
+
 function sleep(ms: number): Promise<void> {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -8,9 +10,7 @@ export async function resetAppState(request: APIRequestContext): Promise<void> {
 	let lastError: unknown;
 	for (let attempt = 0; attempt < 10; attempt += 1) {
 		try {
-			const response = await request.post(
-				"http://localhost:3000/api/testing/reset",
-			);
+			const response = await request.post(`${BASE_URL}/api/testing/reset`);
 			if (response.ok()) {
 				return;
 			}

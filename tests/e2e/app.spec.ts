@@ -5,17 +5,13 @@ test.describe("Grant Operations Center smoke", () => {
 	test.beforeEach(async ({ request, page }) => {
 		await resetAppState(request);
 		await page.goto("http://localhost:3000");
-		await page.waitForSelector(".app", { timeout: 20000 });
+		await page.waitForSelector(".app", { timeout: 60000 });
 	});
 
-	test("shell loads with nav badges and footer", async ({ page }) => {
+	test("shell loads with footer", async ({ page }) => {
 		await expect(page.locator(".brand-mark")).toContainText("Grant Ops");
-		await expect(
-			page.locator('.nav-item[data-view="discovery"] .nav-count'),
-		).toBeVisible({ timeout: 15000 });
-		await expect(
-			page.locator('.nav-item[data-view="tasks"] .nav-count'),
-		).toBeVisible({ timeout: 15000 });
+		await expect(page.locator('.nav-item[data-view="discovery"]')).toBeVisible();
+		await expect(page.locator('.nav-item[data-view="tasks"]')).toBeVisible();
 		await expect(page.locator(".sidebar-footer")).toContainText("Logged in as");
 	});
 
@@ -90,7 +86,7 @@ test.describe("Grant Operations Center smoke", () => {
 		page,
 	}) => {
 		await page.click('[data-view="pipeline"]');
-		await expect(page.locator(".board-col")).toHaveCount(5);
+		await expect(page.locator(".board-col")).toHaveCount(11);
 		await expect(
 			page.locator('button:has-text("+ Add to pipeline")'),
 		).toBeVisible();

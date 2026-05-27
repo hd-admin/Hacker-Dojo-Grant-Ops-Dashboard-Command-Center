@@ -1,16 +1,20 @@
 import { createRoot } from "next/dist/compiled/react-dom/client";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { GrantDetailResponse, SubmissionMethod } from "../../../shared/types";
+import type { GrantDetailResponse, SubmissionManifest, SubmissionMethod } from "../../../shared/types";
 
 const {
 	getGrantDetail,
+	getManifest,
+	createManifest,
 	createDraft,
 	createApproval,
 	createSubmission,
 	createRevision,
 } = vi.hoisted(() => ({
 	getGrantDetail: vi.fn(),
+	getManifest: vi.fn(),
+	createManifest: vi.fn(),
 	createDraft: vi.fn(),
 	createApproval: vi.fn(),
 	createSubmission: vi.fn(),
@@ -20,6 +24,7 @@ const {
 vi.mock("../lib/grant-ops-client", () => ({
 	client: {
 		grants: { getById: getGrantDetail },
+		manifest: { get: getManifest, create: createManifest },
 		drafts: { create: createDraft },
 		approvals: { create: createApproval },
 		submit: { create: createSubmission },
@@ -96,6 +101,26 @@ function makeGrantDetail(
 	};
 
 	return base;
+}
+
+function makeManifest(overrides: Partial<SubmissionManifest> = {}): SubmissionManifest {
+	return {
+		id: "manifest-1",
+		grantId,
+		version: 1,
+		createdAt: "2026-05-23T08:00:00.000Z",
+		updatedAt: "2026-05-23T08:30:00.000Z",
+		instructions: "Upload all portal materials as PDFs.",
+		portalUrl: "https://example.org/submit",
+		fileConstraints: "PDF only, max 10MB",
+		dueDate: "2026-06-14",
+		materialRefs: [
+			{ documentId: "doc-1", documentName: "Narrative.pdf", role: "narrative" },
+			{ documentId: "doc-2", documentName: "Budget.xlsx", version: "v2", role: "budget" },
+		],
+		notes: "Confirm budget attachment before submitting.",
+		...overrides,
+	};
 }
 
 function buildGeneratedDetail(): GrantDetailResponse {
@@ -229,6 +254,7 @@ function buildSubmittedDetail(): GrantDetailResponse {
 }
 
 let currentDetail: GrantDetailResponse;
+let currentManifest: SubmissionManifest | null;
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 const originalOpen = window.open;
@@ -257,12 +283,27 @@ function setTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
 }
 
 beforeEach(() => {
+	vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([]), { headers: { "content-type": "application/json" } })));
 	currentDetail = makeGrantDetail();
+	currentManifest = null;
 	getGrantDetail.mockImplementation(async () => currentDetail);
+	getManifest.mockImplementation(async () => currentManifest);
+	createManifest.mockImplementation(async (_grantId: string, request: { instructions?: string; portalUrl?: string; fileConstraints?: string; dueDate?: string; materialRefs?: Array<{ documentId: string; documentName: string; version?: string; role: string }>; notes?: string }) => {
+		currentManifest = {
+			...makeManifest(request),
+			...request,
+			materialRefs: request.materialRefs ?? [],
+		};
+		return currentManifest;
+	});
 	createDraft.mockImplementation(async (_grantId: string, request: { revisionNotes?: string }) => {
 		const generated = buildGeneratedDetail();
+		const generatedLatestDraft = generated.latestDraft;
+		if (!generatedLatestDraft) {
+			throw new Error("Expected generated.latestDraft to exist");
+		}
 		const latestDraft = {
-			...generated.latestDraft!,
+			...generatedLatestDraft,
 			revisionNotes: request.revisionNotes ?? "",
 		};
 		currentDetail = {
@@ -278,19 +319,31 @@ beforeEach(() => {
 	});
 	createApproval.mockImplementation(async () => {
 		currentDetail = buildApprovedDetail();
-		return currentDetail.approvalRecord!;
+		const approvalRecord = currentDetail.approvalRecord;
+		if (!approvalRecord) {
+			throw new Error("Expected approvalRecord to exist");
+		}
+		return approvalRecord;
 	});
 	createSubmission.mockImplementation(async (_grantId: string, request: { method: { type: SubmissionMethod["type"]; portalUrl?: string; confirmationId?: string; submittedBy: string }; notes?: string }) => {
 		const submitted = buildSubmittedDetail();
+		const submissionRecord = submitted.submissionRecord;
+		if (!submissionRecord) {
+			throw new Error("Expected submissionRecord to exist");
+		}
 		currentDetail = {
 			...submitted,
 			submissionRecord: {
-				...submitted.submissionRecord!,
+				...submissionRecord,
 				method: request.method,
 				notes: request.notes ?? "",
 			},
 		};
-		return currentDetail.submissionRecord!;
+		const currentSubmissionRecord = currentDetail.submissionRecord;
+		if (!currentSubmissionRecord) {
+			throw new Error("Expected currentDetail.submissionRecord to exist");
+		}
+		return currentSubmissionRecord;
 	});
 	createRevision.mockImplementation(async (_grantId: string, notes: string) => {
 		currentDetail = buildRevisedDetail();
@@ -320,10 +373,54 @@ afterEach(() => {
 	root.unmount();
 	container.remove();
 	window.open = originalOpen;
+	vi.unstubAllGlobals();
 	vi.clearAllMocks();
 });
 
 describe("GrantDrawer", () => {
+	it("renders the submission manifest section when a manifest exists", async () => {
+		currentManifest = makeManifest();
+		root.render(
+			React.createElement(GrantDrawer, {
+				grantId,
+				onClose: vi.fn(),
+				onRefreshAppState: vi.fn(),
+			}),
+		);
+
+		await waitFor(() => container.textContent?.includes("Submission manifest") === true);
+		expect(container.textContent).toContain("Version 1");
+		expect(container.textContent).toContain("Upload all portal materials as PDFs.");
+		expect(container.textContent).toContain("https://example.org/submit");
+		expect(container.textContent).toContain("PDF only, max 10MB");
+		expect(container.textContent).toContain("Jun 14, 2026");
+		expect(container.textContent).toContain("2 items");
+		expect(container.textContent).toContain("Narrative.pdf · narrative | Budget.xlsx (v2) · budget");
+		expect(container.textContent).toContain("Confirm budget attachment before submitting.");
+	});
+
+	it("creates and displays a submission manifest when one is missing", async () => {
+		const onRefreshAppState = vi.fn();
+		root.render(
+			React.createElement(GrantDrawer, {
+				grantId,
+				onClose: vi.fn(),
+				onRefreshAppState,
+			}),
+		);
+
+		await waitFor(() => container.textContent?.includes("No submission manifest yet.") === true);
+		Array.from(container.querySelectorAll("button"))
+			.find((button) => button.textContent === "Create manifest")
+			?.click();
+
+		await waitFor(() => createManifest.mock.calls.length === 1);
+		await waitFor(() => container.textContent?.includes("Version 1") === true);
+		expect(createManifest).toHaveBeenCalledWith(grantId, {});
+		expect(onRefreshAppState).toHaveBeenCalled();
+		expect(container.textContent).not.toContain("No submission manifest yet.");
+	});
+
 	it("renders the prototype sections and initial action gates from detail data", async () => {
 		root.render(
 			React.createElement(GrantDrawer, {
@@ -378,7 +475,9 @@ describe("GrantDrawer", () => {
 		await waitFor(
 			() => container.textContent?.includes("Generate draft") === true,
 		);
-		(container.querySelector("button.btn-primary") as HTMLButtonElement | null)?.click();
+		Array.from(container.querySelectorAll("button"))
+			.find((button) => button.textContent === "Generate draft")
+			?.click();
 
 		await waitFor(() => createDraft.mock.calls.length === 1);
 		await waitFor(
@@ -416,7 +515,7 @@ describe("GrantDrawer", () => {
 		);
 
 		Array.from(container.querySelectorAll("button"))
-			.find((button) => button.textContent?.includes("Approve & lock"))
+			.find((button) => button.textContent === "Approve & lock")
 			?.click();
 		await waitFor(() => container.textContent?.includes("Submit") === true);
 		expect(createApproval).toHaveBeenCalledWith(grantId, { approvedBy: "human" });

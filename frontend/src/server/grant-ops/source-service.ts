@@ -13,6 +13,11 @@ export interface AddSourceInput {
   name: string;
   url: string;
   type: 'website' | 'database' | 'api';
+  reviewStatus?: Source['reviewStatus'];
+  suggestedBy?: string;
+  suggestionReason?: string;
+  category?: Source['category'];
+  categoryRationale?: string;
 }
 
 export interface SourceService {
@@ -41,7 +46,12 @@ export async function addSource(input: AddSourceInput): Promise<Source> {
     type: input.type,
     createdAt: clock.now().toISOString(),
     isActive: true,
+    reviewStatus: input.reviewStatus ?? 'approved',
   };
+  if (input.suggestedBy !== undefined) source.suggestedBy = input.suggestedBy;
+  if (input.suggestionReason !== undefined) source.suggestionReason = input.suggestionReason;
+  if (input.category !== undefined) source.category = input.category;
+  if (input.categoryRationale !== undefined) source.categoryRationale = input.categoryRationale;
 
   await deps.repository.addSource(source);
   return source;
@@ -84,7 +94,7 @@ export async function deactivateSource(id: string): Promise<boolean> {
 export async function getActiveSources(): Promise<Source[]> {
   const deps = getDependencies();
   const sources = await deps.repository.getSources();
-  return sources.filter((s) => s.isActive);
+  return sources.filter((s) => s.isActive && (s.reviewStatus === undefined || s.reviewStatus === 'approved'));
 }
 
 export async function updateSourceLastCrawled(id: string): Promise<boolean> {

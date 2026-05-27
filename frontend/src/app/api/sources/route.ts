@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as sourceService from '@/server/grant-ops/source-service';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url);
+    const filter = searchParams.get('filter');
     const sources = await sourceService.getAllSources();
-    return NextResponse.json(sources);
+    const filtered = filter === 'pending-review'
+      ? sources.filter((source) => source.reviewStatus === 'pending-review')
+      : sources;
+    return NextResponse.json(filtered);
   } catch (error) {
     console.error('Error getting sources:', error);
     return NextResponse.json({ error: 'Failed to get sources' }, { status: 500 });
@@ -18,11 +23,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Name and URL are required' }, { status: 400 });
     }
 
-    const source = await sourceService.addSource({
+    const sourceInput: Parameters<typeof sourceService.addSource>[0] = {
       name: body.name.trim(),
       url: body.url.trim(),
       type: body.type === 'database' || body.type === 'api' ? body.type : 'website',
-    });
+      reviewStatus: body.reviewStatus === 'pending-review' ? 'pending-review' : 'approved',
+    };
+    if (typeof body.suggestedBy === 'string') sourceInput.suggestedBy = body.suggestedBy;
+    if (typeof body.suggestionReason === 'string') sourceInput.suggestionReason = body.suggestionReason;
+    if (body.category === 'foundation' || body.category === 'government' || body.category === 'corporate' || body.category === 'community' || body.category === 'other') sourceInput.category = body.category;
+    if (typeof body.categoryRationale === 'string') sourceInput.categoryRationale = body.categoryRationale;
+    const source = await sourceService.addSource(sourceInput);
 
     return NextResponse.json({ success: true, source }, { status: 201 });
   } catch (error) {

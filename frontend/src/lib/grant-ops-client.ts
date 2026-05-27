@@ -15,6 +15,8 @@ import type {
 	GrantDetailResponse,
 	GrantDetailUpdate,
 	GrantStatus,
+	SubmissionManifest,
+	SubmissionManifestItem,
 	Notification,
 	OpencodeSettings,
 	OrganizationProfile,
@@ -40,6 +42,36 @@ async function apiFetch<T>(
 		...options,
 		headers,
 	});
+
+	if (!response.ok) {
+		const error = await response
+			.json()
+			.catch(() => ({ error: "Unknown error" }));
+		throw new Error(error.error || `API error: ${response.status}`);
+	}
+
+	return response.json();
+}
+
+async function apiFetchOptional<T>(
+	endpoint: string,
+	options?: RequestInit,
+): Promise<T | null> {
+	const headers = new Headers(options?.headers);
+	if (options?.body instanceof FormData) {
+		headers.delete("Content-Type");
+	} else if (options?.body !== undefined && !headers.has("Content-Type")) {
+		headers.set("Content-Type", "application/json");
+	}
+
+	const response = await fetch(endpoint, {
+		...options,
+		headers,
+	});
+
+	if (response.status === 404) {
+		return null;
+	}
 
 	if (!response.ok) {
 		const error = await response
@@ -199,6 +231,33 @@ export const submitApi = {
 		),
 };
 
+// ============ Submission Manifest API ============
+
+export interface SubmissionManifestCreateRequest {
+	instructions?: string;
+	portalUrl?: string;
+	fileConstraints?: string;
+	dueDate?: string;
+	materialRefs?: SubmissionManifestItem[];
+	notes?: string;
+}
+
+export const manifestApi = {
+	get: (grantId: string) =>
+		apiFetchOptional<SubmissionManifest>(
+			`/api/grants/${encodeURIComponent(grantId)}/manifest`,
+		),
+
+	create: (grantId: string, request: SubmissionManifestCreateRequest) =>
+		apiFetch<SubmissionManifest>(
+			`/api/grants/${encodeURIComponent(grantId)}/manifest`,
+			{
+				method: "POST",
+				body: JSON.stringify({ materialRefs: [], ...request }),
+			},
+		),
+};
+
 // ============ Follow-ups API ============
 
 export const followUpsApi = {
@@ -350,6 +409,7 @@ export function createGrantOpsClient() {
 		drafts: draftApi,
 		approvals: approvalApi,
 		submit: submitApi,
+		manifest: manifestApi,
 		followUps: followUpsApi,
 		profile: profileApi,
 		opencodeSettings: opencodeSettingsApi,

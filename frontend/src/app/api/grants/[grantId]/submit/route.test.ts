@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
-import type { Grant } from '../../../../../../../shared/types';
+import type { Grant, SubmissionManifest } from '../../../../../../../shared/types';
 import * as repository from '../../../../../server/grant-ops/repository';
 import { POST as approvalPOST } from '../approval/route';
 import { GET, POST } from './route';
@@ -21,6 +21,17 @@ function createGrant(id: string): Grant {
     statusLabel: 'Review',
     matchedAt: '2026-05-01',
     draftContent: 'Test draft content',
+  };
+}
+
+function createManifest(grantId: string): SubmissionManifest {
+  return {
+    id: `manifest-${grantId}`,
+    grantId,
+    version: 1,
+    createdAt: '2026-05-01T00:00:00.000Z',
+    updatedAt: '2026-05-01T00:00:00.000Z',
+    materialRefs: [],
   };
 }
 
@@ -85,6 +96,30 @@ describe('/api/grants/[grantId]/submit route', () => {
     expect(data.error).toMatch(/Grant must be approved before submission/i);
   });
 
+  it('returns 400 when the approved grant is missing a submission manifest', async () => {
+    await approvalPOST(
+      new Request(`http://localhost/api/grants/${grant.id}/approval`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ approvedBy: 'human' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/submit`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ method: { type: 'portal', submittedBy: 'human' } }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toMatch(/Submission manifest is required before submission/i);
+  });
+
   it('returns submissionRecord and followUps after approval', async () => {
     const approvalResponse = await approvalPOST(
       new Request(`http://localhost/api/grants/${grant.id}/approval`, {
@@ -95,6 +130,7 @@ describe('/api/grants/[grantId]/submit route', () => {
       { params: Promise.resolve({ grantId: grant.id }) },
     );
     expect(approvalResponse.status).toBe(201);
+    await repository.addSubmissionManifest(createManifest(grant.id));
 
     const response = await POST(
       new Request(`http://localhost/api/grants/${grant.id}/submit`, {
@@ -125,6 +161,7 @@ describe('/api/grants/[grantId]/submit route', () => {
       }) as never,
       { params: Promise.resolve({ grantId: grant.id }) },
     );
+    await repository.addSubmissionManifest(createManifest(grant.id));
     await POST(
       new Request(`http://localhost/api/grants/${grant.id}/submit`, {
         method: 'POST',

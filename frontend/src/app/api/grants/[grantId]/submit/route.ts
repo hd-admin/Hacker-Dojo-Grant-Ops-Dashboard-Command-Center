@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as submissionService from '@/server/grant-ops/submission-service';
+import type { SubmissionInput } from '@/server/grant-ops/submission-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
@@ -36,17 +37,19 @@ export async function POST(
       return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
     }
 
-    const result = await submissionService.recordSubmission({
-      grant,
-      method: {
-        type: body.method.type,
-        portalUrl: typeof body.method.portalUrl === 'string' ? body.method.portalUrl : undefined,
-        confirmationId: typeof body.method.confirmationId === 'string' ? body.method.confirmationId : undefined,
-        submittedBy: typeof body.method.submittedBy === 'string' ? body.method.submittedBy : 'human',
-      },
-      notes: typeof body.notes === 'string' ? body.notes : undefined,
+    const method: SubmissionInput['method'] = {
+      type: body.method.type,
       submittedBy: typeof body.method.submittedBy === 'string' ? body.method.submittedBy : 'human',
-    });
+    };
+    if (typeof body.method.portalUrl === 'string') method.portalUrl = body.method.portalUrl;
+    if (typeof body.method.confirmationId === 'string') method.confirmationId = body.method.confirmationId;
+    const submissionInput: SubmissionInput = {
+      grant,
+      method,
+      submittedBy: typeof body.method.submittedBy === 'string' ? body.method.submittedBy : 'human',
+    };
+    if (typeof body.notes === 'string') submissionInput.notes = body.notes;
+    const result = await submissionService.recordSubmission(submissionInput);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error || 'Failed to record submission' }, { status: 400 });

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
+import { useEffect, useState } from 'react';
 import type { Task, FollowUp } from '../../../shared/types';
-import { seedTasks } from '../../../shared/seed-data';
 import { tasksApi, followUpsApi } from '../lib/grant-ops-client';
 
 interface TasksViewProps {
@@ -11,7 +11,7 @@ interface TasksViewProps {
 }
 
 export default function TasksView({ onRefreshAppState, tasks: tasksProp }: TasksViewProps) {
-  const [tasks, setTasks] = useState<Task[]>(tasksProp ?? seedTasks);
+  const [tasks, setTasks] = useState<Task[]>(tasksProp ?? []);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);

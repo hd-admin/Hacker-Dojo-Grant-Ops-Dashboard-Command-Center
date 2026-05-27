@@ -2,7 +2,9 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import type {
+	AuditEvent,
 	GrantDetailResponse,
+	SubmissionManifest,
 	SubmissionMethod,
 } from "../../../shared/types";
 import { client } from "../lib/grant-ops-client";
@@ -110,6 +112,9 @@ export default function GrantDrawer({
 	const [confirmationId, setConfirmationId] = useState("");
 	const [portalUrl, setPortalUrl] = useState("");
 	const [submitNotes, setSubmitNotes] = useState("");
+	const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
+	const [manifest, setManifest] = useState<SubmissionManifest | null>(null);
+	const [manifestLoading, setManifestLoading] = useState(false);
 
 	const viewModel = buildGrantDrawerViewModel(detail);
 
@@ -131,8 +136,27 @@ export default function GrantDrawer({
 		}
 	}, [grantId]);
 
+	const loadManifest = useCallback(async () => {
+		if (!grantId) {
+			setManifest(null);
+			return;
+		}
+
+		setManifestLoading(true);
+		try {
+			const data = await client.manifest.get(grantId);
+			setManifest(data);
+		} catch (error) {
+			console.error("Error loading submission manifest:", error);
+			setManifest(null);
+		} finally {
+			setManifestLoading(false);
+		}
+	}, [grantId]);
+
 	useEffect(() => {
 		void loadDetail();
+		void loadManifest();
 		setShowRevision(false);
 		setRevisionNote("");
 		setShowSubmitForm(false);
@@ -140,10 +164,29 @@ export default function GrantDrawer({
 		setConfirmationId("");
 		setPortalUrl("");
 		setSubmitNotes("");
-	}, [loadDetail]);
+	}, [loadDetail, loadManifest]);
+
+	useEffect(() => {
+		async function loadAuditTrail() {
+			if (!grantId) {
+				setAuditEvents([]);
+				return;
+			}
+			try {
+				const response = await fetch(`/api/audit?entityId=${encodeURIComponent(grantId)}`);
+				const data = (await response.json()) as AuditEvent[];
+				setAuditEvents(Array.isArray(data) ? data : []);
+			} catch (error) {
+				console.error('Error loading audit trail:', error);
+				setAuditEvents([]);
+			}
+		}
+		void loadAuditTrail();
+	}, [grantId]);
 
 	const refreshAfterMutation = async () => {
 		await loadDetail();
+		await loadManifest();
 		await onRefreshAppState?.();
 	};
 
@@ -202,6 +245,16 @@ export default function GrantDrawer({
 			setRevisionNote("");
 		} catch (error) {
 			console.error("Error creating revision request:", error);
+		}
+	};
+
+	const handleCreateManifest = async () => {
+		if (!detail) return;
+		try {
+			await client.manifest.create(detail.grant.id, {});
+			await refreshAfterMutation();
+		} catch (error) {
+			console.error("Error creating submission manifest:", error);
 		}
 	};
 
@@ -276,6 +329,9 @@ export default function GrantDrawer({
 										}}
 									>
 										{detail.grant.fit}
+										{detail.grant.humanOverrides?.some((override) => override.field === 'fit') && (
+											<span data-testid="fit-human-confirmed-badge" className="ai-badge">Human-confirmed</span>
+										)}
 									</div>
 								</div>
 								<div className="meta-item">
@@ -387,6 +443,76 @@ export default function GrantDrawer({
 								)}
 							</div>
 
+							{detail.latestDraft?.groundingSections && detail.latestDraft.groundingSections.length > 0 && (
+								<div className="drawer-section">
+									<h3>Grounding review</h3>
+									{detail.grant.groundedDocumentCount === 0 && (
+										<div className="drawer-note">⚠ No grounding documents</div>
+									)}
+									<div className="checklist-list">
+										{detail.latestDraft.groundingSections.map((section) => (
+											<div key={section.sectionTitle} className={`checklist-item ${section.isGrounded ? 'done' : ''}`}>
+												<span>{section.isGrounded ? '✓' : '○'}</span>
+												<div>
+													<div>{section.sectionTitle}</div>
+													<div className="drawer-note">{section.isGrounded ? 'Grounded' : 'No evidence'}</div>
+												</div>
+											</div>
+										))}
+									</div>
+								</div>
+							)}
+
+							<div className="drawer-section">
+								<h3>Submission manifest</h3>
+								{manifestLoading ? (
+									<div className="drawer-note">Loading manifest...</div>
+								) : manifest ? (
+									<>
+										<div className="drawer-note">Version {manifest.version} · Updated {new Date(manifest.updatedAt).toLocaleString()}</div>
+										<div className="drawer-list">
+											<div className="drawer-list-item">
+												<div className="drawer-list-title">Instructions</div>
+												<div className="drawer-note">{manifest.instructions ?? 'Not set'}</div>
+											</div>
+											<div className="drawer-list-item">
+												<div className="drawer-list-title">Portal URL</div>
+												<div className="drawer-note">{manifest.portalUrl ?? 'Not set'}</div>
+											</div>
+											<div className="drawer-list-item">
+												<div className="drawer-list-title">File constraints</div>
+												<div className="drawer-note">{manifest.fileConstraints ?? 'Not set'}</div>
+											</div>
+											<div className="drawer-list-item">
+												<div className="drawer-list-title">Due date</div>
+												<div className="drawer-note">{manifest.dueDate ? formatDate(manifest.dueDate) : 'Not set'}</div>
+											</div>
+											<div className="drawer-list-item">
+												<div className="drawer-list-title">Materials</div>
+												<div className="drawer-note">{manifest.materialRefs.length > 0 ? `${manifest.materialRefs.length} item${manifest.materialRefs.length === 1 ? '' : 's'}` : 'None yet'}</div>
+											</div>
+											{manifest.materialRefs.length > 0 && (
+												<div className="drawer-list-item">
+													<div className="drawer-list-title">Material refs</div>
+													<div className="drawer-note">{manifest.materialRefs.map((item) => `${item.documentName}${item.version ? ` (${item.version})` : ''} · ${item.role}`).join(' | ')}</div>
+												</div>
+											)}
+											<div className="drawer-list-item">
+												<div className="drawer-list-title">Notes</div>
+												<div className="drawer-note">{manifest.notes ?? 'Not set'}</div>
+											</div>
+										</div>
+									</>
+								) : (
+									<>
+										<div className="drawer-note">No submission manifest yet.</div>
+										<button type="button" className="btn btn-primary" onClick={handleCreateManifest}>
+											Create manifest
+										</button>
+									</>
+								)}
+							</div>
+
 							<div className="drawer-section">
 								<h3>Actions</h3>
 								<div className="drawer-actions">
@@ -447,6 +573,20 @@ export default function GrantDrawer({
 											Submission blocked: {viewModel.submitDisabledReason}
 										</div>
 									)}
+							</div>
+
+							<div className="drawer-section">
+								<h3>Audit Trail</h3>
+								<div className="activity-list">
+									{auditEvents.slice(0, 10).map((event) => (
+										<div key={event.id} className="activity-item">
+											<div>
+												<div className="activity-text"><strong>{event.eventType}</strong> · {event.actorLabel}</div>
+												<div className="activity-time">{new Date(event.timestamp).toLocaleString()}</div>
+											</div>
+										</div>
+									))}
+								</div>
 							</div>
 
 							{showRevision && (

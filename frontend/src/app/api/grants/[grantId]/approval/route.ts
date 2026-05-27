@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as submissionService from '@/server/grant-ops/submission-service';
+import type { ApprovalInput } from '@/server/grant-ops/submission-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
@@ -36,11 +37,12 @@ export async function POST(
       return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
     }
 
-    const result = await submissionService.approveGrant({
+    const approvalInput: ApprovalInput = {
       grant,
       approvedBy: body.approvedBy || 'human',
-      lockedUntil: typeof body.lockedUntil === 'string' ? body.lockedUntil : undefined,
-    });
+    };
+    if (typeof body.lockedUntil === 'string') approvalInput.lockedUntil = body.lockedUntil;
+    const result = await submissionService.approveGrant(approvalInput);
 
     if (!result.success) {
       return NextResponse.json({ error: result.error || 'Failed to approve grant' }, { status: 400 });

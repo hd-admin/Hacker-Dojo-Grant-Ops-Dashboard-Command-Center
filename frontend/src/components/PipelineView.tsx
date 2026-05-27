@@ -1,258 +1,263 @@
 "use client";
 
-import type React from "react";
-import { useEffect, useState } from "react";
-import { seedGrants } from "../../../shared/seed-data";
-import type { Grant, GrantStatus } from "../../../shared/types";
+import React from "react";
+import { useEffect, useMemo, useState } from "react";
+import type { Grant, GrantStatus, PipelineViewMode, ResponsibilityTag } from "../../../shared/types";
 import { client } from "../lib/grant-ops-client";
 
-type ViewType =
-	| "dashboard"
-	| "discovery"
-	| "pipeline"
-	| "settings"
-	| "notifications"
-	| "tasks";
+type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'sources' | 'settings' | 'notifications' | 'tasks';
+
+type StatusFilter = 'All' | 'Matched' | 'Drafting' | 'Review' | 'Approved' | 'Submission Ready' | 'Submitted' | 'Follow-up' | 'Awarded' | 'Declined' | 'Closed' | 'Archived';
+type UrgencyFilter = 'all' | 'overdue' | 'soon' | 'normal';
+type FunderTypeFilter = 'all' | 'Foundation' | 'Government' | 'Corporate' | 'Community' | 'Other';
 
 interface PipelineViewProps {
-	onGrantSelect: (grantId: string) => void;
-	onNavigate?: (view: ViewType) => void;
+  onGrantSelect: (grantId: string) => void;
+  onNavigate?: (view: ViewType) => void;
 }
 
-type StatusFilter =
-	| "All"
-	| "Matched"
-	| "Drafting"
-	| "Review"
-	| "Submitted"
-	| "Awarded";
-
 interface BoardColumn {
-	key: GrantStatus | "awarded";
-	title: string;
+  key: GrantStatus;
+  title: string;
 }
 
 const columns: BoardColumn[] = [
-	{ key: "matched", title: "Matched" },
-	{ key: "draft", title: "Drafting" },
-	{ key: "review", title: "Review" },
-	{ key: "submitted", title: "Submitted" },
-	{ key: "awarded", title: "Awarded/Closed" },
+  { key: 'matched', title: 'Matched' },
+  { key: 'draft', title: 'Drafting' },
+  { key: 'review', title: 'Review' },
+  { key: 'approved', title: 'Approved' },
+  { key: 'submission-ready', title: 'Submission Ready' },
+  { key: 'submitted', title: 'Submitted' },
+  { key: 'follow-up', title: 'Follow-up' },
+  { key: 'awarded', title: 'Awarded' },
+  { key: 'declined', title: 'Declined' },
+  { key: 'closed', title: 'Closed' },
+  { key: 'archived', title: 'Archived' },
 ];
 
-function formatDate(dateStr: string): string {
-	if (dateStr === "Rolling") return "Rolling";
-	const parts = dateStr.split("-");
-	const month = parts[1] ?? "";
-	const day = parts[2] ?? "";
-	const months = [
-		"Jan",
-		"Feb",
-		"Mar",
-		"Apr",
-		"May",
-		"Jun",
-		"Jul",
-		"Aug",
-		"Sep",
-		"Oct",
-		"Nov",
-		"Dec",
-	];
-	return `${months[parseInt(month, 10) - 1] ?? ""} ${parseInt(day, 10)}`;
+const WORKING_CONTEXT_KEY = 'grantops.workingContext';
+
+function getWorkingContextStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  const storage = window.localStorage;
+  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function' ? storage : null;
 }
 
-export default function PipelineView({
-	onGrantSelect,
-	onNavigate,
-}: PipelineViewProps) {
-	const [grants, setGrants] = useState<Grant[]>(seedGrants);
-	const [loading, setLoading] = useState(false);
-	const [draggingGrantId, setDraggingGrantId] = useState<string | null>(null);
-	const [dragOverCol, setDragOverCol] = useState<string | null>(null);
-	const [statusFilter, setStatusFilter] = useState<StatusFilter>("All");
+function readWorkingContext(): Record<string, unknown> {
+  const storage = getWorkingContextStorage();
+  if (!storage) return {};
+  try {
+    return JSON.parse(storage.getItem(WORKING_CONTEXT_KEY) || '{}') as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
 
-	useEffect(() => {
-		async function load() {
-			try {
-				const data = await client.grants.getAll();
-				setGrants(data);
-			} catch (error) {
-				console.error("Error loading grants:", error);
-				setGrants([]);
-			} finally {
-				setLoading(false);
-			}
-		}
-		load();
-	}, []);
+function saveWorkingContextField(field: string, value: unknown): void {
+  const storage = getWorkingContextStorage();
+  if (!storage) return;
+  const next = { ...readWorkingContext(), [field]: value };
+  storage.setItem(WORKING_CONTEXT_KEY, JSON.stringify(next));
+}
 
-	if (loading) {
-		return <div className="header-title">Loading...</div>;
-	}
+function formatDate(dateStr: string): string {
+  if (dateStr === 'Rolling') return 'Rolling';
+  const parts = dateStr.split('-');
+  const month = parts[1] ?? '';
+  const day = parts[2] ?? '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}`;
+}
 
-	const getGrantsForColumn = (status: GrantStatus | "awarded") => {
-		if (statusFilter !== "All") {
-			// When filtered, only show grants matching the filter in their respective column
-			const filterStatusMap: Record<StatusFilter, GrantStatus | "awarded"> = {
-				All: "matched",
-				Matched: "matched",
-				Drafting: "draft",
-				Review: "review",
-				Submitted: "submitted",
-				Awarded: "awarded",
-			};
-			const targetStatus = filterStatusMap[statusFilter];
-			if (status !== targetStatus) {
-				return []; // Hide this column when filtered to a different status
-			}
-			return grants.filter((g) => g.status === targetStatus);
-		}
-		if (status === "awarded") {
-			return grants.filter((g) => g.status === "awarded");
-		}
-		return grants.filter((g) => g.status === status);
-	};
+function getUrgency(grant: Grant): UrgencyFilter {
+  if (grant.daysOut < 0) return 'overdue';
+  if (grant.daysOut <= 30) return 'soon';
+  return 'normal';
+}
 
-	const handleDragStart = (grantId: string) => {
-		setDraggingGrantId(grantId);
-	};
+function statusToLabel(status: GrantStatus): StatusFilter {
+  switch (status) {
+    case 'matched': return 'Matched';
+    case 'draft': return 'Drafting';
+    case 'review': return 'Review';
+    case 'approved': return 'Approved';
+    case 'submission-ready': return 'Submission Ready';
+    case 'submitted': return 'Submitted';
+    case 'follow-up': return 'Follow-up';
+    case 'awarded': return 'Awarded';
+    case 'declined': return 'Declined';
+    case 'closed': return 'Closed';
+    case 'archived': return 'Archived';
+    default: return 'Matched';
+  }
+}
 
-	const handleDragOver = (e: React.DragEvent, colKey: string) => {
-		e.preventDefault();
-		setDragOverCol(colKey);
-	};
+export default function PipelineView({ onGrantSelect, onNavigate }: PipelineViewProps) {
+  const [grants, setGrants] = useState<Grant[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [viewMode, setViewMode] = useState<PipelineViewMode>('board');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
+  const [responsibilityFilter, setResponsibilityFilter] = useState<ResponsibilityTag | 'all'>('all');
+  const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');
+  const [funderTypeFilter, setFunderTypeFilter] = useState<FunderTypeFilter>('all');
 
-	const handleDragLeave = () => {
-		setDragOverCol(null);
-	};
+  useEffect(() => {
+    const context = readWorkingContext();
+    setViewMode((context.pipelineViewMode as PipelineViewMode) ?? 'board');
+    setStatusFilter((context.pipelineStatusFilter as StatusFilter) ?? 'All');
+    setResponsibilityFilter((context.pipelineResponsibilityFilter as ResponsibilityTag | 'all') ?? 'all');
+    setUrgencyFilter((context.pipelineUrgencyFilter as UrgencyFilter) ?? 'all');
+    setFunderTypeFilter((context.pipelineFunderTypeFilter as FunderTypeFilter) ?? 'all');
+  }, []);
 
-	const handleDrop = async (
-		e: React.DragEvent,
-		colKey: GrantStatus | "awarded",
-	) => {
-		e.preventDefault();
-		setDragOverCol(null);
-		if (draggingGrantId) {
-			const statusLabelMap: Partial<Record<GrantStatus, string>> = {
-				matched: "Matched",
-				draft: "Drafting",
-				review: "Review",
-				approved: "Approved",
-				"submission-ready": "Submission Ready",
-				submitted: "Submitted",
-				"follow-up": "Follow-up",
-				awarded: "Awarded",
-				declined: "Declined",
-				closed: "Closed",
-				archived: "Archived",
-			};
-			try {
-				await client.grants.updateStatus(
-					draggingGrantId,
-					colKey as GrantStatus,
-					statusLabelMap[colKey as GrantStatus] ?? String(colKey),
-				);
-				setGrants((prev) =>
-					prev.map((g) =>
-						g.id === draggingGrantId
-							? { ...g, status: colKey as GrantStatus }
-							: g,
-					),
-				);
-			} catch (error) {
-				console.error("Error updating grant status:", error);
-			}
-			setDraggingGrantId(null);
-		}
-	};
+  useEffect(() => {
+    saveWorkingContextField('pipelineViewMode', viewMode);
+  }, [viewMode]);
 
-	const handleDragEnd = () => {
-		setDraggingGrantId(null);
-		setDragOverCol(null);
-	};
+  useEffect(() => {
+    saveWorkingContextField('pipelineStatusFilter', statusFilter);
+  }, [statusFilter]);
 
-	return (
-		<>
-			<div className="header">
-				<div>
-					<h1 className="header-title">
-						Pipeline <span className="accent">Grant board</span>
-					</h1>
-					<div className="header-sub">
-						{grants.filter((g) => g.status !== "awarded").length} active grants
-					</div>
-				</div>
-				<div className="header-actions">
-					<select
-						className="filter-select"
-						value={statusFilter}
-						onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-					>
-						<option value="All">Filter: All</option>
-						<option value="Matched">Matched</option>
-						<option value="Drafting">Drafting</option>
-						<option value="Review">Review</option>
-						<option value="Submitted">Submitted</option>
-						<option value="Awarded">Awarded</option>
-					</select>
-					<button
-						type="button"
-						className="btn btn-primary"
-						onClick={() => onNavigate?.("discovery")}
-					>
-						+ Add to pipeline
-					</button>
-				</div>
-			</div>
+  useEffect(() => {
+    saveWorkingContextField('pipelineResponsibilityFilter', responsibilityFilter);
+  }, [responsibilityFilter]);
 
-			{/* Board */}
-			<div className="board">
-				{columns.map((col) => {
-					const colGrants = getGrantsForColumn(col.key);
-					return (
-						<section
-							key={col.key}
-							aria-label={`${col.title} drop zone`}
-							className={`board-col ${dragOverCol === col.key ? "drag-over" : ""}`}
-							onDragOver={(e) => handleDragOver(e, col.key)}
-							onDragLeave={handleDragLeave}
-							onDrop={(e) => handleDrop(e, col.key)}
-						>
-							<div className="board-col-header">
-								<div className="board-col-title">{col.title.toUpperCase()}</div>
-								<div className="board-col-count">{colGrants.length}</div>
-							</div>
-							<div className="board-col-body">
-								{colGrants.length === 0 ? (
-									<div className="empty">none</div>
-								) : (
-									colGrants.map((grant) => (
-										<button
-											type="button"
-											key={grant.id}
-											className={`board-card ${draggingGrantId === grant.id ? "dragging" : ""}`}
-											draggable={true}
-											onDragStart={() => handleDragStart(grant.id)}
-											onDragEnd={handleDragEnd}
-											onClick={() => onGrantSelect(grant.id)}
-										>
-											<div className="board-card-funder">
-												{grant.funderShort}
-											</div>
-											<div className="board-card-title">{grant.title}</div>
-											<div className="board-card-foot">
-												<span>{formatDate(grant.deadline)}</span>
-												<span className="amount">{grant.award}</span>
-											</div>
-										</button>
-									))
-								)}
-							</div>
-						</section>
-					);
-				})}
-			</div>
-		</>
-	);
+  useEffect(() => {
+    saveWorkingContextField('pipelineUrgencyFilter', urgencyFilter);
+  }, [urgencyFilter]);
+
+  useEffect(() => {
+    saveWorkingContextField('pipelineFunderTypeFilter', funderTypeFilter);
+  }, [funderTypeFilter]);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const data = await client.grants.getAll();
+        setGrants(data);
+      } catch (error) {
+        console.error('Error loading grants:', error);
+        setGrants([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const filteredGrants = useMemo(() => {
+    return grants.filter((grant) => {
+      const statusMatches = statusFilter === 'All' || statusToLabel(grant.status) === statusFilter;
+      const responsibilityMatches = responsibilityFilter === 'all' || grant.responsibilityTag === responsibilityFilter;
+      const urgencyMatches = urgencyFilter === 'all' || getUrgency(grant) === urgencyFilter;
+      const funderTypeMatches = funderTypeFilter === 'all' || grant.tags.includes(funderTypeFilter);
+      return statusMatches && responsibilityMatches && urgencyMatches && funderTypeMatches;
+    });
+  }, [grants, statusFilter, responsibilityFilter, urgencyFilter, funderTypeFilter]);
+
+  if (loading) {
+    return <div className="header-title">Loading...</div>;
+  }
+
+  const boardCounts = new Map(columns.map((column) => [column.key, 0]));
+  for (const grant of filteredGrants) {
+    boardCounts.set(grant.status, (boardCounts.get(grant.status) ?? 0) + 1);
+  }
+
+  return (
+    <>
+      <div className="header">
+        <div>
+          <h1 className="header-title">
+            Pipeline <span className="accent">Grant board</span>
+          </h1>
+          <div className="header-sub">{filteredGrants.length} active grants</div>
+        </div>
+        <div className="header-actions">
+          <button type="button" data-testid="pipeline-view-mode-toggle" onClick={() => setViewMode((current) => current === 'board' ? 'list' : 'board')}>
+            {viewMode === 'board' ? 'Switch to list' : 'Switch to board'}
+          </button>
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
+            <option value="All">Filter: All</option>
+            {['Matched','Drafting','Review','Approved','Submission Ready','Submitted','Follow-up','Awarded','Declined','Closed','Archived'].map((label) => <option key={label} value={label}>{label}</option>)}
+          </select>
+          <select data-testid="pipeline-responsibility-filter" value={responsibilityFilter} onChange={(e) => setResponsibilityFilter(e.target.value as ResponsibilityTag | 'all')}>
+            <option value="all">All responsibilities</option>
+            <option value="finance">Finance</option>
+            <option value="program">Program</option>
+            <option value="review">Review</option>
+            <option value="follow-up">Follow-up</option>
+          </select>
+          <select data-testid="pipeline-urgency-filter" value={urgencyFilter} onChange={(e) => setUrgencyFilter(e.target.value as UrgencyFilter)}>
+            <option value="all">All urgency</option>
+            <option value="overdue">Overdue</option>
+            <option value="soon">Soon</option>
+            <option value="normal">Normal</option>
+          </select>
+          <select data-testid="pipeline-funder-type-filter" value={funderTypeFilter} onChange={(e) => setFunderTypeFilter(e.target.value as FunderTypeFilter)}>
+            <option value="all">All funder types</option>
+            <option value="Foundation">Foundation</option>
+            <option value="Government">Government</option>
+            <option value="Corporate">Corporate</option>
+            <option value="Community">Community</option>
+            <option value="Other">Other</option>
+          </select>
+          <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('discovery')}>+ Add to pipeline</button>
+        </div>
+      </div>
+
+      {viewMode === 'list' ? (
+        <div data-testid="pipeline-list-view" className="pipeline-list-view">
+          <div className="pipeline-list-header">
+            <div>Grant Title</div>
+            <div>Funder</div>
+            <div>Status</div>
+            <div>Deadline</div>
+            <div>Award</div>
+            <div>Responsibility</div>
+          </div>
+          {filteredGrants.map((grant) => (
+            <button key={grant.id} type="button" className="pipeline-list-row" onClick={() => onGrantSelect(grant.id)}>
+              <div>{grant.title}</div>
+              <div>{grant.funder}</div>
+              <div>{statusToLabel(grant.status)}</div>
+              <div>{formatDate(grant.deadline)}</div>
+              <div>{grant.award}</div>
+              <div>{grant.responsibilityTag ?? '—'}</div>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div className="board">
+          {columns.map((col) => {
+            const colGrants = filteredGrants.filter((grant) => grant.status === col.key);
+            return (
+              <section key={col.key} className="board-col">
+                <div className="board-col-header">
+                  <div className="board-col-title">{col.title.toUpperCase()}</div>
+                  <div className="board-col-count">{boardCounts.get(col.key) ?? 0}</div>
+                </div>
+                <div className="board-col-body">
+                  {colGrants.length === 0 ? (
+                    <div className="empty">none</div>
+                  ) : (
+                    colGrants.map((grant) => (
+                      <button key={grant.id} type="button" className="board-card" onClick={() => onGrantSelect(grant.id)}>
+                        <div className="board-card-funder">{grant.funderShort}</div>
+                        <div className="board-card-title">{grant.title}</div>
+                        <div className="board-card-foot">
+                          <span>{formatDate(grant.deadline)}</span>
+                          <span className="amount">{grant.award}</span>
+                        </div>
+                      </button>
+                    ))
+                  )}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+      )}
+    </>
+  );
 }

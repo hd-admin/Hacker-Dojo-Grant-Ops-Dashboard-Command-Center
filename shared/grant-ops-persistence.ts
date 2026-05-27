@@ -19,6 +19,8 @@ import {
   readPersistedData as readPersistedDataFromSqlite,
   readProfile as readProfileFromSqlite,
   readSubmissionManifests as readSubmissionManifestsFromSqlite,
+  readBackupFreshness as readBackupFreshnessFromSqlite,
+  readCrawlSchedules as readCrawlSchedulesFromSqlite,
   resolveDataDir,
   resetSqliteCache,
   removeApprovalRecordByGrantId as removeApprovalRecordByGrantIdFromSqlite,
@@ -27,6 +29,10 @@ import {
   saveDuplicateCandidate as saveDuplicateCandidateToSqlite,
   saveJobQueueItem as saveJobQueueItemToSqlite,
   saveSubmissionManifest as saveSubmissionManifestToSqlite,
+  saveBackupVerificationRecord as saveBackupVerificationRecordToSqlite,
+  saveBackupFreshness as saveBackupFreshnessToSqlite,
+  upsertCrawlSchedule as upsertCrawlScheduleToSqlite,
+  deleteCrawlSchedule as deleteCrawlScheduleFromSqlite,
   updateConflictRecord as updateConflictRecordToSqlite,
   updateDuplicateCandidate as updateDuplicateCandidateToSqlite,
   updateJobQueueItem as updateJobQueueItemToSqlite,
@@ -341,4 +347,28 @@ export async function saveSubmissionManifest(item: SubmissionManifest): Promise<
 
 export async function removeApprovalRecordPersistence(grantId: string): Promise<void> {
   await removeApprovalRecordByGrantIdFromSqlite(getSqliteState(), grantId);
+}
+
+export async function loadBackupFreshness(): Promise<import('./types').BackupFreshnessStatus> {
+  return readBackupFreshnessFromSqlite(getSqliteState());
+}
+
+export async function saveBackupVerificationRecord(record: import('./types').BackupVerificationRecord): Promise<void> {
+  await saveBackupVerificationRecordToSqlite(getSqliteState(), record);
+}
+
+export async function saveBackupFreshness(freshness: import('./types').BackupFreshnessStatus): Promise<void> {
+  await saveBackupFreshnessToSqlite(getSqliteState(), freshness);
+}
+
+export async function loadCrawlSchedules(): Promise<import('./types').CrawlSchedule[]> {
+  return readCrawlSchedulesFromSqlite(getSqliteState());
+}
+
+export async function saveCrawlSchedule(schedule: import('./types').CrawlSchedule): Promise<void> {
+  await upsertCrawlScheduleToSqlite(getSqliteState(), schedule);
+}
+
+export async function deleteCrawlSchedule(id: string): Promise<void> {
+  await deleteCrawlScheduleFromSqlite(getSqliteState(), id);
 }

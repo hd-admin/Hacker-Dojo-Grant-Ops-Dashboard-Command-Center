@@ -96,6 +96,46 @@ beforeEach(() => {
   opencodeUpdate.mockReset();
   onRefreshAppState.mockReset();
 
+  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+    const url = String(input);
+    if (url.includes('/api/health')) {
+      return new Response(JSON.stringify({
+        storage: 'ok',
+        opencode: 'ok',
+        opencodeVersion: '1.0.0',
+        crawlerStatus: 'ok',
+        documentIndexer: 'ok',
+      }), { headers: { 'content-type': 'application/json' } });
+    }
+
+    if (url.includes('/api/backup/freshness')) {
+      return new Response(JSON.stringify({
+        lastBackupAt: '2026-05-25T00:00:00.000Z',
+        isStale: false,
+        lastBackupVerification: {
+          checkedAt: '2026-05-25T00:00:00.000Z',
+          outcome: 'Backup verified: 2 grants, 2 documents',
+          grantCount: 2,
+          documentCount: 2,
+          type: 'backup',
+        },
+        lastRestoreVerification: {
+          checkedAt: '2026-05-24T00:00:00.000Z',
+          outcome: 'Restore verified: 1 grant, 1 document',
+          grantCount: 1,
+          documentCount: 1,
+          type: 'restore',
+        },
+      }), { headers: { 'content-type': 'application/json' } });
+    }
+
+    if (url.includes('/api/diagnostics')) {
+      return new Response(JSON.stringify({ ok: true }), { headers: { 'content-type': 'application/json' } });
+    }
+
+    return new Response('{}', { headers: { 'content-type': 'application/json' } });
+  }));
+
   profileGet.mockResolvedValue(profile);
   documentsGetAll.mockResolvedValue(documents);
   opencodeGet.mockResolvedValue(opencodeSettings);
@@ -141,6 +181,7 @@ afterEach(() => {
   root.unmount();
   container.remove();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe('SettingsView', () => {
@@ -149,23 +190,41 @@ describe('SettingsView', () => {
     await waitFor(() => container.textContent?.includes('Hacker Dojo Program Summary.pdf') === true);
 
     expect(container.textContent).toContain('Org Profile');
-    expect(container.textContent).toContain('Context the agent uses for matching & drafting');
-    expect(container.textContent).toContain('grounded');
-    expect(container.textContent).toContain('stored only');
+    expect(container.textContent).toContain('Reference Documents');
+    expect(container.textContent).toContain('Backup & Restore');
+    expect(container.textContent).toContain('Copy Diagnostics');
+    expect(container.textContent).toContain('Export Diagnostics');
+    expect(container.textContent).toContain('Last backup verification: Backup verified: 2 grants, 2 documents');
+    expect(container.textContent).toContain('Last restore verification: Restore verified: 1 grant, 1 document');
+    expect(container.querySelector('[data-testid="copy-diagnostics-btn"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="export-diagnostics-btn"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="backup-verification-result"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="restore-verification-result"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="rerun-health-check-btn"]')).not.toBeNull();
 
-    container.querySelector('button.upload-item')?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Upload document'))?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(() => container.textContent?.includes('hacker-dojo-program-summary.pdf') === true);
 
     expect(documentsCreate).toHaveBeenCalledTimes(1);
     expect(onRefreshAppState).toHaveBeenCalledTimes(1);
-    expect(container.textContent).toContain('grounded');
+    expect(container.textContent).toContain('hacker-dojo-program-summary.pdf');
+  });
+
+  it('shows the unsaved-change badge when profile inputs are edited', async () => {
+    root.render(React.createElement(SettingsView, { onRefreshAppState, initiallyDirty: true }));
+
+    await waitFor(() => container.querySelector('[data-testid="settings-unsaved-badge"]') !== null);
+    expect(container.querySelector('[data-testid="settings-unsaved-badge"]')?.textContent).toContain('Unsaved changes');
   });
 
   it('renders docTypes from profile in the Search Themes card', async () => {
     root.render(React.createElement(SettingsView, { onRefreshAppState }));
-    await waitFor(() => container.textContent?.includes('PDF') === true);
+    await waitFor(() => container.textContent?.includes('Hacker Dojo Program Summary.pdf') === true);
     expect(container.textContent).toContain('Org Profile');
-    expect(container.textContent).toContain('XLS');
-    expect(container.textContent).toContain('DOC');
+    expect(container.textContent).toContain('Reference Documents');
+    expect(container.textContent).toContain('Hacker Dojo Program Summary.pdf');
+    expect(container.textContent).toContain('Budget FY2025.xlsx');
+    expect(container.textContent).toContain('Opencode');
+    expect(container.textContent).toContain('Edit Opencode');
   });
 });
