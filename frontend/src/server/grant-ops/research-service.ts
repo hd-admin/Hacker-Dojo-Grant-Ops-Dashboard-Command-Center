@@ -31,6 +31,7 @@ export interface ResearchOptions {
 	 * @internal Test-only option. Do not use in production code.
 	 */
 	_providerType?: "cli" | "fake";
+	sourceIds?: string[];
 }
 
 export interface ResearchResult {
@@ -65,7 +66,14 @@ export async function runResearch(
 
 	try {
 		// Get active sources
-		const sources = await deps.sourceService.getActiveSources();
+		let sources = await deps.sourceService.getActiveSources();
+		if (options.sourceIds?.length) {
+			const sourceIdSet = new Set(options.sourceIds);
+			sources = sources.filter((source) => sourceIdSet.has(source.id));
+			if (sources.length === 0) {
+				throw new Error(`No active sources matched the requested source scope: ${options.sourceIds.join(', ')}`);
+			}
+		}
 
 		// If no sources, create a default one based on search themes
 		if (sources.length === 0) {

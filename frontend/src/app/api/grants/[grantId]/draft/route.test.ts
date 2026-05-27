@@ -57,6 +57,16 @@ const fakeAdapter = {
   isConfigured: () => true,
 };
 
+async function waitFor(predicate: () => Promise<boolean> | boolean, timeoutMs = 5000): Promise<void> {
+  const start = Date.now();
+  while (!(await predicate())) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error('Timed out waiting for condition');
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+  }
+}
+
 function createGrant(id: string): Grant {
   return {
     id,
@@ -136,13 +146,18 @@ describe('/api/grants/[grantId]/draft route', () => {
       }) as never,
       { params: Promise.resolve({ grantId: grant.id }) },
     );
-    const draft = await response.json();
+    const queued = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(draft.content).toContain(
+    expect(response.status).toBe(202);
+    expect(queued.queued).toBe(true);
+    await waitFor(async () => (await repository.getJobQueueItem(queued.job.id))?.status === 'completed');
+    const job = await repository.getJobQueueItem(queued.job.id);
+    expect(job?.resultSummary).toMatch(/Draft v1 generated/i);
+    const drafts = await repository.getDraftArtifacts(grant.id);
+    expect(drafts.at(-1)?.content).toContain(
       'Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
     );
-    expect(draft.content).not.toContain('stored_unparsed');
+    expect(drafts.at(-1)?.content).not.toContain('stored_unparsed');
   });
 
   it('returns 400 when opencode settings are not configured', async () => {

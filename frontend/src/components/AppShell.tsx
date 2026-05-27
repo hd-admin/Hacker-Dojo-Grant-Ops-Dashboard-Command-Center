@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   CrawlStatus,
   Grant,
@@ -71,6 +71,7 @@ export default function AppShell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [recentGrantIds, setRecentGrantIds] = useState<string[]>([]);
+  const [recentDraftId, setRecentDraftId] = useState<string | null>(null);
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
@@ -84,6 +85,7 @@ export default function AppShell() {
     activeView?: ViewType;
     selectedGrantId?: string | null;
     recentGrantIds?: string[];
+    recentDraftId?: string | null;
   }) => {
     const storage = getWorkingContextStorage();
     if (!storage) return;
@@ -143,6 +145,7 @@ export default function AppShell() {
     if (context.activeView) setActiveView(context.activeView as ViewType);
     if (context.selectedGrantId !== undefined) setSelectedGrantId(context.selectedGrantId);
     if (Array.isArray(context.recentGrantIds)) setRecentGrantIds(context.recentGrantIds.slice(0, 5));
+    if (context.recentDraftId !== undefined) setRecentDraftId(context.recentDraftId);
     void Promise.all([refreshAppState(), refreshHealth()]).catch((error) => {
       console.error('Error loading app state:', error);
     });
@@ -189,6 +192,11 @@ export default function AppShell() {
     saveWorkingContext({ recentGrantIds });
   }, [recentGrantIds, isMounted, saveWorkingContext]);
 
+  useEffect(() => {
+    if (!isMounted || recentDraftId === null) return;
+    saveWorkingContext({ recentDraftId });
+  }, [recentDraftId, isMounted, saveWorkingContext]);
+
   const handleNavClick = (item: NavItem) => {
     if (item.view) {
       setActiveView(item.view);
@@ -209,6 +217,12 @@ export default function AppShell() {
 
   const isFirstRun = grants.length === 0 && sources.length === 0 && tasks.length === 0 && notifications.length === 0;
   const hasStorageError = healthResult?.storage === 'error';
+  const opencodeBlocked =
+    healthResult !== null &&
+    (healthResult.opencode === 'not-installed' ||
+      healthResult.opencode === 'not-reachable' ||
+      healthResult.opencode === 'incompatible' ||
+      healthResult.opencode === 'error');
 
   if (!isMounted) {
     return <div className="app-loading" aria-busy="true" />;
@@ -262,6 +276,7 @@ export default function AppShell() {
                 type="button"
                 className={`nav-item ${activeView === item.view ? 'active' : ''}`}
                 data-view={item.view}
+                disabled={(item.view === 'discovery' || item.view === 'sources') && (healthResult === null || opencodeBlocked)}
                 onClick={() => handleNavClick(item)}
               >
                 <span className="nav-icon">{item.icon}</span>
@@ -338,13 +353,21 @@ export default function AppShell() {
           />
         </div>
         <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`}>
-          <DiscoveryView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} />
+          {healthResult === null || opencodeBlocked ? (
+            <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
+          ) : (
+            <DiscoveryView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} />
+          )}
         </div>
         <div id="view-pipeline" className={`view ${activeView === 'pipeline' ? 'active' : ''}`}>
           <PipelineView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} />
         </div>
         <div id="view-sources" className={`view ${activeView === 'sources' ? 'active' : ''}`}>
-          <SourcesView onRefreshAppState={refreshAppState} />
+          {healthResult === null || opencodeBlocked ? (
+            <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
+          ) : (
+            <SourcesView onRefreshAppState={refreshAppState} />
+          )}
         </div>
         <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`}>
           <SettingsView onRefreshAppState={refreshAppState} />
@@ -374,6 +397,7 @@ function readWorkingContext(): {
   activeView?: string;
   selectedGrantId?: string | null;
   recentGrantIds?: string[];
+  recentDraftId?: string | null;
 } {
   const storage = getWorkingContextStorage();
   if (!storage) return {};
@@ -382,6 +406,7 @@ function readWorkingContext(): {
       activeView?: string;
       selectedGrantId?: string | null;
       recentGrantIds?: string[];
+      recentDraftId?: string | null;
     };
   } catch {
     return {};

@@ -1,57 +1,127 @@
+import { execFileSync } from 'node:child_process';
+import { z } from 'zod';
+import { SourceDiscoverySuggestionSchema } from '../../../../shared/schemas';
 import type { SourceDiscoverySuggestion } from '../../../../shared/types';
-import { getDependencies } from './dependencies';
+import { getDependencies, type Dependencies } from './dependencies';
 
 export interface DiscoverSourcesResult {
   suggestions: SourceDiscoverySuggestion[];
   unavailable?: boolean;
 }
 
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '') || 'grant-source';
+const suggestionInputSchema = z.object({
+  name: z.string(),
+  url: z.string(),
+  type: z.enum(['website', 'database', 'api']),
+  rationale: z.string(),
+  confidence: z.number().min(0).max(1),
+  id: z.string().optional(),
+  createdAt: z.string().optional(),
+  suggestedBy: z.literal('ai').optional(),
+});
+
+const sourceDiscoveryPayloadSchema = z.union([
+  z.array(suggestionInputSchema),
+  z.object({
+    suggestions: z.array(suggestionInputSchema),
+  }),
+]);
+
+function parseJsonPayload(rawOutput: string): unknown {
+  const trimmed = rawOutput.trim();
+  if (!trimmed) return null;
+
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    const firstArray = trimmed.indexOf('[');
+    const firstObject = trimmed.indexOf('{');
+    const start = firstArray === -1 ? firstObject : firstObject === -1 ? firstArray : Math.min(firstArray, firstObject);
+    if (start >= 0) {
+      const candidate = trimmed.slice(start);
+      try {
+        return JSON.parse(candidate) as unknown;
+      } catch {
+        return null;
+      }
+    }
+    return null;
+  }
 }
 
-function titleCase(value: string): string {
-  return value
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 3)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
+type SourceDiscoverySuggestionInput = z.infer<typeof suggestionInputSchema>;
+
+function normalizeSuggestion(
+  item: SourceDiscoverySuggestionInput,
+  deps: Dependencies,
+): SourceDiscoverySuggestion | null {
+  const parsed = SourceDiscoverySuggestionSchema.safeParse({
+    id: item.id ?? deps.idGenerator.generateId('suggestion'),
+    name: item.name,
+    url: item.url,
+    type: item.type,
+    rationale: item.rationale,
+    confidence: item.confidence,
+    suggestedBy: item.suggestedBy ?? 'ai',
+    createdAt: item.createdAt ?? new Date().toISOString(),
+  });
+
+  return parsed.success ? parsed.data : null;
 }
 
-const DISCOVERY_STOP_WORDS = new Set(['find', 'show', 'discover', 'grant', 'grants', 'source', 'sources']);
+function buildPrompt(prompt: string): string {
+  return [
+    'Return only JSON.',
+    'You are helping a nonprofit research team identify real grant source destinations from an operator prompt.',
+    'Return a JSON array only; no markdown, no prose, no explanation.',
+    'Each item must contain: name, url, type (website|database|api), rationale, confidence (0.0-1.0).',
+    'Prefer evidence-backed sources and avoid synthetic URLs.',
+    '',
+    `Operator request: ${prompt}`,
+  ].join('\n');
+}
 
-export async function discoverSourcesFromPrompt(prompt: string): Promise<DiscoverSourcesResult> {
-  const deps = getDependencies();
+export async function discoverSourcesFromPrompt(
+  prompt: string,
+  deps: Dependencies = getDependencies(),
+): Promise<DiscoverSourcesResult> {
   const settings = await deps.repository.getOpencodeSettings();
-
-  if (!settings?.isConfigured) {
+  if (!settings?.isConfigured || !settings.binaryPath?.trim()) {
     return { suggestions: [], unavailable: true };
   }
 
-  const words = prompt
-    .split(/[^a-zA-Z0-9]+/)
-    .map((word) => word.trim())
-    .filter((word) => word.length > 3)
-    .filter((word) => !DISCOVERY_STOP_WORDS.has(word.toLowerCase()))
-    .slice(0, 3);
+  try {
+    const output = execFileSync(settings.binaryPath, ['run', '--format', 'json', buildPrompt(prompt)], {
+      cwd: settings.workingDirectory || process.cwd(),
+      timeout: settings.timeoutMs || 60000,
+      encoding: 'utf8',
+    });
 
-  const subjects = words.length > 0 ? words : ['community', 'education', 'innovation'];
-  const now = new Date().toISOString();
+    const parsedPayload = parseJsonPayload(String(output));
+    const validated = sourceDiscoveryPayloadSchema.safeParse(parsedPayload);
+    if (!validated.success) {
+      console.error('Error parsing source discovery output:', validated.error.flatten());
+      return { suggestions: [] };
+    }
 
-  const suggestions: SourceDiscoverySuggestion[] = subjects.map((subject, index) => ({
-    id: `discover-${slugify(subject)}-${index + 1}`,
-    name: `${titleCase(subject)} Grants`,
-    url: `https://${slugify(subject)}.example.org`,
-    type: 'website',
-    rationale: `Likely relevant to the prompt because it focuses on ${subject}.`,
-    confidence: Math.max(0.55, 0.92 - index * 0.12),
-    suggestedBy: 'ai',
-    createdAt: now,
-  }));
+    const rawSuggestions = Array.isArray(validated.data) ? validated.data : validated.data.suggestions;
+    const suggestions = rawSuggestions
+      .map((item) => normalizeSuggestion(item, deps))
+      .filter((item): item is SourceDiscoverySuggestion => item !== null)
+      .map((item) => ({
+        ...item,
+        id: item.id || deps.idGenerator.generateId('suggestion'),
+        createdAt: item.createdAt || new Date().toISOString(),
+        suggestedBy: 'ai' as const,
+      }));
 
-  return { suggestions };
+    return { suggestions };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error while discovering sources';
+    if (/not configured|binary not found|enoent|no such file/i.test(message)) {
+      return { suggestions: [], unavailable: true };
+    }
+    console.error('Error discovering sources:', message);
+    return { suggestions: [] };
+  }
 }

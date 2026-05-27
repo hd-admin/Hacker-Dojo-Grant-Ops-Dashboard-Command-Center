@@ -83,6 +83,7 @@ export const GrantSchema = z.object({
   externalUrl: z.string().optional(),
   researchEvidence: z.array(z.lazy(() => ResearchEvidenceSchema)).optional(),
   researchRationale: z.string().optional(),
+  category: z.string().optional(),
   manualSource: z.boolean().optional(),
   humanOverrides: z.array(HumanOverrideSchema).optional(),
 });

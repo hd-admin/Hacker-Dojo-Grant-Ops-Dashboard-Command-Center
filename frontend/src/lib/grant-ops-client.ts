@@ -18,6 +18,7 @@ import type {
 	SubmissionManifest,
 	SubmissionManifestItem,
 	Notification,
+	JobQueueItem,
 	OpencodeSettings,
 	OrganizationProfile,
 	Source,
@@ -169,6 +170,11 @@ export interface DraftCreateRequest {
 	revisionNotes?: string;
 }
 
+export interface QueuedJobResponse {
+	queued: true;
+	job: JobQueueItem;
+}
+
 export const draftApi = {
 	get: (grantId: string) =>
 		apiFetch<DraftArtifact[]>(
@@ -176,7 +182,7 @@ export const draftApi = {
 		),
 
 	create: (grantId: string, request: DraftCreateRequest) =>
-		apiFetch<DraftArtifact>(
+		apiFetch<DraftArtifact | QueuedJobResponse>(
 			`/api/grants/${encodeURIComponent(grantId)}/draft`,
 			{
 				method: "POST",
@@ -256,6 +262,17 @@ export const manifestApi = {
 				body: JSON.stringify({ materialRefs: [], ...request }),
 			},
 		),
+};
+
+// ============ Jobs API ============
+
+export const jobsApi = {
+	get: (jobId: string) => apiFetch<JobQueueItem>(`/api/jobs/${encodeURIComponent(jobId)}`),
+
+	retry: (jobId: string) =>
+		apiFetch<{ success: boolean; newJobId: string }>(`/api/jobs/${encodeURIComponent(jobId)}/retry`, {
+			method: "POST",
+		}),
 };
 
 // ============ Follow-ups API ============
@@ -410,6 +427,7 @@ export function createGrantOpsClient() {
 		approvals: approvalApi,
 		submit: submitApi,
 		manifest: manifestApi,
+		jobs: jobsApi,
 		followUps: followUpsApi,
 		profile: profileApi,
 		opencodeSettings: opencodeSettingsApi,

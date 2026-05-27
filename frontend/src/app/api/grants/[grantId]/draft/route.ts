@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import * as draftingService from '@/server/grant-ops/drafting-service';
+import { enqueueJob } from '@/server/grant-ops/job-queue-service';
 export const dynamic = 'force-dynamic';
 
 
@@ -51,13 +52,20 @@ export async function POST(
       );
     }
 
-    const draft = await draftingService.generateDraft(
-      grant,
-      profile,
-      body.revisionNotes ? { revisionNotes: body.revisionNotes } : {},
+    const job = await enqueueJob(
+      { jobType: 'draft', entityId: grantId, retryCount: 0 },
+      'drafting',
+      async () => {
+        const draft = await draftingService.generateDraft(
+          grant,
+          profile,
+          body.revisionNotes ? { revisionNotes: body.revisionNotes } : {},
+        );
+        return `Draft v${draft.version} generated for ${grant.title}`;
+      },
     );
 
-    return NextResponse.json(draft);
+    return NextResponse.json({ queued: true, job }, { status: 202 });
   } catch (error) {
     console.error('Error generating draft:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate draft';

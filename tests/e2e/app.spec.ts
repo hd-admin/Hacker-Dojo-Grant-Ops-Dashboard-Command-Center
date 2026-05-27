@@ -1,11 +1,34 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { resetAppState } from "./test-utils";
+import { configureOpencodeThroughSettingsView, resetAppState } from "./test-utils";
+
+const opencodeStubPath = path.join(process.cwd(), "tests/e2e/opencode-stub.sh");
+
+async function ensureOpencodeStub(): Promise<string> {
+	const script = `#!/bin/sh
+set -eu
+
+cat <<'EOF'
+OpenCode 0.1.0-stub
+EOF
+`;
+	await fs.writeFile(opencodeStubPath, script, "utf8");
+	await fs.chmod(opencodeStubPath, 0o755);
+	return opencodeStubPath;
+}
 
 test.describe("Grant Operations Center smoke", () => {
 	test.beforeEach(async ({ request, page }) => {
+		const stubPath = await ensureOpencodeStub();
 		await resetAppState(request);
 		await page.goto("http://localhost:3000");
 		await page.waitForSelector(".app", { timeout: 60000 });
+		await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
+		await page.locator('.shell-banner-row [data-testid="rerun-health-check-btn"]').click();
+		await expect(page.locator('.nav-item[data-view="discovery"]')).not.toBeDisabled();
+		await page.click('[data-view="dashboard"]');
+		await page.waitForSelector("#view-dashboard.active", { timeout: 10000 });
 	});
 
 	test("shell loads with footer", async ({ page }) => {

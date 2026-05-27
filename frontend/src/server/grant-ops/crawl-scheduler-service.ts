@@ -51,7 +51,7 @@ export async function checkAndRunDue(): Promise<number> {
   }
 
   for (const schedule of dueSchedules) {
-    await runResearch(profile, { _providerType: 'fake' });
+    await runResearch(profile, { sourceIds: [schedule.sourceId] });
     schedule.lastScheduledAt = now.toISOString();
     schedule.nextScheduledAt = addHours(now, schedule.intervalHours);
     await saveCrawlSchedule(schedule);

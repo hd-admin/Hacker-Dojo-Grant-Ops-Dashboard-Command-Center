@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import type {
 	AuditEvent,
 	GrantDetailResponse,
+	GrantStatus,
 	SubmissionManifest,
 	SubmissionMethod,
 } from "../../../shared/types";
@@ -97,6 +98,42 @@ function previewText(text: string, limit = 280): string {
 	return `${text.slice(0, limit).trimEnd()}…`;
 }
 
+const WORKING_CONTEXT_KEY = "grantops.workingContext";
+
+function getWorkingContextStorage(): Storage | null {
+	if (typeof window === "undefined") return null;
+	return window.localStorage;
+}
+
+function readWorkingContext(): Record<string, unknown> {
+	const storage = getWorkingContextStorage();
+	if (!storage || typeof storage.getItem !== "function") return {};
+	try {
+		return JSON.parse(storage.getItem(WORKING_CONTEXT_KEY) || "{}");
+	} catch {
+		return {};
+	}
+}
+
+function saveWorkingContextField(field: string, value: unknown): void {
+	const storage = getWorkingContextStorage();
+	if (!storage || typeof storage.getItem !== "function" || typeof storage.setItem !== "function") return;
+	const next = { ...readWorkingContext(), [field]: value };
+	storage.setItem(WORKING_CONTEXT_KEY, JSON.stringify(next));
+}
+
+async function waitForJobCompletion(jobId: string): Promise<void> {
+	for (let attempt = 0; attempt < 30; attempt += 1) {
+		const job = await client.jobs.get(jobId);
+		if (job.status === 'completed') return;
+		if (job.status === 'failed') {
+			throw new Error(job.errorMessage || 'Draft job failed');
+		}
+		await new Promise<void>((resolve) => setTimeout(resolve, 100));
+	}
+	throw new Error('Timed out waiting for draft job');
+}
+
 export default function GrantDrawer({
 	grantId,
 	onClose,
@@ -115,8 +152,13 @@ export default function GrantDrawer({
 	const [auditEvents, setAuditEvents] = useState<AuditEvent[]>([]);
 	const [manifest, setManifest] = useState<SubmissionManifest | null>(null);
 	const [manifestLoading, setManifestLoading] = useState(false);
+	const [closeWarningOpen, setCloseWarningOpen] = useState(false);
+	const [overrideField, setOverrideField] = useState<'fit' | 'category' | 'status' | null>(null);
+	const [overrideValue, setOverrideValue] = useState('');
+	const [overrideRationale, setOverrideRationale] = useState('');
 
 	const viewModel = buildGrantDrawerViewModel(detail);
+	const hasDirtyNotes = revisionNote.trim().length > 0 || submitNotes.trim().length > 0;
 
 	const loadDetail = useCallback(async () => {
 		if (!grantId) {
@@ -184,6 +226,23 @@ export default function GrantDrawer({
 		void loadAuditTrail();
 	}, [grantId]);
 
+	useEffect(() => {
+		if (detail?.latestDraft?.id) {
+			saveWorkingContextField('recentDraftId', detail.latestDraft.id);
+		}
+	}, [detail?.latestDraft?.id]);
+
+	useEffect(() => {
+		const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+			if (!hasDirtyNotes) return;
+			event.preventDefault();
+			event.returnValue = '';
+			return '';
+		};
+		window.addEventListener('beforeunload', handleBeforeUnload);
+		return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+	}, [hasDirtyNotes]);
+
 	const refreshAfterMutation = async () => {
 		await loadDetail();
 		await loadManifest();
@@ -193,7 +252,10 @@ export default function GrantDrawer({
 	const handleGenerateDraft = async () => {
 		if (!detail) return;
 		try {
-			await client.drafts.create(detail.grant.id, { revisionNotes: "" });
+			const response = await client.drafts.create(detail.grant.id, { revisionNotes: "" });
+			if (response && typeof response === 'object' && 'queued' in response) {
+				await waitForJobCompletion(response.job.id);
+			}
 			await refreshAfterMutation();
 		} catch (error) {
 			console.error("Error generating draft:", error);
@@ -236,6 +298,23 @@ export default function GrantDrawer({
 		setShowRevision(true);
 	};
 
+	const handleRequestClose = () => {
+		if (hasDirtyNotes) {
+			setCloseWarningOpen(true);
+			return;
+		}
+		onClose();
+	};
+
+	const handleDiscardUnsavedNotes = () => {
+		setRevisionNote('');
+		setSubmitNotes('');
+		setShowRevision(false);
+		setShowSubmitForm(false);
+		setCloseWarningOpen(false);
+		onClose();
+	};
+
 	const handleConfirmRevision = async () => {
 		if (!detail || !revisionNote.trim()) return;
 		try {
@@ -263,6 +342,38 @@ export default function GrantDrawer({
 		setRevisionNote("");
 	};
 
+	const handleSubmitOverride = async () => {
+		if (!detail || !overrideField || !overrideRationale.trim()) return;
+		const newValue =
+			overrideField === 'fit'
+				? Number(overrideValue)
+				: overrideValue.trim();
+		if (overrideField === 'fit' && Number.isNaN(newValue)) {
+			return;
+		}
+		try {
+			const response = await fetch(`/api/grants/${encodeURIComponent(detail.grant.id)}/override`, {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					field: overrideField,
+					newValue,
+					rationale: overrideRationale.trim(),
+					overrideType: overrideField === 'fit' ? 'score' : overrideField === 'category' ? 'category' : 'status',
+				}),
+			});
+			if (!response.ok) {
+				throw new Error('Failed to apply override');
+			}
+			setOverrideField(null);
+			setOverrideValue('');
+			setOverrideRationale('');
+			await refreshAfterMutation();
+		} catch (error) {
+			console.error('Error applying override:', error);
+		}
+	};
+
 	const handleOpenInEditor = () => {
 		if (detail?.grant.externalUrl) {
 			window.open(detail.grant.externalUrl);
@@ -286,7 +397,7 @@ export default function GrantDrawer({
 			<button
 				type="button"
 				className="drawer-overlay open"
-				onClick={onClose}
+				onClick={handleRequestClose}
 				aria-label="Close grant drawer"
 			/>
 			<aside className="drawer open">
@@ -297,7 +408,7 @@ export default function GrantDrawer({
 				) : detail ? (
 					<>
 						<div className="drawer-header">
-							<button type="button" className="drawer-close" onClick={onClose}>
+							<button type="button" className="drawer-close" onClick={handleRequestClose}>
 								×
 							</button>
 							<div className="drawer-funder">{detail.grant.funder}</div>
@@ -338,6 +449,12 @@ export default function GrantDrawer({
 									<div className="meta-label">Status</div>
 									<div className="meta-value">{detail.grant.statusLabel}</div>
 								</div>
+								{detail.grant.category && (
+									<div className="meta-item">
+										<div className="meta-label">Category</div>
+										<div className="meta-value">{detail.grant.category}</div>
+									</div>
+								)}
 							</div>
 						</div>
 
@@ -576,6 +693,54 @@ export default function GrantDrawer({
 							</div>
 
 							<div className="drawer-section">
+								<h3>Human overrides</h3>
+								<div className="drawer-actions">
+									<button type="button" data-testid="override-fit-score-btn" onClick={() => {
+										setOverrideField('fit');
+										setOverrideValue(String(detail.grant.fit));
+										setOverrideRationale('');
+									}}>
+										Override fit score
+									</button>
+									<button type="button" onClick={() => {
+										setOverrideField('category');
+										setOverrideValue(detail.grant.category ?? '');
+										setOverrideRationale('');
+									}}>
+										Override category
+									</button>
+									<button type="button" onClick={() => {
+										setOverrideField('status');
+										setOverrideValue(detail.grant.status);
+										setOverrideRationale('');
+									}}>
+										Override status
+									</button>
+								</div>
+								{overrideField && (
+									<div className="override-panel">
+										<div className="drawer-note">Provide a rationale before saving.</div>
+										{overrideField === 'fit' ? (
+											<input type="number" min={0} max={100} className="form-input" value={overrideValue} onChange={(e) => setOverrideValue(e.target.value)} />
+										) : overrideField === 'status' ? (
+											<select value={overrideValue} onChange={(e) => setOverrideValue(e.target.value)}>
+												{(['matched', 'draft', 'review', 'approved', 'submission-ready', 'submitted', 'follow-up', 'awarded', 'declined', 'closed', 'archived'] as GrantStatus[]).map((status) => (
+													<option key={status} value={status}>{status}</option>
+												))}
+											</select>
+										) : (
+											<input type="text" className="form-input" value={overrideValue} onChange={(e) => setOverrideValue(e.target.value)} />
+										)}
+										<textarea className="form-input" rows={3} placeholder="Rationale" value={overrideRationale} onChange={(e) => setOverrideRationale(e.target.value)} />
+										<div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+											<button type="button" onClick={() => void handleSubmitOverride()}>Save override</button>
+											<button type="button" onClick={() => { setOverrideField(null); setOverrideValue(''); setOverrideRationale(''); }}>Cancel</button>
+										</div>
+									</div>
+								)}
+							</div>
+
+							<div className="drawer-section">
 								<h3>Audit Trail</h3>
 								<div className="activity-list">
 									{auditEvents.slice(0, 10).map((event) => (
@@ -696,6 +861,17 @@ export default function GrantDrawer({
 												</div>
 											</div>
 										))}
+									</div>
+								</div>
+							)}
+
+							{closeWarningOpen && (
+								<div className="drawer-section" data-testid="grant-drawer-unsaved-warning">
+									<h3>Discard unsaved notes?</h3>
+									<p>Your revision note or submission notes will be lost if you close the drawer now.</p>
+									<div style={{ display: 'flex', gap: '8px' }}>
+										<button type="button" onClick={handleDiscardUnsavedNotes}>Discard</button>
+										<button type="button" onClick={() => setCloseWarningOpen(false)}>Keep editing</button>
 									</div>
 								</div>
 							)}

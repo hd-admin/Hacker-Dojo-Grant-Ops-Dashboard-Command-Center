@@ -61,6 +61,14 @@ describe('SubmissionService', () => {
         approvedBy: 'human',
       };
       await repository.addApprovalRecord(approval);
+      await repository.addSubmissionManifest({
+        id: `manifest-${Date.now()}`,
+        grantId: grant.id,
+        version: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        materialRefs: [],
+      });
 
       const result = await submissionService.canSubmit(grant.id);
       expect(result.canSubmit).toBe(true);
@@ -191,6 +199,14 @@ describe('SubmissionService', () => {
         },
       };
       await repository.updateOrgProfile(profile);
+      await repository.addSubmissionManifest({
+        id: `manifest-${Date.now()}`,
+        grantId: htmlGrant.id,
+        version: 1,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        materialRefs: [],
+      });
 
       await submissionService.approveGrant({ grant: htmlGrant, approvedBy: 'test-user' });
       const result = await submissionService.recordSubmission({

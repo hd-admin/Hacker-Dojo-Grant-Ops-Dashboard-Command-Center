@@ -1,6 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
-import type { JobQueueItem } from '../../../../../../../shared/types';
+import type { JobQueueItem, OrganizationProfile, OpencodeSettings } from '../../../../../../../shared/types';
+import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
 import * as repository from '../../../../../server/grant-ops/repository';
 import { POST } from './route';
 
@@ -19,15 +20,65 @@ function createJob(id: string, status: JobQueueItem['status']): JobQueueItem {
   };
 }
 
+async function waitFor(predicate: () => Promise<boolean> | boolean, timeoutMs = 5000): Promise<void> {
+  const start = Date.now();
+  while (!(await predicate())) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error('Timed out waiting for condition');
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+  }
+}
+
+const profile: OrganizationProfile = {
+  legalName: 'Hacker Dojo',
+  ein: '94-3359594',
+  samUEI: 'ABC123DEF456',
+  mission: 'Community learning and technology access',
+  docTypes: ['PDF'],
+  searchThemes: ['EdTech'],
+  agentBehavior: {
+    autoDraftThreshold: 75,
+    submissionPolicy: 'Human approval required',
+    notifyEmail: 'ed@hackerdojo.com',
+    voiceAndTone: 'Plain-spoken',
+  },
+};
+
+const opencodeSettings: OpencodeSettings = {
+  binaryPath: '/usr/local/bin/opencode',
+  workingDirectory: '/tmp/hacker-dojo',
+  timeoutMs: 60000,
+  profile: 'default',
+  isConfigured: true,
+};
+
+const fakeAdapter = {
+  executeResearch: vi.fn().mockResolvedValue({
+    success: true,
+    content: JSON.stringify({
+      grants: [],
+      evidence: [],
+      rationale: 'retry-test',
+    }),
+  }),
+  generateDraft: vi.fn(),
+  isConfigured: () => true,
+};
+
 describe('/api/jobs/[jobId]/retry route', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
 
   beforeEach(async () => {
     tempDataDir = await withTempDataDir();
     invalidateCache();
+    setDependencies(createDependencies({ createOpencodeAdapter: () => fakeAdapter }));
+    await repository.updateOrgProfile(profile);
+    await repository.updateOpencodeSettings(opencodeSettings);
   });
 
   afterEach(async () => {
+    resetDependencies();
     await tempDataDir.cleanup();
     invalidateCache();
   });
@@ -42,17 +93,20 @@ describe('/api/jobs/[jobId]/retry route', () => {
     });
     const data = await response.json();
 
-    expect(response.status).toBe(200);
+    expect(response.status).toBe(202);
     expect(data.success).toBe(true);
     expect(data.newJobId).toMatch(/^job-/);
 
+    await waitFor(async () => (await repository.getJobQueueItem(data.newJobId))?.status === 'completed');
     const jobs = await repository.getJobQueue();
     expect(jobs).toHaveLength(2);
     const retried = jobs.find((job) => job.id === data.newJobId);
-    expect(retried?.status).toBe('queued');
-    expect(retried?.stage).toBe('retrying');
+    expect(retried?.status).toBe('completed');
+    expect(retried?.stage).toBe('completed');
     expect(retried?.entityId).toBe('grant-123');
     expect(retried?.retryCount).toBe(2);
+    expect(retried?.resultSummary).toMatch(/Research completed/i);
+    expect(fakeAdapter.executeResearch).toHaveBeenCalled();
   });
 
   it('rejects retry attempts for jobs that are not failed', async () => {

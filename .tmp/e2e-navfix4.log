@@ -1,0 +1,49 @@
+
+> hacker-dojo-grant-ops@0.1.0 pretest:e2e /Users/mistlight/Projects/Experiments/HackerDojoGrantApp
+> bash ./scripts/ensure-better-sqlite3.sh
+
+
+> hacker-dojo-grant-ops@0.1.0 test:e2e /Users/mistlight/Projects/Experiments/HackerDojoGrantApp
+> playwright test --grep 'navigation switches between core views'
+
+
+Running 1 test using 1 worker
+
+  ✘  1 [chromium] › tests/e2e/app.spec.ts:41:6 › Grant Operations Center smoke › navigation switches between core views (2.0m)
+
+
+  1) [chromium] › tests/e2e/app.spec.ts:41:6 › Grant Operations Center smoke › navigation switches between core views 
+
+    [31mTest timeout of 120000ms exceeded while running "beforeEach" hook.[39m
+
+      20 |
+      21 | test.describe("Grant Operations Center smoke", () => {
+    > 22 | 	test.beforeEach(async ({ request, page }) => {
+         | 	     ^
+      23 | 		const stubPath = await ensureOpencodeStub();
+      24 | 		await resetAppState(request);
+      25 | 		await page.goto("http://localhost:3000");
+        at /Users/mistlight/Projects/Experiments/HackerDojoGrantApp/tests/e2e/app.spec.ts:22:7
+
+    Error: locator.click: Test timeout of 120000ms exceeded.
+    Call log:
+    [2m  - waiting for getByRole('button', { name: 'Configure' })[22m
+
+
+       at test-utils.ts:66
+
+      64 | ): Promise<void> {
+      65 | 	await openSettingsView(page);
+    > 66 | 	await page.getByRole("button", { name: "Configure" }).click();
+         | 	                                                      ^
+      67 | 	const opencodeCard = page
+      68 | 		.locator(".setting-card")
+      69 | 		.filter({ hasText: "Opencode Agent" });
+        at configureOpencodeThroughSettingsView (/Users/mistlight/Projects/Experiments/HackerDojoGrantApp/tests/e2e/test-utils.ts:66:56)
+        at /Users/mistlight/Projects/Experiments/HackerDojoGrantApp/tests/e2e/app.spec.ts:27:3
+
+    Error Context: test-results/app-Grant-Operations-Cente-9125d-switches-between-core-views-chromium/error-context.md
+
+  1 failed
+    [chromium] › tests/e2e/app.spec.ts:41:6 › Grant Operations Center smoke › navigation switches between core views 
+ ELIFECYCLE  Command failed with exit code 1.

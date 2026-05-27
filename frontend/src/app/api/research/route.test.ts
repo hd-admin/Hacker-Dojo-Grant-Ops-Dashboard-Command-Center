@@ -62,6 +62,16 @@ const fakeAdapter = {
   isConfigured: () => true,
 };
 
+async function waitFor(predicate: () => Promise<boolean> | boolean, timeoutMs = 5000): Promise<void> {
+  const start = Date.now();
+  while (!(await predicate())) {
+    if (Date.now() - start > timeoutMs) {
+      throw new Error('Timed out waiting for condition');
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+  }
+}
+
 describe('/api/research route', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
 
@@ -96,12 +106,13 @@ describe('/api/research route', () => {
     const response = await POST(new Request('http://localhost/api/research', { method: 'POST' }) as never);
     const data = await response.json();
 
-    expect(response.status).toBe(200);
-    expect(data.success).toBe(true);
-    expect(data.sourcesCrawled).toBe(1);
-    expect(data.grantsFound).toBe(1);
-    expect(data.grantsMatched).toBe(1);
-    expect(data.crawlRun.status).toBe('completed');
+    expect(response.status).toBe(202);
+    expect(data.queued).toBe(true);
+    expect(data.job.status).toBe('queued');
+
+    await waitFor(async () => (await repository.getJobQueueItem(data.job.id))?.status === 'completed');
+    const completedJob = await repository.getJobQueueItem(data.job.id);
+    expect(completedJob?.resultSummary).toContain('Research completed');
 
     const getResponse = await GET(new Request('http://localhost/api/research') as never);
     const getData = await getResponse.json();
@@ -130,8 +141,12 @@ describe('/api/research route', () => {
       const response = await POST(new Request('http://localhost/api/research', { method: 'POST' }) as never);
       const data = await response.json();
 
-      expect(response.status).toBe(500);
-      expect(data.error).toMatch(/crawlRun|persisted/i);
+      expect(response.status).toBe(202);
+      expect(data.queued).toBe(true);
+
+      await waitFor(async () => (await repository.getJobQueueItem(data.job.id))?.status === 'failed');
+      const failedJob = await repository.getJobQueueItem(data.job.id);
+      expect(failedJob?.errorMessage).toMatch(/crawlRun|persisted/i);
 
       spy.mockRestore();
     });

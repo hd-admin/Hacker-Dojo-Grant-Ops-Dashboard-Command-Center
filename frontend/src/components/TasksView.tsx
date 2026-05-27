@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useEffect, useState } from 'react';
-import type { Task, FollowUp } from '../../../shared/types';
+import type { FollowUp, Task, TaskStatus } from '../../../shared/types';
 import { tasksApi, followUpsApi } from '../lib/grant-ops-client';
 
 interface TasksViewProps {
@@ -17,6 +17,9 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp }: Tasks
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [overrideTaskId, setOverrideTaskId] = useState<string | null>(null);
+  const [overrideTaskStatus, setOverrideTaskStatus] = useState<TaskStatus>('blocked');
+  const [overrideTaskRationale, setOverrideTaskRationale] = useState('');
 
   useEffect(() => {
     if (tasksProp) {
@@ -107,6 +110,35 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp }: Tasks
     setShowAddTaskForm(false);
   };
 
+  const handleStartTaskOverride = (task: Task) => {
+    setOverrideTaskId(task.id);
+    setOverrideTaskStatus(task.taskStatus ?? (task.completed ? 'completed' : 'in-progress'));
+    setOverrideTaskRationale(task.justification ?? '');
+  };
+
+  const handleSaveTaskOverride = async (taskId: string) => {
+    if (!overrideTaskRationale.trim()) return;
+    const updatedTasks = tasks.map((task) => {
+      if (task.id !== taskId) return task;
+      return {
+        ...task,
+        taskStatus: overrideTaskStatus,
+        justification: overrideTaskRationale.trim(),
+        completed: overrideTaskStatus === 'completed',
+      };
+    });
+    setTasks(updatedTasks);
+    await tasksApi.update(updatedTasks);
+    setOverrideTaskId(null);
+    setOverrideTaskRationale('');
+    await onRefreshAppState?.();
+  };
+
+  const handleCancelTaskOverride = () => {
+    setOverrideTaskId(null);
+    setOverrideTaskRationale('');
+  };
+
   if (loading) {
     return <div className="header-title">Loading...</div>;
   }
@@ -184,7 +216,40 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp }: Tasks
               onChange={() => handleToggleTask(task.id)}
               className="task-checkbox"
             />
-            <div className="task-text">{task.text}</div>
+            <div className="task-text">
+              <div>{task.text}</div>
+              <div className="task-meta">
+                {task.taskStatus && <span className="task-badge">{task.taskStatus}</span>}
+                {task.responsibilityTag && <span className="task-badge">{task.responsibilityTag}</span>}
+                {task.blockSubmission && <span className="task-badge">Blocks submission</span>}
+              </div>
+              {task.justification && <div className="task-rationale">Rationale: {task.justification}</div>}
+              <button type="button" data-testid="task-override-btn" onClick={() => handleStartTaskOverride(task)}>
+                Override
+              </button>
+              {overrideTaskId === task.id && (
+                <div className="task-override-panel">
+                  <select value={overrideTaskStatus} onChange={(e) => setOverrideTaskStatus(e.target.value as TaskStatus)}>
+                    <option value="blocked">blocked</option>
+                    <option value="in-progress">in-progress</option>
+                    <option value="completed">completed</option>
+                    <option value="waived">waived</option>
+                    <option value="not-applicable">not-applicable</option>
+                  </select>
+                  <textarea
+                    placeholder="Rationale"
+                    value={overrideTaskRationale}
+                    onChange={(e) => setOverrideTaskRationale(e.target.value)}
+                  />
+                  <div>
+                    <button type="button" onClick={() => void handleSaveTaskOverride(task.id)} disabled={!overrideTaskRationale.trim()}>
+                      Save override
+                    </button>
+                    <button type="button" onClick={handleCancelTaskOverride}>Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         ))}
       </div>

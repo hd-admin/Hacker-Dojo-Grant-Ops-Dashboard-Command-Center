@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as researchService from '@/server/grant-ops/research-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import { enqueueJob } from '@/server/grant-ops/job-queue-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,19 +25,22 @@ export async function POST(_request: NextRequest) {
       );
     }
 
-    const result = await researchService.runResearch(profile);
-
-    if (!result.crawlRun) {
-      return NextResponse.json({ error: 'Research completed but crawlRun was not persisted' }, { status: 500 });
-    }
+    const job = await enqueueJob(
+      { jobType: 'research', entityId: profile.legalName, retryCount: 0 },
+      'researching',
+      async () => {
+        const result = await researchService.runResearch(profile);
+        if (!result.crawlRun || result.crawlRun.status === 'failed') {
+          throw new Error(result.error || 'Research completed but crawlRun was not persisted');
+        }
+        return `Research completed: ${result.grantsMatched} grant(s) matched across ${result.crawlRun.sourcesCrawled} source(s)`;
+      },
+    );
 
     return NextResponse.json({
-      success: true,
-      crawlRun: result.crawlRun,
-      grantsFound: result.grantsFound,
-      grantsMatched: result.grantsMatched,
-      sourcesCrawled: result.crawlRun.sourcesCrawled,
-    });
+      queued: true,
+      job,
+    }, { status: 202 });
   } catch (error) {
     console.error('Error running research:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to run research';

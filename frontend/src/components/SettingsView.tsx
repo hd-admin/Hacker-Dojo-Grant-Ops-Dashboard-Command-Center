@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import type { BackupFreshnessStatus, DocumentMetadata, HealthCheckResult, OpencodeSettings, OrganizationProfile } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
@@ -22,6 +21,8 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const [freshness, setFreshness] = useState<BackupFreshnessStatus | null>(null);
   const [diagnosticsText, setDiagnosticsText] = useState('');
   const [isDirty, setIsDirty] = useState(initiallyDirty);
+  const [showRestoreWarning, setShowRestoreWarning] = useState(false);
+  const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
   const [isEditingOpencode, setIsEditingOpencode] = useState(false);
   const [opencodeForm, setOpencodeForm] = useState<Partial<OpencodeSettings>>({});
 
@@ -127,6 +128,23 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
     });
     setFreshness(await fetch('/api/backup/freshness').then((response) => response.json()));
     await onRefreshAppState?.();
+  };
+
+  const handleRequestRestore = (file: File | null) => {
+    if (!file) return;
+    setPendingRestoreFile(file);
+    setShowRestoreWarning(true);
+  };
+
+  const handleConfirmRestore = async () => {
+    await handleRestoreBackup(pendingRestoreFile);
+    setPendingRestoreFile(null);
+    setShowRestoreWarning(false);
+  };
+
+  const handleCancelRestore = () => {
+    setPendingRestoreFile(null);
+    setShowRestoreWarning(false);
   };
 
   const handleEditOpencode = () => {
@@ -244,8 +262,15 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
             <button type="button" onClick={() => { void fetch('/api/backup'); }}>Export backup</button>
             <label>
               Restore from backup
-              <input type="file" accept="application/json,.json" onChange={(e) => { void handleRestoreBackup(e.target.files?.[0] ?? null); }} />
+              <input type="file" accept="application/json,.json" onChange={(e) => { handleRequestRestore(e.target.files?.[0] ?? null); }} />
             </label>
+            {showRestoreWarning && (
+              <div data-testid="restore-warning-banner">
+                <div>Restoring will overwrite local state. Continue only if you have a verified backup.</div>
+                <button type="button" onClick={() => { void handleConfirmRestore(); }}>Confirm restore</button>
+                <button type="button" onClick={handleCancelRestore}>Cancel</button>
+              </div>
+            )}
           </div>
         </section>
 

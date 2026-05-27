@@ -177,6 +177,26 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<void
 }
 
 beforeEach(() => {
+  const localStorageStore = new Map<string, string>();
+  Object.defineProperty(window, 'localStorage', {
+    configurable: true,
+    value: {
+      getItem: (key: string) => localStorageStore.get(key) ?? null,
+      setItem: (key: string, value: string) => {
+        localStorageStore.set(key, value);
+      },
+      removeItem: (key: string) => {
+        localStorageStore.delete(key);
+      },
+      clear: () => {
+        localStorageStore.clear();
+      },
+      key: (index: number) => Array.from(localStorageStore.keys())[index] ?? null,
+      get length() {
+        return localStorageStore.size;
+      },
+    },
+  });
   capturedDashboardNotifications = undefined;
   grantsGetAll.mockReset();
   profileGet.mockReset();
@@ -332,5 +352,20 @@ describe('AppShell', () => {
     root.render(React.createElement(AppShell));
     await waitFor(() => capturedDashboardNotifications !== undefined && capturedDashboardNotifications.length > 0);
     expect(capturedDashboardNotifications).toEqual(notifications);
+  });
+
+  it('preserves recentDraftId in the stored working context', async () => {
+    window.localStorage.setItem('grantops.workingContext', JSON.stringify({
+      activeView: 'dashboard',
+      selectedGrantId: null,
+      recentGrantIds: [],
+      recentDraftId: 'draft-99',
+    }));
+
+    root.render(React.createElement(AppShell));
+    await waitFor(() => window.localStorage.getItem('grantops.workingContext') !== null);
+
+    const context = JSON.parse(window.localStorage.getItem('grantops.workingContext') ?? '{}') as { recentDraftId?: string };
+    expect(context.recentDraftId).toBe('draft-99');
   });
 });

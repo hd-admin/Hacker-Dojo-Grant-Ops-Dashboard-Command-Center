@@ -261,6 +261,7 @@ export interface Grant {
 	responsibilityTag?: ResponsibilityTag;
 	researchEvidence?: ResearchEvidence[];
 	researchRationale?: string;
+	category?: string;
 	manualSource?: boolean;
 	humanOverrides?: HumanOverride[];
 }

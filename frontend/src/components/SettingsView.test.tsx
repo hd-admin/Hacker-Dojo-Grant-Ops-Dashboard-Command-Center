@@ -227,4 +227,24 @@ describe('SettingsView', () => {
     expect(container.textContent).toContain('Opencode');
     expect(container.textContent).toContain('Edit Opencode');
   });
+
+  it('requires confirmation before starting a backup restore', async () => {
+    const fetchMock = vi.mocked(global.fetch as unknown as typeof fetch);
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('Backup & Restore') === true);
+
+    const fileInputs = Array.from(container.querySelectorAll('input[type="file"]')) as HTMLInputElement[];
+    const restoreInput = fileInputs.at(-1);
+    expect(restoreInput).toBeDefined();
+    if (!restoreInput) return;
+    const file = new File([JSON.stringify({ manifest: { version: '1.0' } })], 'backup.json', { type: 'application/json' });
+    Object.defineProperty(restoreInput, 'files', { configurable: true, value: [file] });
+    restoreInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+    await waitFor(() => container.querySelector('[data-testid="restore-warning-banner"]') !== null);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/restore'))).toBe(false);
+
+    Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Confirm restore')?.click();
+    await waitFor(() => fetchMock.mock.calls.some(([url]) => String(url).includes('/api/restore')) === true);
+  });
 });

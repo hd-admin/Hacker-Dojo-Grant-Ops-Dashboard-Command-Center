@@ -29,6 +29,7 @@ vi.mock("../lib/grant-ops-client", () => ({
 		approvals: { create: createApproval },
 		submit: { create: createSubmission },
 		revisions: { create: createRevision },
+		jobs: { get: vi.fn() },
 	},
 }));
 
@@ -283,7 +284,78 @@ function setTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
 }
 
 beforeEach(() => {
-	vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify([]), { headers: { "content-type": "application/json" } })));
+	vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+		const url = String(input);
+		if (url.includes('/api/grants/') && url.includes('/override') && init?.body) {
+			const body = JSON.parse(String(init.body)) as { field: string; newValue: unknown; rationale: string; overrideType: string };
+			if (body.field === 'fit') {
+				currentDetail = {
+					...currentDetail,
+					grant: {
+						...currentDetail.grant,
+						fit: Number(body.newValue),
+						humanOverrides: [
+							...(currentDetail.grant.humanOverrides ?? []),
+							{
+								field: 'fit',
+								previousValue: currentDetail.grant.fit,
+								newValue: Number(body.newValue),
+								rationale: body.rationale,
+								overriddenAt: new Date().toISOString(),
+								overriddenBy: 'operator',
+								overrideType: 'score',
+							},
+						],
+					},
+				};
+			}
+			if (body.field === 'category') {
+				currentDetail = {
+					...currentDetail,
+					grant: {
+						...currentDetail.grant,
+						category: String(body.newValue),
+						humanOverrides: [
+							...(currentDetail.grant.humanOverrides ?? []),
+							{
+								field: 'category',
+								previousValue: currentDetail.grant.category ?? null,
+								newValue: String(body.newValue),
+								rationale: body.rationale,
+								overriddenAt: new Date().toISOString(),
+								overriddenBy: 'operator',
+								overrideType: 'category',
+							},
+						],
+					},
+				};
+			}
+			if (body.field === 'status') {
+				currentDetail = {
+					...currentDetail,
+					grant: {
+						...currentDetail.grant,
+						status: body.newValue as GrantDetailResponse['grant']['status'],
+						statusLabel: String(body.newValue),
+						humanOverrides: [
+							...(currentDetail.grant.humanOverrides ?? []),
+							{
+								field: 'status',
+								previousValue: currentDetail.grant.status,
+								newValue: body.newValue,
+								rationale: body.rationale,
+								overriddenAt: new Date().toISOString(),
+								overriddenBy: 'operator',
+								overrideType: 'status',
+							},
+						],
+					},
+				};
+			}
+			return new Response(JSON.stringify(currentDetail.grant), { headers: { 'content-type': 'application/json' } });
+		}
+		return new Response(JSON.stringify([]), { headers: { 'content-type': 'application/json' } });
+	}));
 	currentDetail = makeGrantDetail();
 	currentManifest = null;
 	getGrantDetail.mockImplementation(async () => currentDetail);

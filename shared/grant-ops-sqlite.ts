@@ -678,7 +678,10 @@ export function setSchemaVersion(state: SqliteBootstrapState, version: number): 
 	).run(version, new Date().toISOString());
 }
 
-export function runMigrations(state: SqliteBootstrapState): {
+export function runMigrations(
+	state: SqliteBootstrapState,
+	options?: { applyMigration?: (currentVersion: number) => void },
+): {
 	success: boolean;
 	version: number;
 	message?: string;
@@ -686,7 +689,11 @@ export function runMigrations(state: SqliteBootstrapState): {
 	try {
 		const currentVersion = getCurrentSchemaVersion(state);
 		if (currentVersion < CURRENT_SCHEMA_VERSION) {
-			setSchemaVersion(state, CURRENT_SCHEMA_VERSION);
+			if (options?.applyMigration) {
+				options.applyMigration(currentVersion);
+			} else {
+				setSchemaVersion(state, CURRENT_SCHEMA_VERSION);
+			}
 		}
 		return { success: true, version: CURRENT_SCHEMA_VERSION };
 	} catch (error) {

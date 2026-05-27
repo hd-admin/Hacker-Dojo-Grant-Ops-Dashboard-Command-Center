@@ -63,6 +63,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       case 'funderShort':
         updates.funderShort = String(parsed.data.newValue);
         break;
+      case 'category':
+        updates.category = String(parsed.data.newValue);
+        break;
       default:
         break;
     }
