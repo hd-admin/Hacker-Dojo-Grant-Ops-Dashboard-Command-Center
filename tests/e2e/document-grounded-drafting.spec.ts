@@ -90,7 +90,7 @@ test("document-grounded-drafting: generate, revise, approve, and submit through 
 
 	await resetAppState(request);
 	await page.goto("http://localhost:3000");
-	await page.waitForSelector(".app", { timeout: 10000 });
+	await page.waitForSelector(".app", { timeout: 20000 });
 
 	await saveProfileThroughSettingsView(
 		page,

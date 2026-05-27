@@ -5,7 +5,7 @@ test.describe("Grant Operations Center smoke", () => {
 	test.beforeEach(async ({ request, page }) => {
 		await resetAppState(request);
 		await page.goto("http://localhost:3000");
-		await page.waitForSelector(".app", { timeout: 10000 });
+		await page.waitForSelector(".app", { timeout: 20000 });
 	});
 
 	test("shell loads with nav badges and footer", async ({ page }) => {

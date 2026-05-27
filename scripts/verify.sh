@@ -61,7 +61,7 @@ echo "✓ typecheck passed"
 
 PLAYWRIGHT_DATA_DIR="$(mktemp -d "$ROOT_DIR/.agent/tmp/playwright-data.XXXXXX")"
 export CI=1
-DATA_DIR="$PLAYWRIGHT_DATA_DIR" pnpm exec playwright test tests/e2e/app.spec.ts tests/e2e/discovery-sorting.spec.ts tests/e2e/document-grounded-drafting.spec.ts tests/e2e/submission-notification.spec.ts tests/e2e/simple-discovery.spec.ts >/dev/null 2>&1
+DATA_DIR="$PLAYWRIGHT_DATA_DIR" pnpm test:e2e >/dev/null 2>&1
 echo "✓ playwright suite passed"
 
 pnpm test >/dev/null 2>&1
