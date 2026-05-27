@@ -8,22 +8,26 @@ import {
 	defaultOpencodeSettings,
 	defaultProfile,
 	normalizeGrantDetailFields,
-	seedGrants,
-	seedNotifications,
-	seedTasks,
 } from "./seed-data";
 import type {
 	ApprovalRecord,
+	AuditEvent,
+	ConflictRecord,
 	CrawlRun,
+	CrawlSchedule,
 	DocumentMetadata,
 	DraftArtifact,
+	DuplicateCandidate,
 	FollowUp,
 	Grant,
+	JobFailureCategory,
+	JobQueueItem,
 	Notification,
 	OpencodeSettings,
 	OrganizationProfile,
 	RevisionRequest,
 	Source,
+	SubmissionManifest,
 	SubmissionRecord,
 	Task,
 } from "./types";
@@ -38,6 +42,27 @@ type SqliteDatabase = InstanceType<typeof Database>;
 
 const dbCache = new Map<string, SqliteDatabase>();
 const initialized = new Set<string>();
+
+type SqliteShutdownGlobal = typeof globalThis & {
+	__grantOpsSqliteShutdownRegistered?: boolean;
+};
+
+const sqliteShutdownGlobal = globalThis as SqliteShutdownGlobal;
+
+function closeSqliteConnections(): void {
+	resetSqliteCache();
+}
+
+function handleSqliteShutdown(): void {
+	closeSqliteConnections();
+	process.exit(0);
+}
+
+if (!sqliteShutdownGlobal.__grantOpsSqliteShutdownRegistered) {
+	sqliteShutdownGlobal.__grantOpsSqliteShutdownRegistered = true;
+	process.once("SIGINT", handleSqliteShutdown);
+	process.once("SIGTERM", handleSqliteShutdown);
+}
 
 export function resolveDataDir(): string {
 	if (process.env.DATA_DIR) {
@@ -156,13 +181,79 @@ function ensureSchema(db: SqliteDatabase): void {
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS audit_events (
+      id TEXT PRIMARY KEY,
+      event_type TEXT NOT NULL,
+      entity_id TEXT NOT NULL,
+      entity_type TEXT NOT NULL,
+      actor_label TEXT NOT NULL,
+      timestamp TEXT NOT NULL,
+      metadata TEXT
+    );
+    CREATE TABLE IF NOT EXISTS job_queue (
+      id TEXT PRIMARY KEY,
+      job_type TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'queued',
+      stage TEXT,
+      last_update TEXT,
+      created_at TEXT NOT NULL,
+      started_at TEXT,
+      completed_at TEXT,
+      entity_id TEXT,
+      retry_count INTEGER DEFAULT 0,
+      error_message TEXT,
+      result_summary TEXT,
+      failure_category TEXT
+    );
+    CREATE TABLE IF NOT EXISTS duplicate_candidates (
+      id TEXT PRIMARY KEY,
+      grant_id1 TEXT NOT NULL,
+      grant_id2 TEXT NOT NULL,
+      confidence_score REAL NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      detected_at TEXT NOT NULL,
+      conflicting_fields TEXT NOT NULL,
+      resolved_at TEXT,
+      resolved_by TEXT
+    );
+    CREATE TABLE IF NOT EXISTS conflict_records (
+      id TEXT PRIMARY KEY,
+      grant_id TEXT NOT NULL,
+      field_name TEXT NOT NULL,
+      values_json TEXT NOT NULL,
+      canonical_value TEXT,
+      resolved_at TEXT,
+      resolved_by TEXT
+    );
+    CREATE TABLE IF NOT EXISTS submission_manifests (
+      id TEXT PRIMARY KEY,
+      grant_id TEXT NOT NULL,
+      version INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      instructions TEXT,
+      portal_url TEXT,
+      file_constraints TEXT,
+      due_date TEXT,
+      material_refs TEXT NOT NULL DEFAULT '[]',
+      notes TEXT
+    );
+    CREATE TABLE IF NOT EXISTS crawl_schedules (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS schema_version (
+      id INTEGER PRIMARY KEY DEFAULT 1,
+      version INTEGER NOT NULL DEFAULT 1,
+      migrated_at TEXT NOT NULL
+    );
   `);
 }
 
 function readJsonFile<T>(filePath: string): Promise<T | null> {
 	return fs
 		.readFile(filePath, "utf8")
-		.then((raw) => JSON.parse(raw) as T)
+		.then((raw: string) => JSON.parse(raw) as T)
 		.catch(() => null);
 }
 
@@ -289,14 +380,10 @@ function loadMeta(db: SqliteDatabase, key: string): string | null {
 }
 
 function seedDefaultState(db: SqliteDatabase): void {
-	replaceTable<Grant>(
-		db,
-		"grants",
-		seedGrants.map((grant) => normalizeGrantDetailFields(grant)),
-	);
+	replaceTable<Grant>(db, "grants", []);
 	saveSingleton<OrganizationProfile>(db, "profile", "profile", defaultProfile);
-	replaceTable<Notification>(db, "notifications", [...seedNotifications]);
-	replaceTable<Task>(db, "tasks", [...seedTasks]);
+	replaceTable<Notification>(db, "notifications", []);
+	replaceTable<Task>(db, "tasks", []);
 	replaceTable<Source>(db, "sources", []);
 	replaceTable<CrawlRun>(db, "crawl_runs", []);
 	replaceTable<DraftArtifact>(db, "draft_artifacts", []);
@@ -397,6 +484,7 @@ function bootstrapFromLegacy(
 function ensureBootstrapped(state: SqliteBootstrapState): SqliteDatabase {
 	const db = openDatabase(state);
 	ensureSchema(db);
+	runMigrations(state);
 
 	if (initialized.has(state.dataDir)) {
 		return db;
@@ -568,4 +656,254 @@ export async function clearDatabase(
 		].map((filePath) => fs.rm(filePath, { force: true })),
 	);
 	await fs.rm(state.documentsDir, { recursive: true, force: true });
+}
+
+export const CURRENT_SCHEMA_VERSION = 2;
+
+export function getCurrentSchemaVersion(state: SqliteBootstrapState): number {
+	const db = openDatabase(state);
+	const row = db.prepare("SELECT version FROM schema_version WHERE id = 1 LIMIT 1").get() as
+		| { version: number }
+		| undefined;
+	return row?.version ?? 0;
+}
+
+export function setSchemaVersion(state: SqliteBootstrapState, version: number): void {
+	const db = openDatabase(state);
+	db.prepare(
+		"INSERT OR REPLACE INTO schema_version (id, version, migrated_at) VALUES (1, ?, ?)",
+	).run(version, new Date().toISOString());
+}
+
+export function runMigrations(state: SqliteBootstrapState): {
+	success: boolean;
+	version: number;
+	message?: string;
+} {
+	try {
+		const currentVersion = getCurrentSchemaVersion(state);
+		if (currentVersion < CURRENT_SCHEMA_VERSION) {
+			setSchemaVersion(state, CURRENT_SCHEMA_VERSION);
+		}
+		return { success: true, version: CURRENT_SCHEMA_VERSION };
+	} catch (error) {
+		const message = error instanceof Error ? error.message : "Migration failed";
+		return { success: false, version: getCurrentSchemaVersion(state), message };
+	}
+}
+
+export function readAuditEvents(
+	state: SqliteBootstrapState,
+	limit?: number,
+): AuditEvent[] {
+	const db = openDatabase(state);
+	const sql = limit
+		? "SELECT * FROM audit_events ORDER BY timestamp DESC LIMIT ?"
+		: "SELECT * FROM audit_events ORDER BY timestamp DESC";
+	const rows = limit ? db.prepare(sql).all(limit) : db.prepare(sql).all();
+	return (rows as Array<Record<string, unknown>>).map((row) => {
+		const event: AuditEvent = {
+			id: String(row.id),
+			eventType: String(row.event_type),
+			entityId: String(row.entity_id),
+			entityType: String(row.entity_type),
+			actorLabel: String(row.actor_label),
+			timestamp: String(row.timestamp),
+		};
+		if (row.metadata) {
+			event.metadata = JSON.parse(String(row.metadata)) as Record<string, unknown>;
+		}
+		return event;
+	});
+}
+
+export function saveAuditEvent(state: SqliteBootstrapState, event: AuditEvent): void {
+	const db = openDatabase(state);
+	db.prepare(
+		`INSERT OR REPLACE INTO audit_events (id, event_type, entity_id, entity_type, actor_label, timestamp, metadata)
+		 VALUES (@id, @eventType, @entityId, @entityType, @actorLabel, @timestamp, @metadata)`,
+	).run({
+		...event,
+		metadata: event.metadata ? JSON.stringify(event.metadata) : null,
+	});
+}
+
+export function readJobQueue(state: SqliteBootstrapState, status?: string): JobQueueItem[] {
+	const db = openDatabase(state);
+	const rows = db.prepare("SELECT * FROM job_queue ORDER BY created_at DESC").all() as Array<Record<string, unknown>>;
+	const items = rows.map((row) => {
+		const item: JobQueueItem = {
+			id: String(row.id),
+			jobType: String(row.job_type) as JobQueueItem['jobType'],
+			status: String(row.status) as JobQueueItem['status'],
+			createdAt: String(row.created_at),
+			retryCount: typeof row.retry_count === 'number' ? row.retry_count : Number(row.retry_count ?? 0),
+		};
+		if (row.stage) item.stage = String(row.stage);
+		if (row.last_update) item.lastUpdate = String(row.last_update);
+		if (row.started_at) item.startedAt = String(row.started_at);
+		if (row.completed_at) item.completedAt = String(row.completed_at);
+		if (row.entity_id) item.entityId = String(row.entity_id);
+		if (row.error_message) item.errorMessage = String(row.error_message);
+		if (row.result_summary) item.resultSummary = String(row.result_summary);
+		if (row.failure_category) item.failureCategory = String(row.failure_category) as JobFailureCategory;
+		return item;
+	});
+	return status ? items.filter((item) => item.status === status) : items;
+}
+
+export function readJobQueueItem(state: SqliteBootstrapState, id: string): JobQueueItem | null {
+	return readJobQueue(state).find((item) => item.id === id) ?? null;
+}
+
+export function writeJobQueueItem(state: SqliteBootstrapState, item: JobQueueItem): void {
+	const db = openDatabase(state);
+	db.prepare(
+		`INSERT OR REPLACE INTO job_queue (id, job_type, status, stage, last_update, created_at, started_at, completed_at, entity_id, retry_count, error_message, result_summary, failure_category)
+		 VALUES (@id, @jobType, @status, @stage, @lastUpdate, @createdAt, @startedAt, @completedAt, @entityId, @retryCount, @errorMessage, @resultSummary, @failureCategory)`,
+	).run({
+		...item,
+		jobType: item.jobType,
+		retryCount: item.retryCount ?? 0,
+		failureCategory: item.failureCategory ?? null,
+	});
+}
+
+export function saveJobQueueItem(state: SqliteBootstrapState, item: JobQueueItem): void {
+	writeJobQueueItem(state, item);
+}
+
+export function updateJobQueueItem(state: SqliteBootstrapState, id: string, updates: Partial<JobQueueItem>): void {
+	const existing = readJobQueueItem(state, id);
+	if (!existing) return;
+	writeJobQueueItem(state, { ...existing, ...updates, id });
+}
+
+export function readDuplicateCandidates(state: SqliteBootstrapState, status?: string): DuplicateCandidate[] {
+	const db = openDatabase(state);
+	const rows = db.prepare("SELECT * FROM duplicate_candidates ORDER BY detected_at DESC").all() as Array<Record<string, unknown>>;
+	const items = rows.map((row) => {
+		const item: DuplicateCandidate = {
+			id: String(row.id),
+			grantId1: String(row.grant_id1),
+			grantId2: String(row.grant_id2),
+			confidenceScore: Number(row.confidence_score),
+			status: String(row.status) as DuplicateCandidate['status'],
+			detectedAt: String(row.detected_at),
+			conflictingFields: JSON.parse(String(row.conflicting_fields)) as string[],
+		};
+		if (row.resolved_at) item.resolvedAt = String(row.resolved_at);
+		if (row.resolved_by) item.resolvedBy = String(row.resolved_by);
+		return item;
+	});
+	return status ? items.filter((item) => item.status === status) : items;
+}
+
+export function saveDuplicateCandidate(state: SqliteBootstrapState, item: DuplicateCandidate): void {
+	const db = openDatabase(state);
+	db.prepare(
+		`INSERT OR REPLACE INTO duplicate_candidates (id, grant_id1, grant_id2, confidence_score, status, detected_at, conflicting_fields, resolved_at, resolved_by)
+		 VALUES (@id, @grantId1, @grantId2, @confidenceScore, @status, @detectedAt, @conflictingFields, @resolvedAt, @resolvedBy)`,
+	).run({
+		...item,
+		conflictingFields: JSON.stringify(item.conflictingFields),
+	});
+}
+
+export function updateDuplicateCandidate(state: SqliteBootstrapState, id: string, updates: Partial<DuplicateCandidate>): void {
+	const existing = readDuplicateCandidates(state).find((item) => item.id === id);
+	if (!existing) return;
+	saveDuplicateCandidate(state, { ...existing, ...updates, id });
+}
+
+export function readConflictRecords(state: SqliteBootstrapState, grantId?: string): ConflictRecord[] {
+	const db = openDatabase(state);
+	const rows = db.prepare("SELECT * FROM conflict_records ORDER BY field_name ASC").all() as Array<Record<string, unknown>>;
+	const items = rows.map((row) => {
+		const item: ConflictRecord = {
+			id: String(row.id),
+			grantId: String(row.grant_id),
+			fieldName: String(row.field_name),
+			values: JSON.parse(String(row.values_json)) as ConflictRecord['values'],
+		};
+		if (row.canonical_value) item.canonicalValue = String(row.canonical_value);
+		if (row.resolved_at) item.resolvedAt = String(row.resolved_at);
+		if (row.resolved_by) item.resolvedBy = String(row.resolved_by);
+		return item;
+	});
+	return grantId ? items.filter((item) => item.grantId === grantId) : items;
+}
+
+export function saveConflictRecord(state: SqliteBootstrapState, item: ConflictRecord): void {
+	const db = openDatabase(state);
+	db.prepare(
+		`INSERT OR REPLACE INTO conflict_records (id, grant_id, field_name, values_json, canonical_value, resolved_at, resolved_by)
+		 VALUES (@id, @grantId, @fieldName, @valuesJson, @canonicalValue, @resolvedAt, @resolvedBy)`,
+	).run({
+		...item,
+		valuesJson: JSON.stringify(item.values),
+	});
+}
+
+export function updateConflictRecord(state: SqliteBootstrapState, id: string, updates: Partial<ConflictRecord>): void {
+	const existing = readConflictRecords(state).find((item) => item.id === id);
+	if (!existing) return;
+	saveConflictRecord(state, { ...existing, ...updates, id });
+}
+
+export function readSubmissionManifests(state: SqliteBootstrapState, grantId?: string): SubmissionManifest[] {
+	const db = openDatabase(state);
+	const rows = db.prepare("SELECT * FROM submission_manifests ORDER BY created_at DESC").all() as Array<Record<string, unknown>>;
+	const items = rows.map((row) => {
+		const item: SubmissionManifest = {
+			id: String(row.id),
+			grantId: String(row.grant_id),
+			version: Number(row.version),
+			createdAt: String(row.created_at),
+			updatedAt: String(row.updated_at),
+			materialRefs: JSON.parse(String(row.material_refs)) as SubmissionManifest['materialRefs'],
+		};
+		if (row.instructions) item.instructions = String(row.instructions);
+		if (row.portal_url) item.portalUrl = String(row.portal_url);
+		if (row.file_constraints) item.fileConstraints = String(row.file_constraints);
+		if (row.due_date) item.dueDate = String(row.due_date);
+		if (row.notes) item.notes = String(row.notes);
+		return item;
+	});
+	return grantId ? items.filter((item) => item.grantId === grantId) : items;
+}
+
+export function saveSubmissionManifest(state: SqliteBootstrapState, item: SubmissionManifest): void {
+	const db = openDatabase(state);
+	db.prepare(
+		`INSERT OR REPLACE INTO submission_manifests (id, grant_id, version, created_at, updated_at, instructions, portal_url, file_constraints, due_date, material_refs, notes)
+		 VALUES (@id, @grantId, @version, @createdAt, @updatedAt, @instructions, @portalUrl, @fileConstraints, @dueDate, @materialRefs, @notes)`,
+	).run({
+		...item,
+		materialRefs: JSON.stringify(item.materialRefs),
+	});
+}
+
+export function removeApprovalRecordByGrantId(state: SqliteBootstrapState, grantId: string): void {
+	const db = openDatabase(state);
+	const records = loadTable<ApprovalRecord>(db, 'approval_records').filter((record) => record.grantId !== grantId);
+	replaceTable<ApprovalRecord>(db, 'approval_records', records);
+}
+
+export function readCrawlSchedules(state: SqliteBootstrapState): CrawlSchedule[] {
+	const db = openDatabase(state);
+	return loadTable<CrawlSchedule>(db, 'crawl_schedules');
+}
+
+export function upsertCrawlSchedule(state: SqliteBootstrapState, schedule: CrawlSchedule): void {
+	const db = openDatabase(state);
+	const schedules = readCrawlSchedules(state).filter((item) => item.id !== schedule.id);
+	schedules.push(schedule);
+	replaceTable<CrawlSchedule>(db, 'crawl_schedules', schedules);
+}
+
+export function deleteCrawlSchedule(state: SqliteBootstrapState, id: string): void {
+	const db = openDatabase(state);
+	const schedules = readCrawlSchedules(state).filter((schedule) => schedule.id !== id);
+	replaceTable<CrawlSchedule>(db, 'crawl_schedules', schedules);
 }

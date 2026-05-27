@@ -5,6 +5,12 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # Use the default node in PATH, not a specific homebrew node
 # Using homebrew/node@24 could cause NODE_MODULE_VERSION mismatch
 
+cd "$ROOT_DIR"
+if ! node -e "require.resolve('better-sqlite3/package.json')" >/dev/null 2>&1; then
+  echo "[ensure-better-sqlite3] installing dependencies" >&2
+  pnpm install --frozen-lockfile --ignore-scripts
+fi
+
 PACKAGE_JSON_PATH="$(node -e "process.stdout.write(require.resolve('better-sqlite3/package.json'))")"
 PACKAGE_DIR="$(dirname "$PACKAGE_JSON_PATH")"
 LOCK_DIR="$PACKAGE_DIR/.ensure-better-sqlite3.lock"

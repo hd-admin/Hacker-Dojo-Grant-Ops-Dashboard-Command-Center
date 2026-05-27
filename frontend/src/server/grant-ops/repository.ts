@@ -6,36 +6,56 @@
  */
 
 import type {
-  Grant,
-  Source,
+  ApprovalRecord,
+  AuditEvent,
+  ConflictRecord,
   CrawlRun,
   DraftArtifact,
-  RevisionRequest,
-  ApprovalRecord,
-  SubmissionRecord,
+  DuplicateCandidate,
   FollowUp,
+  Grant,
+  JobQueueItem,
+  Notification,
   OpencodeSettings,
   OrganizationProfile,
-  Notification,
+  RevisionRequest,
+  Source,
+  SubmissionManifest,
+  SubmissionRecord,
   Task,
 } from '../../../../shared/types';
 
 // Import from shared persistence layer (GAP-01 fix)
 import {
+  loadAuditEvents as loadAuditEventsPersistence,
+  loadConflictRecords as loadConflictRecordsPersistence,
+  loadDuplicateCandidates as loadDuplicateCandidatesPersistence,
   loadPersistedData,
   savePersistedData,
   loadGrants,
   saveGrants,
   loadProfile,
   saveProfile,
+  loadJobQueue as loadJobQueuePersistence,
+  loadJobQueueItem as loadJobQueueItemPersistence,
   loadNotifications,
   saveNotifications,
+  loadSubmissionManifests as loadSubmissionManifestsPersistence,
   loadTasks,
   saveTasks,
   loadDocuments,
   saveDocuments,
   loadOpencodeSettings,
   saveOpencodeSettings,
+  saveAuditEvent as saveAuditEventPersistence,
+  saveConflictRecord as saveConflictRecordPersistence,
+  saveDuplicateCandidate as saveDuplicateCandidatePersistence,
+  saveJobQueueItem as saveJobQueueItemPersistence,
+  saveSubmissionManifest as saveSubmissionManifestPersistence,
+  removeApprovalRecordPersistence,
+  updateConflictRecordPersistence,
+  updateDuplicateCandidatePersistence,
+  updateJobQueueItemPersistence,
 } from '../../../../shared/grant-ops-persistence';
 
 import type { DocumentMetadata } from '../../../../shared/types';
@@ -260,4 +280,100 @@ export async function getOrgProfile(): Promise<OrganizationProfile | null> {
 
 export async function updateOrgProfile(profile: OrganizationProfile): Promise<void> {
   await saveProfile(profile);
+}
+
+// Audit event operations
+export async function getAuditEvents(limit?: number): Promise<AuditEvent[]> {
+  return loadAuditEventsPersistence(limit);
+}
+
+export async function addAuditEvent(event: AuditEvent): Promise<void> {
+  await saveAuditEventPersistence(event);
+}
+
+// Job queue operations
+export async function getJobQueue(status?: string): Promise<JobQueueItem[]> {
+  return loadJobQueuePersistence(status);
+}
+
+export async function getJobQueueItem(id: string): Promise<JobQueueItem | null> {
+  return loadJobQueueItemPersistence(id);
+}
+
+export async function addJobQueueItem(item: JobQueueItem): Promise<void> {
+  await saveJobQueueItemPersistence(item);
+}
+
+export async function updateJobQueueItem(id: string, updates: Partial<JobQueueItem>): Promise<void> {
+  await updateJobQueueItemPersistence(id, updates);
+}
+
+// Duplicate/conflict operations
+export async function getDuplicateCandidates(status?: string): Promise<DuplicateCandidate[]> {
+  return loadDuplicateCandidatesPersistence(status);
+}
+
+export async function addDuplicateCandidate(item: DuplicateCandidate): Promise<void> {
+  await saveDuplicateCandidatePersistence(item);
+}
+
+export async function updateDuplicateCandidate(id: string, updates: Partial<DuplicateCandidate>): Promise<void> {
+  await updateDuplicateCandidatePersistence(id, updates);
+}
+
+export async function getConflictRecords(grantId?: string): Promise<ConflictRecord[]> {
+  return loadConflictRecordsPersistence(grantId);
+}
+
+export async function addConflictRecord(item: ConflictRecord): Promise<void> {
+  await saveConflictRecordPersistence(item);
+}
+
+export async function updateConflictRecord(id: string, updates: Partial<ConflictRecord>): Promise<void> {
+  await updateConflictRecordPersistence(id, updates);
+}
+
+// Submission manifest operations
+export async function getSubmissionManifests(grantId?: string): Promise<SubmissionManifest[]> {
+  return loadSubmissionManifestsPersistence(grantId);
+}
+
+export async function addSubmissionManifest(item: SubmissionManifest): Promise<void> {
+  await saveSubmissionManifestPersistence(item);
+}
+
+export async function updateSubmissionManifest(id: string, updates: Partial<SubmissionManifest>): Promise<void> {
+  const manifests = await getSubmissionManifests();
+  const index = manifests.findIndex((manifest) => manifest.id === id);
+  if (index !== -1) {
+    const existing = manifests[index]!;
+    const updated: SubmissionManifest = {
+      id: existing.id,
+      grantId: existing.grantId,
+      version: existing.version,
+      createdAt: existing.createdAt,
+      updatedAt: updates.updatedAt ?? existing.updatedAt,
+      materialRefs: updates.materialRefs ?? existing.materialRefs,
+    };
+    if (updates.instructions !== undefined) updated.instructions = updates.instructions;
+    if (updates.portalUrl !== undefined) updated.portalUrl = updates.portalUrl;
+    if (updates.fileConstraints !== undefined) updated.fileConstraints = updates.fileConstraints;
+    if (updates.dueDate !== undefined) updated.dueDate = updates.dueDate;
+    if (updates.notes !== undefined) updated.notes = updates.notes;
+    await addSubmissionManifest(updated);
+  }
+}
+
+export async function removeApprovalRecord(grantId: string): Promise<void> {
+  await removeApprovalRecordPersistence(grantId);
+}
+
+export async function updateSource(id: string, updates: Partial<Source>): Promise<void> {
+  const data = await loadPersistedData();
+  const index = data.sources.findIndex((source) => source.id === id);
+  if (index === -1) {
+    return;
+  }
+  data.sources[index] = { ...data.sources[index]!, ...updates };
+  await savePersistedData(data);
 }

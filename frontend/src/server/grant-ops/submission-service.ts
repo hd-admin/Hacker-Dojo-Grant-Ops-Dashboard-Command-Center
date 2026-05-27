@@ -78,6 +78,14 @@ export async function canSubmit(grantId: string): Promise<{ canSubmit: boolean; 
     return { canSubmit: false, reason: 'Grant must be approved before submission' };
   }
 
+  const blockedItems = (grant.checklist || []).filter((item) => item.required === true && item.done === false);
+  if (blockedItems.length > 0) {
+    return {
+      canSubmit: false,
+      reason: `Required checklist items incomplete: ${blockedItems.map((item) => item.label).join(', ')}`,
+    };
+  }
+
   // Check if approval is still valid
   if (approval.lockedUntil) {
     const lockedUntil = new Date(approval.lockedUntil);
@@ -130,10 +138,19 @@ export async function approveGrant(input: ApprovalInput): Promise<ApprovalResult
     };
 
     await deps.repository.addApprovalRecord(approvalRecord);
-
-    // Note: Grant status remains 'review' (or current board status) until actual submission.
-    // Approval creates an ApprovalRecord which gates submission, but does not change
-    // the board column. This matches the prototype pipeline which has no 'approved' column.
+    await deps.repository.updateGrant(grant.id, {
+      status: 'approved',
+      statusLabel: 'Approved',
+    });
+    await deps.repository.addAuditEvent({
+      id: idGenerator.generateId('audit'),
+      eventType: 'grant_approved',
+      entityId: grant.id,
+      entityType: 'grant',
+      actorLabel: approvedBy,
+      timestamp: clock.now().toISOString(),
+      metadata: { approvedBy, draftVersion: latestVersion },
+    });
 
     return {
       success: true,

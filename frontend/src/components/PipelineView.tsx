@@ -134,18 +134,24 @@ export default function PipelineView({
 		e.preventDefault();
 		setDragOverCol(null);
 		if (draggingGrantId) {
-			const statusLabelMap: Record<GrantStatus, string> = {
+			const statusLabelMap: Partial<Record<GrantStatus, string>> = {
 				matched: "Matched",
 				draft: "Drafting",
 				review: "Review",
+				approved: "Approved",
+				"submission-ready": "Submission Ready",
 				submitted: "Submitted",
+				"follow-up": "Follow-up",
 				awarded: "Awarded",
+				declined: "Declined",
+				closed: "Closed",
+				archived: "Archived",
 			};
 			try {
 				await client.grants.updateStatus(
 					draggingGrantId,
 					colKey as GrantStatus,
-					statusLabelMap[colKey as GrantStatus],
+					statusLabelMap[colKey as GrantStatus] ?? String(colKey),
 				);
 				setGrants((prev) =>
 					prev.map((g) =>

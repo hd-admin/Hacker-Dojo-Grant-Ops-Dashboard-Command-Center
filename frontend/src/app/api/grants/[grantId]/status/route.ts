@@ -6,7 +6,7 @@ import type { GrantStatus } from "../../../../../../../shared/types";
 export const dynamic = "force-dynamic";
 
 const statusSchema = z.object({
-	status: z.enum(["matched", "draft", "review", "submitted", "awarded"]),
+	status: z.enum(["matched", "draft", "review", "approved", "submission-ready", "submitted", "follow-up", "awarded", "declined", "closed", "archived"]),
 	statusLabel: z.string(),
 });
 
@@ -42,9 +42,19 @@ export async function PATCH(
 			return NextResponse.json({ error: "Grant not found" }, { status: 404 });
 		}
 
+		const previousStatus = existingGrant.status;
 		await deps.repository.updateGrant(grantId, {
 			status: parsed.data.status as GrantStatus,
 			statusLabel: parsed.data.statusLabel,
+		});
+		await deps.repository.addAuditEvent({
+			id: `${grantId}-status-${Date.now()}`,
+			eventType: 'grant_status_changed',
+			entityId: grantId,
+			entityType: 'grant',
+			actorLabel: 'system',
+			timestamp: new Date().toISOString(),
+			metadata: { from: previousStatus, to: parsed.data.status },
 		});
 
 		return NextResponse.json({ success: true });

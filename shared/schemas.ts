@@ -20,6 +20,24 @@ import type {
   OpencodeSettings as _OpencodeSettings,
   WorkflowState,
   DocumentExtractionStatus,
+  TaskStatus,
+  ResponsibilityTag,
+  SourceReviewStatus,
+  SourceCategory,
+  JobFailureCategory,
+  JobQueueItem,
+  DuplicateCandidate,
+  ConflictRecord,
+  SubmissionManifest,
+  HealthCheckResult,
+  BackupVerificationRecord,
+  HumanOverride,
+  WorkingContext,
+  SourceDiscoverySuggestion,
+  CrawlSchedule,
+  AuditEvent,
+  BackupManifest,
+  BackupFreshnessStatus,
 } from './types';
 
 // Grant status - GAP-02 FIX: 'discarded' is NOT a valid status
@@ -27,8 +45,14 @@ export const GrantStatusSchema: z.ZodType<GrantStatus> = z.enum([
   'matched',
   'draft',
   'review',
+  'approved',
+  'submission-ready',
   'submitted',
+  'follow-up',
   'awarded',
+  'declined',
+  'closed',
+  'archived',
 ]);
 
 export const FitScoreBreakdownSchema: z.ZodType<FitScoreBreakdown> = z.object({
@@ -39,10 +63,21 @@ export const FitScoreBreakdownSchema: z.ZodType<FitScoreBreakdown> = z.object({
   partnershipReadiness: z.number().min(0).max(100),
 });
 
-export const ChecklistItemSchema: z.ZodType<ChecklistItem> = z.object({
+export const ChecklistItemSchema = z.object({
   label: z.string(),
   done: z.boolean(),
   source: z.string(),
+  required: z.boolean().optional(),
+});
+
+export const HumanOverrideSchema = z.object({
+  field: z.string(),
+  previousValue: z.unknown(),
+  newValue: z.unknown(),
+  rationale: z.string(),
+  overriddenAt: z.string(),
+  overriddenBy: z.string(),
+  overrideType: z.enum(['score', 'category', 'task', 'status']),
 });
 
 export const GrantSchema = z.object({
@@ -65,6 +100,8 @@ export const GrantSchema = z.object({
   externalUrl: z.string().optional(),
   researchEvidence: z.array(z.lazy(() => ResearchEvidenceSchema)).optional(),
   researchRationale: z.string().optional(),
+  manualSource: z.boolean().optional(),
+  humanOverrides: z.array(HumanOverrideSchema).optional(),
 });
 
 export const OrganizationProfileSchema = z.object({
@@ -100,10 +137,18 @@ export const NotificationSchema: z.ZodType<Notification> = z.object({
   dot: z.string(),
 });
 
-export const TaskSchema: z.ZodType<Task> = z.object({
+export const TaskSchema = z.object({
   id: z.string(),
   text: z.string(),
   completed: z.boolean(),
+  taskStatus: z.enum(['blocked', 'in-progress', 'completed', 'waived', 'not-applicable']).optional(),
+  responsibilityTag: z.enum(['finance', 'program', 'review', 'follow-up']).optional(),
+  dependsOn: z.array(z.string()).optional(),
+  justification: z.string().optional(),
+  dueDate: z.string().optional(),
+  notes: z.string().optional(),
+  evidence: z.string().optional(),
+  blockSubmission: z.boolean().optional(),
 });
 
 export const DocumentExtractionStatusSchema: z.ZodType<DocumentExtractionStatus> = z.enum([
@@ -129,6 +174,14 @@ export const DocumentMetadataSchema = z.object({
   mimeType: z.string().optional(),
 });
 
+export const OpencodeSettingsSchema = z.object({
+  binaryPath: z.string(),
+  workingDirectory: z.string(),
+  timeoutMs: z.number(),
+  profile: z.string().optional(),
+  isConfigured: z.boolean(),
+});
+
 // ============ NEW WORKFLOW SCHEMAS ============
 
 export const WorkflowStateSchema: z.ZodType<WorkflowState> = z.enum([
@@ -144,6 +197,20 @@ export const WorkflowStateSchema: z.ZodType<WorkflowState> = z.enum([
   'awarded',
 ]);
 
+export const SourceReviewStatusSchema: z.ZodType<SourceReviewStatus> = z.enum([
+  'pending-review',
+  'approved',
+  'rejected',
+]);
+
+export const SourceCategorySchema: z.ZodType<SourceCategory> = z.enum([
+  'foundation',
+  'government',
+  'corporate',
+  'community',
+  'other',
+]);
+
 export const SourceSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -152,6 +219,34 @@ export const SourceSchema = z.object({
   createdAt: z.string(),
   lastCrawledAt: z.string().optional(),
   isActive: z.boolean(),
+  reviewStatus: SourceReviewStatusSchema.optional(),
+  suggestedBy: z.string().optional(),
+  approvedAt: z.string().optional(),
+  rejectionReason: z.string().optional(),
+  suggestionReason: z.string().optional(),
+  category: SourceCategorySchema.optional(),
+  categoryRationale: z.string().optional(),
+});
+
+export const SourceDiscoverySuggestionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  url: z.string(),
+  type: z.enum(['website', 'database', 'api']),
+  rationale: z.string(),
+  confidence: z.number().min(0).max(1),
+  suggestedBy: z.literal('ai'),
+  createdAt: z.string(),
+});
+
+export const CrawlScheduleSchema = z.object({
+  id: z.string(),
+  sourceId: z.string(),
+  intervalHours: z.number().min(1),
+  lastScheduledAt: z.string().optional(),
+  nextScheduledAt: z.string(),
+  isEnabled: z.boolean(),
+  createdAt: z.string(),
 });
 
 export const CrawlRunSchema = z.object({
@@ -210,6 +305,11 @@ export const DraftArtifactSchema = z.object({
   createdAt: z.string(),
   createdBy: z.enum(['agent', 'human']),
   revisionNotes: z.string().optional(),
+  groundingSections: z.array(z.object({
+    sectionTitle: z.string(),
+    evidence: z.array(z.string()),
+    isGrounded: z.boolean(),
+  })).optional(),
 });
 
 export const RevisionRequestSchema: z.ZodType<RevisionRequest> = z.object({
@@ -238,6 +338,27 @@ export const SubmissionMethodSchema = z.object({
   submittedBy: z.string(),
 });
 
+export const SubmissionManifestItemSchema = z.object({
+  documentId: z.string(),
+  documentName: z.string(),
+  version: z.string().optional(),
+  role: z.string(),
+});
+
+export const SubmissionManifestSchema = z.object({
+  id: z.string(),
+  grantId: z.string(),
+  version: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  instructions: z.string().optional(),
+  portalUrl: z.string().optional(),
+  fileConstraints: z.string().optional(),
+  dueDate: z.string().optional(),
+  materialRefs: z.array(SubmissionManifestItemSchema),
+  notes: z.string().optional(),
+});
+
 export const SubmissionRecordSchema = z.object({
   id: z.string(),
   grantId: z.string(),
@@ -245,6 +366,8 @@ export const SubmissionRecordSchema = z.object({
   method: SubmissionMethodSchema,
   notes: z.string().optional(),
   followUpsCreated: z.array(z.string()),
+  manifestId: z.string().optional(),
+  confirmationNumber: z.string().optional(),
 });
 
 export const FollowUpSchema = z.object({
@@ -260,32 +383,117 @@ export const FollowUpSchema = z.object({
   createdAt: z.string(),
 });
 
-export const OpencodeSettingsSchema = z.object({
-  binaryPath: z.string(),
-  workingDirectory: z.string(),
-  timeoutMs: z.number(),
-  profile: z.string().optional(),
-  isConfigured: z.boolean(),
+export const JobFailureCategorySchema: z.ZodType<JobFailureCategory> = z.enum([
+  'connectivity',
+  'timeout',
+  'rate-limit',
+  'quota-exhausted',
+  'capacity',
+  'logic',
+  'unknown',
+]);
+
+export const JobQueueItemSchema = z.object({
+  id: z.string(),
+  jobType: z.enum(['research', 'draft']),
+  status: z.enum(['queued', 'running', 'completed', 'failed', 'cancelled']),
+  stage: z.string().optional(),
+  lastUpdate: z.string().optional(),
+  createdAt: z.string(),
+  startedAt: z.string().optional(),
+  completedAt: z.string().optional(),
+  entityId: z.string().optional(),
+  retryCount: z.number().optional(),
+  errorMessage: z.string().optional(),
+  resultSummary: z.string().optional(),
+  failureCategory: JobFailureCategorySchema.optional(),
 });
 
-export const StoreDataSchema = z.object({
-  grants: z.array(GrantSchema),
-  profile: OrganizationProfileSchema,
-  crawlStatus: CrawlStatusSchema,
-  notifications: z.array(NotificationSchema),
-  tasks: z.array(TaskSchema),
-  documents: z.array(DocumentMetadataSchema),
-  activity: z.array(ActivityEventSchema),
-  sources: z.array(SourceSchema).optional(),
-  crawlRuns: z.array(CrawlRunSchema).optional(),
-  draftArtifacts: z.array(DraftArtifactSchema).optional(),
-  revisionRequests: z.array(RevisionRequestSchema).optional(),
-  approvalRecords: z.array(ApprovalRecordSchema).optional(),
-  submissionRecords: z.array(SubmissionRecordSchema).optional(),
-  followUps: z.array(FollowUpSchema).optional(),
-  opencodeSettings: OpencodeSettingsSchema.optional(),
+export const DuplicateCandidateSchema = z.object({
+  id: z.string(),
+  grantId1: z.string(),
+  grantId2: z.string(),
+  confidenceScore: z.number(),
+  status: z.enum(['pending', 'merged', 'kept-separate', 'deferred']),
+  detectedAt: z.string(),
+  conflictingFields: z.array(z.string()),
+  resolvedAt: z.string().optional(),
+  resolvedBy: z.string().optional(),
 });
 
+export const ConflictRecordSchema = z.object({
+  id: z.string(),
+  grantId: z.string(),
+  fieldName: z.string(),
+  values: z.array(z.object({ value: z.string(), sourceId: z.string(), crawledAt: z.string() })),
+  canonicalValue: z.string().optional(),
+  resolvedAt: z.string().optional(),
+  resolvedBy: z.string().optional(),
+});
+
+export const AuditEventSchema = z.object({
+  id: z.string(),
+  eventType: z.string(),
+  entityId: z.string(),
+  entityType: z.string(),
+  actorLabel: z.string(),
+  timestamp: z.string(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+export const HealthCheckResultSchema = z.object({
+  storage: z.enum(['ok', 'error']),
+  storageError: z.string().optional(),
+  opencode: z.enum(['not-installed', 'not-reachable', 'incompatible', 'ok', 'error']),
+  opencodeError: z.string().optional(),
+  opencodeVersion: z.string().optional(),
+  crawlerLastRunAt: z.string().optional(),
+  crawlerStatus: z.enum(['ok', 'stale', 'never-run']),
+  documentIndexer: z.enum(['ok', 'degraded', 'error']),
+  documentIndexerError: z.string().optional(),
+  documentIndexerFailedCount: z.number().optional(),
+});
+
+export const BackupManifestSchema = z.object({
+  version: z.string(),
+  createdAt: z.string(),
+  grantCount: z.number(),
+  sourceCount: z.number(),
+  documentCount: z.number(),
+  hasDocumentFiles: z.boolean(),
+});
+
+export const BackupVerificationRecordSchema = z.object({
+  checkedAt: z.string(),
+  outcome: z.string(),
+  grantCount: z.number(),
+  documentCount: z.number(),
+  type: z.enum(['backup', 'restore']),
+});
+
+export const BackupFreshnessStatusSchema = z.object({
+  lastBackupAt: z.string().nullable(),
+  isStale: z.boolean(),
+  lastBackupVerification: BackupVerificationRecordSchema.nullable(),
+  lastRestoreVerification: BackupVerificationRecordSchema.nullable(),
+});
+
+export const WorkingContextSchema = z.object({
+  activeView: z.string(),
+  selectedGrantId: z.string().nullable(),
+  recentGrantIds: z.array(z.string()),
+  discoverySearch: z.string().optional(),
+  discoverySort: z.string().optional(),
+  discoveryCategory: z.string().optional(),
+  pipelineViewMode: z.enum(['board', 'list']).optional(),
+  pipelineStatusFilter: z.string().optional(),
+  pipelineResponsibilityFilter: z.string().optional(),
+  pipelineUrgencyFilter: z.string().optional(),
+  pipelineFunderTypeFilter: z.string().optional(),
+  recentDraftId: z.string().nullable().optional(),
+});
+
+// Re-export types
 export type {
   Grant,
   GrantStatus,
@@ -307,4 +515,22 @@ export type {
   OpencodeSettings,
   WorkflowState,
   DocumentExtractionStatus,
+  TaskStatus,
+  ResponsibilityTag,
+  SourceReviewStatus,
+  SourceCategory,
+  JobFailureCategory,
+  JobQueueItem,
+  DuplicateCandidate,
+  ConflictRecord,
+  SubmissionManifest,
+  HealthCheckResult,
+  BackupVerificationRecord,
+  HumanOverride,
+  WorkingContext,
+  SourceDiscoverySuggestion,
+  CrawlSchedule,
+  AuditEvent,
+  BackupManifest,
+  BackupFreshnessStatus,
 } from './types';

@@ -3,8 +3,14 @@ export type GrantStatus =
 	| "matched"
 	| "draft"
 	| "review"
+	| "approved"
+	| "submission-ready"
 	| "submitted"
-	| "awarded";
+	| "follow-up"
+	| "awarded"
+	| "declined"
+	| "closed"
+	| "archived";
 
 export interface FitScoreBreakdown {
 	missionAlignment: number;
@@ -18,6 +24,216 @@ export interface ChecklistItem {
 	label: string;
 	done: boolean;
 	source: string;
+	required?: boolean;
+}
+
+export type TaskStatus =
+	| "blocked"
+	| "in-progress"
+	| "completed"
+	| "waived"
+	| "not-applicable";
+
+export type ResponsibilityTag = "finance" | "program" | "review" | "follow-up";
+export type SourceReviewStatus = "pending-review" | "approved" | "rejected";
+export type SourceCategory = "foundation" | "government" | "corporate" | "community" | "other";
+export type JobFailureCategory =
+	| "connectivity"
+	| "timeout"
+	| "rate-limit"
+	| "quota-exhausted"
+	| "capacity"
+	| "logic"
+	| "unknown";
+export type PipelineViewMode = "board" | "list";
+
+export interface JobQueueItem {
+	id: string;
+	jobType: "research" | "draft";
+	status: "queued" | "running" | "completed" | "failed" | "cancelled";
+	stage?: string;
+	lastUpdate?: string;
+	createdAt: string;
+	startedAt?: string;
+	completedAt?: string;
+	entityId?: string;
+	retryCount?: number;
+	errorMessage?: string;
+	resultSummary?: string;
+	failureCategory?: JobFailureCategory;
+}
+
+export interface HumanOverride {
+	field: string;
+	previousValue: unknown;
+	newValue: unknown;
+	rationale: string;
+	overriddenAt: string;
+	overriddenBy: string;
+	overrideType: "score" | "category" | "task" | "status";
+}
+
+export interface AuditEvent {
+	id: string;
+	eventType: string;
+	entityId: string;
+	entityType: string;
+	actorLabel: string;
+	timestamp: string;
+	metadata?: Record<string, unknown>;
+}
+
+export interface HealthCheckResult {
+	storage: "ok" | "error";
+	storageError?: string;
+	opencode: "not-installed" | "not-reachable" | "incompatible" | "ok" | "error";
+	opencodeError?: string;
+	opencodeVersion?: string;
+	crawlerLastRunAt?: string;
+	crawlerStatus: "ok" | "stale" | "never-run";
+	documentIndexer: "ok" | "degraded" | "error";
+	documentIndexerError?: string;
+	documentIndexerFailedCount?: number;
+}
+
+export interface BackupManifest {
+	version: string;
+	createdAt: string;
+	grantCount: number;
+	sourceCount: number;
+	documentCount: number;
+	hasDocumentFiles: boolean;
+}
+
+export interface BackupVerificationRecord {
+	checkedAt: string;
+	outcome: string;
+	grantCount: number;
+	documentCount: number;
+	type: "backup" | "restore";
+}
+
+export interface BackupFreshnessStatus {
+	lastBackupAt: string | null;
+	isStale: boolean;
+	lastBackupVerification: BackupVerificationRecord | null;
+	lastRestoreVerification: BackupVerificationRecord | null;
+}
+
+export interface UnsavedChangesState {
+	hasUnsaved: boolean;
+	surfaceName: string;
+	warningMessage: string;
+}
+
+export interface WorkingContext {
+	activeView: string;
+	selectedGrantId: string | null;
+	recentGrantIds: string[];
+	discoverySearch?: string;
+	discoverySort?: string;
+	discoveryCategory?: string;
+	pipelineViewMode?: PipelineViewMode;
+	pipelineStatusFilter?: string;
+	pipelineResponsibilityFilter?: string;
+	pipelineUrgencyFilter?: string;
+	pipelineFunderTypeFilter?: string;
+	recentDraftId?: string | null;
+}
+
+export interface Task {
+	id: string;
+	text: string;
+	completed: boolean;
+	taskStatus?: TaskStatus;
+	responsibilityTag?: ResponsibilityTag;
+	dependsOn?: string[];
+	justification?: string;
+	dueDate?: string;
+	notes?: string;
+	evidence?: string;
+	blockSubmission?: boolean;
+}
+
+export interface Source {
+	id: string;
+	name: string;
+	url: string;
+	type: "website" | "database" | "api";
+	createdAt: string;
+	lastCrawledAt?: string;
+	isActive: boolean;
+	reviewStatus?: SourceReviewStatus;
+	suggestedBy?: string;
+	approvedAt?: string;
+	rejectionReason?: string;
+	suggestionReason?: string;
+	category?: SourceCategory;
+	categoryRationale?: string;
+}
+
+export interface SourceDiscoverySuggestion {
+	id: string;
+	name: string;
+	url: string;
+	type: "website" | "database" | "api";
+	rationale: string;
+	confidence: number;
+	suggestedBy: "ai";
+	createdAt: string;
+}
+
+export interface CrawlSchedule {
+	id: string;
+	sourceId: string;
+	intervalHours: number;
+	lastScheduledAt?: string;
+	nextScheduledAt: string;
+	isEnabled: boolean;
+	createdAt: string;
+}
+
+export interface DuplicateCandidate {
+	id: string;
+	grantId1: string;
+	grantId2: string;
+	confidenceScore: number;
+	status: "pending" | "merged" | "kept-separate" | "deferred";
+	detectedAt: string;
+	conflictingFields: string[];
+	resolvedAt?: string;
+	resolvedBy?: string;
+}
+
+export interface ConflictRecord {
+	id: string;
+	grantId: string;
+	fieldName: string;
+	values: Array<{ value: string; sourceId: string; crawledAt: string }>;
+	canonicalValue?: string;
+	resolvedAt?: string;
+	resolvedBy?: string;
+}
+
+export interface SubmissionManifestItem {
+	documentId: string;
+	documentName: string;
+	version?: string;
+	role: string;
+}
+
+export interface SubmissionManifest {
+	id: string;
+	grantId: string;
+	version: number;
+	createdAt: string;
+	updatedAt: string;
+	instructions?: string;
+	portalUrl?: string;
+	fileConstraints?: string;
+	dueDate?: string;
+	materialRefs: SubmissionManifestItem[];
+	notes?: string;
 }
 
 export interface Grant {
@@ -44,6 +260,8 @@ export interface Grant {
 	sourceCount?: number;
 	researchEvidence?: ResearchEvidence[];
 	researchRationale?: string;
+	manualSource?: boolean;
+	humanOverrides?: HumanOverride[];
 }
 
 export interface OrganizationProfile {
@@ -79,18 +297,6 @@ export interface Notification {
 	dot: string;
 }
 
-export interface Task {
-	id: string;
-	text: string;
-	completed: boolean;
-}
-
-export type DocumentExtractionStatus =
-	| "pending"
-	| "extracted"
-	| "stored_unparsed"
-	| "failed";
-
 export interface DocumentMetadata {
 	id: string;
 	name: string;
@@ -106,6 +312,12 @@ export interface DocumentMetadata {
 	extractionError?: string;
 	mimeType?: string;
 }
+
+export type DocumentExtractionStatus =
+	| "pending"
+	| "extracted"
+	| "stored_unparsed"
+	| "failed";
 
 export interface BoardCard {
 	id: string;
@@ -128,16 +340,6 @@ export type WorkflowState =
 	| "submission_blocked"
 	| "submitted"
 	| "awarded";
-
-export interface Source {
-	id: string;
-	name: string;
-	url: string;
-	type: "website" | "database" | "api";
-	createdAt: string;
-	lastCrawledAt?: string;
-	isActive: boolean;
-}
 
 export interface CrawlRun {
 	id: string;
@@ -181,6 +383,7 @@ export interface DraftArtifact {
 	createdAt: string;
 	createdBy: "agent" | "human";
 	revisionNotes?: string;
+	groundingSections?: Array<{ sectionTitle: string; evidence: string[]; isGrounded: boolean }>;
 }
 
 export interface RevisionRequest {
@@ -216,6 +419,8 @@ export interface SubmissionRecord {
 	method: SubmissionMethod;
 	notes?: string;
 	followUpsCreated: string[];
+	manifestId?: string;
+	confirmationNumber?: string;
 }
 
 export interface FollowUp {

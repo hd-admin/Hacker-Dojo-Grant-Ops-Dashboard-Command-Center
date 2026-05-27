@@ -1,7 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import { getDependencies } from "@/server/grant-ops/dependencies";
+import type { Grant } from "../../../../../shared/types";
 export const dynamic = 'force-dynamic';
 
+const manualGrantSchema = z.object({
+	title: z.string().min(1),
+	funder: z.string().min(1),
+	award: z.string().optional(),
+	deadline: z.string().optional(),
+	tags: z.array(z.string()).optional(),
+	notes: z.string().optional(),
+});
 
 export async function GET(request: NextRequest) {
 	try {
@@ -39,5 +49,51 @@ export async function GET(request: NextRequest) {
 			{ error: "Failed to get grants" },
 			{ status: 500 },
 		);
+	}
+}
+
+export async function POST(request: NextRequest) {
+	try {
+		const body = await request.json().catch(() => null);
+		const parsed = manualGrantSchema.safeParse(body);
+		if (!parsed.success) {
+			return NextResponse.json({ error: 'Invalid grant payload' }, { status: 400 });
+		}
+
+		const deps = getDependencies();
+		const now = new Date().toISOString();
+		const grant: Grant = {
+			id: deps.idGenerator.generateId('grant'),
+			title: parsed.data.title,
+			funder: parsed.data.funder,
+			funderShort: parsed.data.funder,
+			award: parsed.data.award ?? '—',
+			awardSort: 0,
+			deadline: parsed.data.deadline ?? 'Rolling',
+			daysOut: 0,
+			fit: 60,
+			tags: parsed.data.tags ?? [],
+			status: 'matched',
+			statusLabel: 'Matched',
+			manualSource: true,
+			matchedAt: now,
+			checklist: [],
+		};
+
+		await deps.repository.addGrant(grant);
+		await deps.repository.addAuditEvent({
+			id: deps.idGenerator.generateId('audit'),
+			eventType: 'match_created',
+			entityId: grant.id,
+			entityType: 'grant',
+			actorLabel: 'manual-intake',
+			timestamp: now,
+			metadata: { source: 'manual', notes: parsed.data.notes ?? '' },
+		});
+
+		return NextResponse.json(grant, { status: 201 });
+	} catch (error) {
+		console.error('Error creating grant:', error);
+		return NextResponse.json({ error: 'Failed to create grant' }, { status: 500 });
 	}
 }

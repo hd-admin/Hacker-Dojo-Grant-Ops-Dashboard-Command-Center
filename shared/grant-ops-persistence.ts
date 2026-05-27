@@ -9,12 +9,27 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   getSqliteState,
+  readAuditEvents as readAuditEventsFromSqlite,
+  readConflictRecords as readConflictRecordsFromSqlite,
+  readDuplicateCandidates as readDuplicateCandidatesFromSqlite,
   readGrants as readGrantsFromSqlite,
+  readJobQueue as readJobQueueFromSqlite,
+  readJobQueueItem as readJobQueueItemFromSqlite,
   readOpencodeSettings as readOpencodeSettingsFromSqlite,
   readPersistedData as readPersistedDataFromSqlite,
   readProfile as readProfileFromSqlite,
+  readSubmissionManifests as readSubmissionManifestsFromSqlite,
   resolveDataDir,
   resetSqliteCache,
+  removeApprovalRecordByGrantId as removeApprovalRecordByGrantIdFromSqlite,
+  saveAuditEvent as saveAuditEventToSqlite,
+  saveConflictRecord as saveConflictRecordToSqlite,
+  saveDuplicateCandidate as saveDuplicateCandidateToSqlite,
+  saveJobQueueItem as saveJobQueueItemToSqlite,
+  saveSubmissionManifest as saveSubmissionManifestToSqlite,
+  updateConflictRecord as updateConflictRecordToSqlite,
+  updateDuplicateCandidate as updateDuplicateCandidateToSqlite,
+  updateJobQueueItem as updateJobQueueItemToSqlite,
   writeGrants as writeGrantsToSqlite,
   writeOpencodeSettings as writeOpencodeSettingsToSqlite,
   writePersistedData as writePersistedDataToSqlite,
@@ -30,16 +45,21 @@ import {
 } from './seed-data';
 import type {
   ApprovalRecord,
+  AuditEvent,
+  ConflictRecord,
   CrawlRun,
   DocumentMetadata,
   DraftArtifact,
+  DuplicateCandidate,
   FollowUp,
   Grant,
+  JobQueueItem,
   Notification,
   OpencodeSettings,
   OrganizationProfile,
   RevisionRequest,
   Source,
+  SubmissionManifest,
   SubmissionRecord,
   Task,
 } from './types';
@@ -261,4 +281,64 @@ export async function resetPersistentStateForTests(): Promise<void> {
   await saveProfile({ ...defaultProfile });
   await saveOpencodeSettings({ ...defaultOpencodeSettings });
   await loadPersistedData();
+}
+
+export async function loadAuditEvents(limit?: number): Promise<AuditEvent[]> {
+  return readAuditEventsFromSqlite(getSqliteState(), limit);
+}
+
+export async function saveAuditEvent(event: AuditEvent): Promise<void> {
+  await saveAuditEventToSqlite(getSqliteState(), event);
+}
+
+export async function loadJobQueue(status?: string): Promise<JobQueueItem[]> {
+  return readJobQueueFromSqlite(getSqliteState(), status);
+}
+
+export async function loadJobQueueItem(id: string): Promise<JobQueueItem | null> {
+  return readJobQueueItemFromSqlite(getSqliteState(), id);
+}
+
+export async function saveJobQueueItem(item: JobQueueItem): Promise<void> {
+  await saveJobQueueItemToSqlite(getSqliteState(), item);
+}
+
+export async function updateJobQueueItemPersistence(id: string, updates: Partial<JobQueueItem>): Promise<void> {
+  await updateJobQueueItemToSqlite(getSqliteState(), id, updates);
+}
+
+export async function loadDuplicateCandidates(status?: string): Promise<DuplicateCandidate[]> {
+  return readDuplicateCandidatesFromSqlite(getSqliteState(), status);
+}
+
+export async function saveDuplicateCandidate(item: DuplicateCandidate): Promise<void> {
+  await saveDuplicateCandidateToSqlite(getSqliteState(), item);
+}
+
+export async function updateDuplicateCandidatePersistence(id: string, updates: Partial<DuplicateCandidate>): Promise<void> {
+  await updateDuplicateCandidateToSqlite(getSqliteState(), id, updates);
+}
+
+export async function loadConflictRecords(grantId?: string): Promise<ConflictRecord[]> {
+  return readConflictRecordsFromSqlite(getSqliteState(), grantId);
+}
+
+export async function saveConflictRecord(item: ConflictRecord): Promise<void> {
+  await saveConflictRecordToSqlite(getSqliteState(), item);
+}
+
+export async function updateConflictRecordPersistence(id: string, updates: Partial<ConflictRecord>): Promise<void> {
+  await updateConflictRecordToSqlite(getSqliteState(), id, updates);
+}
+
+export async function loadSubmissionManifests(grantId?: string): Promise<SubmissionManifest[]> {
+  return readSubmissionManifestsFromSqlite(getSqliteState(), grantId);
+}
+
+export async function saveSubmissionManifest(item: SubmissionManifest): Promise<void> {
+  await saveSubmissionManifestToSqlite(getSqliteState(), item);
+}
+
+export async function removeApprovalRecordPersistence(grantId: string): Promise<void> {
+  await removeApprovalRecordByGrantIdFromSqlite(getSqliteState(), grantId);
 }
