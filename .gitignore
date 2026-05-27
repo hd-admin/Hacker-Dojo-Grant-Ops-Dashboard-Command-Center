@@ -20,3 +20,4 @@ start-server.ts
 tmp/*
 
 .playwright-mcp/
+checkpoint.json
