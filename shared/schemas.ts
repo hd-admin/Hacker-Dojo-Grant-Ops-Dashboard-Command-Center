@@ -125,6 +125,7 @@ export const TaskSchema = z.object({
   id: z.string(),
   text: z.string(),
   completed: z.boolean(),
+  grantId: z.string().optional(),
   taskStatus: z.enum(['blocked', 'in-progress', 'completed', 'waived', 'not-applicable']).optional(),
   responsibilityTag: z.enum(['finance', 'program', 'review', 'follow-up']).optional(),
   dependsOn: z.array(z.string()).optional(),

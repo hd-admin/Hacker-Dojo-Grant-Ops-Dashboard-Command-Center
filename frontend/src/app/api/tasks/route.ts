@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
-import type { Task } from '../../../../../shared/types';
+import type { Task, TaskStatus, ResponsibilityTag } from '../../../../../shared/types';
 export const dynamic = 'force-dynamic';
 
 // GET: Get all tasks
@@ -28,11 +28,39 @@ export async function POST(request: NextRequest) {
 
     const tasks = await deps.repository.getTasks();
 
+    const VALID_TASK_STATUSES: TaskStatus[] = ['blocked', 'in-progress', 'completed', 'waived', 'not-applicable'];
+    const VALID_RESPONSIBILITY_TAGS: ResponsibilityTag[] = ['finance', 'program', 'review', 'follow-up'];
+
     const newTask: Task = {
       id: body.id || idGenerator.generateId('task'),
       text: body.text.trim(),
-      completed: body.completed || false,
+      completed: Boolean(body.completed),
     };
+
+    if (body.taskStatus !== undefined && VALID_TASK_STATUSES.includes(body.taskStatus)) {
+      newTask.taskStatus = body.taskStatus;
+    }
+    if (body.responsibilityTag !== undefined && VALID_RESPONSIBILITY_TAGS.includes(body.responsibilityTag)) {
+      newTask.responsibilityTag = body.responsibilityTag;
+    }
+    if (Array.isArray(body.dependsOn)) {
+      newTask.dependsOn = body.dependsOn.filter((d: unknown): d is string => typeof d === 'string');
+    }
+    if (typeof body.justification === 'string') {
+      newTask.justification = body.justification;
+    }
+    if (typeof body.dueDate === 'string') {
+      newTask.dueDate = body.dueDate;
+    }
+    if (typeof body.notes === 'string') {
+      newTask.notes = body.notes;
+    }
+    if (typeof body.evidence === 'string') {
+      newTask.evidence = body.evidence;
+    }
+    if (body.blockSubmission === true) {
+      newTask.blockSubmission = true;
+    }
 
     tasks.push(newTask);
     await deps.repository.updateTasks(tasks);

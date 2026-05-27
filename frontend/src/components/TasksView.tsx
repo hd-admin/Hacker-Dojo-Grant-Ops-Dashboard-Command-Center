@@ -2,8 +2,8 @@
 
 import React from 'react';
 import { useEffect, useState } from 'react';
-import type { FollowUp, Task, TaskStatus } from '../../../shared/types';
-import { tasksApi, followUpsApi } from '../lib/grant-ops-client';
+import type { FollowUp, Task, TaskStatus, ResponsibilityTag } from '../../../shared/types';
+import { tasksApi, followUpsApi, grantsApi } from '../lib/grant-ops-client';
 
 interface TasksViewProps {
   onRefreshAppState?: () => Promise<void> | void;
@@ -16,6 +16,10 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp }: Tasks
   const [loading, setLoading] = useState(false);
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [newTaskText, setNewTaskText] = useState('');
+  const [newTaskStatus, setNewTaskStatus] = useState<TaskStatus>('blocked');
+  const [newTaskResponsibility, setNewTaskResponsibility] = useState<ResponsibilityTag | ''>('');
+  const [newTaskDueDate, setNewTaskDueDate] = useState('');
+  const [newTaskBlockSubmission, setNewTaskBlockSubmission] = useState(false);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [overrideTaskId, setOverrideTaskId] = useState<string | null>(null);
   const [overrideTaskStatus, setOverrideTaskStatus] = useState<TaskStatus>('blocked');
@@ -90,12 +94,22 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp }: Tasks
 
     setIsAddingTask(true);
     try {
-      const newTask = await tasksApi.create({
+      const createPayload: Omit<Task, 'id'> = {
         completed: false,
         text: newTaskText.trim(),
-      });
+        taskStatus: newTaskStatus,
+      };
+      if (newTaskResponsibility) createPayload.responsibilityTag = newTaskResponsibility;
+      if (newTaskDueDate) createPayload.dueDate = newTaskDueDate;
+      if (newTaskBlockSubmission) createPayload.blockSubmission = true;
+
+      const newTask = await tasksApi.create(createPayload);
       setTasks((prev) => [...prev, newTask]);
       setNewTaskText('');
+      setNewTaskStatus('blocked');
+      setNewTaskResponsibility('');
+      setNewTaskDueDate('');
+      setNewTaskBlockSubmission(false);
       setShowAddTaskForm(false);
       await onRefreshAppState?.();
     } catch (error) {
@@ -107,6 +121,10 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp }: Tasks
 
   const handleCancelTask = () => {
     setNewTaskText('');
+    setNewTaskStatus('blocked');
+    setNewTaskResponsibility('');
+    setNewTaskDueDate('');
+    setNewTaskBlockSubmission(false);
     setShowAddTaskForm(false);
   };
 
@@ -116,19 +134,39 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp }: Tasks
     setOverrideTaskRationale(task.justification ?? '');
   };
 
-  const handleSaveTaskOverride = async (taskId: string) => {
+  const handleSaveTaskOverride = async (taskId: string, grantId?: string) => {
     if (!overrideTaskRationale.trim()) return;
-    const updatedTasks = tasks.map((task) => {
-      if (task.id !== taskId) return task;
-      return {
-        ...task,
-        taskStatus: overrideTaskStatus,
-        justification: overrideTaskRationale.trim(),
-        completed: overrideTaskStatus === 'completed',
-      };
-    });
-    setTasks(updatedTasks);
-    await tasksApi.update(updatedTasks);
+
+    if (grantId) {
+      // Use the grant override API to record human override with audit trail
+      await grantsApi.override(grantId, {
+        field: `task.${taskId}.status` as const,
+        newValue: overrideTaskStatus,
+        rationale: overrideTaskRationale.trim(),
+        overrideType: 'task',
+      });
+    } else {
+      // Fall back to task-specific override API for tasks without grantId
+      await tasksApi.override(taskId, {
+        newValue: overrideTaskStatus,
+        rationale: overrideTaskRationale.trim(),
+        overrideType: 'task',
+      });
+    }
+
+    // Update local state to reflect the override
+    setTasks((prev) =>
+      prev.map((task) =>
+        task.id === taskId
+          ? {
+              ...task,
+              taskStatus: overrideTaskStatus,
+              justification: overrideTaskRationale.trim(),
+              completed: overrideTaskStatus === 'completed',
+            }
+          : task,
+      ),
+    );
     setOverrideTaskId(null);
     setOverrideTaskRationale('');
     await onRefreshAppState?.();
@@ -184,6 +222,44 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp }: Tasks
                 onChange={(e) => setNewTaskText(e.target.value)}
                 disabled={isAddingTask}
               />
+              <select
+                value={newTaskStatus}
+                onChange={(e) => setNewTaskStatus(e.target.value as TaskStatus)}
+                disabled={isAddingTask}
+              >
+                <option value="blocked">blocked</option>
+                <option value="in-progress">in-progress</option>
+                <option value="completed">completed</option>
+                <option value="waived">waived</option>
+                <option value="not-applicable">not-applicable</option>
+              </select>
+              <select
+                value={newTaskResponsibility}
+                onChange={(e) => setNewTaskResponsibility(e.target.value as ResponsibilityTag | '')}
+                disabled={isAddingTask}
+              >
+                <option value="">No assignment</option>
+                <option value="finance">Finance</option>
+                <option value="program">Program</option>
+                <option value="review">Review</option>
+                <option value="follow-up">Follow-up</option>
+              </select>
+              <input
+                type="date"
+                placeholder="Due date"
+                value={newTaskDueDate}
+                onChange={(e) => setNewTaskDueDate(e.target.value)}
+                disabled={isAddingTask}
+              />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <input
+                  type="checkbox"
+                  checked={newTaskBlockSubmission}
+                  onChange={(e) => setNewTaskBlockSubmission(e.target.checked)}
+                  disabled={isAddingTask}
+                />
+                Blocks submission
+              </label>
               <button
                 type="submit"
                 className="btn btn-primary btn-sm"
@@ -242,7 +318,7 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp }: Tasks
                     onChange={(e) => setOverrideTaskRationale(e.target.value)}
                   />
                   <div>
-                    <button type="button" onClick={() => void handleSaveTaskOverride(task.id)} disabled={!overrideTaskRationale.trim()}>
+                    <button type="button" onClick={() => void handleSaveTaskOverride(task.id, task.grantId)} disabled={!overrideTaskRationale.trim()}>
                       Save override
                     </button>
                     <button type="button" onClick={handleCancelTaskOverride}>Cancel</button>

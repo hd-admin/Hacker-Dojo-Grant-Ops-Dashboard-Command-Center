@@ -145,6 +145,7 @@ export interface Task {
 	id: string;
 	text: string;
 	completed: boolean;
+	grantId?: string;
 	taskStatus?: TaskStatus;
 	responsibilityTag?: ResponsibilityTag;
 	dependsOn?: string[];

@@ -153,12 +153,29 @@ export default function GrantDrawer({
 	const [manifest, setManifest] = useState<SubmissionManifest | null>(null);
 	const [manifestLoading, setManifestLoading] = useState(false);
 	const [closeWarningOpen, setCloseWarningOpen] = useState(false);
+	const [showLockedDraftConfirm, setShowLockedDraftConfirm] = useState(false);
 	const [overrideField, setOverrideField] = useState<'fit' | 'category' | 'status' | null>(null);
 	const [overrideValue, setOverrideValue] = useState('');
 	const [overrideRationale, setOverrideRationale] = useState('');
 
 	const viewModel = buildGrantDrawerViewModel(detail);
 	const hasDirtyNotes = revisionNote.trim().length > 0 || submitNotes.trim().length > 0;
+
+	// beforeunload handler for unsaved notes protection
+	useEffect(() => {
+		const handler = (e: BeforeUnloadEvent) => {
+			if (hasDirtyNotes) {
+				e.preventDefault();
+				e.returnValue = 'You have unsaved notes. Are you sure you want to leave?';
+			}
+		};
+		if (hasDirtyNotes) {
+			window.addEventListener('beforeunload', handler);
+		}
+		return () => {
+			window.removeEventListener('beforeunload', handler);
+		};
+	}, [hasDirtyNotes]);
 
 	const loadDetail = useCallback(async () => {
 		if (!grantId) {
@@ -251,6 +268,16 @@ export default function GrantDrawer({
 
 	const handleGenerateDraft = async () => {
 		if (!detail) return;
+		// Check for existing approval record (locked draft)
+		if (detail.approvalRecord) {
+			setShowLockedDraftConfirm(true);
+			return;
+		}
+		await doGenerateDraft();
+	};
+
+	const doGenerateDraft = async () => {
+		if (!detail) return;
 		try {
 			const response = await client.drafts.create(detail.grant.id, { revisionNotes: "" });
 			if (response && typeof response === 'object' && 'queued' in response) {
@@ -260,6 +287,11 @@ export default function GrantDrawer({
 		} catch (error) {
 			console.error("Error generating draft:", error);
 		}
+	};
+
+	const handleConfirmLockedDraftOverwrite = async () => {
+		setShowLockedDraftConfirm(false);
+		await doGenerateDraft();
 	};
 
 	const handleApproveAndLock = async () => {
@@ -872,6 +904,17 @@ export default function GrantDrawer({
 									<div style={{ display: 'flex', gap: '8px' }}>
 										<button type="button" onClick={handleDiscardUnsavedNotes}>Discard</button>
 										<button type="button" onClick={() => setCloseWarningOpen(false)}>Keep editing</button>
+									</div>
+								</div>
+							)}
+
+							{showLockedDraftConfirm && (
+								<div className="drawer-section" data-testid="locked-draft-overwrite-confirm">
+									<h3>Overwrite locked draft?</h3>
+									<p>This grant has an approved, locked draft. Generating a new draft will unlock it and require re-approval. Continue?</p>
+									<div style={{ display: 'flex', gap: '8px' }}>
+										<button type="button" className="btn btn-primary" onClick={handleConfirmLockedDraftOverwrite}>Yes, generate new draft</button>
+										<button type="button" onClick={() => setShowLockedDraftConfirm(false)}>Cancel</button>
 									</div>
 								</div>
 							)}

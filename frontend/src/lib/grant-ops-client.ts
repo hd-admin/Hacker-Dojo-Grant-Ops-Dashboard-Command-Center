@@ -140,6 +140,13 @@ export const researchApi = {
 
 // ============ Grants API ============
 
+export interface GrantOverrideRequest {
+  field: 'status' | 'statusLabel' | 'fit' | 'award' | 'deadline' | 'title' | 'funder' | 'funderShort' | 'category' | `task.${string}.status`;
+  newValue: unknown;
+  rationale: string;
+  overrideType: 'score' | 'category' | 'task' | 'status';
+}
+
 export const grantsApi = {
 	getAll: () => apiFetch<Grant[]>("/api/grants"),
 
@@ -161,6 +168,15 @@ export const grantsApi = {
 			{
 				method: "PATCH",
 				body: JSON.stringify({ status, statusLabel }),
+			},
+		),
+
+	override: (grantId: string, override: GrantOverrideRequest) =>
+		apiFetch<Grant>(
+			`/api/grants/${encodeURIComponent(grantId)}/override`,
+			{
+				method: "POST",
+				body: JSON.stringify(override),
 			},
 		),
 };
@@ -356,6 +372,12 @@ export const notificationsApi = {
 
 // ============ Tasks API ============
 
+export interface TaskOverrideRequest {
+	newValue: TaskStatus;
+	rationale: string;
+	overrideType: 'task';
+}
+
 export const tasksApi = {
 	getAll: () => apiFetch<Task[]>("/api/tasks"),
 
@@ -369,6 +391,12 @@ export const tasksApi = {
 		apiFetch<Task>("/api/tasks", {
 			method: "POST",
 			body: JSON.stringify(task),
+		}),
+
+	override: (taskId: string, request: TaskOverrideRequest) =>
+		apiFetch<Task>(`/api/tasks/${encodeURIComponent(taskId)}/override`, {
+			method: "POST",
+			body: JSON.stringify(request),
 		}),
 };
 
