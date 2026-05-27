@@ -80,6 +80,7 @@ describe("ResearchService", () => {
 				name: "Test Source",
 				url: "https://example.com/grants",
 				type: "website",
+				reviewStatus: 'approved', // Must be approved to be included in research
 			});
 
 			// Run research
@@ -102,6 +103,7 @@ describe("ResearchService", () => {
 				name: "Test Source",
 				url: "https://example.com/grants",
 				type: "website",
+				reviewStatus: 'approved', // Must be approved to be included in research
 			});
 
 			// Run research
@@ -119,6 +121,7 @@ describe("ResearchService", () => {
 				name: "Test Source",
 				url: "https://example.com/grants",
 				type: "website",
+				reviewStatus: 'approved', // Must be approved to be included in research
 			});
 
 			// Run research
@@ -136,6 +139,7 @@ describe("ResearchService", () => {
 				name: "Test Source",
 				url: "https://example.com/grants",
 				type: "website",
+				reviewStatus: 'approved', // Must be approved to be included in research
 			});
 
 			// Run research
@@ -180,6 +184,7 @@ describe("ResearchService", () => {
 				name: "Test Source",
 				url: "https://example.com/grants",
 				type: "website",
+				reviewStatus: 'approved', // Must be approved to be included in research
 			});
 
 			const sourcesBefore = await sourceService.getAllSources();
@@ -201,6 +206,7 @@ describe("ResearchService", () => {
 				name: "No Grant Source",
 				url: "https://example.com/empty",
 				type: "website",
+				reviewStatus: 'approved', // Must be approved to be included in research
 			});
 
 			setDependencies(
@@ -222,11 +228,12 @@ describe("ResearchService", () => {
 			expect(sourceAfter?.lastCrawledAt).toBeDefined();
 		});
 
-		it("FAILS: runResearch should not mutate existing matched grants when research returns no grants", async () => {
+		it("runResearch should not mutate existing matched grants when research returns no grants", async () => {
 			const source = await sourceService.addSource({
 				name: "Empty Content Source",
 				url: "https://example.com/empty",
 				type: "website",
+				reviewStatus: 'approved', // Must be approved to be included in research
 			});
 			const existingGrant = {
 				id: `existing-grant-${Date.now()}`,
@@ -271,7 +278,7 @@ describe("ResearchService", () => {
 			expect(sourceAfter?.lastCrawledAt).toBeDefined();
 		});
 
-		it("FAILS: runResearch should stamp lastCrawledAt even when a successful crawl returns empty content", async () => {
+		it("runResearch should stamp lastCrawledAt even when a successful crawl returns empty content", async () => {
 			setDependencies(
 				createDependencies({
 					createOpencodeAdapter: () => ({
@@ -286,6 +293,7 @@ describe("ResearchService", () => {
 				name: "Empty Content Source",
 				url: "https://example.com/empty",
 				type: "website",
+				reviewStatus: 'approved', // Must be approved to be included in research
 			});
 
 			await researchService.runResearch(mockProfile, {

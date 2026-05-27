@@ -131,8 +131,10 @@ describe('DiscoveryView', () => {
     addButton.click();
     await waitFor(() => container.querySelectorAll('.grants-row:not(.header)').length === 2);
 
-    expect(sourcesAdd).toHaveBeenCalledWith({ name: 'Candid', url: 'https://www.candid.org', type: 'website' });
-    expect(researchTrigger).toHaveBeenCalledTimes(1);
+    expect(sourcesAdd).toHaveBeenCalledWith({ name: 'Candid', url: 'https://www.candid.org', type: 'website', reviewStatus: 'pending-review' });
+    // Note: researchTrigger is NOT called automatically when adding a source.
+    // Sources enter pending-review status and must be approved before research runs.
+    expect(researchTrigger).not.toHaveBeenCalled();
     expect(onRefreshAppState).toHaveBeenCalledTimes(1);
     expect(grantsGetAll).toHaveBeenCalledTimes(2);
     expect(container.textContent).toContain('Candid Community Innovation Fund');

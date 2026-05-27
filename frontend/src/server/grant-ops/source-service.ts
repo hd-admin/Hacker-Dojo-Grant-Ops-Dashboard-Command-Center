@@ -45,8 +45,8 @@ export async function addSource(input: AddSourceInput): Promise<Source> {
     url: input.url,
     type: input.type,
     createdAt: clock.now().toISOString(),
-    isActive: true,
-    reviewStatus: input.reviewStatus ?? 'approved',
+    isActive: input.reviewStatus === 'approved',
+    reviewStatus: input.reviewStatus ?? 'pending-review',
   };
   if (input.suggestedBy !== undefined) source.suggestedBy = input.suggestedBy;
   if (input.suggestionReason !== undefined) source.suggestionReason = input.suggestionReason;

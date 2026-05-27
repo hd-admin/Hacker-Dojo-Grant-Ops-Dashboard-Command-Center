@@ -90,6 +90,7 @@ export interface AddSourceRequest {
 	name: string;
 	url: string;
 	type?: "website" | "database" | "api";
+	reviewStatus?: "pending-review" | "approved" | "rejected";
 }
 
 export const sourcesApi = {

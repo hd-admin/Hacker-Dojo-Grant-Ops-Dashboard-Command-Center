@@ -131,8 +131,7 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
     if (!newSourceName.trim() || !newSourceUrl.trim()) return;
     setIsAddingSource(true);
     try {
-      await client.sources.add({ name: newSourceName.trim(), url: newSourceUrl.trim(), type: 'website' });
-      await client.research.trigger();
+      await client.sources.add({ name: newSourceName.trim(), url: newSourceUrl.trim(), type: 'website', reviewStatus: 'pending-review' });
       setNewSourceName('');
       setNewSourceUrl('');
       setShowAddSourceForm(false);

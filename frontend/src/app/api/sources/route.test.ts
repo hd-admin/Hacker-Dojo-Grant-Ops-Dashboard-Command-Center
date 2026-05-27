@@ -41,6 +41,25 @@ describe('/api/sources route', () => {
     expect(response.status).toBe(201);
     expect(data.success).toBe(true);
     expect(data.source.name).toBe('Candid');
+    // New sources default to pending-review (not crawl-active until explicitly approved)
+    expect(data.source.reviewStatus).toBe('pending-review');
+    expect(data.source.isActive).toBe(false);
+
+    const sources = await repository.getSources();
+    expect(sources).toHaveLength(1);
+    expect(sources[0]?.url).toBe('https://www.candid.org');
+  });
+
+  it('creates an approved source when reviewStatus is explicitly approved', async () => {
+    const response = await POST(
+      makeRequest({ name: 'Candid', url: 'https://www.candid.org', type: 'website', reviewStatus: 'approved' }) as never,
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(201);
+    expect(data.success).toBe(true);
+    expect(data.source.name).toBe('Candid');
+    expect(data.source.reviewStatus).toBe('approved');
     expect(data.source.isActive).toBe(true);
 
     const sources = await repository.getSources();

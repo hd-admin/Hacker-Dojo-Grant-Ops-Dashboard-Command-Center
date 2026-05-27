@@ -16,7 +16,7 @@ describe('SourceService', () => {
   });
 
   describe('Happy path', () => {
-    it('addSource creates a source with correct name, url, type, and isActive=true', async () => {
+    it('addSource creates a source with correct name, url, type, and isActive=false when reviewStatus is pending-review', async () => {
       const result = await sourceService.addSource({
         name: 'Test Source',
         url: 'https://example.com/grants',
@@ -27,8 +27,24 @@ describe('SourceService', () => {
       expect(result.name).toBe('Test Source');
       expect(result.url).toBe('https://example.com/grants');
       expect(result.type).toBe('website');
-      expect(result.isActive).toBe(true);
+      // New behavior: sources start with isActive=false and reviewStatus=pending-review until explicitly approved
+      expect(result.isActive).toBe(false);
+      expect(result.reviewStatus).toBe('pending-review');
       expect(result.createdAt).toBeDefined();
+    });
+
+    it('addSource creates a source with isActive=true when reviewStatus is approved', async () => {
+      const result = await sourceService.addSource({
+        name: 'Test Source',
+        url: 'https://example.com/grants',
+        type: 'website',
+        reviewStatus: 'approved',
+      });
+
+      expect(result.id).toBeDefined();
+      expect(result.name).toBe('Test Source');
+      expect(result.isActive).toBe(true);
+      expect(result.reviewStatus).toBe('approved');
     });
 
     it('getAllSources returns all stored sources', async () => {
@@ -101,31 +117,36 @@ describe('SourceService', () => {
       expect(updatedSource.isActive).toBe(false);
     });
 
-    it('getActiveSources returns only sources with isActive=true', async () => {
+    it('getActiveSources returns only sources with isActive=true and reviewStatus approved', async () => {
+      // Sources must be approved to be active for research
       const active1 = await sourceService.addSource({
         name: 'Active 1',
         url: 'https://example.com/1',
         type: 'website',
+        reviewStatus: 'approved',
       });
       const active2 = await sourceService.addSource({
         name: 'Active 2',
         url: 'https://example.com/2',
         type: 'website',
+        reviewStatus: 'approved',
       });
-      const inactive = await sourceService.addSource({
-        name: 'Inactive',
-        url: 'https://example.com/inactive',
+      // This source is approved but then deactivated
+      const toDeactivate = await sourceService.addSource({
+        name: 'To Deactivate',
+        url: 'https://example.com/deactivate',
         type: 'website',
+        reviewStatus: 'approved',
       });
 
-      await sourceService.deactivateSource(inactive.id);
+      await sourceService.deactivateSource(toDeactivate.id);
 
       const activeSources = await sourceService.getActiveSources();
 
       expect(activeSources).toHaveLength(2);
       expect(activeSources.some((s) => s.id === active1.id)).toBe(true);
       expect(activeSources.some((s) => s.id === active2.id)).toBe(true);
-      expect(activeSources.some((s) => s.id === inactive.id)).toBe(false);
+      expect(activeSources.some((s) => s.id === toDeactivate.id)).toBe(false);
     });
 
     it('updateSourceLastCrawled sets lastCrawledAt to a non-null ISO string on the specified source and returns true', async () => {

@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       name: body.name.trim(),
       url: body.url.trim(),
       type: body.type === 'database' || body.type === 'api' ? body.type : 'website',
-      reviewStatus: body.reviewStatus === 'pending-review' ? 'pending-review' : 'approved',
+      reviewStatus: body.reviewStatus === 'approved' ? 'approved' : 'pending-review',
     };
     if (typeof body.suggestedBy === 'string') sourceInput.suggestedBy = body.suggestedBy;
     if (typeof body.suggestionReason === 'string') sourceInput.suggestionReason = body.suggestionReason;
