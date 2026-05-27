@@ -1,5 +1,6 @@
 'use client';
 
+import React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import type { BackupFreshnessStatus, DocumentMetadata, HealthCheckResult, OpencodeSettings, OrganizationProfile } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';

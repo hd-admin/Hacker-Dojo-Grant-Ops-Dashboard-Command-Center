@@ -25,6 +25,7 @@ import type {
 	SubmissionMethod,
 	SubmissionRecord,
 	Task,
+	TaskStatus,
 } from "../../../shared/types";
 
 // Base fetch wrapper with error handling

@@ -5,6 +5,7 @@ import type { Task } from '../../../shared/types';
 
 const tasksGetAllMock = vi.hoisted(() => vi.fn());
 const tasksUpdateMock = vi.hoisted(() => vi.fn().mockResolvedValue({ success: true }));
+const tasksOverrideMock = vi.hoisted(() => vi.fn().mockResolvedValue({}));
 const followUpsGetAllMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../lib/grant-ops-client', () => ({
@@ -12,6 +13,7 @@ vi.mock('../lib/grant-ops-client', () => ({
     getAll: tasksGetAllMock,
     update: tasksUpdateMock,
     create: vi.fn(),
+    override: tasksOverrideMock,
   },
   followUpsApi: {
     getAll: followUpsGetAllMock,

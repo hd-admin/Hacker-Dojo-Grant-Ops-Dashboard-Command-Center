@@ -27,7 +27,7 @@ function createTask(id: string, grantId?: string): Task {
     id,
     text: 'Test Task',
     completed: false,
-    grantId,
+    ...(grantId !== undefined ? { grantId } : {}),
     taskStatus: 'blocked',
   };
 }

@@ -5,6 +5,8 @@ import {
   GrantStatusSchema,
   FitScoreBreakdownSchema,
   ChecklistItemSchema,
+  HumanOverrideSchema,
+  WorkingContextSchema,
 } from './schemas';
 
 describe('shared/schemas', () => {
@@ -13,8 +15,14 @@ describe('shared/schemas', () => {
       expect(GrantStatusSchema.safeParse('matched').success).toBe(true);
       expect(GrantStatusSchema.safeParse('draft').success).toBe(true);
       expect(GrantStatusSchema.safeParse('review').success).toBe(true);
+      expect(GrantStatusSchema.safeParse('approved').success).toBe(true);
+      expect(GrantStatusSchema.safeParse('submission-ready').success).toBe(true);
       expect(GrantStatusSchema.safeParse('submitted').success).toBe(true);
+      expect(GrantStatusSchema.safeParse('follow-up').success).toBe(true);
       expect(GrantStatusSchema.safeParse('awarded').success).toBe(true);
+      expect(GrantStatusSchema.safeParse('declined').success).toBe(true);
+      expect(GrantStatusSchema.safeParse('closed').success).toBe(true);
+      expect(GrantStatusSchema.safeParse('archived').success).toBe(true);
     });
 
     it('should reject invalid statuses', () => {
@@ -170,6 +178,105 @@ describe('shared/schemas', () => {
         },
       };
       expect(OrganizationProfileSchema.safeParse(profile).success).toBe(false);
+    });
+  });
+
+  describe('HumanOverrideSchema', () => {
+    it('should accept valid human override', () => {
+      const override = {
+        field: 'fit',
+        previousValue: 65,
+        newValue: 85,
+        rationale: 'Manual adjustment based on deeper research',
+        overriddenAt: '2026-05-27T10:00:00.000Z',
+        overriddenBy: 'operator',
+        overrideType: 'score',
+      };
+      expect(HumanOverrideSchema.safeParse(override).success).toBe(true);
+    });
+
+    it('should accept human override with status overrideType', () => {
+      const override = {
+        field: 'status',
+        previousValue: 'matched',
+        newValue: 'draft',
+        rationale: 'Operator reviewed and moved to drafting',
+        overriddenAt: '2026-05-27T10:00:00.000Z',
+        overriddenBy: 'operator',
+        overrideType: 'status',
+      };
+      expect(HumanOverrideSchema.safeParse(override).success).toBe(true);
+    });
+
+    it('should reject override with invalid overrideType', () => {
+      const override = {
+        field: 'fit',
+        previousValue: 65,
+        newValue: 85,
+        rationale: 'Manual adjustment',
+        overriddenAt: '2026-05-27T10:00:00.000Z',
+        overriddenBy: 'operator',
+        overrideType: 'invalid-type',
+      };
+      expect(HumanOverrideSchema.safeParse(override).success).toBe(false);
+    });
+
+    it('should reject override with missing required fields', () => {
+      const override = {
+        field: 'fit',
+        previousValue: 65,
+        // missing rationale, overriddenAt, overriddenBy, overrideType
+      };
+      expect(HumanOverrideSchema.safeParse(override).success).toBe(false);
+    });
+  });
+
+  describe('WorkingContextSchema', () => {
+    it('should accept valid working context', () => {
+      const context = {
+        activeView: 'discovery',
+        selectedGrantId: 'grant-123',
+        recentGrantIds: ['grant-123', 'grant-456'],
+        discoverySearch: 'education',
+        discoverySort: 'fit',
+        discoveryCategory: 'EdTech',
+        pipelineViewMode: 'board',
+        pipelineStatusFilter: 'matched',
+        pipelineResponsibilityFilter: 'finance',
+        pipelineUrgencyFilter: 'soon',
+        pipelineFunderTypeFilter: 'foundation',
+        recentDraftId: 'draft-789',
+      };
+      expect(WorkingContextSchema.safeParse(context).success).toBe(true);
+    });
+
+    it('should accept minimal working context', () => {
+      const context = {
+        activeView: 'dashboard',
+        selectedGrantId: null,
+        recentGrantIds: [],
+      };
+      expect(WorkingContextSchema.safeParse(context).success).toBe(true);
+    });
+
+    it('should reject working context with invalid viewMode', () => {
+      const context = {
+        activeView: 'discovery',
+        selectedGrantId: null,
+        recentGrantIds: [],
+        pipelineViewMode: 'invalid-mode',
+      };
+      expect(WorkingContextSchema.safeParse(context).success).toBe(false);
+    });
+
+    it('should accept working context with list viewMode', () => {
+      const context = {
+        activeView: 'pipeline',
+        selectedGrantId: 'grant-123',
+        recentGrantIds: ['grant-123'],
+        pipelineViewMode: 'list',
+      };
+      expect(WorkingContextSchema.safeParse(context).success).toBe(true);
     });
   });
 });

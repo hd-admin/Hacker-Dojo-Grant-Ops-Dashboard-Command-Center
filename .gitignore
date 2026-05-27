@@ -21,3 +21,9 @@ tmp/*
 
 .playwright-mcp/
 checkpoint.json
+.agent-*.log
+.tmp-*.log
+.vitest-*
+.uservitest-output.txt
+vitest-*.out
+.tmp/*

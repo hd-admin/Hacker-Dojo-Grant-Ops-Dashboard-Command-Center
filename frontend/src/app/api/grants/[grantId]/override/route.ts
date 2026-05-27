@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
-import type { Grant, GrantStatus, TaskStatus } from '../../../../../../../shared/types';
+import type { Grant, GrantStatus, HumanOverride, TaskStatus } from '../../../../../../../shared/types';
 import { GrantStatusSchema } from '../../../../../../../shared/schemas';
 
 export const dynamic = 'force-dynamic';
@@ -86,7 +86,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     }
 
     const isTaskOverride = TASK_OVERRIDE_FIELD_REGEX.test(parsed.data.field);
-    let override: { field: string; previousValue: unknown; newValue: unknown; rationale: string; overriddenAt: string; overriddenBy: string; overrideType: string };
+    let override: HumanOverride;
     let updates: Partial<Grant>;
 
     if (isTaskOverride) {
@@ -109,7 +109,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
         return NextResponse.json({ error: 'Task not found' }, { status: 404 });
       }
 
-      const existingTask = tasks[taskIndex];
+      const existingTask = tasks[taskIndex]!;
       const previousTaskStatus = existingTask.taskStatus ?? (existingTask.completed ? 'completed' : 'blocked');
 
       // Update the task
