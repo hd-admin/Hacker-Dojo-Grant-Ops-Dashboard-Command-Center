@@ -158,6 +158,71 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
     return <div className="header-title">Loading...</div>;
   }
 
+  // Empty state: no grants discovered
+  if (grants.length === 0 && !loading) {
+    return (
+      <>
+        <div className="header">
+          <div>
+            <h1 className="header-title">
+              Discovery <span className="accent">Find grants</span>
+            </h1>
+            <div className="header-sub">0 grants · crawled {sourcesCrawled} sources</div>
+          </div>
+          <div className="header-actions">
+            <button type="button" className="btn btn-primary" onClick={() => setShowAddSourceForm((value) => !value)}>
+              + Add source
+            </button>
+          </div>
+        </div>
+        <div className="empty-state-guide" data-testid="discovery-empty-state">
+          <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F50D)}</div>
+          <div className="empty-state-title">No grants discovered yet</div>
+          <div className="empty-state-description">
+            Add funding sources to start discovering grants. You can add websites, databases,
+            or manually enter grant opportunities. The AI will automatically crawl and match.
+          </div>
+          <div className="empty-state-actions">
+            <button type="button" className="btn btn-primary" onClick={() => setShowAddSourceForm(true)} aria-label="Add a funding source">
+              Add a source
+            </button>
+            <button type="button" data-testid="add-manually-btn" className="btn" onClick={() => setShowManualIntake(true)} aria-label="Add grant manually">
+              Add grant manually
+            </button>
+          </div>
+        </div>
+        {showManualIntake && (
+          <form onSubmit={handleManualSubmit} className="manual-intake-form">
+            <input data-testid="manual-title" value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} placeholder="Title" />
+            <input data-testid="manual-funder" value={manualFunder} onChange={(e) => setManualFunder(e.target.value)} placeholder="Funder" />
+            <button type="submit" data-testid="manual-submit-btn">Save grant</button>
+          </form>
+        )}
+        {showAddSourceForm && (
+          <form onSubmit={handleAddSource} className="add-source-inline">
+            <input type="text" placeholder="Source name" value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)} disabled={isAddingSource} />
+            <input type="url" placeholder="https://..." value={newSourceUrl} onChange={(e) => setNewSourceUrl(e.target.value)} disabled={isAddingSource} />
+            <button type="submit" className="btn btn-primary btn-sm" disabled={isAddingSource || !newSourceName.trim() || !newSourceUrl.trim()}>
+              {isAddingSource ? 'Adding...' : 'Add'}
+            </button>
+          </form>
+        )}
+        <div className="sources-panel">
+          <div className="sources-panel-header">Sources ({sources.length})</div>
+          {sources.map((source) => (
+            <div key={source.id} className="source-item">
+              <div className="source-info">
+                <div className="source-name">{source.name}</div>
+                <div className="source-url">{source.url}</div>
+              </div>
+              <button type="button" onClick={() => void handleDeleteSource(source.id)}>Delete</button>
+            </div>
+          ))}
+        </div>
+      </>
+    );
+  }
+
   const handleDeleteSource = async (sourceId: string) => {
     await client.sources.remove(sourceId);
     await Promise.all([client.sources.getAll().then(setSources), onRefreshAppState?.()]);

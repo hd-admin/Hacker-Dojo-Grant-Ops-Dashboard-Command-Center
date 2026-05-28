@@ -40,14 +40,12 @@ import {
   writeOpencodeSettings as writeOpencodeSettingsToSqlite,
   writePersistedData as writePersistedDataToSqlite,
   writeProfile as writeProfileToSqlite,
+  readThemesData as readThemesDataFromSqlite,
+  writeThemesData as writeThemesDataToSqlite,
 } from './grant-ops-sqlite';
 import {
   defaultOpencodeSettings,
   defaultProfile,
-  normalizeGrantDetailFields,
-  seedGrants,
-  seedNotifications,
-  seedTasks,
 } from './seed-data';
 import type {
   ApprovalRecord,
@@ -68,6 +66,7 @@ import type {
   SubmissionManifest,
   SubmissionRecord,
   Task,
+  ThemesData,
 } from './types';
 
 export function getDataDir(): string {
@@ -137,6 +136,20 @@ export function invalidateCache(): void {
   dataCache.delete(dataDir);
   grantsCache.delete(dataDir);
   resetSqliteCache(dataDir);
+}
+
+/**
+ * Normalize grant detail fields with safe defaults.
+ * This is a local implementation that does not depend on seed-data helpers.
+ */
+function normalizeGrantDetailFields(grant: Grant): Grant {
+  const normalized: Grant = {
+    ...grant,
+    latestDraftVersion: grant.latestDraftVersion ?? (grant.draftContent ? 1 : 0),
+    groundedDocumentCount: grant.groundedDocumentCount ?? 0,
+    sourceCount: grant.sourceCount ?? 0,
+  };
+  return normalized;
 }
 
 export async function loadGrants(): Promise<Grant[]> {
@@ -281,9 +294,10 @@ export async function resetPersistentStateForTests(): Promise<void> {
   dataCache.delete(dataDir);
   grantsCache.delete(dataDir);
   await savePersistedData(emptyPersistedData);
-  await saveGrants(seedGrants);
-  await saveTasks(seedTasks);
-  await saveNotifications(seedNotifications);
+  // GAP-05: seedGrants, seedNotifications, seedTasks eliminated - use empty arrays for test reset
+  await saveGrants([]);
+  await saveTasks([]);
+  await saveNotifications([]);
   await saveProfile({ ...defaultProfile });
   await saveOpencodeSettings({ ...defaultOpencodeSettings });
   await loadPersistedData();
@@ -371,4 +385,14 @@ export async function saveCrawlSchedule(schedule: import('./types').CrawlSchedul
 
 export async function deleteCrawlSchedule(id: string): Promise<void> {
   await deleteCrawlScheduleFromSqlite(getSqliteState(), id);
+}
+
+// ============ THEMES DATA PERSISTENCE ============
+
+export async function loadThemesData(): Promise<ThemesData> {
+  return readThemesDataFromSqlite(getSqliteState());
+}
+
+export async function saveThemesData(data: ThemesData): Promise<void> {
+  writeThemesDataToSqlite(getSqliteState(), data);
 }

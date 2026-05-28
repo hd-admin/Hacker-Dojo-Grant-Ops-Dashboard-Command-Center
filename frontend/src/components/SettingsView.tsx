@@ -277,6 +277,16 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
 
 
         <section className="setting-card">
+          <div className="setting-card-header"><div className="setting-card-title">Safety &amp; Lock</div></div>
+          <div className="setting-card-body">
+            <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '12px' }}>
+              Configure application lock to protect sensitive grant data with a passcode.
+            </p>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => { void fetch('/api/safety/lock', { method: 'POST' }); }}>Lock app now</button>
+          </div>
+        </section>
+
+        <section className="setting-card">
           <div className="setting-card-header"><div className="setting-card-title">Opencode</div></div>
           <div className="setting-card-body">
             {isEditingOpencode ? (
@@ -292,6 +302,36 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 <button type="button" onClick={handleEditOpencode}>Edit Opencode</button>
               </>
             )}
+          </div>
+        </section>
+
+        <section className="setting-card">
+          <div className="setting-card-header"><div className="setting-card-title">Theme Configuration</div></div>
+          <div className="setting-card-body">
+            <p className="setting-card-description">
+              Configure matching themes, keyword clusters, and scoring thresholds for grant discovery.
+            </p>
+            <div>
+              <h4>Search Themes</h4>
+              {profile.searchThemes?.length ? (
+                <ul>
+                  {profile.searchThemes.map((theme, i) => (
+                    <li key={i}>{theme}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-muted">No search themes configured.</p>
+              )}
+            </div>
+            <div>
+              <h4>Auto-Draft Threshold</h4>
+              <p>
+                Current threshold: {profile.agentBehavior?.autoDraftThreshold ?? 75}
+              </p>
+              <p className="text-muted">
+                Grants with a fit score above this threshold will be automatically drafted.
+              </p>
+            </div>
           </div>
         </section>
       </div>

@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
-import { exportBackupSnapshot, recordBackupVerification } from '@/server/grant-ops/backup-service';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const snapshot = await exportBackupSnapshot();
-    await recordBackupVerification(snapshot);
+    const deps = getDependencies();
+    const snapshot = await deps.backup.exportBackupSnapshot();
+    await deps.backup.recordBackupVerification(snapshot);
     return NextResponse.json(snapshot, {
       headers: { 'content-disposition': `attachment; filename=grant-ops-backup-${snapshot.manifest.createdAt}.json` },
     });

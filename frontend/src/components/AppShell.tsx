@@ -1,16 +1,17 @@
 "use client";
 
-import React from "react";
-import { useCallback, useEffect, useMemo, useState } from "react";
 import type {
   CrawlStatus,
   Grant,
   HealthCheckResult,
+  JobQueueItem,
   Notification,
   OrganizationProfile,
   Source,
   Task,
 } from "../../../shared/types";
+import React from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { client } from "../lib/grant-ops-client";
 import DashboardView from "./DashboardView";
 import DiscoveryView from "./DiscoveryView";
@@ -32,32 +33,63 @@ type ViewType =
   | "tasks"
   | "audit";
 
+type HealthTier = "fully_online" | "partially_degraded" | "fully_offline";
+
 interface NavItem {
   view?: ViewType;
   label: string;
   icon?: string;
+  ariaLabel?: string;
+}
+
+interface SetupData {
+  orgName: string;
+  ein: string;
+  mission: string;
+  opencodePath: string;
 }
 
 const workspaceNav: NavItem[] = [
-  { view: 'dashboard', label: 'Dashboard', icon: '◐' },
-  { view: 'discovery', label: 'Discovery', icon: '◇' },
-  { view: 'pipeline', label: 'Pipeline', icon: '▤' },
-  { view: 'sources', label: 'Sources', icon: '◈' },
-  { view: 'settings', label: 'Org Profile', icon: '◯' },
+  { view: 'dashboard', label: 'Dashboard', icon: '◐', ariaLabel: 'View dashboard' },
+  { view: 'discovery', label: 'Discovery', icon: '◇', ariaLabel: 'Discover grants' },
+  { view: 'pipeline', label: 'Pipeline', icon: '▤', ariaLabel: 'View grant pipeline' },
+  { view: 'sources', label: 'Sources', icon: '◈', ariaLabel: 'Manage sources' },
+  { view: 'settings', label: 'Org Profile', icon: '◯', ariaLabel: 'Organization profile settings' },
 ];
 
 const activityNav: NavItem[] = [
-  { view: 'notifications', label: 'Notifications', icon: '✉' },
-  { view: 'tasks', label: 'Tasks', icon: '⌶' },
-  { view: 'audit', label: 'Audit', icon: '✎' },
+  { view: 'notifications', label: 'Notifications', icon: '✉', ariaLabel: 'View notifications' },
+  { view: 'tasks', label: 'Tasks', icon: '⌶', ariaLabel: 'View tasks' },
+  { view: 'audit', label: 'Audit', icon: '✎', ariaLabel: 'View audit trail' },
 ];
 
 const WORKING_CONTEXT_KEY = 'grantops.workingContext';
+const SETUP_COMPLETED_KEY = 'grantops.setupCompleted';
 
 function getWorkingContextStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   const storage = window.localStorage;
   return typeof storage.getItem === 'function' && typeof storage.setItem === 'function' ? storage : null;
+}
+
+function readWorkingContext(): {
+  activeView?: string;
+  selectedGrantId?: string | null;
+  recentGrantIds?: string[];
+  recentDraftId?: string | null;
+} {
+  const storage = getWorkingContextStorage();
+  if (!storage) return {};
+  try {
+    return JSON.parse(storage.getItem(WORKING_CONTEXT_KEY) || '{}') as {
+      activeView?: string;
+      selectedGrantId?: string | null;
+      recentGrantIds?: string[];
+      recentDraftId?: string | null;
+    };
+  } catch {
+    return {};
+  }
 }
 
 export default function AppShell() {
@@ -76,11 +108,53 @@ export default function AppShell() {
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
+  // Setup wizard state
+  const [showSetupWizard, setShowSetupWizard] = useState(false);
+  const [setupStep, setSetupStep] = useState(0);
+  const [setupData, setSetupData] = useState<SetupData>({ orgName: '', ein: '', mission: '', opencodePath: '' });
+
+  // Safe quit state
+  const [showSafeQuit, setShowSafeQuit] = useState(false);
+  const [activeJobs, setActiveJobs] = useState<JobQueueItem[]>([]);
+  const isSafeQuit = useRef(false);
+
+  // Keyboard navigation
+  const mainRef = useRef<HTMLElement>(null);
+
   const unreadTaskCount = useMemo(() => tasks.filter((task) => !task.completed).length, [tasks]);
   const pendingSourcesCount = useMemo(
     () => sources.filter((source) => source.reviewStatus === 'pending-review').length,
     [sources],
   );
+
+  // Health tier computation
+  const healthTier: HealthTier = useMemo(() => {
+    if (!healthResult) return 'fully_online';
+    if (healthResult.storage === 'error') return 'fully_offline';
+    const opencodeDegraded =
+      healthResult.opencode === 'not-installed' ||
+      healthResult.opencode === 'not-reachable' ||
+      healthResult.opencode === 'incompatible' ||
+      healthResult.opencode === 'error';
+    if (opencodeDegraded) return 'partially_degraded';
+    return 'fully_online';
+  }, [healthResult]);
+
+  // Crawl staleness (>7 days)
+  const isCrawlStale = useMemo(() => {
+    if (!crawlStatus.lastSync) return false;
+    const diffDays = (Date.now() - new Date(crawlStatus.lastSync).getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays > 7;
+  }, [crawlStatus.lastSync]);
+
+  // Check setup completion on mount
+  useEffect(() => {
+    const storage = getWorkingContextStorage();
+    if (storage) {
+      const completed = storage.getItem(SETUP_COMPLETED_KEY) === 'true';
+      setSetupCompleted(completed);
+    }
+  }, []);
 
   const saveWorkingContext = useCallback((next: {
     activeView?: ViewType;
@@ -89,13 +163,17 @@ export default function AppShell() {
     recentDraftId?: string | null;
   }) => {
     const storage = getWorkingContextStorage();
-    if (!storage) return;
+    if (!storage || typeof storage.setItem !== 'function') return;
     const current = readWorkingContext();
     const merged = {
       ...current,
       ...next,
     };
-    storage.setItem(WORKING_CONTEXT_KEY, JSON.stringify(merged));
+    try {
+      storage.setItem(WORKING_CONTEXT_KEY, JSON.stringify(merged));
+    } catch {
+      // Ignore storage write failures in non-persistent test environments.
+    }
   }, []);
 
   const refreshHealth = useCallback(async (): Promise<void> => {
@@ -106,6 +184,19 @@ export default function AppShell() {
     } catch (error) {
       console.error('Error loading health:', error);
       setHealthResult({ storage: 'error', opencode: 'error', crawlerStatus: 'never-run', documentIndexer: 'error', storageError: 'Unable to load health' });
+    }
+  }, []);
+
+  const loadActiveJobs = useCallback(async (): Promise<void> => {
+    try {
+      const response = await fetch('/api/jobs');
+      const data = (await response.json()) as JobQueueItem[];
+      const active = Array.isArray(data)
+        ? data.filter((job) => job.status === 'queued' || job.status === 'running')
+        : [];
+      setActiveJobs(active);
+    } catch {
+      setActiveJobs([]);
     }
   }, []);
 
@@ -147,10 +238,18 @@ export default function AppShell() {
     if (context.selectedGrantId !== undefined) setSelectedGrantId(context.selectedGrantId);
     if (Array.isArray(context.recentGrantIds)) setRecentGrantIds(context.recentGrantIds.slice(0, 5));
     if (context.recentDraftId !== undefined) setRecentDraftId(context.recentDraftId);
-    void Promise.all([refreshAppState(), refreshHealth()]).catch((error) => {
+
+    // Check if profile has been saved (guided setup trigger)
+    const storage = getWorkingContextStorage();
+    const hasCompletedSetup = storage?.getItem(SETUP_COMPLETED_KEY) === 'true';
+    if (!hasCompletedSetup) {
+      setShowSetupWizard(true);
+    }
+
+    void Promise.all([refreshAppState(), refreshHealth(), loadActiveJobs()]).catch((error) => {
       console.error('Error loading app state:', error);
     });
-  }, [refreshAppState, refreshHealth]);
+  }, [refreshAppState, refreshHealth, loadActiveJobs]);
 
   useEffect(() => {
     const triggerScheduledCrawls = async (): Promise<void> => {
@@ -171,6 +270,15 @@ export default function AppShell() {
     };
   }, []);
 
+  // Periodic health refresh for reconnection detection
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      void refreshHealth();
+    }, 30_000);
+    return () => window.clearInterval(interval);
+  }, [refreshHealth]);
+
+  // Working context save effects
   useEffect(() => {
     if (!isMounted) return;
     saveWorkingContext({ activeView });
@@ -198,9 +306,64 @@ export default function AppShell() {
     saveWorkingContext({ recentDraftId });
   }, [recentDraftId, isMounted, saveWorkingContext]);
 
+  // Safe quit: beforeunload handler
+  useEffect(() => {
+    const handler = async (e: BeforeUnloadEvent) => {
+      await loadActiveJobs();
+      // Check if there are active jobs after load
+      const currentActiveJobs = activeJobs.filter(
+        (job) => job.status === 'queued' || job.status === 'running',
+      );
+      if (currentActiveJobs.length > 0) {
+        e.preventDefault();
+        e.returnValue = '';
+        // Mark interrupted jobs as incomplete
+        try {
+          await fetch('/api/jobs/interrupt', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ jobIds: currentActiveJobs.map((j) => j.id) }),
+          });
+        } catch {
+          // Best effort
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [activeJobs, loadActiveJobs]);
+
+  // Keyboard navigation: Escape to close drawer
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (selectedGrantId) {
+          setSelectedGrantId(null);
+        }
+        if (showSafeQuit) {
+          setShowSafeQuit(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedGrantId, showSafeQuit]);
+
+  // ============ Handlers ============
+
   const handleNavClick = (item: NavItem) => {
     if (item.view) {
       setActiveView(item.view);
+    }
+  };
+
+  const handleNavKeyDown = (e: React.KeyboardEvent, item: NavItem) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (item.view) {
+        setActiveView(item.view);
+      }
     }
   };
 
@@ -216,6 +379,89 @@ export default function AppShell() {
     setSelectedGrantId(null);
   };
 
+  const handleSkipToContent = (e: React.MouseEvent | React.KeyboardEvent) => {
+    if ('key' in e && e.key !== 'Enter' && e.key !== ' ') return;
+    e.preventDefault();
+    mainRef.current?.focus();
+    mainRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // ============ Setup Wizard ============
+
+  const handleSetupNext = () => {
+    if (setupStep === 0 && (!setupData.orgName.trim() || !setupData.ein.trim() || !setupData.mission.trim())) {
+      return;
+    }
+    if (setupStep === 1 && !setupData.opencodePath.trim()) {
+      return;
+    }
+    if (setupStep < 2) {
+      setSetupStep((s) => s + 1);
+    }
+  };
+
+  const handleSetupPrevious = () => {
+    if (setupStep > 0) {
+      setSetupStep((s) => s - 1);
+    }
+  };
+
+  const handleSetupComplete = async () => {
+    try {
+      if (setupData.orgName.trim() && setupData.ein.trim() && setupData.mission.trim()) {
+        await client.profile.update({
+          legalName: setupData.orgName.trim(),
+          ein: setupData.ein.trim(),
+          samUEI: profile?.samUEI ?? '',
+          nonprofitStatus: profile?.nonprofitStatus ?? '501(c)(3)',
+          contactInfo: profile?.contactInfo ?? {},
+          geography: profile?.geography ?? '',
+          mission: setupData.mission.trim(),
+          programAreas: profile?.programAreas ?? [],
+          populationsServed: profile?.populationsServed ?? [],
+          fundingHistory: profile?.fundingHistory ?? [],
+          partnerships: profile?.partnerships ?? [],
+          complianceFacts: profile?.complianceFacts ?? [],
+          docTypes: profile?.docTypes ?? ['PDF'],
+          searchThemes: profile?.searchThemes ?? [],
+          agentBehavior: profile?.agentBehavior ?? {
+            autoDraftThreshold: 75,
+            submissionPolicy: 'Human approval required',
+            notifyEmail: 'ed@hackerdojo.com',
+            voiceAndTone: 'Plain-spoken',
+          },
+        });
+      }
+      if (setupData.opencodePath.trim()) {
+        await client.opencodeSettings.update({
+          binaryPath: setupData.opencodePath.trim(),
+          workingDirectory: setupData.opencodePath.trim().replace(/\/opencode$/i, ''),
+          timeoutMs: 60000,
+          isConfigured: true,
+        });
+      }
+      const storage = getWorkingContextStorage();
+      if (storage) {
+        storage.setItem(SETUP_COMPLETED_KEY, 'true');
+      }
+      setShowSetupWizard(false);
+      await refreshAppState();
+      await refreshHealth();
+    } catch (error) {
+      console.error('Error completing setup:', error);
+    }
+  };
+
+  const handleSetupSkip = () => {
+    const storage = getWorkingContextStorage();
+    if (storage) {
+      storage.setItem(SETUP_COMPLETED_KEY, 'true');
+    }
+    setShowSetupWizard(false);
+  };
+
+  // ============ Compute derived state ============
+
   const isFirstRun = grants.length === 0 && sources.length === 0 && tasks.length === 0 && notifications.length === 0;
   const hasStorageError = healthResult?.storage === 'error';
   const opencodeBlocked =
@@ -225,13 +471,18 @@ export default function AppShell() {
       healthResult.opencode === 'incompatible' ||
       healthResult.opencode === 'error');
 
+  const profileExists = profile !== null && profile.legalName && profile.legalName.trim().length > 0;
+
+  // ============ Render ============
+
   if (!isMounted) {
-    return <div className="app-loading" aria-busy="true" />;
+    return <div className="app-loading" aria-busy="true" role="status" aria-label="Loading application" />;
   }
 
+  // Storage blocked: critical failure screen
   if (hasStorageError) {
     return (
-      <div className="app app-blocked">
+      <div className="app app-blocked" role="alert">
         <div className="storage-blocked-panel">
           <div data-testid="storage-blocked-banner">
             Storage unavailable: {healthResult.storageError ?? 'Unknown error'}
@@ -252,7 +503,19 @@ export default function AppShell() {
 
   return (
     <div className="app">
-      <aside className="sidebar">
+      {/* Skip-to-content link for keyboard users */}
+      <button
+        type="button"
+        className="skip-to-content"
+        onClick={handleSkipToContent}
+        onKeyDown={handleSkipToContent}
+      >
+        Skip to main content
+      </button>
+
+      {/* Sidebar */}
+      {/* biome-ignore lint/a11y/useSemanticElements: <explanation>sidebar layout uses aside for complementary content */}
+      <aside className="sidebar" aria-label="Main navigation">
         <div className="brand">
           <div className="brand-mark">
             Hacker Dojo <em>Grant Ops</em>
@@ -277,10 +540,14 @@ export default function AppShell() {
                 type="button"
                 className={`nav-item ${activeView === item.view ? 'active' : ''}`}
                 data-view={item.view}
+                aria-label={item.ariaLabel}
+                aria-current={activeView === item.view ? 'page' : undefined}
+                tabIndex={0}
                 disabled={(item.view === 'discovery' || item.view === 'sources') && (healthResult === null || opencodeBlocked)}
                 onClick={() => handleNavClick(item)}
+                onKeyDown={(e) => handleNavKeyDown(e, item)}
               >
-                <span className="nav-icon">{item.icon}</span>
+                <span className="nav-icon" aria-hidden="true">{item.icon}</span>
                 {item.label}
                 {matchedCount > 0 && item.view && <span className="nav-count">{matchedCount}</span>}
               </button>
@@ -296,9 +563,13 @@ export default function AppShell() {
               type="button"
               className={`nav-item ${activeView === item.view ? 'active' : ''}`}
               data-view={item.view}
+              aria-label={item.ariaLabel}
+              aria-current={activeView === item.view ? 'page' : undefined}
+              tabIndex={0}
               onClick={() => handleNavClick(item)}
+              onKeyDown={(e) => handleNavKeyDown(e, item)}
             >
-              <span className="nav-icon">{item.icon}</span>
+              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
               {item.label}
               {item.view === 'notifications' && notifications.length > 0 && (
                 <span className="nav-count">{notifications.length}</span>
@@ -311,10 +582,14 @@ export default function AppShell() {
         </div>
 
         <div className="sidebar-footer">
-          <span className={`status-dot ${crawlStatus.online ? '' : 'offline'}`} />
+          <span
+            className={`status-dot ${crawlStatus.online ? '' : 'offline'}`}
+            aria-hidden="true"
+          />
           Crawler {crawlStatus.online ? 'online' : 'offline'}
+          {isCrawlStale && <span className="staleness-badge">Stale</span>}
           <br />
-          Last sync: {crawlStatus.lastSync ? getRelativeTime(crawlStatus.lastSync) : '—'}
+          Last sync: {crawlStatus.lastSync ? getRelativeTime(crawlStatus.lastSync) : '\u2014'}
           <br />
           <br />
           Logged in as
@@ -325,7 +600,49 @@ export default function AppShell() {
         </div>
       </aside>
 
-      <main className="main">
+      {/* Main content with skip target */}
+      <main className="main" ref={mainRef} id="main-content" tabIndex={-1} aria-label="Main content">
+        {/* Health Banner */}
+        {healthTier !== 'fully_online' && (
+          <div
+            className={`health-banner ${healthTier === 'partially_degraded' ? 'degraded' : 'offline'}`}
+            role="alert"
+            aria-live="polite"
+            data-testid="health-banner"
+          >
+            <span className="health-banner-icon" aria-hidden="true">
+              {healthTier === 'partially_degraded' ? '\u26A0' : '\u2716'}
+            </span>
+            <span className="health-banner-text">
+              {healthTier === 'partially_degraded'
+                ? 'AI features are currently unavailable. Local operations are unaffected.'
+                : 'Storage is unavailable. Some features may be limited.'}
+            </span>
+            <button
+              type="button"
+              className="health-banner-action"
+              onClick={() => { void refreshHealth(); }}
+              aria-label="Re-check system health"
+            >
+              Re-check
+            </button>
+          </div>
+        )}
+
+        {/* Reconnection notification */}
+        {healthTier === 'fully_online' && healthResult && opencodeBlocked === false && healthResult.opencode === 'ok' && (
+          <div
+            className="health-banner online"
+            role="status"
+            aria-live="polite"
+            data-testid="health-banner-online"
+          >
+            <span className="health-banner-icon" aria-hidden="true">\u2714</span>
+            <span className="health-banner-text">All systems operational</span>
+          </div>
+        )}
+
+        {/* Existing banner row (kept for backward compatibility) */}
         <div className="shell-banner-row">
           {hasStorageError && (
             <div data-testid="storage-blocked-banner">Storage unavailable: {healthResult?.storageError ?? 'Unknown error'}</div>
@@ -333,7 +650,7 @@ export default function AppShell() {
           {(healthResult?.opencode === 'not-installed' || healthResult?.opencode === 'not-reachable') && (
             <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
           )}
-          {isFirstRun && (
+          {isFirstRun && !showSetupWizard && (
             <div data-testid="first-run-guidance-card">
               Welcome to Hacker Dojo Grant Ops
               <button type="button" data-testid="first-run-add-source-btn" onClick={() => handleNavigate('sources')}>Add Your First Source</button>
@@ -342,7 +659,8 @@ export default function AppShell() {
           <button type="button" data-testid="rerun-health-check-btn" onClick={() => { void refreshHealth(); }}>Re-run Health Check</button>
         </div>
 
-        <div id="view-dashboard" className={`view ${activeView === 'dashboard' ? 'active' : ''}`}>
+        {/* Views */}
+        <div id="view-dashboard" className={`view ${activeView === 'dashboard' ? 'active' : ''}`} role="tabpanel" aria-label="Dashboard">
           <DashboardView
             onGrantSelect={handleGrantSelect}
             onNavigate={handleNavigate}
@@ -353,37 +671,207 @@ export default function AppShell() {
             recentGrantIds={recentGrantIds}
           />
         </div>
-        <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`}>
+        <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`} role="tabpanel" aria-label="Discovery">
           {healthResult === null || opencodeBlocked ? (
             <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
           ) : (
             <DiscoveryView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} />
           )}
         </div>
-        <div id="view-pipeline" className={`view ${activeView === 'pipeline' ? 'active' : ''}`}>
+        <div id="view-pipeline" className={`view ${activeView === 'pipeline' ? 'active' : ''}`} role="tabpanel" aria-label="Pipeline">
           <PipelineView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} />
         </div>
-        <div id="view-sources" className={`view ${activeView === 'sources' ? 'active' : ''}`}>
+        <div id="view-sources" className={`view ${activeView === 'sources' ? 'active' : ''}`} role="tabpanel" aria-label="Sources">
           {healthResult === null || opencodeBlocked ? (
             <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
           ) : (
             <SourcesView onRefreshAppState={refreshAppState} />
           )}
         </div>
-        <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`}>
+        <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`} role="tabpanel" aria-label="Organization Profile Settings">
           <SettingsView onRefreshAppState={refreshAppState} />
         </div>
-        <div id="view-notifications" className={`view ${activeView === 'notifications' ? 'active' : ''}`}>
+        <div id="view-notifications" className={`view ${activeView === 'notifications' ? 'active' : ''}`} role="tabpanel" aria-label="Notifications">
           <NotificationsView notifications={notifications} />
         </div>
-        <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`}>
+        <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`} role="tabpanel" aria-label="Tasks">
           <TasksView onRefreshAppState={refreshAppState} tasks={tasks} />
         </div>
-        <div id="view-audit" className={`view ${activeView === 'audit' ? 'active' : ''}`}>
+        <div id="view-audit" className={`view ${activeView === 'audit' ? 'active' : ''}`} role="tabpanel" aria-label="Audit Trail">
           <AuditView />
         </div>
       </main>
 
+      {/* Safe Quit Dialog */}
+      {showSafeQuit && (
+        <div className="safe-quit-overlay" role="dialog" aria-modal="true" aria-label="Safe quit confirmation">
+          <div className="safe-quit-dialog">
+            <h3>Safe Quit</h3>
+            <p>
+              {activeJobs.length > 0
+                ? `The following jobs are still running. Quitting will mark them as incomplete.`
+                : 'No active jobs detected. You can safely close the application.'}
+            </p>
+            {activeJobs.length > 0 && (
+              <div className="active-jobs-list">
+                {activeJobs.map((job) => (
+                  <div key={job.id} className="active-job-item">
+                    <span>{job.jobType} #{job.id.slice(0, 8)}</span>
+                    <span>{job.status}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="quit-actions">
+              <button type="button" className="btn btn-ghost" onClick={() => setShowSafeQuit(false)}>
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={() => {
+                  isSafeQuit.current = true;
+                  void (async () => {
+                    if (activeJobs.length > 0) {
+                      try {
+                        await fetch('/api/jobs/interrupt', {
+                          method: 'POST',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify({ jobIds: activeJobs.map((j) => j.id) }),
+                        });
+                      } catch {
+                        // Best effort
+                      }
+                    }
+                    window.close();
+                  })();
+                }}
+              >
+                Quit anyway
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Guided Setup Wizard */}
+      {showSetupWizard && (
+        <div className="setup-wizard-overlay" role="dialog" aria-modal="true" aria-label="First-run setup wizard">
+          <div className="setup-wizard" data-testid="setup-wizard">
+            <h2>Welcome to Grant Ops</h2>
+            <div className="setup-subtitle">Let&apos;s get you set up in 3 steps</div>
+
+            {/* Progress indicator */}
+            <div className="setup-progress" role="progressbar" aria-valuenow={setupStep + 1} aria-valuemin={1} aria-valuemax={3} aria-label={`Step ${setupStep + 1} of 3`}>
+              <div className={`setup-progress-dot ${setupStep >= 0 ? 'active' : ''} ${setupStep > 0 ? 'done' : ''}`} />
+              <div className={`setup-progress-dot ${setupStep >= 1 ? 'active' : ''} ${setupStep > 1 ? 'done' : ''}`} />
+              <div className={`setup-progress-dot ${setupStep >= 2 ? 'active' : ''}`} />
+            </div>
+
+            {/* Step 0: Organization Profile */}
+            {setupStep === 0 && (
+              <div className="setup-step">
+                <div className="setup-step-label">Step 1 of 3</div>
+                <div className="setup-step-title">Organization Profile</div>
+                <div className="setup-step-body">
+                  <label htmlFor="setup-org-name">Organization Name</label>
+                  <input
+                    id="setup-org-name"
+                    type="text"
+                    placeholder="e.g., Hacker Dojo"
+                    value={setupData.orgName}
+                    onChange={(e) => setSetupData((prev) => ({ ...prev, orgName: e.target.value }))}
+                    required
+                  />
+                  <label htmlFor="setup-ein">EIN (Employer Identification Number)</label>
+                  <input
+                    id="setup-ein"
+                    type="text"
+                    placeholder="e.g., 26-3375350"
+                    value={setupData.ein}
+                    onChange={(e) => setSetupData((prev) => ({ ...prev, ein: e.target.value }))}
+                    required
+                  />
+                  <label htmlFor="setup-mission">Mission Statement</label>
+                  <textarea
+                    id="setup-mission"
+                    placeholder="Describe your organization's mission..."
+                    value={setupData.mission}
+                    onChange={(e) => setSetupData((prev) => ({ ...prev, mission: e.target.value }))}
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Step 1: Opencode Path */}
+            {setupStep === 1 && (
+              <div className="setup-step">
+                <div className="setup-step-label">Step 2 of 3</div>
+                <div className="setup-step-title">AI Agent Configuration</div>
+                <div className="setup-step-body">
+                  <label htmlFor="setup-opencode-path">Opencode Binary Path</label>
+                  <input
+                    id="setup-opencode-path"
+                    type="text"
+                    placeholder="e.g., /usr/local/bin/opencode"
+                    value={setupData.opencodePath}
+                    onChange={(e) => setSetupData((prev) => ({ ...prev, opencodePath: e.target.value }))}
+                    required
+                  />
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
+                    Leave blank if you don&apos;t have opencode installed. AI features can be configured later in Settings.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Step 2: Initial Document Upload */}
+            {setupStep === 2 && (
+              <div className="setup-step">
+                <div className="setup-step-label">Step 3 of 3</div>
+                <div className="setup-step-title">Reference Documents</div>
+                <div className="setup-step-body">
+                  <p style={{ fontSize: '13px', color: 'var(--text-dim)' }}>
+                    Upload key documents that will help the AI agent write better grant proposals:
+                    budgets, impact reports, board lists, and organizational documents.
+                  </p>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                    You can upload documents later from Settings at any time.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Navigation */}
+            <div className="setup-nav">
+              <div>
+                {setupStep > 0 && (
+                  <button type="button" className="btn btn-ghost" onClick={handleSetupPrevious}>
+                    Back
+                  </button>
+                )}
+              </div>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button type="button" className="btn btn-ghost" onClick={handleSetupSkip}>
+                  Skip setup
+                </button>
+                {setupStep < 2 ? (
+                  <button type="button" className="btn btn-primary" onClick={handleSetupNext}>
+                    Next
+                  </button>
+                ) : (
+                  <button type="button" className="btn btn-primary" onClick={() => { void handleSetupComplete(); }}>
+                    Complete setup
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grant Drawer */}
       <GrantDrawer
         key={`${selectedGrantId ?? 'none'}-${selectedGrantRefreshKey}`}
         grantId={selectedGrantId}
@@ -392,26 +880,6 @@ export default function AppShell() {
       />
     </div>
   );
-}
-
-function readWorkingContext(): {
-  activeView?: string;
-  selectedGrantId?: string | null;
-  recentGrantIds?: string[];
-  recentDraftId?: string | null;
-} {
-  const storage = getWorkingContextStorage();
-  if (!storage) return {};
-  try {
-    return JSON.parse(storage.getItem(WORKING_CONTEXT_KEY) || '{}') as {
-      activeView?: string;
-      selectedGrantId?: string | null;
-      recentGrantIds?: string[];
-      recentDraftId?: string | null;
-    };
-  } catch {
-    return {};
-  }
 }
 
 function getRelativeTime(isoString: string): string {

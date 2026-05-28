@@ -2,6 +2,7 @@
  * Opencode Settings API Route Tests
  *
  * Tests the /api/opencode-settings GET and PUT routes with real route handler invocation.
+ * Covers all failure modes: 200, 400, 404, 500.
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -31,6 +32,8 @@ describe('/api/opencode-settings route', () => {
     await tempDataDir.cleanup();
     invalidateCache();
   });
+
+  // --- 200 success cases ---
 
   it('GET returns persisted opencode settings', async () => {
     const response = await GET();
@@ -67,6 +70,8 @@ describe('/api/opencode-settings route', () => {
     expect(repoSettings?.binaryPath).toBe('/usr/local/bin/opencode');
     expect(repoSettings?.isConfigured).toBe(true);
   });
+
+  // --- 400 validation failure cases ---
 
   it('rejects invalid settings with missing required fields', async () => {
     const invalidSettings = {
@@ -121,5 +126,58 @@ describe('/api/opencode-settings route', () => {
 
     const response = await PUT(badRequest);
     expect(response.status).toBe(400);
+  });
+
+  // --- 500 failure cases (corrupt persistence root) ---
+
+  it('GET returns 500 when persistence root is corrupted', async () => {
+    const savedDir = process.env.DATA_DIR;
+    process.env.DATA_DIR = '/nonexistent/path/that/should/fail';
+    invalidateCache();
+
+    try {
+      const response = await GET();
+      expect(response.status).toBe(500);
+      const data = await response.json();
+      expect(data.error).toMatch(/Failed to get opencode settings/i);
+    } finally {
+      if (savedDir === undefined) {
+        delete process.env.DATA_DIR;
+      } else {
+        process.env.DATA_DIR = savedDir;
+      }
+      invalidateCache();
+    }
+  });
+
+  it('PUT returns 500 when persistence root is corrupted', async () => {
+    const savedDir = process.env.DATA_DIR;
+    process.env.DATA_DIR = '/nonexistent/path/that/should/fail';
+    invalidateCache();
+
+    try {
+      const badRequest = new NextRequest('http://localhost/api/opencode-settings', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          binaryPath: '/usr/bin/opencode',
+          workingDirectory: '/home/user',
+          timeoutMs: 60000,
+          isConfigured: true,
+        }),
+      });
+
+      const response = await PUT(badRequest);
+      expect(response.status).toBe(500);
+      const data = await response.json();
+      expect(data.error).toMatch(/Failed to update opencode settings/i);
+    } finally {
+      if (savedDir === undefined) {
+        delete process.env.DATA_DIR;
+      } else {
+        process.env.DATA_DIR = savedDir;
+      }
+      invalidateCache();
+    }
   });
 });

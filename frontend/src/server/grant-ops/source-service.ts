@@ -53,8 +53,13 @@ export async function addSource(input: AddSourceInput): Promise<Source> {
   if (input.category !== undefined) source.category = input.category;
   if (input.categoryRationale !== undefined) source.categoryRationale = input.categoryRationale;
 
-  await deps.repository.addSource(source);
-  return source;
+  const persistedSource = {
+    ...source,
+    isActive: source.reviewStatus === 'approved',
+  };
+
+  await deps.repository.addSource(persistedSource);
+  return persistedSource;
 }
 
 export async function removeSource(id: string): Promise<boolean> {

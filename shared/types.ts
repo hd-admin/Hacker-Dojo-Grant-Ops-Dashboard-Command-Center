@@ -245,6 +245,7 @@ export interface Grant {
 	award: string;
 	awardSort: number;
 	deadline: string;
+	deadlineConfidence?: 'exact' | 'estimated' | 'rolling' | 'unknown';
 	daysOut: number;
 	fit: number;
 	tags: string[];
@@ -267,11 +268,33 @@ export interface Grant {
 	humanOverrides?: HumanOverride[];
 }
 
+export interface ContactInfo {
+	address?: string;
+	phone?: string;
+	email?: string;
+	website?: string;
+}
+
+export interface FundingHistoryEntry {
+	year: number;
+	amount: number;
+	source: string;
+	purpose: string;
+}
+
 export interface OrganizationProfile {
 	legalName: string;
 	ein: string;
 	samUEI: string;
+	nonprofitStatus: string;
+	contactInfo: ContactInfo;
+	geography: string;
 	mission: string;
+	programAreas: string[];
+	populationsServed: string[];
+	fundingHistory: FundingHistoryEntry[];
+	partnerships: string[];
+	complianceFacts: string[];
 	docTypes: string[];
 	searchThemes: string[];
 	agentBehavior: {
@@ -495,4 +518,77 @@ export interface StoreData {
 	submissionRecords: SubmissionRecord[];
 	followUps: FollowUp[];
 	opencodeSettings: OpencodeSettings;
+}
+
+// ============ THEME & MATCHING POLICY TYPES ============
+
+export interface KeywordCluster {
+	id: string;
+	name: string;
+	keywords: string[];
+	weight: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface InclusionExclusionRule {
+	id: string;
+	field: "tags" | "funder" | "title" | "category";
+	operator: "contains" | "equals" | "startsWith" | "regex";
+	value: string;
+	priority: number;
+}
+
+export interface MatchingPolicy {
+	matchThreshold: number;
+	autoDraftThreshold: number;
+	includeRules: InclusionExclusionRule[];
+	excludeRules: InclusionExclusionRule[];
+}
+
+export interface Region {
+	id: string;
+	name: string;
+	description?: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface Population {
+	id: string;
+	name: string;
+	description?: string;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface StrategicPriority {
+	id: string;
+	name: string;
+	description?: string;
+	weight: number;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface Theme {
+	id: string;
+	name: string;
+	description?: string;
+	keywordClusters: string[];
+	regions: string[];
+	populations: string[];
+	strategicPriorities: string[];
+	matchingPolicy: MatchingPolicy;
+	isActive: boolean;
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface ThemesData {
+	keywordClusters: KeywordCluster[];
+	themes: Theme[];
+	regions: Region[];
+	populations: Population[];
+	strategicPriorities: StrategicPriority[];
 }

@@ -8,7 +8,7 @@
     "prebuild": "bash ../scripts/ensure-better-sqlite3.sh",
     "build": "node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && next build",
     "prestart": "bash ../scripts/ensure-better-sqlite3.sh",
-    "start": "PORT=3000 HOSTNAME=0.0.0.0 next start"
+    "start": "PORT=3000 HOSTNAME=127.0.0.1 next start"
   },
   "devDependencies": {
     "next": "^15.2.0"

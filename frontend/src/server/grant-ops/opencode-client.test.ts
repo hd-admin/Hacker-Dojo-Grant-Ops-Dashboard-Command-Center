@@ -14,6 +14,7 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { OpencodeSettings } from "../../../../shared/types";
 import {
+	classifyOpencodeError,
 	createOpencodeAdapter,
 	normalizeOpencodeOutput,
 } from "./opencode-client";
@@ -193,6 +194,59 @@ EOF
 
 			expect(normalizeOpencodeOutput(output)).toBe("first line\nsecond line");
 			expect(normalizeOpencodeOutput(" plain text ")).toBe("plain text");
+		});
+	});
+
+	describe("classifyOpencodeError", () => {
+		it('classifies missing binary as install-missing', () => {
+			expect(classifyOpencodeError('ENOENT: no such file or directory')).toBe('install-missing');
+			expect(classifyOpencodeError('command not found: opencode')).toBe('install-missing');
+			expect(classifyOpencodeError('opencode is not installed')).toBe('install-missing');
+		});
+
+		it('classifies auth/permission errors as config-error', () => {
+			expect(classifyOpencodeError('API key not set', 'Authentication failed')).toBe('config-error');
+			expect(classifyOpencodeError('EACCES: permission denied')).toBe('config-error');
+			expect(classifyOpencodeError('Profile "custom" not found')).toBe('config-error');
+		});
+
+		it('classifies rate limiting as rate-limit', () => {
+			expect(classifyOpencodeError('429 Too Many Requests')).toBe('rate-limit');
+			expect(classifyOpencodeError('Rate limit exceeded', 'quota exceeded for today')).toBe('rate-limit');
+		});
+
+		it('classifies parse errors as malformed-output', () => {
+			expect(classifyOpencodeError('SyntaxError: Unexpected token in JSON')).toBe('malformed-output');
+			expect(classifyOpencodeError('malformed response from model')).toBe('malformed-output');
+		});
+
+		it('classifies token limit errors as context-overflow', () => {
+			expect(classifyOpencodeError('Context length exceeded 128000 tokens')).toBe('context-overflow');
+			expect(classifyOpencodeError('input is too long, maximum context window is 200k')).toBe('context-overflow');
+		});
+
+		it('classifies truncated output as partial-output', () => {
+			expect(classifyOpencodeError('output was truncated')).toBe('partial-output');
+			expect(classifyOpencodeError('stream closed unexpectedly', 'broken pipe')).toBe('partial-output');
+		});
+
+		it('classifies model unavailable as model-unavailable', () => {
+			expect(classifyOpencodeError('Model "gpt-5" not found')).toBe('model-unavailable');
+			expect(classifyOpencodeError('503 Service Unavailable')).toBe('model-unavailable');
+			expect(classifyOpencodeError('server overloaded')).toBe('model-unavailable');
+		});
+
+		it('classifies timeout as timeout', () => {
+			expect(classifyOpencodeError('Operation timed out')).toBe('timeout');
+			expect(classifyOpencodeError('execution deadline exceeded')).toBe('timeout');
+		});
+
+		it('detects timeout by exit code 124', () => {
+			expect(classifyOpencodeError('process exited', '', 124)).toBe('timeout');
+		});
+
+		it('returns unknown for unrecognized errors', () => {
+			expect(classifyOpencodeError('something went wrong')).toBe('unknown');
 		});
 	});
 

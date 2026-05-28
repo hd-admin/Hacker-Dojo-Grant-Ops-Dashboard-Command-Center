@@ -7,7 +7,6 @@ import type { PersistedData } from "./grant-ops-persistence";
 import {
 	defaultOpencodeSettings,
 	defaultProfile,
-	normalizeGrantDetailFields,
 } from "./seed-data";
 import type {
 	ApprovalRecord,
@@ -32,7 +31,22 @@ import type {
 	Task,
 	BackupFreshnessStatus,
 	BackupVerificationRecord,
+	ThemesData,
 } from "./types";
+
+/**
+ * Normalize grant detail fields with safe defaults.
+ * This is a local implementation that does not depend on seed-data helpers.
+ */
+function normalizeGrantDetailFields(grant: Grant): Grant {
+	const normalized: Grant = {
+		...grant,
+		latestDraftVersion: grant.latestDraftVersion ?? (grant.draftContent ? 1 : 0),
+		groundedDocumentCount: grant.groundedDocumentCount ?? 0,
+		sourceCount: grant.sourceCount ?? 0,
+	};
+	return normalized;
+}
 
 export interface SqliteBootstrapState {
 	dataDir: string;
@@ -249,6 +263,10 @@ function ensureSchema(db: SqliteDatabase): void {
       id INTEGER PRIMARY KEY DEFAULT 1,
       version INTEGER NOT NULL DEFAULT 1,
       migrated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS themes_data (
+      id TEXT PRIMARY KEY CHECK (id = 'themes_data'),
+      json TEXT NOT NULL
     );
   `);
 }
@@ -992,4 +1010,36 @@ export function saveBackupFreshness(state: SqliteBootstrapState, freshness: Back
 	if (freshness.lastRestoreVerification) {
 		saveMeta(db, 'lastRestoreVerification', JSON.stringify(freshness.lastRestoreVerification));
 	}
+}
+
+// ============ THEMES DATA PERSISTENCE ============
+
+function defaultThemesData(): ThemesData {
+	return {
+		keywordClusters: [],
+		themes: [],
+		regions: [],
+		populations: [],
+		strategicPriorities: [],
+	};
+}
+
+export function readThemesData(state: SqliteBootstrapState): ThemesData {
+	const db = openDatabase(state);
+	const row = db
+		.prepare("SELECT json FROM themes_data WHERE id = 'themes_data' LIMIT 1")
+		.get() as { json: string } | undefined;
+	if (!row) return defaultThemesData();
+	try {
+		return JSON.parse(row.json) as ThemesData;
+	} catch {
+		return defaultThemesData();
+	}
+}
+
+export function writeThemesData(state: SqliteBootstrapState, data: ThemesData): void {
+	const db = openDatabase(state);
+	db.prepare("INSERT OR REPLACE INTO themes_data (id, json) VALUES ('themes_data', ?)").run(
+		JSON.stringify(data),
+	);
 }

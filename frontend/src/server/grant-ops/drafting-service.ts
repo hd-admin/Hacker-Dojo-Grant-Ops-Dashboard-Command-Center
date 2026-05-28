@@ -4,10 +4,6 @@
  * Handles proposal draft generation and revision management.
  */
 
-import {
-	createDefaultFunderSummary,
-	createDefaultGrantChecklist,
-} from "../../../../shared/seed-data";
 import type {
 	DocumentMetadata,
 	DraftArtifact,
@@ -18,6 +14,22 @@ import type {
 } from "../../../../shared/types";
 import { escapeForHtml } from "../../lib/sanitize-html";
 import { getDependencies } from "./dependencies";
+
+/**
+ * Create a default funder summary when none is provided.
+ * Returns empty string - no fake funder summary should be generated.
+ */
+function createDefaultFunderSummary(_grant: Pick<Grant, 'funder' | 'title' | 'tags'>): string {
+	return '';
+}
+
+/**
+ * Create a default grant checklist when none is provided.
+ * Returns empty array - real checklist items should be generated from grant requirements.
+ */
+function createDefaultGrantChecklist(_grant: Pick<Grant, 'fit' | 'status' | 'draftContent' | 'funderSummary' | 'latestDraftVersion' | 'groundedDocumentCount' | 'sourceCount'>): Array<{ label: string; done: boolean; source: string }> {
+	return [];
+}
 
 export interface GenerateDraftOptions {
 	revisionNotes?: string;

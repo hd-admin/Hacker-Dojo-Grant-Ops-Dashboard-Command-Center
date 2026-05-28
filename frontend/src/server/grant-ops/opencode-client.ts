@@ -45,7 +45,72 @@ export interface DraftGenerationRequest {
 	groundingDocuments?: string[];
 }
 
+export type OpencodeFailureMode =
+	| 'install-missing'
+	| 'config-error'
+	| 'rate-limit'
+	| 'malformed-output'
+	| 'context-overflow'
+	| 'partial-output'
+	| 'model-unavailable'
+	| 'timeout'
+	| 'unknown';
+
 export type OpencodeProvider = "cli" | "fake";
+
+/**
+ * Classify an opencode execution error into a standard failure mode.
+ * Uses stderr content, error message, and exit code to infer the root cause.
+ */
+export function classifyOpencodeError(
+	errorMessage: string,
+	stderr?: string,
+	exitCode?: number,
+): OpencodeFailureMode {
+	const combined = [errorMessage, stderr].filter(Boolean).join(' ').toLowerCase();
+
+	// Install-missing: binary not found on PATH or at configured path
+	if (/command not found|no such file|enoent|not installed/i.test(combined)) {
+		return 'install-missing';
+	}
+
+	// Config-error: API key missing, profile not found, permission denied
+	if (/api.key|unauthorized|authentication|permission denied|eacces|not configured|profile.*not found/i.test(combined)) {
+		return 'config-error';
+	}
+
+	// Rate-limit: provider throttling
+	if (/429|rate.limit|too many requests|quota exceeded|rate exceeded/i.test(combined)) {
+		return 'rate-limit';
+	}
+
+	// Malformed-output: unparseable response, invalid JSON, unexpected format
+	if (/unexpected token|syntax.?error|malformed|invalid json|parse error|unexpected.*format/i.test(combined)) {
+		return 'malformed-output';
+	}
+
+	// Context-overflow: token limit, context window exceeded
+	if (/context length|token limit|maximum context|context.*exceed|too long/i.test(combined)) {
+		return 'context-overflow';
+	}
+
+	// Partial-output: output truncated, cut off, incomplete response
+	if (/truncated|incomplete|partial|cut off|stream.*closed|broken pipe/i.test(combined)) {
+		return 'partial-output';
+	}
+
+	// Model-unavailable: model overloaded, not found, temporarily unavailable
+	if (/model.*not found|model.*unavailable|overloaded|capacity|503|service unavailable/i.test(combined)) {
+		return 'model-unavailable';
+	}
+
+	// Timeout: execution exceeded deadline
+	if (/timed out|timeout|deadline exceeded/i.test(combined) || exitCode === 124) {
+		return 'timeout';
+	}
+
+	return 'unknown';
+}
 
 export interface OpencodeAdapter {
 	executeResearch(request: GrantResearchRequest): Promise<OpencodeResponse>;

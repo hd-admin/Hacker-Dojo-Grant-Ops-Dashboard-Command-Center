@@ -6,10 +6,12 @@
  * directly importing repository globals or creating adapters inline.
  */
 
-import type { OpencodeSettings } from '../../../../shared/types';
-import { getDataDir } from '../../../../shared/grant-ops-persistence';
-import type { OpencodeAdapter } from './opencode-client';
+import { getDataDir, loadBackupFreshness, resetPersistentStateForTests } from '../../../../shared/grant-ops-persistence';
+import type { BackupFreshnessStatus, OpencodeSettings } from '../../../../shared/types';
+import { exportBackupSnapshot, importBackupSnapshot, recordBackupVerification } from './backup-service';
+import type { BackupSnapshot } from './backup-service';
 import { createOpencodeAdapter } from './opencode-client';
+import type { OpencodeAdapter } from './opencode-client';
 import * as repository from './repository';
 import * as sourceService from './source-service';
 
@@ -44,6 +46,13 @@ export interface Dependencies {
   clock: Clock;
   idGenerator: IdGenerator;
   persistenceRoot: PersistenceRoot;
+  backup: {
+    exportBackupSnapshot(): Promise<BackupSnapshot>;
+    importBackupSnapshot(snapshot: BackupSnapshot): Promise<void>;
+    recordBackupVerification(snapshot: BackupSnapshot): Promise<void>;
+  };
+  loadBackupFreshness(): Promise<BackupFreshnessStatus>;
+  resetPersistentStateForTests(): Promise<void>;
 }
 
 export function createDependencies(
@@ -54,6 +63,9 @@ export function createDependencies(
     clock: Clock;
     idGenerator: IdGenerator;
     persistenceRoot: PersistenceRoot;
+    backup: Dependencies['backup'];
+    loadBackupFreshness: Dependencies['loadBackupFreshness'];
+    resetPersistentStateForTests: Dependencies['resetPersistentStateForTests'];
   }> = {},
 ): Dependencies {
   return {
@@ -64,6 +76,13 @@ export function createDependencies(
     clock: overrides.clock ?? systemClock,
     idGenerator: overrides.idGenerator ?? cryptoIdGenerator,
     persistenceRoot: overrides.persistenceRoot ?? cwdPersistenceRoot,
+    backup: overrides.backup ?? {
+      exportBackupSnapshot,
+      importBackupSnapshot,
+      recordBackupVerification,
+    },
+    loadBackupFreshness: overrides.loadBackupFreshness ?? loadBackupFreshness,
+    resetPersistentStateForTests: overrides.resetPersistentStateForTests ?? resetPersistentStateForTests,
   };
 }
 

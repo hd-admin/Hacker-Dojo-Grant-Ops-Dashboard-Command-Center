@@ -4,6 +4,7 @@ import fs from 'node:fs/promises';
 import { getDataDir } from '../../../../../shared/grant-ops-persistence';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { analyzeStoredDocument } from '@/server/grant-ops/document-text-extractor';
+import * as documentService from '@/server/grant-ops/document-service';
 import type { DocumentMetadata } from '../../../../../shared/types';
 
 export const dynamic = 'force-dynamic';
@@ -19,11 +20,17 @@ function parseBoolean(value: FormDataEntryValue | null): boolean | undefined {
   return undefined;
 }
 
-// GET: List all documents
-export async function GET() {
+// GET: List all documents, with optional search
+export async function GET(request: NextRequest) {
   try {
-    const deps = getDependencies();
-    const documents = await deps.repository.getDocuments();
+    const searchQuery = request.nextUrl.searchParams.get('q');
+
+    if (searchQuery) {
+      const results = await documentService.searchDocuments(searchQuery);
+      return NextResponse.json(results);
+    }
+
+    const documents = await documentService.listDocuments();
     return NextResponse.json(documents);
   } catch (error) {
     console.error('Error getting documents:', error);
@@ -89,6 +96,10 @@ export async function POST(request: NextRequest) {
     }
 
     await deps.repository.addDocument(doc);
+
+    // Index the document for search
+    await documentService.indexDocument(doc);
+
     return NextResponse.json(doc, { status: 201 });
   } catch (error) {
     console.error('Error adding document:', error);
@@ -122,5 +133,26 @@ export async function PATCH(request: NextRequest) {
   } catch (error) {
     console.error('Error updating document:', error);
     return NextResponse.json({ error: 'Failed to update document' }, { status: 500 });
+  }
+}
+
+// DELETE: Remove a document
+export async function DELETE(request: NextRequest) {
+  try {
+    const body = await request.json().catch(() => null);
+
+    if (!body || !body.id) {
+      return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
+    }
+
+    const success = await documentService.deleteDocument(body.id);
+    if (!success) {
+      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting document:', error);
+    return NextResponse.json({ error: 'Failed to delete document' }, { status: 500 });
   }
 }

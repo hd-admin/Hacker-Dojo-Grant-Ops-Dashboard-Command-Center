@@ -9,11 +9,6 @@
  */
 
 import { ResearchResponseSchema } from "../../../../shared/schemas";
-import {
-	createDefaultFitBreakdown,
-	createDefaultFunderSummary,
-	createDefaultGrantChecklist,
-} from "../../../../shared/seed-data";
 import type {
 	CrawlRun,
 	Grant,
@@ -25,6 +20,31 @@ import type {
 } from "../../../../shared/types";
 import { escapeForHtml } from "../../lib/sanitize-html";
 import { type Clock, getDependencies, type IdGenerator } from "./dependencies";
+import { scoreGrantByThemes } from "./theme-service";
+
+/**
+ * Create a default fit score breakdown when none is provided.
+ * Returns null to indicate no breakdown is available - scoring should be done properly.
+ */
+function createDefaultFitBreakdown(_fit: number): null {
+	return null;
+}
+
+/**
+ * Create a default funder summary when none is provided.
+ * Returns empty string - no fake funder summary should be generated.
+ */
+function createDefaultFunderSummary(_grant: Pick<Grant, 'funder' | 'title' | 'tags'>): string {
+	return '';
+}
+
+/**
+ * Create a default grant checklist when none is provided.
+ * Returns empty array - real checklist items should be generated from grant requirements.
+ */
+function createDefaultGrantChecklist(_grant: Pick<Grant, 'fit' | 'status' | 'draftContent' | 'funderSummary' | 'latestDraftVersion' | 'groundedDocumentCount' | 'sourceCount'>): Array<{ label: string; done: boolean; source: string }> {
+	return [];
+}
 
 export interface ResearchOptions {
 	/**
@@ -250,7 +270,9 @@ async function performResearch(
 								deadline,
 								daysOut:
 									grantData.daysOut ?? calculateDaysOut(deadline, clock.now()),
-								fit: grantData.fit || 70,
+								fit: grantData.fit ?? await scoreGrantByThemes(
+								grantData.tags ?? profile.searchThemes.slice(0, 2)
+							),
 								tags: grantData.tags || profile.searchThemes.slice(0, 2),
 								status: "matched",
 								statusLabel: "Matched",

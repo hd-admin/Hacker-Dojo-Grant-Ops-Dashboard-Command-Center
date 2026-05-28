@@ -88,11 +88,33 @@ export const GrantSchema = z.object({
   humanOverrides: z.array(HumanOverrideSchema).optional(),
 });
 
+export const ContactInfoSchema = z.object({
+  address: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().optional(),
+  website: z.string().optional(),
+});
+
+export const FundingHistoryEntrySchema = z.object({
+  year: z.number().int().min(1900).max(2100),
+  amount: z.number().min(0),
+  source: z.string(),
+  purpose: z.string(),
+});
+
 export const OrganizationProfileSchema = z.object({
   legalName: z.string(),
   ein: z.string(),
   samUEI: z.string(),
+  nonprofitStatus: z.string(),
+  contactInfo: ContactInfoSchema,
+  geography: z.string(),
   mission: z.string(),
+  programAreas: z.array(z.string()),
+  populationsServed: z.array(z.string()),
+  fundingHistory: z.array(FundingHistoryEntrySchema),
+  partnerships: z.array(z.string()),
+  complianceFacts: z.array(z.string()),
   docTypes: z.array(z.string()),
   searchThemes: z.array(z.string()),
   agentBehavior: z.object({
@@ -478,11 +500,86 @@ export const WorkingContextSchema = z.object({
   recentDraftId: z.string().nullable().optional(),
 });
 
+// ============ THEME SCHEMAS ============
+
+export const InclusionExclusionRuleSchema = z.object({
+  id: z.string(),
+  field: z.enum(['tags', 'funder', 'title', 'category']),
+  operator: z.enum(['contains', 'equals', 'startsWith', 'regex']),
+  value: z.string(),
+  priority: z.number(),
+});
+
+export const MatchingPolicySchema = z.object({
+  matchThreshold: z.number().min(0).max(100),
+  autoDraftThreshold: z.number().min(0).max(100),
+  includeRules: z.array(InclusionExclusionRuleSchema),
+  excludeRules: z.array(InclusionExclusionRuleSchema),
+});
+
+export const KeywordClusterSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  keywords: z.array(z.string()),
+  weight: z.number().min(0).max(100),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const RegionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const PopulationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const StrategicPrioritySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  weight: z.number().min(0).max(100),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const ThemeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  keywordClusters: z.array(z.string()),
+  regions: z.array(z.string()),
+  populations: z.array(z.string()),
+  strategicPriorities: z.array(z.string()),
+  matchingPolicy: MatchingPolicySchema,
+  isActive: z.boolean(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const ThemesDataSchema = z.object({
+  keywordClusters: z.array(KeywordClusterSchema),
+  themes: z.array(ThemeSchema),
+  regions: z.array(RegionSchema),
+  populations: z.array(PopulationSchema),
+  strategicPriorities: z.array(StrategicPrioritySchema),
+});
+
 // Re-export types
 export type {
   Grant,
   GrantStatus,
   OrganizationProfile,
+  ContactInfo,
+  FundingHistoryEntry,
   ActivityEvent,
   FitScoreBreakdown,
   ChecklistItem,

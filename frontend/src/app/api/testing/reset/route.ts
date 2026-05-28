@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { resetPersistentStateForTests } from '../../../../../../shared/grant-ops-persistence';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST() {
-  await resetPersistentStateForTests();
+  const deps = getDependencies();
+  await deps.resetPersistentStateForTests();
   return NextResponse.json({ success: true });
 }

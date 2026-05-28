@@ -7,13 +7,39 @@ import type {
   RevisionRequest,
   SubmissionRecord,
 } from '../../../../shared/types';
-import {
-  createDefaultFunderSummary,
-  createDefaultGrantChecklist,
-  normalizeGrantDetailFields,
-} from '../../../../shared/seed-data';
 import { getDependencies } from './dependencies';
 import { canSubmit as canSubmitGrant } from './submission-service';
+
+/**
+ * Create a default funder summary when none is provided.
+ * Returns null to indicate no summary is available, rather than generating fake content.
+ */
+function createDefaultFunderSummary(_grant: Pick<Grant, 'funder' | 'title' | 'tags'>): string {
+  // Return empty string - no fake funder summary should be generated
+  return '';
+}
+
+/**
+ * Create a default grant checklist when none is provided.
+ * Returns an empty array - checklist items should be generated from real grant requirements.
+ */
+function createDefaultGrantChecklist(_grant: Pick<Grant, 'fit' | 'status' | 'draftContent' | 'funderSummary' | 'latestDraftVersion' | 'groundedDocumentCount' | 'sourceCount'>): Array<{ label: string; done: boolean; source: string }> {
+  // Return empty checklist - real checklist items should be generated from grant requirements
+  return [];
+}
+
+/**
+ * Normalize grant detail fields with safe defaults.
+ */
+function normalizeGrantDetailFields(grant: Grant): Grant {
+  const normalized: Grant = {
+    ...grant,
+    latestDraftVersion: grant.latestDraftVersion ?? (grant.draftContent ? 1 : 0),
+    groundedDocumentCount: grant.groundedDocumentCount ?? 0,
+    sourceCount: grant.sourceCount ?? 0,
+  };
+  return normalized;
+}
 
 function latestByVersion(drafts: DraftArtifact[]): DraftArtifact | null {
   if (drafts.length === 0) {

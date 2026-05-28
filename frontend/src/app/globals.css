@@ -47,6 +47,80 @@ body {
   background-attachment: fixed;
 }
 
+/* === ACCESSIBILITY: Skip-to-content === */
+.skip-to-content {
+  position: absolute;
+  top: -100px;
+  left: 16px;
+  background: var(--accent);
+  color: var(--bg);
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius);
+  z-index: 200;
+  transition: top 0.2s ease;
+  text-decoration: none;
+  font-family: var(--sans);
+}
+
+.skip-to-content:focus {
+  top: 12px;
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* === ACCESSIBILITY: Focus indicators === */
+*:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  outline-offset: 2px !important;
+  border-radius: 2px;
+}
+
+/* Override for interactive elements to use high-contrast outlines */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible,
+[role="button"]:focus-visible,
+[role="link"]:focus-visible,
+[role="tab"]:focus-visible,
+[role="menuitem"]:focus-visible,
+[role="option"]:focus-visible {
+  outline: 3px solid var(--accent) !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--accent) !important;
+}
+
+/* Soften focus for text inputs to avoid visual clash */
+input[type="text"]:focus-visible,
+input[type="url"]:focus-visible,
+input[type="email"]:focus-visible,
+textarea:focus-visible {
+  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent) !important;
+}
+
+/* Preserve custom focus styles for elements that define their own */
+.filter-bar input:focus-visible,
+.filter-bar select:focus-visible {
+  outline: 2px solid var(--accent) !important;
+  box-shadow: none !important;
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 /* === LAYOUT === */
 .app {
   display: grid;
@@ -1846,6 +1920,7 @@ body {
   justify-content: center;
   padding: 2rem;
   color: rgba(255, 255, 255, 0.6);
+  min-height: 100vh;
 }
 
 .app-loading::after {
@@ -1862,4 +1937,309 @@ body {
   to {
     transform: rotate(360deg);
   }
+}
+
+/* === HEALTH BANNER === */
+.health-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  font-size: 12px;
+  font-family: var(--mono);
+  border-bottom: 1px solid var(--border);
+  animation: bannerSlideIn 0.3s ease;
+}
+
+@keyframes bannerSlideIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.health-banner.degraded {
+  background: rgba(224, 137, 74, 0.08);
+  color: var(--warning);
+  border-bottom-color: rgba(224, 137, 74, 0.3);
+}
+
+.health-banner.offline {
+  background: rgba(198, 107, 90, 0.08);
+  color: var(--danger);
+  border-bottom-color: rgba(198, 107, 90, 0.3);
+}
+
+.health-banner.online {
+  background: rgba(138, 171, 111, 0.06);
+  color: var(--success);
+  border-bottom-color: rgba(138, 171, 111, 0.2);
+}
+
+.health-banner-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.health-banner-text {
+  flex: 1;
+}
+
+.health-banner-action {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  background: var(--surface);
+  border: 1px solid var(--border-light);
+  color: var(--text-dim);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+
+.health-banner-action:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+/* === STALENESS INDICATOR === */
+.staleness-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 10px;
+  background: rgba(224, 137, 74, 0.12);
+  color: var(--warning);
+  border: 1px solid rgba(224, 137, 74, 0.3);
+}
+
+.staleness-badge::before {
+  content: '\26A0';
+  font-size: 10px;
+}
+
+/* === EMPTY STATES === */
+.empty-state-guide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+  min-height: 320px;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-state-title {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 8px;
+}
+
+.empty-state-description {
+  font-size: 14px;
+  color: var(--text-dim);
+  max-width: 420px;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.empty-state-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+/* === SAFE QUIT DIALOG === */
+.safe-quit-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 10, 8, 0.7);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.safe-quit-dialog {
+  background: var(--bg-2);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 28px 32px;
+  max-width: 480px;
+  width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.safe-quit-dialog h3 {
+  font-family: var(--serif);
+  font-size: 18px;
+  font-weight: 500;
+  margin-bottom: 12px;
+  color: var(--text);
+}
+
+.safe-quit-dialog p {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  line-height: 1.6;
+}
+
+.safe-quit-dialog .active-jobs-list {
+  margin-bottom: 16px;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.safe-quit-dialog .active-job-item {
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 6px;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text-dim);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.safe-quit-dialog .quit-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* === GUIDED SETUP WIZARD === */
+.setup-wizard-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 10, 8, 0.8);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 150;
+}
+
+.setup-wizard {
+  background: var(--bg-2);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-lg);
+  padding: 36px 40px;
+  max-width: 560px;
+  width: 90vw;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.setup-wizard h2 {
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.setup-wizard .setup-subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 28px;
+}
+
+.setup-step {
+  margin-bottom: 24px;
+}
+
+.setup-step-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  margin-bottom: 8px;
+}
+
+.setup-step-title {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+  margin-bottom: 12px;
+}
+
+.setup-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.setup-step-body input,
+.setup-step-body textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: var(--radius);
+  font-family: var(--sans);
+  font-size: 13px;
+  width: 100%;
+}
+
+.setup-step-body input:focus,
+.setup-step-body textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.setup-step-body textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.setup-progress {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 28px;
+}
+
+.setup-progress-dot {
+  width: 24px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  transition: background 0.2s;
+}
+
+.setup-progress-dot.active {
+  background: var(--accent);
+}
+
+.setup-progress-dot.done {
+  background: var(--success);
+}
+
+.setup-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
 }

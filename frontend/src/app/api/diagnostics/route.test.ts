@@ -1,8 +1,16 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { invalidateCache, withTempDataDir } from '../../../../../shared/grant-ops-persistence';
 import type { AuditEvent, JobQueueItem } from '../../../../../shared/types';
 import * as repository from '../../../server/grant-ops/repository';
 import { GET } from './route';
+
+const { getHealthMock } = vi.hoisted(() => ({
+	getHealthMock: vi.fn(),
+}));
+
+vi.mock('@/server/grant-ops/health-service', () => ({
+	getHealth: getHealthMock,
+}));
 
 function createAuditEvent(id: string, eventType: string): AuditEvent {
   return {
@@ -36,6 +44,13 @@ describe('/api/diagnostics route', () => {
   beforeEach(async () => {
     tempDataDir = await withTempDataDir();
     invalidateCache();
+    getHealthMock.mockReset();
+    getHealthMock.mockResolvedValue({
+      storage: 'ok',
+      opencode: 'not-installed',
+      crawlerStatus: 'never-run',
+      documentIndexer: 'degraded',
+    });
     await repository.addAuditEvent(createAuditEvent('audit-failed', 'research_failed'));
     await repository.addAuditEvent(createAuditEvent('audit-ok', 'grant_matched'));
     await repository.addJobQueueItem(createJob('job-running', 'running'));
