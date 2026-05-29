@@ -22,6 +22,11 @@ vi.mock('../lib/grant-ops-client', () => ({
     tasks: { getAll: tasksGetAll },
     sources: { getAll: sourcesGetAll },
     research: { getRuns: researchGetRuns },
+    themes: {
+      get: vi.fn().mockResolvedValue({ keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] }),
+      update: vi.fn().mockResolvedValue({ keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] }),
+      rescore: vi.fn().mockResolvedValue({ success: true, rescored: 0 }),
+    },
   },
 }));
 

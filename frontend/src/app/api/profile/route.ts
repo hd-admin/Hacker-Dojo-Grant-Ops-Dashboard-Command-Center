@@ -54,6 +54,28 @@ export async function PUT(request: NextRequest) {
 
     await profileService.updateProfile(parsed.data as OrganizationProfile);
 
+    // Fire-and-forget: rescore grants when searchThemes change
+    if (Array.isArray(parsed.data.searchThemes)) {
+      void (async () => {
+        try {
+          const { loadGrants, saveGrants } = await import('../../../../shared/grant-ops-persistence');
+          const { scoreGrantByThemes } = await import('@/server/grant-ops/theme-service');
+          const grants = await loadGrants();
+          let changed = 0;
+          const updated = await Promise.all(
+            grants.map(async (grant) => {
+              const newScore = await scoreGrantByThemes(grant.tags);
+              if (newScore !== grant.fit) { changed++; return { ...grant, fit: newScore }; }
+              return grant;
+            }),
+          );
+          if (changed > 0) await saveGrants(updated);
+        } catch (err) {
+          console.error('[profile] Background rescore failed:', err);
+        }
+      })();
+    }
+
     // Return updated profile with meta
     const updated = await profileService.getProfile();
     const missingFields = profileService.getMissingRequiredFields(updated);

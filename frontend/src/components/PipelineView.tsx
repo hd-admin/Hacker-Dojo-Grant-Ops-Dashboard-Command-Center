@@ -202,6 +202,19 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
             <option value="Community">Community</option>
             <option value="Other">Other</option>
           </select>
+          <button
+            type="button"
+            className="btn"
+            onClick={() => {
+              const link = document.createElement('a');
+              link.href = '/api/grants/export?view=pipeline';
+              link.download = 'grant-ops-pipeline.csv';
+              link.click();
+            }}
+            aria-label="Export pipeline as CSV"
+          >
+            Export CSV
+          </button>
           <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('discovery')}>+ Add to pipeline</button>
         </div>
       </div>

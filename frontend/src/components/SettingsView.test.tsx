@@ -21,11 +21,22 @@ const {
   onRefreshAppState: vi.fn(),
 }));
 
+const {
+  themesGet,
+  themesUpdate,
+  themesRescore,
+} = vi.hoisted(() => ({
+  themesGet: vi.fn(),
+  themesUpdate: vi.fn(),
+  themesRescore: vi.fn(),
+}));
+
 vi.mock('../lib/grant-ops-client', () => ({
   client: {
     profile: { get: profileGet, update: profileUpdate },
     documents: { getAll: documentsGetAll, create: documentsCreate },
     opencodeSettings: { get: opencodeGet, update: opencodeUpdate },
+    themes: { get: themesGet, update: themesUpdate, rescore: themesRescore },
   },
 }));
 
@@ -103,6 +114,9 @@ beforeEach(() => {
   opencodeGet.mockReset();
   opencodeUpdate.mockReset();
   onRefreshAppState.mockReset();
+  themesGet.mockReset();
+  themesUpdate.mockReset();
+  themesRescore.mockReset();
 
   vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
     const url = String(input);
@@ -157,6 +171,9 @@ beforeEach(() => {
       'Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
   }));
   opencodeUpdate.mockResolvedValue({ success: true });
+  themesGet.mockResolvedValue({ keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] });
+  themesUpdate.mockResolvedValue({ keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] });
+  themesRescore.mockResolvedValue({ success: true, rescored: 0 });
 
   vi.spyOn(document, 'createElement').mockImplementation(((tagName: string) => {
     if (tagName === 'input') {
@@ -270,6 +287,20 @@ describe('SettingsView', () => {
       (btn) => btn.textContent?.includes('Save'),
     );
     expect(hasSaveButton).toBe(true);
+  });
+
+  it('renders Search Themes & Matching Policy section with threshold controls and Recalculate scores button', async () => {
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('Search Themes') === true);
+
+    expect(container.textContent).toContain('Search Themes');
+    expect(container.textContent).toContain('Matching Policy');
+    expect(container.querySelector('#match-threshold')).not.toBeNull();
+    expect(container.querySelector('#autodraft-threshold')).not.toBeNull();
+    const rescoreBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.includes('Recalculate scores'),
+    );
+    expect(rescoreBtn).not.toBeNull();
   });
 
   it('requires confirmation before starting a backup restore', async () => {

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
-import type { BackupFreshnessStatus, DocumentMetadata, HealthCheckResult, OpencodeSettings, OrganizationProfile, FailureHistoryEntry } from '../../../shared/types';
+import type { BackupFreshnessStatus, DocumentMetadata, FailureHistoryEntry, HealthCheckResult, OpencodeSettings, OrganizationProfile, Theme, ThemesData } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
 
 // Guidance messages keyed by opencode health status
@@ -83,16 +83,26 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const [testConnectionLoading, setTestConnectionLoading] = useState(false);
   const [testConnectionResult, setTestConnectionResult] = useState<'success' | 'failed' | null>(null);
   const [opencodeSaveSuccess, setOpencodeSaveSuccess] = useState(false);
+  const [themesData, setThemesData] = useState<ThemesData | null>(null);
+  const [matchThreshold, setMatchThreshold] = useState(70);
+  const [autoDraftThreshold, setAutoDraftThreshold] = useState(85);
+  const [newClusterName, setNewClusterName] = useState('');
+  const [newClusterKeywords, setNewClusterKeywords] = useState('');
+  const [newClusterWeight, setNewClusterWeight] = useState(80);
+  const [rescoreLoading, setRescoreLoading] = useState(false);
+  const [rescoreResult, setRescoreResult] = useState<string | null>(null);
+  const [themesSaving, setThemesSaving] = useState(false);
 
   useEffect(() => {
     async function load() {
       try {
-        const [profileData, docsData, opencodeData, healthData, freshnessData] = await Promise.all([
+        const [profileData, docsData, opencodeData, healthData, freshnessData, themesResult] = await Promise.all([
           client.profile.get().catch(() => null),
           client.documents.getAll().catch(() => []),
           client.opencodeSettings.get().catch(() => null),
           fetch('/api/health').then((response) => response.json()).catch(() => null),
           fetch('/api/backup/freshness').then((response) => response.json()).catch(() => null),
+          client.themes.get().catch(() => null),
         ]);
         setProfile(profileData);
         setEditForm(profileData ?? {});
@@ -103,6 +113,14 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
           setLastHandshakeAt(new Date().toISOString());
         }
         setFreshness(freshnessData);
+        if (themesResult) {
+          setThemesData(themesResult);
+          const activeTheme = themesResult.themes?.find((t: Theme) => t.isActive);
+          if (activeTheme?.matchingPolicy) {
+            setMatchThreshold(activeTheme.matchingPolicy.matchThreshold);
+            setAutoDraftThreshold(activeTheme.matchingPolicy.autoDraftThreshold);
+          }
+        }
       } finally {
         setLoading(false);
       }
@@ -244,6 +262,54 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
     setOpencodeSaveSuccess(true);
     setTimeout(() => setOpencodeSaveSuccess(false), 3000);
     await onRefreshAppState?.();
+  };
+
+  const handleSaveMatchingPolicy = async () => {
+    setThemesSaving(true);
+    try {
+      const current = await client.themes.get();
+      const activeTheme = current.themes.find((t) => t.isActive);
+      const updatedData: ThemesData = activeTheme
+        ? { ...current, themes: current.themes.map((t) => t.isActive ? { ...t, matchingPolicy: { ...t.matchingPolicy, matchThreshold, autoDraftThreshold } } : t) }
+        : { ...current, themes: [{ id: 'theme-default', name: 'Default Theme', keywordClusters: [], regions: [], populations: [], strategicPriorities: [], matchingPolicy: { matchThreshold, autoDraftThreshold, includeRules: [], excludeRules: [] }, isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }] };
+      const saved = await client.themes.update(updatedData);
+      setThemesData(saved);
+    } catch (err) {
+      console.error('Error saving matching policy:', err);
+    } finally {
+      setThemesSaving(false);
+    }
+  };
+
+  const handleAddKeywordCluster = async () => {
+    if (!newClusterName.trim() || !newClusterKeywords.trim()) return;
+    const keywords = newClusterKeywords.split(',').map((k) => k.trim()).filter(Boolean);
+    const newCluster = { id: `kc-${Date.now()}`, name: newClusterName.trim(), keywords, weight: newClusterWeight, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    const current: ThemesData = themesData ?? { keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] };
+    const saved = await client.themes.update({ ...current, keywordClusters: [...current.keywordClusters, newCluster] });
+    setThemesData(saved);
+    setNewClusterName('');
+    setNewClusterKeywords('');
+    setNewClusterWeight(80);
+  };
+
+  const handleRemoveKeywordCluster = async (clusterId: string) => {
+    const current: ThemesData = themesData ?? { keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] };
+    const saved = await client.themes.update({ ...current, keywordClusters: current.keywordClusters.filter((c) => c.id !== clusterId) });
+    setThemesData(saved);
+  };
+
+  const handleRescore = async () => {
+    setRescoreLoading(true);
+    setRescoreResult(null);
+    try {
+      const result = await client.themes.rescore();
+      setRescoreResult(`Rescored ${result.rescored} grant(s).`);
+    } catch {
+      setRescoreResult('Rescore failed.');
+    } finally {
+      setRescoreLoading(false);
+    }
   };
 
   const handleUploadDocument = () => {
@@ -458,6 +524,49 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 <div className="setting-row"><span className="setting-label">Voice &amp; Tone</span><span className="setting-value">{profile.agentBehavior?.voiceAndTone || '—'}</span></div>
               </div>
             )}
+          </div>
+        </section>
+
+        <section className="setting-card" data-testid="themes-matching-card">
+          <div className="setting-card-header"><div className="setting-card-title">Search Themes &amp; Matching Policy</div></div>
+          <div className="setting-card-body">
+            <fieldset className="settings-fieldset">
+              <legend className="settings-legend">Matching Thresholds</legend>
+              <div className="settings-form-grid">
+                <div>
+                  <label className="setting-label" htmlFor="match-threshold">Match Threshold (0-100)</label>
+                  <input id="match-threshold" type="number" min={0} max={100} className="form-input" value={matchThreshold} onChange={(e) => setMatchThreshold(Number(e.target.value))} />
+                </div>
+                <div>
+                  <label className="setting-label" htmlFor="autodraft-threshold">Auto-Draft Threshold (0-100)</label>
+                  <input id="autodraft-threshold" type="number" min={0} max={100} className="form-input" value={autoDraftThreshold} onChange={(e) => setAutoDraftThreshold(Number(e.target.value))} />
+                </div>
+              </div>
+              <div className="settings-form-row">
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => void handleSaveMatchingPolicy()} disabled={themesSaving}>{themesSaving ? 'Saving...' : 'Save thresholds'}</button>
+              </div>
+            </fieldset>
+            <fieldset className="settings-fieldset">
+              <legend className="settings-legend">Keyword Clusters</legend>
+              {(themesData?.keywordClusters ?? []).length === 0 && <div className="empty-state">No keyword clusters. Add one to enable weighted tag scoring.</div>}
+              {(themesData?.keywordClusters ?? []).map((cluster) => (
+                <div key={cluster.id} className="setting-row">
+                  <span className="setting-label">{cluster.name}</span>
+                  <span className="setting-value">{cluster.keywords.join(', ')} &middot; weight {cluster.weight}</span>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => void handleRemoveKeywordCluster(cluster.id)} aria-label={`Remove cluster ${cluster.name}`}>Remove</button>
+                </div>
+              ))}
+              <div className="settings-form-grid">
+                <div><label className="setting-label" htmlFor="new-cluster-name">Cluster Name</label><input id="new-cluster-name" className="form-input" value={newClusterName} onChange={(e) => setNewClusterName(e.target.value)} placeholder="e.g., STEM Education" /></div>
+                <div><label className="setting-label" htmlFor="new-cluster-keywords">Keywords (comma-separated)</label><input id="new-cluster-keywords" className="form-input" value={newClusterKeywords} onChange={(e) => setNewClusterKeywords(e.target.value)} placeholder="STEM, science, technology" /></div>
+                <div><label className="setting-label" htmlFor="new-cluster-weight">Weight (0-100)</label><input id="new-cluster-weight" type="number" min={0} max={100} className="form-input" value={newClusterWeight} onChange={(e) => setNewClusterWeight(Number(e.target.value))} /></div>
+              </div>
+              <button type="button" className="btn btn-primary btn-sm" onClick={() => void handleAddKeywordCluster()} disabled={!newClusterName.trim() || !newClusterKeywords.trim()}>Add cluster</button>
+            </fieldset>
+            <div className="settings-form-row">
+              <button type="button" className="btn" onClick={() => void handleRescore()} disabled={rescoreLoading} aria-label="Recalculate fit scores for all grants">{rescoreLoading ? 'Rescoring...' : 'Recalculate scores'}</button>
+              {rescoreResult && <span style={{ color: 'var(--success)', fontSize: '12px', marginLeft: '8px' }}>{rescoreResult}</span>}
+            </div>
           </div>
         </section>
 

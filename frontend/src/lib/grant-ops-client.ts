@@ -27,6 +27,7 @@ import type {
 	SubmissionRecord,
 	Task,
 	TaskStatus,
+	ThemesData,
 } from "../../../shared/types";
 
 // Base fetch wrapper with error handling
@@ -477,6 +478,21 @@ export const duplicatesApi = {
 		),
 };
 
+// ============ Themes API ============
+
+export const themesApi = {
+	get: () => apiFetch<ThemesData>('/api/themes'),
+	update: (data: Partial<ThemesData>) =>
+		apiFetch<ThemesData>('/api/themes', {
+			method: 'PUT',
+			body: JSON.stringify(data),
+		}),
+	rescore: () =>
+		apiFetch<{ success: boolean; rescored: number }>('/api/themes/rescore', {
+			method: 'POST',
+		}),
+};
+
 // ============ Grant Ops Client ============
 
 /**
@@ -501,6 +517,7 @@ export function createGrantOpsClient() {
 		tasks: tasksApi,
 		documents: documentsApi,
 		duplicates: duplicatesApi,
+		themes: themesApi,
 	};
 }
 
