@@ -101,12 +101,14 @@ async function performHandshake(
 	const startTime = deps.clock.now().getTime();
 
 	try {
-		const { execFileSync } = await import('node:child_process');
-		const output = execFileSync(binaryPath, ['run', '--help'], {
+		const { spawnSync } = await import('node:child_process');
+		const result = spawnSync(binaryPath, ['run', '--help'], {
 			encoding: 'utf8',
 			timeout: HANDSHAKE_TIMEOUT_MS,
 			maxBuffer: 1024 * 1024,
 		});
+		// opencode writes help text to stderr; combine both streams
+		const output = [result.stdout, result.stderr].filter(Boolean).join('\n');
 
 		const responseTimeMs = deps.clock.now().getTime() - startTime;
 
