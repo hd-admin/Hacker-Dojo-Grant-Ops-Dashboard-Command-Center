@@ -97,12 +97,6 @@ export async function generateDraft(
 	const settings = await deps.repository.getOpencodeSettings();
 	const providerType = options._providerType || "cli";
 
-	if (providerType === "cli" && !settings?.isConfigured) {
-		throw new Error(
-			"Opencode is not configured. Please set up Opencode settings in the application before generating drafts.",
-		);
-	}
-
 	const adapter = deps.createOpencodeAdapter(
 		settings ?? {
 			binaryPath: "",

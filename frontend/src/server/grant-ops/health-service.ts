@@ -7,6 +7,7 @@
 
 import type { FailureHistoryEntry, FailureRootCauseCategory, HealthCheckResult } from '../../../../shared/types';
 import type { Dependencies } from './dependencies';
+import { resolveOpencodePath } from './opencode-client';
 
 const MIN_OPENCODE_VERSION = '0.1.0';
 const CRAWL_STALENESS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -156,37 +157,8 @@ async function performHandshake(
 }
 
 /**
- * Resolve the opencode binary path, falling back to PATH search when
- * the configured binaryPath is empty.
- *
- * On Unix: uses `which opencode` to locate the binary.
- * On Windows: uses `where opencode` to locate the binary.
- * Falls back to returning null when opencode cannot be found on PATH.
+ * Check opencode availability, version compatibility, and perform a handshake.
  */
-export async function resolveOpencodePath(configuredPath: string): Promise<string | null> {
-	if (configuredPath) {
-		return configuredPath;
-	}
-
-	const { execFileSync } = await import('node:child_process');
-	try {
-		const isWindows = process.platform === 'win32';
-		const locateCmd = isWindows ? 'where' : 'which';
-		const output = execFileSync(locateCmd, ['opencode'], {
-			encoding: 'utf8',
-			timeout: 5000,
-		});
-		const firstLine = output.trim().split(/\r?\n/)[0]?.trim();
-		if (firstLine && firstLine.length > 0) {
-			return firstLine;
-		}
-	} catch {
-		// `which`/`where` failed — opencode not on PATH
-	}
-
-	return null;
-}
-
 export async function checkOpencode(deps: Dependencies): Promise<
 	Pick<HealthCheckResult, 'opencode' | 'opencodeError' | 'opencodeVersion' | 'handshakeSuccess' | 'handshakeResponseTimeMs' | 'handshakeError' | 'capabilities'>
 > {

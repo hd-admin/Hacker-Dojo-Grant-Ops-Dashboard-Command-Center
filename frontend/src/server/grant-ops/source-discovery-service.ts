@@ -103,14 +103,34 @@ export async function discoverSourcesFromPrompt(
   deps: Dependencies = getDependencies(),
 ): Promise<DiscoverSourcesResult> {
   const settings = await deps.repository.getOpencodeSettings();
-  if (!settings?.isConfigured || !settings.binaryPath?.trim()) {
+
+  // Resolve binary path: configured path first, then PATH detection fallback
+  let binaryPath = settings?.binaryPath?.trim() || '';
+  if (!binaryPath) {
+    try {
+      const isWindows = process.platform === 'win32';
+      const locateCmd = isWindows ? 'where' : 'which';
+      const output = execFileSync(locateCmd, ['opencode'], {
+        encoding: 'utf8',
+        timeout: 5000,
+      });
+      const firstLine = output.trim().split(/\r?\n/)[0]?.trim();
+      if (firstLine && firstLine.length > 0) {
+        binaryPath = firstLine;
+      }
+    } catch {
+      // opencode not on PATH
+    }
+  }
+
+  if (!binaryPath) {
     return { suggestions: [], unavailable: true };
   }
 
   try {
-    const output = execFileSync(settings.binaryPath, ['run', '--format', 'json', buildPrompt(prompt)], {
-      cwd: settings.workingDirectory || process.cwd(),
-      timeout: settings.timeoutMs || 60000,
+    const output = execFileSync(binaryPath, ['run', '--format', 'json', buildPrompt(prompt)], {
+      cwd: settings?.workingDirectory || process.cwd(),
+      timeout: settings?.timeoutMs || 60000,
       encoding: 'utf8',
     });
 

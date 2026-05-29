@@ -112,13 +112,6 @@ export async function runResearch(
 		const settings = await deps.repository.getOpencodeSettings();
 		const providerType = options._providerType || "cli";
 
-		// Only require settings for CLI provider (fake provider doesn't need them)
-		if (providerType === "cli" && !settings?.isConfigured) {
-			throw new Error(
-				"Opencode is not configured. Please set up Opencode settings in the application before running research.",
-			);
-		}
-
 		// Create Opencode adapter using DI
 		const defaultSettings: OpencodeSettings = {
 			binaryPath: "",

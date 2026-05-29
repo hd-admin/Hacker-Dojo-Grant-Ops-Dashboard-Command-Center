@@ -12,6 +12,61 @@
 import { spawn } from "node:child_process";
 import type { OpencodeSettings } from "../../../../shared/types";
 
+/**
+ * Resolve the opencode binary path, falling back to PATH search when
+ * the configured binaryPath is empty.
+ *
+ * On Unix: uses `which opencode` to locate the binary.
+ * On Windows: uses `where opencode` to locate the binary.
+ * Falls back to returning null when opencode cannot be found on PATH.
+ */
+export async function resolveOpencodePath(configuredPath: string): Promise<string | null> {
+	if (configuredPath) {
+		return configuredPath;
+	}
+
+	const { execFileSync } = await import('node:child_process');
+	try {
+		const isWindows = process.platform === 'win32';
+		const locateCmd = isWindows ? 'where' : 'which';
+		const output = execFileSync(locateCmd, ['opencode'], {
+			encoding: 'utf8',
+			timeout: 5000,
+		});
+		const firstLine = output.trim().split(/\r?\n/)[0]?.trim();
+		if (firstLine && firstLine.length > 0) {
+			return firstLine;
+		}
+	} catch {
+		// `which`/`where` failed — opencode not on PATH
+	}
+
+	return null;
+}
+
+// Module-level cached PATH resolution for synchronous isConfigured() check.
+// Uses the same platform-aware execFileSync + which/where detection as resolveOpencodePath.
+let cachedResolvedPath: string | null = null;
+
+function getCachedOpencodePath(): string | null {
+	if (cachedResolvedPath === null) {
+		const { execFileSync } = require('node:child_process');
+		try {
+			const isWindows = process.platform === 'win32';
+			const locateCmd = isWindows ? 'where' : 'which';
+			const output = execFileSync(locateCmd, ['opencode'], {
+				encoding: 'utf8',
+				timeout: 5000,
+			});
+			const firstLine = output.trim().split(/\r?\n/)[0]?.trim();
+			cachedResolvedPath = firstLine && firstLine.length > 0 ? firstLine : null;
+		} catch {
+			cachedResolvedPath = null;
+		}
+	}
+	return cachedResolvedPath;
+}
+
 export interface OpencodeRequest {
 	prompt: string;
 	systemPrompt?: string;
@@ -341,7 +396,7 @@ class CliOpencodeProvider implements OpencodeAdapter {
 
 	private async runCommand(args: string[]): Promise<OpencodeResponse> {
 		return new Promise((resolve) => {
-			const binaryPath = this.settings.binaryPath || "opencode";
+			const binaryPath = this.settings.binaryPath || getCachedOpencodePath() || "opencode";
 			const timeoutMs = this.settings.timeoutMs || 60000;
 
 			const proc = spawn(binaryPath, args, {
@@ -515,7 +570,9 @@ ${request.missionStatement}
 	}
 
 	isConfigured(): boolean {
-		return this.settings.isConfigured && !!this.settings.binaryPath;
+		if (!this.settings.isConfigured) return false;
+		if (this.settings.binaryPath) return true;
+		return getCachedOpencodePath() !== null;
 	}
 }
 
