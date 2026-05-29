@@ -844,6 +844,7 @@ export default function GrantDrawer({
 										<button
 											type="button"
 											className="btn btn-primary"
+											title="Generate an AI-powered grant draft"
 											onClick={handleGenerateDraft}
 										>
 											Generate draft
@@ -853,6 +854,7 @@ export default function GrantDrawer({
 										<button
 											type="button"
 											className="btn btn-primary"
+											title="Approve the draft and lock it from further edits"
 											onClick={handleApproveAndLock}
 										>
 											Approve &amp; lock
@@ -862,6 +864,7 @@ export default function GrantDrawer({
 										<button
 											type="button"
 											className="btn"
+											title="Send the draft back for revision"
 											onClick={handleRequestRevision}
 										>
 											Request revision
@@ -871,6 +874,7 @@ export default function GrantDrawer({
 										<button
 											type="button"
 											className="btn"
+											title="Submit the approved grant application"
 											onClick={() => setShowSubmitForm(true)}
 										>
 											Submit

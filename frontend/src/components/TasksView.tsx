@@ -198,8 +198,7 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp, onNavig
         <div className="empty-state-guide" data-testid="tasks-empty-state">
           <div className="empty-state-title">No tasks yet</div>
           <div className="empty-state-description">
-            Tasks are automatically generated when grants are added to your pipeline.
-            Discover and add grants to start tracking your requirements.
+            Tasks appear here when you add grants to your pipeline.
           </div>
           <div className="empty-state-actions">
             <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('pipeline')} aria-label="Go to Pipeline">

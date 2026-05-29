@@ -91,6 +91,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const [newClusterWeight, setNewClusterWeight] = useState(80);
   const [rescoreLoading, setRescoreLoading] = useState(false);
   const [rescoreResult, setRescoreResult] = useState<string | null>(null);
+  const [showOpencodeConfig, setShowOpencodeConfig] = useState(false);
   const [themesSaving, setThemesSaving] = useState(false);
 
   useEffect(() => {
@@ -107,7 +108,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
         setProfile(profileData);
         setEditForm(profileData ?? {});
         setDocuments(docsData);
-        setOpencodeForm(opencodeData ?? { binaryPath: '', workingDirectory: '', timeoutMs: 60000, isConfigured: false });
+        setOpencodeForm(opencodeData ?? { binaryPath: '', workingDirectory: '', timeoutMs: 60000, profile: '', isConfigured: false });
         setHealth(healthData);
         if (healthData?.handshakeSuccess) {
           setLastHandshakeAt(new Date().toISOString());
@@ -613,7 +614,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
 
         <section className="setting-card" data-testid="opencode-status-card">
           <div className="setting-card-header">
-            <div className="setting-card-title">Opencode Status</div>
+            <div className="setting-card-title">Opencode Agent</div>
             <div className="settings-status-header-row">
               <span
                 className="status-dot"
@@ -622,6 +623,9 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
               <span className="settings-status-label">
                 {health?.opencode ? getStatusLabelText(health.opencode) : 'Unknown'}
               </span>
+              {opencodeForm.isConfigured && (
+                <span className="settings-configured-badge">Configured</span>
+              )}
             </div>
           </div>
           <div className="setting-card-body">
@@ -719,6 +723,12 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
             )}
 
             {/* Configuration section */}
+            <div className="settings-button-row" style={{ marginTop: '10px', marginBottom: '10px' }}>
+              <button type="button" className="btn btn-sm" onClick={() => setShowOpencodeConfig((v) => !v)}>
+                Configure
+              </button>
+            </div>
+            {showOpencodeConfig && (
             <div className="settings-connection-config">
               <div className="setting-label settings-connection-config-label">Connection Configuration</div>
 
@@ -759,11 +769,23 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                     onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, timeoutMs: Number(e.target.value) })); setOpencodeSaveSuccess(false); }}
                   />
                 </div>
+                <div>
+                  <label htmlFor="opencode-profile" className="settings-field-label-mono">
+                    Profile
+                  </label>
+                  <input
+                    id="opencode-profile"
+                    className="settings-input-full"
+                    value={opencodeForm.profile ?? ''}
+                    onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, profile: e.target.value })); setOpencodeSaveSuccess(false); }}
+                    placeholder="default"
+                  />
+                </div>
               </div>
 
               <div className="settings-button-row">
                 <button type="button" className="btn btn-primary btn-sm" onClick={() => void handleSaveOpencode()}>
-                  Save Configuration
+                  Save
                 </button>
                 <button
                   type="button"
@@ -804,6 +826,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 </div>
               )}
             </div>
+            )}
           </div>
         </section>
 

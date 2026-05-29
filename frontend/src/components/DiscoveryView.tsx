@@ -353,6 +353,15 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
         ))}
       </div>
 
+      {filtered.length === 0 && grants.length > 0 && (
+        <div className="empty-state-guide" data-testid="discovery-filter-empty-state">
+          <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F50D)}</div>
+          <div className="empty-state-title">No grants match your current filters</div>
+          <div className="empty-state-description">
+            Try broadening your search or adding more sources.
+          </div>
+        </div>
+      )}
       <div className="grants-table">
         <div className="grants-row header">
           <div>Grant</div>

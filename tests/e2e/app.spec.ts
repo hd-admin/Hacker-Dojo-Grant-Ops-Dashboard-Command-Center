@@ -116,7 +116,7 @@ test.describe("Grant Operations Center smoke", () => {
 
 		await page.click('[data-view="settings"]');
 		await expect(page.locator(".upload-item")).toBeVisible();
-		await expect(page.locator(".setting-card")).toHaveCount(5);
+		await expect(page.locator(".setting-card")).toHaveCount(9);
 	});
 
 	test("grant updates persist through the API", async ({ request }) => {

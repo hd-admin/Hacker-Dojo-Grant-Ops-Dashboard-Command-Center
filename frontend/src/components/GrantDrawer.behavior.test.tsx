@@ -29,6 +29,7 @@ vi.mock('../lib/grant-ops-client', () => ({
     submit: { create: createSubmission },
     revisions: { create: createRevision },
     jobs: { get: vi.fn() },
+    followUps: { getFiltered: vi.fn().mockResolvedValue([]) },
   },
 }));
 

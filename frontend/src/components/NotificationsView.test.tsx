@@ -120,7 +120,7 @@ describe('NotificationsView', () => {
     it('renders empty state when notifications array is empty', async () => {
       root.render(React.createElement(NotificationsView, { notifications: [] }));
       await new Promise((r) => setTimeout(r, 0));
-      expect(container.querySelector('.empty-state')).not.toBeNull();
+      expect(container.querySelector('[data-testid="notifications-empty-state"]')).not.toBeNull();
     });
 
     it('renders all notification items', async () => {

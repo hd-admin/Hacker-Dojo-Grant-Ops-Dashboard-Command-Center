@@ -48,8 +48,11 @@ export default function NotificationsView({ notifications: notificationsProp }: 
             <div className="header-sub">No notifications</div>
           </div>
         </div>
-        <div className="empty-state">
-          <p>No notifications yet.</p>
+        <div className="empty-state-guide" data-testid="notifications-empty-state">
+          <div className="empty-state-title">No notifications yet</div>
+          <div className="empty-state-description">
+            Activity appears here as grants are discovered, drafted, and submitted.
+          </div>
         </div>
       </>
     );
