@@ -621,8 +621,8 @@ export default function AppShell() {
             </span>
             <span className="health-banner-text">
               {healthTier === 'partially_degraded'
-                ? 'AI features are currently unavailable. Local operations are unaffected.'
-                : 'Storage is unavailable. Some features may be limited.'}
+                ? 'AI drafting and research are unavailable. You can still browse grants, sources, and tasks.'
+                : 'Storage is unavailable. Grant data, sources, and tasks cannot be saved or loaded.'}
             </span>
             <button
               type="button"

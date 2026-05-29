@@ -236,6 +236,42 @@ describe('SettingsView', () => {
     expect(container.textContent).toContain('Opencode Status');
   });
 
+  it('renders "Edit Themes & Threshold" button in Theme Configuration card', async () => {
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('Theme Configuration') === true);
+
+    const editBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.includes('Edit Themes') && btn.textContent?.includes('Threshold'),
+    );
+    expect(editBtn).not.toBeNull();
+    expect(editBtn?.textContent).toContain('Edit Themes');
+    expect(editBtn?.textContent).toContain('Threshold');
+  });
+
+  it('clicking "Edit Themes & Threshold" button transitions to editing mode', async () => {
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('Theme Configuration') === true);
+
+    const editBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.includes('Edit Themes') && btn.textContent?.includes('Threshold'),
+    );
+    expect(editBtn).not.toBeNull();
+    editBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    // After clicking, the form should now be in editing mode with a Save Profile button
+    await waitFor(() =>
+      container.textContent?.includes('Save Profile') === true ||
+      container.querySelector('input[name="legalName"]') !== null ||
+      Array.from(container.querySelectorAll('button')).some((btn) => btn.textContent?.includes('Save'))
+    );
+
+    // Verify editing mode is active by checking for save-related elements
+    const hasSaveButton = Array.from(container.querySelectorAll('button')).some(
+      (btn) => btn.textContent?.includes('Save'),
+    );
+    expect(hasSaveButton).toBe(true);
+  });
+
   it('requires confirmation before starting a backup restore', async () => {
     const fetchMock = vi.mocked(global.fetch as unknown as typeof fetch);
     root.render(React.createElement(SettingsView, { onRefreshAppState }));

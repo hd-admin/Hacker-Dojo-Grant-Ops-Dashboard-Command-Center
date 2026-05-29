@@ -57,8 +57,8 @@ describe("ResearchService", () => {
 	});
 
 	describe("runResearch with zero sources", () => {
-		it("returns NO_SOURCES_CONFIGURED error when crawl is triggered with no active sources", async () => {
-			// No sources added — should throw NoSourcesConfiguredError
+		it("registers ProPublica as a default source and proceeds without NoSourcesConfiguredError", async () => {
+			// No sources manually added — ProPublica is registered automatically by runResearch
 			let caughtError: Error | null = null;
 			try {
 				await researchService.runResearch(mockProfile, {
@@ -68,11 +68,26 @@ describe("ResearchService", () => {
 				caughtError = error as Error;
 			}
 
-			expect(caughtError).toBeInstanceOf(NoSourcesConfiguredError);
-			expect((caughtError as NoSourcesConfiguredError).code).toBe('NO_SOURCES_CONFIGURED');
-			expect(caughtError?.message).toBe(
-				'No sources configured. Add funding sources in Sources before running discovery.'
-			);
+			// ProPublica is always registered, so NoSourcesConfiguredError is never thrown
+			expect(caughtError).not.toBeInstanceOf(NoSourcesConfiguredError);
+
+			// ProPublica should now be registered in the repository
+			const sources = await repository.getSources();
+			expect(sources.some(s => s.name === 'ProPublica Nonprofit Explorer')).toBe(true);
+		});
+	});
+
+	describe("ProPublica default source registration", () => {
+		it("registers ProPublica source in repository before getActiveSources() is called", async () => {
+			// Start with empty sources — ProPublica should be registered automatically
+			try {
+				await researchService.runResearch(mockProfile, { _providerType: "fake" });
+			} catch {
+				// Ignore errors — what matters is ProPublica gets registered before source query
+			}
+			// Whether research succeeded or failed, ProPublica should be in the repository
+			const sources = await repository.getSources();
+			expect(sources.some(s => s.name === 'ProPublica Nonprofit Explorer')).toBe(true);
 		});
 	});
 
@@ -389,7 +404,8 @@ describe("ResearchService", () => {
 			const researchedGrant = grants.find((grant) => grant.funder === 'Mock Foundation');
 			expect(researchedGrant?.funderSummary).toContain('Mock Foundation');
 			expect(researchedGrant?.fitBreakdown).toBeDefined();
-			expect(researchedGrant?.sourceCount).toBe(1);
+			// sourceCount is 2 because ProPublica is also registered as a default source
+			expect(researchedGrant?.sourceCount).toBe(2);
 			expect(researchedGrant?.groundedDocumentCount).toBe(0);
 			expect(researchedGrant?.latestDraftVersion).toBe(0);
 			expect(researchedGrant?.checklist?.length).toBeGreaterThan(0);
@@ -509,8 +525,9 @@ describe('auto-draft triggering', () => {
 		const allianceGrant = grants.find((g) => g.id === 'multi-grant-002');
 		expect(mockFoundationGrant?.researchRationale).toBe('Multiple aligned grants');
 		expect(allianceGrant?.status).toBe('matched');
-		expect(mockFoundationGrant?.sourceCount).toBe(1);
-		expect(allianceGrant?.sourceCount).toBe(1);
+		// sourceCount is 2: ProPublica is also registered as a default source
+		expect(mockFoundationGrant?.sourceCount).toBe(2);
+		expect(allianceGrant?.sourceCount).toBe(2);
 	});
 
 	it('research creates matched grants for both high-fit and low-fit results', async () => {
@@ -555,7 +572,8 @@ describe('auto-draft triggering', () => {
 		const grantsAfterSecond = await repository.getGrants();
 		const grantAfterSecond = grantsAfterSecond.find((g) => g.id === 'mock-grant-001');
 		expect(grantAfterSecond?.status).toBe('matched');
-		expect(grantAfterSecond?.sourceCount).toBe(2);
+		// sourceCount is 4: ProPublica + Test Source each run twice (2 runs × 2 sources)
+		expect(grantAfterSecond?.sourceCount).toBe(4);
 	});
 });
 

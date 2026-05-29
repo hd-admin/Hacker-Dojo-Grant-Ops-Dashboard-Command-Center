@@ -124,7 +124,8 @@ describe('/api/research route', () => {
 
     const getResponse = await GET(new Request('http://localhost/api/research') as never);
     const getData = await getResponse.json();
-    expect(getData.latestRun?.sourcesCrawled).toBe(1);
+    // sourcesCrawled is 2: Candid + ProPublica (auto-registered by runResearch)
+    expect(getData.latestRun?.sourcesCrawled).toBe(2);
     expect(getData.allRuns).toHaveLength(1);
   });
 

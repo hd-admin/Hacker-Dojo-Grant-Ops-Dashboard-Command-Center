@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { act } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { DuplicateCandidate, Grant } from '../../../shared/types';
@@ -163,8 +164,10 @@ describe('DuplicatesView', () => {
   });
 
   it('renders the header with pending count', async () => {
-    root.render(React.createElement(DuplicatesView, { onGrantSelect: vi.fn() }));
-    await new Promise((r) => setTimeout(r, 100));
+    await act(async () => {
+      root.render(React.createElement(DuplicatesView, { onGrantSelect: vi.fn() }));
+      await new Promise((r) => setTimeout(r, 100));
+    });
 
     const header = container.querySelector('[data-testid="duplicates-view-header"]');
     expect(header).not.toBeNull();

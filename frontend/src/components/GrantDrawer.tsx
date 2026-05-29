@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import type {
 	AuditEvent,
+	DocumentMetadata,
 	FollowUp,
 	GrantDetailResponse,
 	GrantStatus,
@@ -12,6 +13,7 @@ import type {
 import { client } from "../lib/grant-ops-client";
 import { AlertTriangle } from "lucide-react";
 import GroundingReview from "./GroundingReview";
+import SubmissionReadiness from "./SubmissionReadiness";
 
 interface GrantDrawerProps {
 	grantId: string | null;
@@ -172,6 +174,9 @@ export default function GrantDrawer({
 	const [showOutcomeForm, setShowOutcomeForm] = useState(false);
 	const [outcomeNotes, setOutcomeNotes] = useState('');
 
+	// Submission documents for SubmissionReadiness
+	const [submissionDocuments, setSubmissionDocuments] = useState<DocumentMetadata[]>([]);
+
 	// Grounding approval state
 	const [showGroundingWarning, setShowGroundingWarning] = useState(false);
 	const [groundingOverrideConfirmed, setGroundingOverrideConfirmed] = useState(false);
@@ -211,6 +216,18 @@ export default function GrantDrawer({
 		} finally {
 			setLoading(false);
 		}
+	}, [grantId]);
+
+	// Load submission documents independently of detail loading
+	useEffect(() => {
+		if (!grantId) {
+			setSubmissionDocuments([]);
+			return;
+		}
+		void Promise.resolve()
+			.then(() => client.documents?.getAll() ?? Promise.resolve([]))
+			.then((docs) => setSubmissionDocuments(docs))
+			.catch(() => setSubmissionDocuments([]));
 	}, [grantId]);
 
 	const loadManifest = useCallback(async () => {
@@ -471,6 +488,11 @@ export default function GrantDrawer({
 		} catch (error) {
 			console.error('Error applying override:', error);
 		}
+	};
+
+	const handleSubmitComplete = async (_data: { confirmationNumber: string; submittedAt: string }) => {
+		await refreshAfterMutation();
+		onClose();
 	};
 
 	const handleOpenInEditor = () => {
@@ -801,6 +823,17 @@ export default function GrantDrawer({
 									</>
 								)}
 							</div>
+
+							{detail.workflow.canSubmit && (
+								<SubmissionReadiness
+									grant={detail.grant}
+									latestDraft={detail.latestDraft}
+									approvalRecord={detail.approvalRecord}
+									documents={submissionDocuments}
+									manifest={manifest}
+									onSubmitComplete={handleSubmitComplete}
+								/>
+							)}
 
 							<div className="drawer-section">
 								<h3>Actions</h3>

@@ -42,7 +42,9 @@ export default function AuditView({ entityId, entityType }: AuditViewProps) {
         <div className="panel-title">Audit Trail</div>
       </div>
       {events.length === 0 ? (
-        <div className="empty-state">No audit events yet.</div>
+        <div className="empty-state">
+          No audit events yet. Audit events are recorded automatically as you work — run discovery, approve drafts, or manage sources to generate activity.
+        </div>
       ) : (
         <div className="activity-list">
           {events.slice(0, 25).map((event) => (

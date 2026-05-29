@@ -11,6 +11,8 @@ const {
 	createApproval,
 	createSubmission,
 	createRevision,
+	getDocuments,
+	getFollowUps,
 } = vi.hoisted(() => ({
 	getGrantDetail: vi.fn(),
 	getManifest: vi.fn(),
@@ -19,6 +21,8 @@ const {
 	createApproval: vi.fn(),
 	createSubmission: vi.fn(),
 	createRevision: vi.fn(),
+	getDocuments: vi.fn(),
+	getFollowUps: vi.fn(),
 }));
 
 vi.mock("../lib/grant-ops-client", () => ({
@@ -30,6 +34,8 @@ vi.mock("../lib/grant-ops-client", () => ({
 		submit: { create: createSubmission },
 		revisions: { create: createRevision },
 		jobs: { get: vi.fn() },
+		documents: { getAll: getDocuments },
+		followUps: { getFiltered: getFollowUps, create: vi.fn(), update: vi.fn(), delete: vi.fn() },
 	},
 }));
 
@@ -360,6 +366,8 @@ beforeEach(() => {
 	currentManifest = null;
 	getGrantDetail.mockImplementation(async () => currentDetail);
 	getManifest.mockImplementation(async () => currentManifest);
+	getDocuments.mockResolvedValue([]);
+	getFollowUps.mockResolvedValue([]);
 	createManifest.mockImplementation(async (_grantId: string, request: { instructions?: string; portalUrl?: string; fileConstraints?: string; dueDate?: string; materialRefs?: Array<{ documentId: string; documentName: string; version?: string; role: string }>; notes?: string }) => {
 		currentManifest = {
 			...makeManifest(request),
@@ -520,7 +528,9 @@ describe("GrantDrawer", () => {
 			),
 		).toEqual(["96", "90", "88", "82", "78"]);
 		expect(container.textContent).toContain("Requirements checklist");
-		expect(container.querySelectorAll(".checklist-item")).toHaveLength(3);
+		// 3 from Requirements checklist + 7 from SubmissionReadiness readiness items
+		expect(container.querySelectorAll(".checklist-item").length).toBeGreaterThanOrEqual(3);
+		// Done items only from Requirements checklist (.done class) — SubmissionReadiness uses readiness-green
 		expect(container.querySelectorAll(".checklist-item.done")).toHaveLength(2);
 		expect(container.textContent).toContain("Drafted Letter of Intent — preview");
 		
@@ -589,7 +599,8 @@ describe("GrantDrawer", () => {
 		Array.from(container.querySelectorAll("button"))
 			.find((button) => button.textContent === "Approve & lock")
 			?.click();
-		await waitFor(() => container.textContent?.includes("Submit") === true);
+		// Wait for the exact "Submit" button to appear in Actions (viewModel.showSubmit = true after approve)
+		await waitFor(() => Array.from(container.querySelectorAll("button")).some((btn) => btn.textContent === "Submit"));
 		expect(createApproval).toHaveBeenCalledWith(grantId, { approvedBy: "human" });
 		expect(container.textContent).not.toContain(
 			"Submission blocked: Grant must be approved before submission",
@@ -795,6 +806,22 @@ describe("GrantDrawer", () => {
 			);
 			await waitFor(() => container.textContent?.includes('NSF Technology Access and Adoption Program') === true);
 			expect(container.querySelector('[data-testid="deadline-confidence-badge"]')).toBeNull();
+		});
+	});
+
+	describe('SubmissionReadiness integration', () => {
+		it('renders SubmissionReadiness section when grant can be submitted (canSubmit=true)', async () => {
+			// Use approved detail where workflow.canSubmit = true to trigger SubmissionReadiness rendering
+			currentDetail = buildApprovedDetail();
+			root.render(
+				React.createElement(GrantDrawer, { grantId, onClose: vi.fn(), onRefreshAppState: vi.fn() }),
+			);
+			await waitFor(() => container.textContent?.includes('NSF Technology Access and Adoption Program') === true);
+
+			// SubmissionReadiness renders a "Submission Readiness" heading (only when canSubmit=true)
+			const readinessSection = container.querySelector('[aria-label="Submission readiness"]');
+			expect(readinessSection).not.toBeNull();
+			expect(container.textContent).toContain('Submission Readiness');
 		});
 	});
 });

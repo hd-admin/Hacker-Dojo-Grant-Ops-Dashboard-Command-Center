@@ -806,6 +806,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 Grants with a fit score above this threshold will be automatically drafted.
               </p>
             </div>
+            <button type="button" className="btn" onClick={() => setIsEditing(true)}>Edit Themes &amp; Threshold</button>
           </div>
         </section>
       </div>

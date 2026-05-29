@@ -20,6 +20,7 @@ import type {
 } from "../../../../shared/types";
 import { escapeForHtml } from "../../lib/sanitize-html";
 import { type Clock, getDependencies, type IdGenerator } from "./dependencies";
+import { ensureProPublicaSourceRegistered } from "./propublica-service";
 import { scoreGrantByThemes } from "./theme-service";
 
 export class NoSourcesConfiguredError extends Error {
@@ -99,6 +100,9 @@ export async function runResearch(
 	await deps.repository.addCrawlRun(crawlRun);
 
 	try {
+		// Ensure ProPublica is registered as a default source before checking active sources
+		await ensureProPublicaSourceRegistered(deps);
+
 		// Get active sources
 		let sources = await deps.sourceService.getActiveSources();
 		if (options.sourceIds?.length) {
