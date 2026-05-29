@@ -1,9 +1,37 @@
 'use client';
 
-import React from 'react';
 import { useCallback, useEffect, useState } from 'react';
 import type { BackupFreshnessStatus, DocumentMetadata, HealthCheckResult, OpencodeSettings, OrganizationProfile } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
+
+// Guidance messages keyed by opencode health status
+const opencodeStatusGuidance: Record<string, { title: string; description: string; action: string }> = {
+  'not-installed': {
+    title: 'Opencode is not installed',
+    description: 'The opencode binary was not found on PATH or at the configured path. Grant generation and AI-powered features cannot run without it.',
+    action: 'Install opencode from https://opencode.ai or verify the binary path below and test the connection.',
+  },
+  'not-reachable': {
+    title: 'Opencode cannot be reached',
+    description: 'The opencode binary was found but is not responding. It may be installed incorrectly or the binary may not be executable.',
+    action: 'Verify the binary path points to a working opencode installation. Check that the file is executable (chmod +x on macOS/Linux).',
+  },
+  'incompatible': {
+    title: 'Opencode version is incompatible',
+    description: 'The installed opencode version does not meet the minimum version requirements for this application.',
+    action: 'Update opencode to the latest version. Run \'opencode --version\' to check your current version, then upgrade.',
+  },
+  'ok': {
+    title: 'Opencode is connected and healthy',
+    description: 'Opencode is properly installed, reachable, and compatible. All AI-powered features are available.',
+    action: '',
+  },
+  'error': {
+    title: 'Opencode encountered an error',
+    description: 'An unexpected error occurred while checking opencode health. This may indicate a configuration issue or a problem with the opencode installation.',
+    action: 'Check the error details below. Verify your binary path and working directory, then test the connection again.',
+  },
+};
 
 interface SettingsViewProps {
   onRefreshAppState?: () => Promise<void> | void;
@@ -17,15 +45,17 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(initiallyEditing);
   const [editForm, setEditForm] = useState<Partial<OrganizationProfile>>({});
-  const [opencodeSettings, setOpencodeSettings] = useState<OpencodeSettings | null>(null);
   const [health, setHealth] = useState<HealthCheckResult | null>(null);
   const [freshness, setFreshness] = useState<BackupFreshnessStatus | null>(null);
   const [diagnosticsText, setDiagnosticsText] = useState('');
   const [isDirty, setIsDirty] = useState(initiallyDirty);
   const [showRestoreWarning, setShowRestoreWarning] = useState(false);
   const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
-  const [isEditingOpencode, setIsEditingOpencode] = useState(false);
   const [opencodeForm, setOpencodeForm] = useState<Partial<OpencodeSettings>>({});
+  const [lastHandshakeAt, setLastHandshakeAt] = useState<string | null>(null);
+  const [testConnectionLoading, setTestConnectionLoading] = useState(false);
+  const [testConnectionResult, setTestConnectionResult] = useState<'success' | 'failed' | null>(null);
+  const [opencodeSaveSuccess, setOpencodeSaveSuccess] = useState(false);
 
   useEffect(() => {
     async function load() {
@@ -40,8 +70,11 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
         setProfile(profileData);
         setEditForm(profileData ?? {});
         setDocuments(docsData);
-        setOpencodeSettings(opencodeData);
+        setOpencodeForm(opencodeData ?? { binaryPath: '', workingDirectory: '', timeoutMs: 60000, isConfigured: false });
         setHealth(healthData);
+        if (healthData?.handshakeSuccess) {
+          setLastHandshakeAt(new Date().toISOString());
+        }
         setFreshness(freshnessData);
       } finally {
         setLoading(false);
@@ -89,6 +122,28 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const refreshHealth = async () => {
     const data = await fetch('/api/health').then((response) => response.json()).catch(() => null);
     setHealth(data);
+    if (data?.handshakeSuccess) {
+      setLastHandshakeAt(new Date().toISOString());
+    }
+  };
+
+  const handleTestConnection = async () => {
+    setTestConnectionLoading(true);
+    setTestConnectionResult(null);
+    try {
+      const data = await fetch('/api/health').then((r) => r.json()).catch(() => null);
+      setHealth(data);
+      if (data?.handshakeSuccess) {
+        setLastHandshakeAt(new Date().toISOString());
+        setTestConnectionResult('success');
+      } else {
+        setTestConnectionResult('failed');
+      }
+    } catch {
+      setTestConnectionResult('failed');
+    } finally {
+      setTestConnectionLoading(false);
+    }
   };
 
   const loadDiagnostics = async () => {
@@ -148,19 +203,19 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
     setShowRestoreWarning(false);
   };
 
-  const handleEditOpencode = () => {
-    setOpencodeForm(opencodeSettings || { binaryPath: '', workingDirectory: '', timeoutMs: 60000, isConfigured: false });
-    setIsEditingOpencode(true);
-  };
-
   const handleSaveOpencode = async () => {
     const nextSettings: OpencodeSettings = {
-      ...(opencodeForm as OpencodeSettings),
+      binaryPath: opencodeForm.binaryPath ?? '',
+      workingDirectory: opencodeForm.workingDirectory ?? '',
+      timeoutMs: opencodeForm.timeoutMs ?? 60000,
+      profile: opencodeForm.profile,
       isConfigured: true,
     };
     await client.opencodeSettings.update(nextSettings);
-    setOpencodeSettings(await client.opencodeSettings.get());
-    setIsEditingOpencode(false);
+    const updated = await client.opencodeSettings.get();
+    setOpencodeForm(updated);
+    setOpencodeSaveSuccess(true);
+    setTimeout(() => setOpencodeSaveSuccess(false), 3000);
     await onRefreshAppState?.();
   };
 
@@ -286,22 +341,240 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
           </div>
         </section>
 
-        <section className="setting-card">
-          <div className="setting-card-header"><div className="setting-card-title">Opencode</div></div>
+        <section className="setting-card" data-testid="opencode-status-card">
+          <div className="setting-card-header">
+            <div className="setting-card-title">Opencode Status</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span
+                className="status-dot"
+                style={{
+                  background: health?.opencode === 'ok' ? 'var(--success)' : health?.opencode === 'incompatible' ? 'var(--warning)' : 'var(--danger)',
+                  boxShadow: health?.opencode === 'ok' ? '0 0 8px var(--success)' : health?.opencode === 'incompatible' ? '0 0 8px var(--warning)' : '0 0 8px var(--danger)',
+                }}
+              />
+              <span style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-dim)' }}>
+                {health?.opencode === 'ok' ? 'Connected' : health?.opencode === 'incompatible' ? 'Incompatible' : health?.opencode === 'not-installed' ? 'Not Installed' : health?.opencode === 'not-reachable' ? 'Not Reachable' : health?.opencode === 'error' ? 'Error' : 'Unknown'}
+              </span>
+            </div>
+          </div>
           <div className="setting-card-body">
-            {isEditingOpencode ? (
-              <>
-                <input value={opencodeForm.binaryPath ?? ''} onChange={(e) => setOpencodeForm((prev) => ({ ...prev, binaryPath: e.target.value }))} />
-                <input value={opencodeForm.workingDirectory ?? ''} onChange={(e) => setOpencodeForm((prev) => ({ ...prev, workingDirectory: e.target.value }))} />
-                <input type="number" value={opencodeForm.timeoutMs ?? 60000} onChange={(e) => setOpencodeForm((prev) => ({ ...prev, timeoutMs: Number(e.target.value) }))} />
-                <button type="button" onClick={() => void handleSaveOpencode()}>Save</button>
-              </>
-            ) : (
-              <>
-                <div>{opencodeSettings?.binaryPath ?? 'Not configured'}</div>
-                <button type="button" onClick={handleEditOpencode}>Edit Opencode</button>
-              </>
+            {/* Status guidance */}
+            {health?.opencode && opencodeStatusGuidance[health.opencode] && (
+              <div style={{
+                background: health.opencode === 'ok' ? 'rgba(138, 171, 111, 0.08)' : health.opencode === 'incompatible' ? 'rgba(224, 137, 74, 0.08)' : 'rgba(198, 107, 90, 0.08)',
+                border: `1px solid ${health.opencode === 'ok' ? 'rgba(138, 171, 111, 0.2)' : health.opencode === 'incompatible' ? 'rgba(224, 137, 74, 0.2)' : 'rgba(198, 107, 90, 0.2)'}`,
+                borderRadius: 'var(--radius)',
+                padding: '14px 16px',
+                marginBottom: '16px',
+              }}>
+                <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '6px', color: 'var(--text)' }}>
+                  {opencodeStatusGuidance[health.opencode].title}
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: 1.6, marginBottom: health.opencode !== 'ok' ? '10px' : 0 }}>
+                  {opencodeStatusGuidance[health.opencode].description}
+                </div>
+                {health.opencode !== 'ok' && opencodeStatusGuidance[health.opencode].action && (
+                  <div style={{ fontSize: '12px', color: 'var(--accent)', lineHeight: 1.5 }}>
+                    <strong>What to do:</strong> {opencodeStatusGuidance[health.opencode].action}
+                  </div>
+                )}
+              </div>
             )}
+
+            {/* Diagnostics grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '12px',
+              marginBottom: '16px',
+              padding: '12px',
+              background: 'var(--surface-2)',
+              borderRadius: 'var(--radius)',
+              border: '1px solid var(--border)',
+            }}>
+              <div>
+                <div className="setting-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Version</div>
+                <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                  {health?.opencodeVersion ? `v${health.opencodeVersion}` : (health?.opencode === 'not-installed' ? '—' : 'Unknown')}
+                </div>
+              </div>
+              <div>
+                <div className="setting-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Response Time</div>
+                <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                  {health?.handshakeResponseTimeMs != null ? `${health.handshakeResponseTimeMs}ms` : '—'}
+                </div>
+              </div>
+              <div>
+                <div className="setting-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Handshake</div>
+                <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                  {health?.handshakeSuccess === true ? (
+                    <span style={{ color: 'var(--success)' }}>✓ Success</span>
+                  ) : health?.handshakeSuccess === false ? (
+                    <span style={{ color: 'var(--danger)' }}>✗ Failed</span>
+                  ) : '—'}
+                </div>
+              </div>
+              <div>
+                <div className="setting-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Last Handshake</div>
+                <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                  {lastHandshakeAt ? new Date(lastHandshakeAt).toLocaleString() : 'Never'}
+                </div>
+              </div>
+            </div>
+
+            {/* Capabilities */}
+            {health?.capabilities && health.capabilities.length > 0 && (
+              <div style={{ marginBottom: '16px' }}>
+                <div className="setting-label" style={{ fontSize: '9px', marginBottom: '6px' }}>Detected Capabilities</div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                  {health.capabilities.map((cap) => (
+                    <span
+                      key={cap}
+                      style={{
+                        fontFamily: 'var(--mono)',
+                        fontSize: '10px',
+                        padding: '2px 8px',
+                        background: 'rgba(123, 163, 184, 0.12)',
+                        color: 'var(--info)',
+                        borderRadius: '10px',
+                        border: '1px solid rgba(123, 163, 184, 0.2)',
+                      }}
+                    >
+                      {cap}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Error details */}
+            {health?.opencodeError && (
+              <div style={{
+                background: 'rgba(198, 107, 90, 0.06)',
+                border: '1px solid rgba(198, 107, 90, 0.15)',
+                borderRadius: 'var(--radius)',
+                padding: '10px 14px',
+                marginBottom: '16px',
+              }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--danger)', marginBottom: '4px' }}>
+                  Opencode Error
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-dim)', fontFamily: 'var(--mono)', lineHeight: 1.5 }}>
+                  {health.opencodeError}
+                </div>
+              </div>
+            )}
+
+            {health?.handshakeError && !health?.handshakeSuccess && (
+              <div style={{
+                background: 'rgba(224, 137, 74, 0.06)',
+                border: '1px solid rgba(224, 137, 74, 0.15)',
+                borderRadius: 'var(--radius)',
+                padding: '10px 14px',
+                marginBottom: '16px',
+              }}>
+                <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--warning)', marginBottom: '4px' }}>
+                  Handshake Error
+                </div>
+                <div style={{ fontSize: '12px', color: 'var(--text-dim)', fontFamily: 'var(--mono)', lineHeight: 1.5 }}>
+                  {health.handshakeError}
+                </div>
+              </div>
+            )}
+
+            {/* Configuration section */}
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px', marginTop: '4px' }}>
+              <div className="setting-label" style={{ fontSize: '9px', marginBottom: '12px' }}>Connection Configuration</div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div>
+                  <label htmlFor="opencode-binary-path" style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    Binary Path
+                  </label>
+                  <input
+                    id="opencode-binary-path"
+                    value={opencodeForm.binaryPath ?? ''}
+                    onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, binaryPath: e.target.value })); setOpencodeSaveSuccess(false); }}
+                    placeholder="/usr/local/bin/opencode"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="opencode-working-directory" style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    Working Directory
+                  </label>
+                  <input
+                    id="opencode-working-directory"
+                    value={opencodeForm.workingDirectory ?? ''}
+                    onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, workingDirectory: e.target.value })); setOpencodeSaveSuccess(false); }}
+                    placeholder="/home/user/projects"
+                    style={{ width: '100%' }}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="opencode-timeout" style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    Timeout (ms)
+                  </label>
+                  <input
+                    id="opencode-timeout"
+                    type="number"
+                    value={opencodeForm.timeoutMs ?? 60000}
+                    onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, timeoutMs: Number(e.target.value) })); setOpencodeSaveSuccess(false); }}
+                    style={{ width: '100%' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginTop: '14px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button type="button" className="btn btn-primary btn-sm" onClick={() => void handleSaveOpencode()}>
+                  Save Configuration
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  onClick={() => { void handleTestConnection(); }}
+                  disabled={testConnectionLoading}
+                  data-testid="test-connection-btn"
+                >
+                  {testConnectionLoading ? 'Testing…' : 'Test Connection'}
+                </button>
+                {opencodeSaveSuccess && (
+                  <span style={{ fontSize: '12px', color: 'var(--success)' }}>✓ Saved</span>
+                )}
+              </div>
+
+              {/* Test connection result */}
+              {testConnectionResult && (
+                <div style={{
+                  marginTop: '12px',
+                  padding: '10px 14px',
+                  borderRadius: 'var(--radius)',
+                  background: testConnectionResult === 'success' ? 'rgba(138, 171, 111, 0.06)' : 'rgba(198, 107, 90, 0.06)',
+                  border: `1px solid ${testConnectionResult === 'success' ? 'rgba(138, 171, 111, 0.15)' : 'rgba(198, 107, 90, 0.15)'}`,
+                  fontSize: '12px',
+                }}>
+                  <div style={{ fontWeight: 600, marginBottom: '4px', color: testConnectionResult === 'success' ? 'var(--success)' : 'var(--danger)' }}>
+                    {testConnectionResult === 'success' ? '✓ Connection successful' : '✗ Connection failed'}
+                  </div>
+                  {testConnectionResult === 'success' && health?.handshakeResponseTimeMs != null && (
+                    <div style={{ color: 'var(--text-dim)' }}>
+                      Response time: {health.handshakeResponseTimeMs}ms
+                      {health?.opencodeVersion && ` • Version: v${health.opencodeVersion}`}
+                    </div>
+                  )}
+                  {testConnectionResult === 'failed' && health?.opencodeError && (
+                    <div style={{ color: 'var(--text-dim)', fontFamily: 'var(--mono)', fontSize: '11px' }}>
+                      {health.opencodeError}
+                    </div>
+                  )}
+                  {testConnectionResult === 'failed' && health?.handshakeError && (
+                    <div style={{ color: 'var(--text-dim)', fontFamily: 'var(--mono)', fontSize: '11px', marginTop: '4px' }}>
+                      {health.handshakeError}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </section>
 

@@ -15,7 +15,7 @@ export async function GET(
     return NextResponse.json(submission);
   } catch (error) {
     console.error('Error getting submission:', error);
-    return NextResponse.json({ error: 'Failed to get submission' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to get submission', failureCategory: 'unknown' }, { status: 500 });
   }
 }
 
@@ -58,6 +58,6 @@ export async function POST(
     return NextResponse.json({ success: true, submissionRecord: result.submissionRecord, followUps: result.followUps }, { status: 201 });
   } catch (error) {
     console.error('Error recording submission:', error);
-    return NextResponse.json({ error: 'Failed to record submission' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to record submission', failureCategory: 'unknown' }, { status: 500 });
   }
 }

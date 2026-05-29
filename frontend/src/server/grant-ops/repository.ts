@@ -191,6 +191,17 @@ export async function updateFollowUp(followUp: FollowUp): Promise<void> {
   }
 }
 
+export async function deleteFollowUp(id: string): Promise<boolean> {
+  const data = await loadPersistedData();
+  const index = data.followUps.findIndex((f: FollowUp) => f.id === id);
+  if (index !== -1) {
+    data.followUps.splice(index, 1);
+    await savePersistedData(data);
+    return true;
+  }
+  return false;
+}
+
 // OpencodeSettings operations - use dedicated singletons to bypass cached aggregate
 export async function getOpencodeSettings(): Promise<OpencodeSettings | null> {
   return loadOpencodeSettings();

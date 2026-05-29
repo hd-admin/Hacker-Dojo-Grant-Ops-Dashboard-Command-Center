@@ -2243,3 +2243,198 @@ textarea:focus-visible {
   align-items: center;
   margin-top: 28px;
 }
+
+/* ================================================================
+   SECTION: Apple HIG-aligned CSS additions
+   Added: Step 8 - WCAG touch targets, progress bars, empty states,
+   sheet transitions, view-switch transitions, contrast audit
+   ================================================================ */
+
+/* === WCAG AA CONTRAST VERIFICATION ===
+ *
+ * Checking key variable combos against WCAG AA minimums:
+ *   - Normal text (< 18px): 4.5:1
+ *   - Large text (>= 18px or >= 14px bold): 3:1
+ *   - UI components / graphics: 3:1
+ *
+ * Combo 1: --text (#ebe6dc) on --bg (#1c1a17)
+ *   L_text = 0.7941, L_bg = 0.0105
+ *   Contrast = (0.7941 + 0.05) / (0.0105 + 0.05) = 13.95:1
+ *   Result: PASS (AA normal text 4.5:1 ✓, AAA normal text 7:1 ✓)
+ *
+ * Combo 2: --text-dim (#b3ac9e) on --surface (#25221d)
+ *   L_dim = 0.4160, L_surface = 0.0163
+ *   Contrast = (0.4160 + 0.05) / (0.0163 + 0.05) = 7.03:1
+ *   Result: PASS (AA normal text 4.5:1 ✓, AAA normal text 7:1 ✓)
+ *
+ * Combo 3: --accent (#d4a943) on --bg (#1c1a17)
+ *   L_accent = 0.4272, L_bg = 0.0105
+ *   Contrast = (0.4272 + 0.05) / (0.0105 + 0.05) = 7.89:1
+ *   Result: PASS (AA normal text 4.5:1 ✓, AAA normal text 7:1 ✓)
+ *
+ * VERDICT: All three combos pass WCAG AA. No variable adjustments needed.
+ */
+
+/* === TOUCH TARGET SIZE (WCAG 2.5.5 Target Size - AA) ===
+ * Minimum 32x32px click area for pointer inputs.
+ * Only added where min-height/min-width not already defined.
+ */
+button,
+.nav-item,
+input[type='checkbox'],
+input[type='radio'] {
+  min-height: 32px;
+  min-width: 32px;
+}
+
+/* === PROGRESS BAR === */
+
+/* Progress bar container - full-width track */
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: var(--surface-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+/* Indeterminate progress fill - striped gradient sweep */
+.progress-bar-fill {
+  width: 40%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  border-radius: 999px;
+  animation: progress-indeterminate 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    background-position: 100% 0;
+  }
+  100% {
+    background-position: -100% 0;
+  }
+}
+
+/* Determinate progress fill - width-based with smooth transition */
+.progress-bar-determinate {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 0.4s ease;
+}
+
+/* === EMPTY STATE PANEL (generic/reusable) ===
+ * Follows the pattern from .empty-state-guide but more compact
+ * and suitable for inline use within panels and drawers.
+ */
+.empty-state-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 24px;
+  text-align: center;
+}
+
+.empty-state-panel .empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+  line-height: 1;
+}
+
+.empty-state-panel .empty-state-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.empty-state-panel .empty-state-description {
+  font-size: 13px;
+  color: var(--text-dim);
+  max-width: 400px;
+  line-height: 1.55;
+}
+
+.empty-state-panel .empty-state-action {
+  margin-top: 16px;
+}
+
+/* === SHEET / DIALOG TRANSITIONS === */
+
+/* Sheet overlay - blurred backdrop */
+.sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 10, 8, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+.sheet-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* Sheet panel - slides in from the right */
+.sheet-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 540px;
+  max-width: 95vw;
+  height: 100vh;
+  background: var(--bg-2);
+  border-left: 1px solid var(--border-light);
+  box-shadow: -20px 0 48px rgba(0, 0, 0, 0.35);
+  z-index: 101;
+  transform: translateX(100%);
+  transition: transform 0.3s ease-out;
+  overflow-y: auto;
+}
+
+.sheet-panel.open {
+  transform: translateX(0);
+}
+
+/* Sheet panel enter/exit state classes */
+.sheet-panel-enter {
+  transform: translateX(100%);
+}
+
+.sheet-panel-exit {
+  transform: translateX(0);
+}
+
+/* === VIEW-SWITCH TRANSITIONS === */
+
+/* Fade transition for view switching */
+.view-enter {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.view-enter-active {
+  opacity: 1;
+}
+
+.view-exit {
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.view-exit-active {
+  opacity: 0;
+}

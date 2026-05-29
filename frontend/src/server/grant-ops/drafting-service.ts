@@ -57,22 +57,16 @@ function getGroundingDocuments(documents: DocumentMetadata[]): string[] {
 		});
 }
 
-function buildGroundingSections(content: string, groundedDocumentCount: number) {
-	const sections = content
-		.split(/^#{1,3}\s+/m)
-		.map((section) => section.trim())
-		.filter(Boolean)
-		.slice(0, 8)
-		.map((section, index) => {
-			const [firstLine] = section.split(/\r?\n/, 1);
-			return {
-				sectionTitle: firstLine?.slice(0, 80) || `Section ${index + 1}`,
-				evidence: groundedDocumentCount > 0 ? [`Grounded in ${groundedDocumentCount} documents`] : [],
-				isGrounded: groundedDocumentCount > 0,
-			};
-		});
+function buildGroundingSections(
+	opencodeGroundingSections?: Array<{ sectionTitle: string; evidence: string[]; isGrounded: boolean }>,
+): Array<{ sectionTitle: string; evidence: string[]; isGrounded: boolean }> {
+	// Only populate groundingSections when opencode provides section-level metadata.
+	// Never fabricate grounding data from content headings.
+	if (opencodeGroundingSections && opencodeGroundingSections.length > 0) {
+		return opencodeGroundingSections;
+	}
 
-	return sections;
+	return [];
 }
 
 export async function generateDraft(
@@ -125,6 +119,55 @@ export async function generateDraft(
 		groundingDocuments: groundedDocuments,
 	});
 
+	// Handle partial-output: when opencode fails mid-generation but produced partial draft content
+	if (!response.success && response.failureMode === "partial-output" && response.content) {
+		console.warn(
+			`Draft generation for grant ${grant.id} produced partial output. Persisting partial draft.`,
+		);
+
+		const partialArtifact: DraftArtifact = {
+			id: idGenerator.generateId("draft"),
+			grantId: grant.id,
+			version: latestVersion + 1,
+			content: response.content,
+			createdAt: clock.now().toISOString(),
+			createdBy: "agent",
+			revisionNotes: options.revisionNotes || "",
+			groundingSections: buildGroundingSections(response.groundingSections),
+			status: "partial-failure",
+		};
+
+		await deps.repository.addDraftArtifact(partialArtifact);
+		const nextSourceCount =
+			groundedDocuments.length > 0
+				? groundedDocuments.length
+				: (grant.sourceCount ?? 0);
+		await deps.repository.updateGrant(grant.id, {
+			status: "draft",
+			statusLabel: "Drafting (partial)",
+			draftContent: response.content,
+			latestDraftVersion: partialArtifact.version,
+			groundedDocumentCount: groundedDocuments.length,
+			sourceCount: nextSourceCount,
+			funderSummary: grant.funderSummary ?? createDefaultFunderSummary(grant),
+			checklist:
+				grant.checklist ??
+				createDefaultGrantChecklist({
+					...grant,
+					draftContent: response.content,
+					latestDraftVersion: partialArtifact.version,
+					groundedDocumentCount: groundedDocuments.length,
+					sourceCount: nextSourceCount,
+				}),
+		});
+
+		return partialArtifact;
+	}
+
+	if (!response.success && response.failureMode === "partial-output" && !response.content) {
+		throw new Error("No partial content was recovered");
+	}
+
 	if (!response.success || !response.content) {
 		throw new Error(
 			`Draft generation failed: ${response.error || "Unknown error from Opencode"}`,
@@ -139,7 +182,7 @@ export async function generateDraft(
 		createdAt: clock.now().toISOString(),
 		createdBy: "agent",
 		revisionNotes: options.revisionNotes || "",
-		groundingSections: buildGroundingSections(response.content, groundedDocuments.length),
+		groundingSections: buildGroundingSections(response.groundingSections),
 	};
 
 	await deps.repository.addDraftArtifact(draftArtifact);

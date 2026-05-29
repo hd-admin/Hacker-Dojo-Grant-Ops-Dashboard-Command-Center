@@ -1,8 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import * as researchService from '@/server/grant-ops/research-service';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { enqueueJob } from '@/server/grant-ops/job-queue-service';
-
+import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
+import * as researchService from '@/server/grant-ops/research-service';
+import { NoSourcesConfiguredError } from '@/server/grant-ops/research-service';
 export const dynamic = 'force-dynamic';
 
 export async function POST(_request: NextRequest) {
@@ -43,8 +46,28 @@ export async function POST(_request: NextRequest) {
     }, { status: 202 });
   } catch (error) {
     console.error('Error running research:', error);
+
+    if (error instanceof NoSourcesConfiguredError) {
+      return NextResponse.json(
+        { error: error.code, message: error.message },
+        { status: 409 },
+      );
+    }
+
     const errorMessage = error instanceof Error ? error.message : 'Failed to run research';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    const failureMode = classifyOpencodeError(errorMessage);
+    const guidance = opencodeFailureMessages[failureMode];
+    const retryable = ['rate-limit', 'malformed-output', 'model-unavailable', 'timeout', 'unknown'].includes(failureMode);
+
+    return NextResponse.json(
+      {
+        error: errorMessage,
+        failureMode,
+        retryable,
+        guidance,
+      },
+      { status: 500 },
+    );
   }
 }
 

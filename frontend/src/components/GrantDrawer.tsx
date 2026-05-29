@@ -3,12 +3,14 @@
 import React, { useCallback, useEffect, useState } from "react";
 import type {
 	AuditEvent,
+	FollowUp,
 	GrantDetailResponse,
 	GrantStatus,
 	SubmissionManifest,
 	SubmissionMethod,
 } from "../../../shared/types";
 import { client } from "../lib/grant-ops-client";
+import GroundingReview from "./GroundingReview";
 
 interface GrantDrawerProps {
 	grantId: string | null;
@@ -158,6 +160,17 @@ export default function GrantDrawer({
 	const [overrideValue, setOverrideValue] = useState('');
 	const [overrideRationale, setOverrideRationale] = useState('');
 
+	// Follow-up state
+	const [followUps, setFollowUps] = useState<FollowUp[]>([]);
+	const [followUpsLoading, setFollowUpsLoading] = useState(false);
+	const [showFollowUpForm, setShowFollowUpForm] = useState(false);
+	const [newFollowUpType, setNewFollowUpType] = useState<FollowUp['type']>('other');
+	const [newFollowUpTitle, setNewFollowUpTitle] = useState('');
+	const [newFollowUpDescription, setNewFollowUpDescription] = useState('');
+	const [newFollowUpDueDate, setNewFollowUpDueDate] = useState('');
+	const [showOutcomeForm, setShowOutcomeForm] = useState(false);
+	const [outcomeNotes, setOutcomeNotes] = useState('');
+
 	const viewModel = buildGrantDrawerViewModel(detail);
 	const hasDirtyNotes = revisionNote.trim().length > 0 || submitNotes.trim().length > 0;
 
@@ -259,6 +272,37 @@ export default function GrantDrawer({
 		window.addEventListener('beforeunload', handleBeforeUnload);
 		return () => window.removeEventListener('beforeunload', handleBeforeUnload);
 	}, [hasDirtyNotes]);
+
+	// Load follow-ups for this grant
+	useEffect(() => {
+		async function loadFollowUps() {
+			if (!grantId) {
+				setFollowUps([]);
+				return;
+			}
+			setFollowUpsLoading(true);
+			try {
+				const data = await client.followUps.getFiltered({ grantId });
+				setFollowUps(Array.isArray(data) ? data : []);
+			} catch (error) {
+				console.error('Error loading follow-ups:', error);
+				setFollowUps([]);
+			} finally {
+				setFollowUpsLoading(false);
+			}
+		}
+		void loadFollowUps();
+	}, [grantId]);
+
+	// Show outcome form when grant transitions to a terminal status
+	useEffect(() => {
+		if (detail?.grant.status) {
+			const terminalStatuses: GrantStatus[] = ['awarded', 'declined', 'closed', 'archived'];
+			if (terminalStatuses.includes(detail.grant.status)) {
+				setShowOutcomeForm(true);
+			}
+		}
+	}, [detail?.grant.status]);
 
 	const refreshAfterMutation = async () => {
 		await loadDetail();
@@ -419,6 +463,89 @@ export default function GrantDrawer({
 			);
 		}
 	};
+
+	// Follow-up handlers
+	const handleCreateFollowUp = async () => {
+		if (!detail || !newFollowUpTitle.trim()) return;
+		try {
+			const id = `followup-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+			const followUp: Omit<FollowUp, 'id' | 'createdAt'> = {
+				grantId: detail.grant.id,
+				type: newFollowUpType,
+				title: newFollowUpTitle.trim(),
+				description: newFollowUpDescription.trim() || undefined,
+				dueDate: newFollowUpDueDate || undefined,
+				status: 'pending',
+			};
+			await client.followUps.create({ ...followUp, id, createdAt: new Date().toISOString() } as FollowUp);
+			setShowFollowUpForm(false);
+			setNewFollowUpType('other');
+			setNewFollowUpTitle('');
+			setNewFollowUpDescription('');
+			setNewFollowUpDueDate('');
+			// Reload follow-ups
+			const data = await client.followUps.getFiltered({ grantId: detail.grant.id });
+			setFollowUps(Array.isArray(data) ? data : []);
+		} catch (error) {
+			console.error('Error creating follow-up:', error);
+		}
+	};
+
+	const handleMarkComplete = async (followUp: FollowUp) => {
+		try {
+			const now = new Date().toISOString();
+			await client.followUps.update({
+				...followUp,
+				status: 'completed',
+				completedAt: now,
+			});
+			// Reload
+			const data = await client.followUps.getFiltered({ grantId: detail!.grant.id });
+			setFollowUps(Array.isArray(data) ? data : []);
+		} catch (error) {
+			console.error('Error marking follow-up complete:', error);
+		}
+	};
+
+	const handleDeleteFollowUp = async (id: string) => {
+		try {
+			await client.followUps.delete(id);
+			// Reload
+			const data = await client.followUps.getFiltered({ grantId: detail!.grant.id });
+			setFollowUps(Array.isArray(data) ? data : []);
+		} catch (error) {
+			console.error('Error deleting follow-up:', error);
+		}
+	};
+
+	const handleSaveOutcome = async () => {
+		if (!detail || !outcomeNotes.trim()) return;
+		try {
+			const id = `followup-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+			await client.followUps.create({
+				id,
+				grantId: detail.grant.id,
+				type: 'next_steps',
+				title: `Outcome: ${detail.grant.statusLabel}`,
+				description: outcomeNotes.trim(),
+				status: 'completed',
+				completedAt: new Date().toISOString(),
+				createdAt: new Date().toISOString(),
+			});
+			setShowOutcomeForm(false);
+			setOutcomeNotes('');
+			const data = await client.followUps.getFiltered({ grantId: detail.grant.id });
+			setFollowUps(Array.isArray(data) ? data : []);
+		} catch (error) {
+			console.error('Error saving outcome:', error);
+		}
+	};
+
+	function isOverdue(followUp: FollowUp): boolean {
+		if (!followUp.dueDate) return false;
+		if (followUp.status === 'completed') return false;
+		return new Date(followUp.dueDate) < new Date();
+	}
 
 	if (!grantId) {
 		return null;
@@ -592,24 +719,8 @@ export default function GrantDrawer({
 								)}
 							</div>
 
-							{detail.latestDraft?.groundingSections && detail.latestDraft.groundingSections.length > 0 && (
-								<div className="drawer-section">
-									<h3>Grounding review</h3>
-									{detail.grant.groundedDocumentCount === 0 && (
-										<div className="drawer-note">⚠ No grounding documents</div>
-									)}
-									<div className="checklist-list">
-										{detail.latestDraft.groundingSections.map((section) => (
-											<div key={section.sectionTitle} className={`checklist-item ${section.isGrounded ? 'done' : ''}`}>
-												<span>{section.isGrounded ? '✓' : '○'}</span>
-												<div>
-													<div>{section.sectionTitle}</div>
-													<div className="drawer-note">{section.isGrounded ? 'Grounded' : 'No evidence'}</div>
-												</div>
-											</div>
-										))}
-									</div>
-								</div>
+							{detail.latestDraft && (
+								<GroundingReview draftArtifact={detail.latestDraft} />
 							)}
 
 							<div className="drawer-section">
@@ -876,26 +987,219 @@ export default function GrantDrawer({
 								</div>
 							)}
 
-							{detail.followUps.length > 0 && (
-								<div className="drawer-section">
-									<h3>Follow-ups</h3>
-									<div className="drawer-list">
-										{detail.followUps.map((followUp) => (
-											<div key={followUp.id} className="drawer-list-item">
-												<div className="drawer-list-title">
-													{followUp.title}
-												</div>
-												<div className="drawer-note">
-													{followUp.type} · {followUp.status}
-													{followUp.dueDate
-														? ` · Due ${formatDate(followUp.dueDate.slice(0, 10))}`
-														: ""}
-												</div>
-											</div>
-										))}
-									</div>
+							{/* Follow-ups Section */}
+							<div className="drawer-section" data-testid="grant-drawer-follow-ups">
+								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+									<h3 style={{ marginBottom: 0 }}>Follow-ups</h3>
+									<button
+										type="button"
+										className="btn btn-sm"
+										onClick={() => setShowFollowUpForm(!showFollowUpForm)}
+										data-testid="add-follow-up-btn"
+										aria-label={showFollowUpForm ? 'Cancel new follow-up' : 'Add follow-up'}
+									>
+										{showFollowUpForm ? 'Cancel' : '+ Add follow-up'}
+									</button>
 								</div>
-							)}
+
+								{/* Create follow-up form */}
+								{showFollowUpForm && (
+									<div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px', marginBottom: '12px' }} data-testid="follow-up-create-form">
+										<select
+											className="form-input"
+											value={newFollowUpType}
+											onChange={(e) => setNewFollowUpType(e.target.value as FollowUp['type'])}
+											style={{ marginBottom: '8px' }}
+											aria-label="Follow-up type"
+										>
+											<option value="progress_check">Progress Check</option>
+											<option value="report_due">Report Due</option>
+											<option value="stipulation">Stipulation</option>
+											<option value="next_steps">Next Steps</option>
+											<option value="other">Other</option>
+										</select>
+										<input
+											type="text"
+											className="form-input"
+											placeholder="Title"
+											value={newFollowUpTitle}
+											onChange={(e) => setNewFollowUpTitle(e.target.value)}
+											style={{ marginBottom: '8px' }}
+											aria-label="Follow-up title"
+										/>
+										<textarea
+											className="form-input"
+											rows={2}
+											placeholder="Description (optional)"
+											value={newFollowUpDescription}
+											onChange={(e) => setNewFollowUpDescription(e.target.value)}
+											style={{ marginBottom: '8px' }}
+											aria-label="Follow-up description"
+										/>
+										<input
+											type="date"
+											className="form-input"
+											value={newFollowUpDueDate}
+											onChange={(e) => setNewFollowUpDueDate(e.target.value)}
+											style={{ marginBottom: '8px' }}
+											aria-label="Due date"
+										/>
+										<div style={{ display: 'flex', gap: '8px' }}>
+											<button
+												type="button"
+												className="btn btn-primary btn-sm"
+												onClick={handleCreateFollowUp}
+												disabled={!newFollowUpTitle.trim()}
+												data-testid="save-follow-up-btn"
+											>
+												Save
+											</button>
+										</div>
+									</div>
+								)}
+
+								{/* Outcome tracking for terminal statuses */}
+								{showOutcomeForm && (
+									<div style={{ background: 'rgba(212, 169, 67, 0.06)', border: '1px solid var(--accent-dim)', borderRadius: 'var(--radius)', padding: '12px', marginBottom: '12px' }} data-testid="outcome-tracking-form">
+										<div className="drawer-note" style={{ marginBottom: '8px', color: 'var(--accent)' }}>
+											Grant is now <strong>{detail.grant.statusLabel}</strong>. Record outcome notes:
+										</div>
+										<textarea
+											className="form-input"
+											rows={3}
+											placeholder="What happened? Capture lessons learned, next steps, or closure notes..."
+											value={outcomeNotes}
+											onChange={(e) => setOutcomeNotes(e.target.value)}
+											style={{ marginBottom: '8px' }}
+											aria-label="Outcome notes"
+										/>
+										<div style={{ display: 'flex', gap: '8px' }}>
+											<button
+												type="button"
+												className="btn btn-primary btn-sm"
+												onClick={handleSaveOutcome}
+												disabled={!outcomeNotes.trim()}
+												data-testid="save-outcome-btn"
+											>
+												Save outcome
+											</button>
+											<button
+												type="button"
+												className="btn btn-sm"
+												onClick={() => { setShowOutcomeForm(false); setOutcomeNotes(''); }}
+											>
+												Dismiss
+											</button>
+										</div>
+									</div>
+								)}
+
+								{/* Follow-ups list */}
+								{followUpsLoading ? (
+									<div className="drawer-note">Loading follow-ups...</div>
+								) : followUps.length === 0 ? (
+									<div className="drawer-note">No follow-ups yet. Click "+ Add follow-up" to create one.</div>
+								) : (
+									<div className="drawer-list">
+										{[...followUps].sort((a, b) => {
+											// Sort: pending first, then overdue, then completed last
+											const statusOrder: Record<string, number> = { overdue: 0, pending: 1, completed: 2 };
+											const orderA = isOverdue(a) ? 0 : (statusOrder[a.status] ?? 1);
+											const orderB = isOverdue(b) ? 0 : (statusOrder[b.status] ?? 1);
+											if (orderA !== orderB) return orderA - orderB;
+											// Then by due date (earliest first)
+											if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+											return 0;
+										}).map((followUp) => {
+											const overdue = isOverdue(followUp);
+											const statusColor =
+												followUp.status === 'completed' ? 'var(--success)' :
+												overdue ? 'var(--danger)' : 'var(--warning)';
+											return (
+												<div
+													key={followUp.id}
+													className="drawer-list-item"
+													data-testid={`follow-up-item-${followUp.id}`}
+													style={overdue ? { borderColor: 'var(--danger)', borderWidth: '1.5px' } : undefined}
+												>
+													<div style={{ flex: 1 }}>
+														<div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+															<span style={{
+																fontFamily: 'var(--mono)',
+																fontSize: '9px',
+																textTransform: 'uppercase',
+																letterSpacing: '0.1em',
+																padding: '2px 6px',
+																borderRadius: '3px',
+																background: `${statusColor}22`,
+																color: statusColor,
+																fontWeight: 600,
+															}}>
+																{overdue ? 'OVERDUE' : followUp.status}
+															</span>
+															<span style={{
+																fontFamily: 'var(--mono)',
+																fontSize: '9px',
+																textTransform: 'uppercase',
+																color: 'var(--text-muted)',
+															}}>
+																{followUp.type.replace(/_/g, ' ')}
+															</span>
+														</div>
+														<div className="drawer-list-title" style={{ color: overdue ? 'var(--danger)' : undefined }}>
+															{overdue && <span aria-label="Warning" role="img" style={{ marginRight: '4px' }}>⚠️</span>}
+															{followUp.title}
+														</div>
+														{followUp.description && (
+															<div className="drawer-note" style={{ marginTop: '4px' }}>{followUp.description}</div>
+														)}
+														<div className="drawer-note">
+															{followUp.dueDate && (
+																<span style={overdue ? { color: 'var(--danger)' } : undefined}>
+																	Due {formatDate(followUp.dueDate.slice(0, 10))}
+																</span>
+															)}
+															{followUp.completedAt && (
+																<span style={{ color: 'var(--success)' }}>
+																	{' '}· Completed {new Date(followUp.completedAt).toLocaleString()}
+																</span>
+															)}
+															{!followUp.dueDate && !followUp.completedAt && (
+																<span>No due date</span>
+															)}
+														</div>
+													</div>
+													<div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', flexShrink: 0 }}>
+														{followUp.status !== 'completed' && (
+															<button
+																type="button"
+																className="btn btn-sm"
+																onClick={() => handleMarkComplete(followUp)}
+																data-testid={`mark-complete-btn-${followUp.id}`}
+																aria-label={`Mark \"${followUp.title}\" as complete`}
+																title="Mark complete"
+															>
+																✓
+															</button>
+														)}
+														<button
+															type="button"
+															className="btn btn-sm btn-ghost"
+															onClick={() => handleDeleteFollowUp(followUp.id)}
+															data-testid={`delete-follow-up-btn-${followUp.id}`}
+															aria-label={`Delete \"${followUp.title}\"`}
+															title="Delete"
+															style={{ color: 'var(--text-muted)' }}
+														>
+															🗑
+														</button>
+													</div>
+												</div>
+											);
+										})}
+									</div>
+								)}
+							</div>
 
 							{closeWarningOpen && (
 								<div className="drawer-section" data-testid="grant-drawer-unsaved-warning">

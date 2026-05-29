@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { z } from 'zod';
+import { opencodeFailureMessages } from '@/lib/failure-messages';
+import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
 import { discoverSourcesFromPrompt } from '@/server/grant-ops/source-discovery-service';
 
 export const dynamic = 'force-dynamic';
@@ -19,6 +22,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error('Error discovering sources:', error);
-    return NextResponse.json({ error: 'Failed to discover sources' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to discover sources';
+    const failureMode = classifyOpencodeError(errorMessage);
+    const guidance = opencodeFailureMessages[failureMode];
+    const retryable = ['rate-limit', 'malformed-output', 'model-unavailable', 'timeout', 'unknown'].includes(failureMode);
+
+    return NextResponse.json(
+      {
+        error: errorMessage,
+        failureMode,
+        retryable,
+        guidance,
+      },
+      { status: 500 },
+    );
   }
 }

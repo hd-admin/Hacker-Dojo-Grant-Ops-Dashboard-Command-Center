@@ -225,10 +225,11 @@ describe('DashboardView', () => {
       expect(container.querySelector('.activity-text')?.innerHTML).toContain('Grant matched');
     });
 
-    it('falls back to getDefaultActivity when notifications is empty array', async () => {
-      root.render(React.createElement(DashboardView, { ...requiredProps, notifications: [] }));
+    it('renders activity-empty-state when notifications is empty array', async () => {
+      root.render(React.createElement(DashboardView, { ...requiredProps, grants: [...mockGrants], notifications: [], profile: { agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile }));
       await new Promise((r) => setTimeout(r, 0));
-      expect(container.querySelectorAll('.activity-item').length).toBeGreaterThanOrEqual(1);
+      expect(container.querySelector('[data-testid="activity-empty-state"]')).not.toBeNull();
+      expect(container.querySelector('[data-testid="activity-empty-state"] .empty-state-title')?.textContent).toBe('No activity yet');
     });
   });
 });

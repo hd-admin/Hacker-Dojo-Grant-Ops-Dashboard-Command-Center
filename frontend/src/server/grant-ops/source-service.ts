@@ -6,7 +6,7 @@
  * This service uses the DI boundary from dependencies.ts for all external dependencies.
  */
 
-import { Source } from '../../../../shared/types';
+import type { CrawlRun, Source, SourceCrawlState } from '../../../../shared/types';
 import { getDependencies } from './dependencies';
 
 export interface AddSourceInput {
@@ -18,6 +18,7 @@ export interface AddSourceInput {
   suggestionReason?: string;
   category?: Source['category'];
   categoryRationale?: string;
+  crawlAccessCategory?: Source['crawlAccessCategory'];
 }
 
 export interface SourceService {
@@ -47,6 +48,8 @@ export async function addSource(input: AddSourceInput): Promise<Source> {
     createdAt: clock.now().toISOString(),
     isActive: input.reviewStatus === 'approved',
     reviewStatus: input.reviewStatus ?? 'pending-review',
+    sourceCrawlState: 'never-crawled',
+    crawlAccessCategory: input.crawlAccessCategory ?? 'crawlable',
   };
   if (input.suggestedBy !== undefined) source.suggestedBy = input.suggestedBy;
   if (input.suggestionReason !== undefined) source.suggestionReason = input.suggestionReason;
@@ -115,4 +118,83 @@ export async function updateSourceLastCrawled(id: string): Promise<boolean> {
   await deps.repository.removeSource(id);
   await deps.repository.addSource(source);
   return true;
+}
+
+/**
+ * Compute the crawl state for a source based on its crawl run history.
+ */
+export async function computeSourceCrawlState(sourceId: string): Promise<SourceCrawlState> {
+  const deps = getDependencies();
+  const runs = await getSourceCrawlHistory(sourceId);
+
+  if (runs.length === 0) {
+    return 'never-crawled';
+  }
+
+  // Check for active runs
+  const activeRun = runs.find((r) => r.status === 'running');
+  if (activeRun) {
+    return 'running';
+  }
+
+  // Check for queued runs (status queued isn't in CrawlRun, but we handle it)
+  const queuedRun = runs.find((r) => (r as CrawlRun & { status: string }).status === 'queued');
+  if (queuedRun) {
+    return 'queued';
+  }
+
+  // Sort by recency
+  const sortedRuns = [...runs].sort(
+    (a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime(),
+  );
+  const latestRun = sortedRuns[0];
+
+  if (!latestRun) {
+    return 'never-crawled';
+  }
+
+  if (latestRun.status === 'completed') {
+    // Check if there were partial failures in recent history
+    const recentFailures = sortedRuns.slice(0, 3).filter((r) => r.status === 'failed');
+    if (recentFailures.length > 0) {
+      return 'partially-failed';
+    }
+    return 'succeeded';
+  }
+
+  if (latestRun.status === 'failed') {
+    return 'failed';
+  }
+
+  return 'never-crawled';
+}
+
+/**
+ * Get crawl run history for a specific source.
+ */
+export async function getSourceCrawlHistory(sourceId: string): Promise<CrawlRun[]> {
+  const deps = getDependencies();
+  const allRuns = await deps.repository.getCrawlRuns();
+  return allRuns
+    .filter((run) => run.sourceId === sourceId)
+    .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
+}
+
+/**
+ * Enrich a single source with its computed crawl state.
+ */
+export async function enrichSourceWithCrawlState(source: Source): Promise<Source> {
+  const crawlState = await computeSourceCrawlState(source.id);
+  const runs = await getSourceCrawlHistory(source.id);
+
+  const latestFailed = runs.find((r) => r.status === 'failed');
+  const latestSucceeded = runs.find((r) => r.status === 'completed');
+
+  return {
+    ...source,
+    sourceCrawlState: crawlState,
+    lastFailedAt: latestFailed?.completedAt || latestFailed?.startedAt,
+    failureCategory: latestFailed?.failureCategory,
+    lastCrawledAt: source.lastCrawledAt ?? latestSucceeded?.completedAt,
+  };
 }

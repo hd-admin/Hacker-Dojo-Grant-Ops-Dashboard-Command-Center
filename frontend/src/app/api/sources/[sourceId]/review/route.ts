@@ -30,6 +30,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       await deps.repository.updateSource(sourceId, {
         reviewStatus: 'approved',
         approvedAt: now,
+        lastManualReviewDate: now,
         isActive: true,
         ...(body.data.category ? { category: body.data.category } : {}),
         ...(body.data.categoryRationale ? { categoryRationale: body.data.categoryRationale } : {}),

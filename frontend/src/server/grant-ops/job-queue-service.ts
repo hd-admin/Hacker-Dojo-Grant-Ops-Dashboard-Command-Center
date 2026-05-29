@@ -47,37 +47,90 @@ export async function createQueuedJob(
   return queuedJob;
 }
 
-export async function executeQueuedJob(jobId: string, stage: string, runner: JobRunner): Promise<void> {
-  const deps = getDependencies();
-  await deps.repository.updateJobQueueItem(jobId, {
-    status: 'running',
-    stage,
-    startedAt: now(),
-    lastUpdate: now(),
-  });
+export async function executeQueuedJob(
+	jobId: string,
+	stage: string,
+	runner: JobRunner,
+): Promise<void> {
+	const deps = getDependencies();
+	await deps.repository.updateJobQueueItem(jobId, {
+		status: 'running',
+		stage,
+		startedAt: now(),
+		lastUpdate: now(),
+	});
 
-  try {
-    const resultSummary = await runner();
-    await deps.repository.updateJobQueueItem(jobId, {
-      status: 'completed',
-      stage: 'completed',
-      completedAt: now(),
-      lastUpdate: now(),
-      resultSummary,
-      errorMessage: undefined,
-      failureCategory: undefined,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : 'Job failed';
-    await deps.repository.updateJobQueueItem(jobId, {
-      status: 'failed',
-      stage: 'failed',
-      completedAt: now(),
-      lastUpdate: now(),
-      errorMessage: message,
-      failureCategory: classifyJobFailureCategory(error),
-    });
-  }
+	const MAX_AUTO_RETRIES = 3;
+	const MAX_TOTAL_DELAY_MS = 2 * 60 * 1000;
+	let totalDelayMs = 0;
+	let lastError: unknown;
+	let lastPartialOutput: string | undefined;
+
+	for (let attempt = 0; attempt <= MAX_AUTO_RETRIES; attempt++) {
+		try {
+			const resultSummary = await runner();
+			await deps.repository.updateJobQueueItem(jobId, {
+				status: 'completed',
+				stage: 'completed',
+				completedAt: now(),
+				lastUpdate: now(),
+				resultSummary,
+				errorMessage: undefined,
+				failureCategory: undefined,
+				partialOutput: undefined,
+			});
+			return;
+		} catch (error) {
+			lastError = error;
+			const category = classifyJobFailureCategory(error);
+			const isTransient =
+				category === 'rate-limit' ||
+				category === 'timeout' ||
+				category === 'connectivity';
+
+			// Preserve partial output from error object when present
+			if (
+				error !== null &&
+				typeof error === 'object' &&
+				'partialOutput' in error
+			) {
+				const val = (error as Record<string, unknown>).partialOutput;
+				if (typeof val === 'string') {
+					lastPartialOutput = val;
+				}
+			}
+
+			if (!isTransient || attempt >= MAX_AUTO_RETRIES) {
+				break;
+			}
+
+			// Exponential backoff: 1s, 2s, 4s for attempts 0, 1, 2
+			const backoffMs = 1000 * 2 ** attempt;
+			if (totalDelayMs + backoffMs > MAX_TOTAL_DELAY_MS) {
+				break;
+			}
+			totalDelayMs += backoffMs;
+
+			await deps.repository.updateJobQueueItem(jobId, {
+				stage: 'retrying',
+				lastUpdate: now(),
+			});
+			await new Promise<void>((resolve) => setTimeout(resolve, backoffMs));
+		}
+	}
+
+	// All retries exhausted — mark as failed
+	const message =
+		lastError instanceof Error ? lastError.message : 'Job failed';
+	await deps.repository.updateJobQueueItem(jobId, {
+		status: 'failed',
+		stage: 'failed',
+		completedAt: now(),
+		lastUpdate: now(),
+		errorMessage: message,
+		failureCategory: classifyJobFailureCategory(lastError),
+		...(lastPartialOutput ? { partialOutput: lastPartialOutput } : {}),
+	});
 }
 
 export async function enqueueJob(job: Pick<JobQueueItem, 'jobType' | 'entityId' | 'retryCount'>, stage: string, runner: JobRunner): Promise<JobQueueItem> {
@@ -145,6 +198,43 @@ export async function cancelQueuedJob(jobId: string): Promise<boolean> {
 	});
 
 	return true;
+}
+
+/**
+ * Restart a job by cancelling it (if active) and creating a fresh queued job
+ * with retry count reset to 0. Returns the new job or null if the original job
+ * was not found.
+ */
+export async function restartQueuedJob(
+	jobId: string,
+): Promise<JobQueueItem | null> {
+	const deps = getDependencies();
+	const job = await deps.repository.getJobQueueItem(jobId);
+
+	if (!job) {
+		return null;
+	}
+
+	// Cancel the existing job if it is still active
+	if (job.status === 'queued' || job.status === 'running') {
+		await cancelQueuedJob(jobId);
+	}
+
+	// Create a fresh job with retry count reset to 0
+	const timestamp = now();
+	const newJob: JobQueueItem = {
+		id: deps.idGenerator.generateId('job'),
+		jobType: job.jobType,
+		status: 'queued',
+		stage: 'queued',
+		lastUpdate: timestamp,
+		createdAt: timestamp,
+		retryCount: 0,
+		...(job.entityId ? { entityId: job.entityId } : {}),
+	};
+
+	await deps.repository.addJobQueueItem(newJob);
+	return newJob;
 }
 
 /**

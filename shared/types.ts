@@ -46,6 +46,8 @@ export type JobFailureCategory =
 	| "logic"
 	| "unknown";
 export type PipelineViewMode = "board" | "list";
+export type SourceCrawlState = 'never-crawled' | 'queued' | 'running' | 'succeeded' | 'partially-failed' | 'failed';
+export type SourceCrawlAccessCategory = 'crawlable' | 'manual-only' | 'unsupported';
 
 export interface JobQueueItem {
 	id: string;
@@ -61,6 +63,7 @@ export interface JobQueueItem {
 	errorMessage?: string | undefined;
 	resultSummary?: string;
 	failureCategory?: JobFailureCategory | undefined;
+	partialOutput?: string;
 }
 
 export interface HumanOverride {
@@ -89,6 +92,10 @@ export interface HealthCheckResult {
 	opencode: "not-installed" | "not-reachable" | "incompatible" | "ok" | "error";
 	opencodeError?: string;
 	opencodeVersion?: string;
+	handshakeSuccess?: boolean;
+	handshakeResponseTimeMs?: number;
+	handshakeError?: string;
+	capabilities?: string[];
 	crawlerLastRunAt?: string;
 	crawlerStatus: "ok" | "stale" | "never-run";
 	documentIndexer: "ok" | "degraded" | "error";
@@ -171,6 +178,18 @@ export interface Source {
 	suggestionReason?: string;
 	category?: SourceCategory;
 	categoryRationale?: string;
+	sourceCrawlState: SourceCrawlState;
+	lastFailedAt?: string;
+	failureCategory?: JobFailureCategory;
+	crawlAccessCategory: SourceCrawlAccessCategory;
+	/** How authentication is handled for this source (e.g. 'API key', 'OAuth2', 'none') */
+	authMethodDescription?: string;
+	/** Recommended crawl interval in human-readable form (e.g. 'weekly', 'daily') */
+	crawlFrequencyRecommendation?: string;
+	/** ISO timestamp of the last manual review by an operator */
+	lastManualReviewDate?: string;
+	/** Free-form operator notes about this source */
+	operatorNotes?: string;
 }
 
 export interface SourceDiscoverySuggestion {
@@ -182,6 +201,14 @@ export interface SourceDiscoverySuggestion {
 	confidence: number;
 	suggestedBy: "ai";
 	createdAt: string;
+	/** AI-suggested source category */
+	suggestedCategory?: SourceCategory;
+	/** AI-suggested crawl access classification */
+	suggestedCrawlAccess?: SourceCrawlAccessCategory;
+	/** AI-suggested auth method description */
+	authMethodDescription?: string;
+	/** AI-suggested crawl frequency */
+	crawlFrequencyRecommendation?: string;
 }
 
 export interface CrawlSchedule {
@@ -371,11 +398,13 @@ export interface CrawlRun {
 	id: string;
 	startedAt: string;
 	completedAt?: string;
-	status: "running" | "completed" | "failed";
+	status: "running" | "completed" | "failed" | "partial-results";
 	sourcesCrawled: number;
 	grantsFound: number;
 	grantsMatched: number;
 	errorMessage?: string;
+	sourceId?: string;
+	failureCategory?: JobFailureCategory;
 }
 
 export interface ResearchEvidence {
@@ -410,6 +439,7 @@ export interface DraftArtifact {
 	createdBy: "agent" | "human";
 	revisionNotes?: string;
 	groundingSections?: Array<{ sectionTitle: string; evidence: string[]; isGrounded: boolean }>;
+	status?: "generated" | "partial-failure";
 }
 
 export interface RevisionRequest {

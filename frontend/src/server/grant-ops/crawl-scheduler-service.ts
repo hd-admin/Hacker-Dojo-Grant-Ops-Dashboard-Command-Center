@@ -51,6 +51,21 @@ export async function checkAndRunDue(): Promise<number> {
   }
 
   for (const schedule of dueSchedules) {
+    // Approval gate: skip sources that are not approved
+    const source = await deps.repository.getSources().then(
+      (all) => all.find((s) => s.id === schedule.sourceId),
+    );
+    if (!source || source.reviewStatus !== 'approved' || !source.isActive) {
+      console.warn(
+        `Skipping scheduled crawl for source ${schedule.sourceId}: not approved or inactive`,
+      );
+      // Update next schedule time to skip this cycle but keep schedule
+      schedule.lastScheduledAt = now.toISOString();
+      schedule.nextScheduledAt = addHours(now, schedule.intervalHours);
+      await saveCrawlSchedule(schedule);
+      continue;
+    }
+
     await runResearch(profile, { sourceIds: [schedule.sourceId] });
     schedule.lastScheduledAt = now.toISOString();
     schedule.nextScheduledAt = addHours(now, schedule.intervalHours);

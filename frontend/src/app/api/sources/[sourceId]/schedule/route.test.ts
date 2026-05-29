@@ -13,6 +13,8 @@ function createSource(id: string): Source {
     createdAt: '2026-05-27T00:00:00.000Z',
     isActive: true,
     reviewStatus: 'approved',
+    sourceCrawlState: 'never-crawled',
+    crawlAccessCategory: 'crawlable',
   };
 }
 

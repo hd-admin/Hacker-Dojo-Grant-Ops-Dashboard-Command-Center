@@ -298,6 +298,14 @@ export const jobsApi = {
 export const followUpsApi = {
 	getAll: () => apiFetch<FollowUp[]>("/api/follow-ups"),
 
+	getFiltered: (params: { grantId?: string; status?: string }) => {
+		const searchParams = new URLSearchParams();
+		if (params.grantId) searchParams.set('grantId', params.grantId);
+		if (params.status) searchParams.set('status', params.status);
+		const qs = searchParams.toString();
+		return apiFetch<FollowUp[]>(`/api/follow-ups${qs ? `?${qs}` : ''}`);
+	},
+
 	create: (followUp: Omit<FollowUp, "id" | "createdAt">) =>
 		apiFetch<FollowUp>("/api/follow-ups", {
 			method: "POST",
@@ -309,6 +317,12 @@ export const followUpsApi = {
 			method: "PATCH",
 			body: JSON.stringify(followUp),
 		}),
+
+	delete: (id: string) =>
+		apiFetch<{ success: boolean }>(
+			`/api/follow-ups?id=${encodeURIComponent(id)}`,
+			{ method: "DELETE" },
+		),
 };
 
 // ============ Profile API ============

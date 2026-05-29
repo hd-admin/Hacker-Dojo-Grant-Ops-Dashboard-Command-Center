@@ -22,6 +22,7 @@ import SettingsView from "./SettingsView";
 import SourcesView from "./SourcesView";
 import TasksView from "./TasksView";
 import AuditView from "./AuditView";
+import JobsPanel from "./JobsPanel";
 
 type ViewType =
   | "dashboard"
@@ -31,6 +32,7 @@ type ViewType =
   | "settings"
   | "notifications"
   | "tasks"
+  | "jobs"
   | "audit";
 
 type HealthTier = "fully_online" | "partially_degraded" | "fully_offline";
@@ -60,6 +62,7 @@ const workspaceNav: NavItem[] = [
 const activityNav: NavItem[] = [
   { view: 'notifications', label: 'Notifications', icon: '✉', ariaLabel: 'View notifications' },
   { view: 'tasks', label: 'Tasks', icon: '⌶', ariaLabel: 'View tasks' },
+  { view: 'jobs', label: 'Jobs', icon: '⚙', ariaLabel: 'View job queue' },
   { view: 'audit', label: 'Audit', icon: '✎', ariaLabel: 'View audit trail' },
 ];
 
@@ -697,6 +700,9 @@ export default function AppShell() {
         <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`} role="tabpanel" aria-label="Tasks">
           <TasksView onRefreshAppState={refreshAppState} tasks={tasks} />
         </div>
+        <div id="view-jobs" className={`view ${activeView === 'jobs' ? 'active' : ''}`} role="tabpanel" aria-label="Job Queue">
+          <JobsPanel onRefreshAppState={refreshAppState} />
+        </div>
         <div id="view-audit" className={`view ${activeView === 'audit' ? 'active' : ''}`} role="tabpanel" aria-label="Audit Trail">
           <AuditView />
         </div>
@@ -826,18 +832,20 @@ export default function AppShell() {
               </div>
             )}
 
-            {/* Step 2: Initial Document Upload */}
+            {/* Step 2: Reference Documents */}
             {setupStep === 2 && (
               <div className="setup-step">
                 <div className="setup-step-label">Step 3 of 3</div>
                 <div className="setup-step-title">Reference Documents</div>
                 <div className="setup-step-body">
                   <p style={{ fontSize: '13px', color: 'var(--text-dim)' }}>
-                    Upload key documents that will help the AI agent write better grant proposals:
-                    budgets, impact reports, board lists, and organizational documents.
+                    You can upload reference documents (budgets, impact reports, board lists, and
+                    organizational documents) to help the AI write stronger grant proposals.
                   </p>
                   <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    You can upload documents later from Settings at any time.
+                    Document upload is available from the Settings page after setup. Click
+                    &ldquo;Complete setup&rdquo; below or &ldquo;Skip setup&rdquo; to proceed without
+                    uploading documents now.
                   </p>
                 </div>
               </div>

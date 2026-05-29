@@ -20,6 +20,8 @@ import type {
   DocumentExtractionStatus,
   SourceReviewStatus,
   SourceCategory,
+  SourceCrawlState,
+  SourceCrawlAccessCategory,
   JobFailureCategory,
 } from './types';
 
@@ -218,6 +220,31 @@ export const SourceCategorySchema: z.ZodType<SourceCategory> = z.enum([
   'other',
 ]);
 
+export const JobFailureCategorySchema: z.ZodType<JobFailureCategory> = z.enum([
+  'connectivity',
+  'timeout',
+  'rate-limit',
+  'quota-exhausted',
+  'capacity',
+  'logic',
+  'unknown',
+]);
+
+export const SourceCrawlStateSchema: z.ZodType<SourceCrawlState> = z.enum([
+  'never-crawled',
+  'queued',
+  'running',
+  'succeeded',
+  'partially-failed',
+  'failed',
+]);
+
+export const SourceCrawlAccessCategorySchema: z.ZodType<SourceCrawlAccessCategory> = z.enum([
+  'crawlable',
+  'manual-only',
+  'unsupported',
+]);
+
 export const SourceSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -233,6 +260,14 @@ export const SourceSchema = z.object({
   suggestionReason: z.string().optional(),
   category: SourceCategorySchema.optional(),
   categoryRationale: z.string().optional(),
+  sourceCrawlState: SourceCrawlStateSchema,
+  lastFailedAt: z.string().optional(),
+  failureCategory: JobFailureCategorySchema.optional(),
+  crawlAccessCategory: SourceCrawlAccessCategorySchema,
+  authMethodDescription: z.string().optional(),
+  crawlFrequencyRecommendation: z.string().optional(),
+  lastManualReviewDate: z.string().optional(),
+  operatorNotes: z.string().optional(),
 });
 
 export const SourceDiscoverySuggestionSchema = z.object({
@@ -244,6 +279,10 @@ export const SourceDiscoverySuggestionSchema = z.object({
   confidence: z.number().min(0).max(1),
   suggestedBy: z.literal('ai'),
   createdAt: z.string(),
+  suggestedCategory: SourceCategorySchema.optional(),
+  suggestedCrawlAccess: SourceCrawlAccessCategorySchema.optional(),
+  authMethodDescription: z.string().optional(),
+  crawlFrequencyRecommendation: z.string().optional(),
 });
 
 export const CrawlScheduleSchema = z.object({
@@ -260,7 +299,7 @@ export const CrawlRunSchema = z.object({
   id: z.string(),
   startedAt: z.string(),
   completedAt: z.string().optional(),
-  status: z.enum(['running', 'completed', 'failed']),
+  status: z.enum(['running', 'completed', 'failed', 'partial-results']),
   sourcesCrawled: z.number(),
   grantsFound: z.number(),
   grantsMatched: z.number(),
@@ -317,6 +356,7 @@ export const DraftArtifactSchema = z.object({
     evidence: z.array(z.string()),
     isGrounded: z.boolean(),
   })).optional(),
+  status: z.enum(['generated', 'partial-failure']).optional(),
 });
 
 export const RevisionRequestSchema: z.ZodType<RevisionRequest> = z.object({
@@ -389,16 +429,6 @@ export const FollowUpSchema = z.object({
   completedAt: z.string().optional(),
   createdAt: z.string(),
 });
-
-export const JobFailureCategorySchema: z.ZodType<JobFailureCategory> = z.enum([
-  'connectivity',
-  'timeout',
-  'rate-limit',
-  'quota-exhausted',
-  'capacity',
-  'logic',
-  'unknown',
-]);
 
 export const JobQueueItemSchema = z.object({
   id: z.string(),

@@ -355,3 +355,8 @@ export async function updateFollowUp(followUp: FollowUp): Promise<void> {
   const deps = getDependencies();
   await deps.repository.updateFollowUp(followUp);
 }
+
+export async function deleteFollowUp(id: string): Promise<boolean> {
+  const deps = getDependencies();
+  return deps.repository.deleteFollowUp(id);
+}

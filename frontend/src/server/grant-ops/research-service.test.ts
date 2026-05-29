@@ -15,6 +15,7 @@ import type { OrganizationProfile } from "../../../../shared/types";
 import { createDependencies, resetDependencies, setDependencies } from "./dependencies";
 import * as repository from "./repository";
 import * as researchService from "./research-service";
+import { NoSourcesConfiguredError } from "./research-service";
 import * as sourceService from "./source-service";
 
 const mockProfile: OrganizationProfile = {
@@ -53,6 +54,26 @@ describe("ResearchService", () => {
 		// Cleanup temp directory
 		resetDependencies();
 		await tempDataDir.cleanup();
+	});
+
+	describe("runResearch with zero sources", () => {
+		it("returns NO_SOURCES_CONFIGURED error when crawl is triggered with no active sources", async () => {
+			// No sources added — should throw NoSourcesConfiguredError
+			let caughtError: Error | null = null;
+			try {
+				await researchService.runResearch(mockProfile, {
+					_providerType: "fake",
+				});
+			} catch (error) {
+				caughtError = error as Error;
+			}
+
+			expect(caughtError).toBeInstanceOf(NoSourcesConfiguredError);
+			expect((caughtError as NoSourcesConfiguredError).code).toBe('NO_SOURCES_CONFIGURED');
+			expect(caughtError?.message).toBe(
+				'No sources configured. Add funding sources in Sources before running discovery.'
+			);
+		});
 	});
 
 	describe("runResearch persistence", () => {

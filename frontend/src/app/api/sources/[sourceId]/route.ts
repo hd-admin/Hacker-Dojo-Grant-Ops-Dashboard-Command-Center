@@ -11,6 +11,11 @@ const updateSchema = z.object({
   type: z.enum(['website', 'database', 'api']).optional(),
   category: z.enum(['foundation', 'government', 'corporate', 'community', 'other']).optional(),
   categoryRationale: z.string().optional(),
+  crawlAccessCategory: z.enum(['crawlable', 'manual-only', 'unsupported']).optional(),
+  authMethodDescription: z.string().optional(),
+  crawlFrequencyRecommendation: z.string().optional(),
+  operatorNotes: z.string().optional(),
+  lastManualReviewDate: z.string().optional(),
 });
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ sourceId: string }> }) {
@@ -33,6 +38,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     if (parsed.data.type !== undefined) updates.type = parsed.data.type;
     if (parsed.data.category !== undefined) updates.category = parsed.data.category;
     if (parsed.data.categoryRationale !== undefined) updates.categoryRationale = parsed.data.categoryRationale;
+    if (parsed.data.crawlAccessCategory !== undefined) updates.crawlAccessCategory = parsed.data.crawlAccessCategory;
+    if (parsed.data.authMethodDescription !== undefined) updates.authMethodDescription = parsed.data.authMethodDescription;
+    if (parsed.data.crawlFrequencyRecommendation !== undefined) updates.crawlFrequencyRecommendation = parsed.data.crawlFrequencyRecommendation;
+    if (parsed.data.operatorNotes !== undefined) updates.operatorNotes = parsed.data.operatorNotes;
+    if (parsed.data.lastManualReviewDate !== undefined) updates.lastManualReviewDate = parsed.data.lastManualReviewDate;
     await deps.repository.updateSource(sourceId, updates);
     const updated = (await deps.repository.getSources()).find((item) => item.id === sourceId);
     await deps.repository.addAuditEvent({

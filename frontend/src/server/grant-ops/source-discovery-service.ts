@@ -18,6 +18,10 @@ const suggestionInputSchema = z.object({
   id: z.string().optional(),
   createdAt: z.string().optional(),
   suggestedBy: z.literal('ai').optional(),
+  suggestedCategory: z.enum(['foundation', 'government', 'corporate', 'community', 'other']).optional(),
+  suggestedCrawlAccess: z.enum(['crawlable', 'manual-only', 'unsupported']).optional(),
+  authMethodDescription: z.string().optional(),
+  crawlFrequencyRecommendation: z.string().optional(),
 });
 
 const sourceDiscoveryPayloadSchema = z.union([
@@ -64,6 +68,10 @@ function normalizeSuggestion(
     confidence: item.confidence,
     suggestedBy: item.suggestedBy ?? 'ai',
     createdAt: item.createdAt ?? new Date().toISOString(),
+    suggestedCategory: item.suggestedCategory,
+    suggestedCrawlAccess: item.suggestedCrawlAccess,
+    authMethodDescription: item.authMethodDescription,
+    crawlFrequencyRecommendation: item.crawlFrequencyRecommendation,
   });
 
   return parsed.success ? parsed.data : null;
@@ -74,7 +82,16 @@ function buildPrompt(prompt: string): string {
     'Return only JSON.',
     'You are helping a nonprofit research team identify real grant source destinations from an operator prompt.',
     'Return a JSON array only; no markdown, no prose, no explanation.',
-    'Each item must contain: name, url, type (website|database|api), rationale, confidence (0.0-1.0).',
+    'Each item must contain:',
+    '  - name: source name',
+    '  - url: real, verifiable URL (no synthetic URLs)',
+    '  - type: "website" | "database" | "api"',
+    '  - rationale: why this source is relevant to the prompt',
+    '  - confidence: 0.0-1.0 how certain you are this is a real, useful source',
+    '  - suggestedCategory: "foundation" | "government" | "corporate" | "community" | "other"',
+    '  - suggestedCrawlAccess: "crawlable" (public pages, no login) | "manual-only" (requires browser interaction) | "unsupported" (paywalled, captcha, etc.)',
+    '  - authMethodDescription: brief note on auth needed (e.g. "none", "API key", "OAuth2")',
+    '  - crawlFrequencyRecommendation: "daily" | "weekly" | "monthly" based on how often content changes',
     'Prefer evidence-backed sources and avoid synthetic URLs.',
     '',
     `Operator request: ${prompt}`,

@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import type { Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem } from '../../../shared/types';
+import type { FollowUp, Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem } from '../../../shared/types';
+import { client } from '../lib/grant-ops-client';
+import { jobFailureMessages } from '../lib/failure-messages';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
 
@@ -33,22 +35,42 @@ function formatCurrency(amount: number): string {
   return `$${amount}`;
 }
 
-function getDefaultActivity(): ActivityEvent[] {
-  return [
-    { dot: 'success', text: '<strong>3 new grants</strong> matched from Candid weekly crawl', time: '2h ago' },
-    { dot: 'accent', text: 'Draft completed for <strong>SVCF Community Innovation Fund</strong> \u00b7 awaiting review', time: '4h ago' },
-    { dot: 'info', text: 'Crawled 47 sources \u00b7 12 federal, 28 foundation, 7 corporate', time: '6h ago' },
-    { dot: 'warning', text: 'NSF TechAccess LOI deadline in <strong>26 days</strong> \u2014 checklist 4/7 complete', time: 'yesterday' },
-    { dot: 'success', text: 'Submitted: <strong>Wiener Family Foundation</strong> \u00b7 confirmation #WFF-2026-0341', time: '2d ago' },
-    { dot: 'accent', text: 'Org profile updated \u00b7 Impact Report v2.1 indexed', time: '3d ago' },
-  ];
+/** Client-side progress mapping matching the server-side JobProgressStage values. */
+const stageProgress: Record<string, number> = {
+  queued: 0,
+  retrying: 5,
+  preparing: 10,
+  fetching: 30,
+  analyzing: 60,
+  drafting: 80,
+  completed: 100,
+  failed: 100,
+  cancelled: 100,
+};
+
+function getJobProgress(stage: string | undefined): number {
+  return stage ? (stageProgress[stage] ?? 0) : 0;
+}
+
+function stageDescription(stage: string | undefined): string {
+  if (!stage || stage === 'queued') return 'Waiting to start';
+  if (stage === 'retrying') return 'Retrying after previous attempt';
+  if (stage === 'preparing') return 'Preparing resources';
+  if (stage === 'fetching') return 'Fetching data';
+  if (stage === 'analyzing') return 'Analyzing results';
+  if (stage === 'drafting') return 'Generating draft';
+  if (stage === 'completed') return 'Completed successfully';
+  if (stage === 'failed') return 'Failed';
+  if (stage === 'cancelled') return 'Cancelled';
+  return stage;
 }
 
 export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications, recentGrantIds }: DashboardViewProps) {
   const [jobs, setJobs] = useState<JobQueueItem[]>([]);
+  const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const activity: ActivityEvent[] = (notifications && notifications.length > 0)
     ? notifications.slice(0, 6).map((n) => ({ dot: n.dot, text: n.text, time: n.time }))
-    : getDefaultActivity();
+    : [];
 
   const handleRefreshCrawl = async () => {
     try {
@@ -80,6 +102,21 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
     }, jobs.some((job) => job.status === 'queued' || job.status === 'running') ? 5000 : 15000);
     return () => { cancelled = true; window.clearInterval(interval); };
   }, [jobs]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadFollowUps = async () => {
+      try {
+        const data = await client.followUps.getAll();
+        if (!cancelled) setFollowUps(Array.isArray(data) ? data : []);
+      } catch (error) {
+        console.error('Error loading follow-ups:', error);
+        if (!cancelled) setFollowUps([]);
+      }
+    };
+    void loadFollowUps();
+    return () => { cancelled = true; };
+  }, []);
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
@@ -114,6 +151,32 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
     .slice(0, 5);
 
   const reviewQueue = grants.filter((g) => g.status === 'review');
+
+  // Follow-up data
+  const pendingFollowUps = followUps.filter((f) => f.status === 'pending');
+  const overdueFollowUps = followUps.filter((f) => {
+    if (f.status !== 'pending' || !f.dueDate) return false;
+    return new Date(f.dueDate) < new Date();
+  });
+  const upcomingFollowUps = followUps.filter((f) => {
+    if (f.status !== 'pending' || !f.dueDate) return false;
+    const dueDate = new Date(f.dueDate);
+    return dueDate >= new Date() && dueDate <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  });
+  const followUpActivityItems = followUps
+    .filter((f) => f.status === 'completed' && f.completedAt)
+    .sort((a, b) => new Date(b.completedAt!).getTime() - new Date(a.completedAt!).getTime())
+    .slice(0, 3)
+    .map((f) => {
+      const grant = grants.find((g) => g.id === f.grantId);
+      return {
+        dot: 'success' as const,
+        text: `Follow-up completed: <strong>${f.title}</strong>${grant ? ` for ${grant.title}` : ''}`,
+        time: new Date(f.completedAt!).toLocaleString(),
+      };
+    });
+  // Merge follow-up activity into general activity feed
+  const mergedActivity = [...followUpActivityItems, ...activity].slice(0, 6);
 
   const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
   const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
@@ -269,17 +332,27 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
           <div className="panel-header">
             <div className="panel-title">Agent Activity</div>
           </div>
-          <div className="activity-list">
-            {activity.map((item, idx) => (
-              <div key={idx} className="activity-item">
-                <div className={`activity-dot ${item.dot}`} />
-                <div>
-                  <div className="activity-text" dangerouslySetInnerHTML={{ __html: item.text }} />
-                  <div className="activity-time">{item.time}</div>
+          {mergedActivity.length > 0 ? (
+            <div className="activity-list">
+              {mergedActivity.map((item, idx) => (
+                <div key={idx} className="activity-item">
+                  <div className={`activity-dot ${item.dot}`} />
+                  <div>
+                    <div className="activity-text" dangerouslySetInnerHTML={{ __html: item.text }} />
+                    <div className="activity-time">{item.time}</div>
+                  </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state-guide" data-testid="activity-empty-state">
+              <div className="empty-state-icon" aria-hidden="true">{'\u{1F4AC}'}</div>
+              <div className="empty-state-title">No activity yet</div>
+              <div className="empty-state-description">
+                Activity will appear here as the system processes grants, generates drafts, and surfaces new matches.
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -310,26 +383,71 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
           <div className="panel-header">
             <div className="panel-title">Job Queue</div>
           </div>
+          {/* ARIA live region for job state announcements */}
+          <div
+            role="status"
+            aria-live="polite"
+            className="sr-only"
+            data-testid="dashboard-jobs-aria-live"
+          >
+            {jobs.filter((j) => j.status === 'queued' || j.status === 'running').length} active job(s)
+          </div>
           <div className="activity-list">
             {jobs.slice(0, 8).map((job) => {
-              const failureMessage = job.failureCategory === 'rate-limit'
-                ? 'Service rate limited \u2014 wait before retrying'
-                : job.failureCategory === 'quota-exhausted'
-                ? 'Quota exhausted \u2014 action required to restore service'
-                : job.failureCategory === 'timeout'
-                ? 'Operation timed out \u2014 retry or check opencode settings'
-                : job.failureCategory === 'capacity'
-                ? 'Service temporarily unavailable \u2014 retry later'
-                : job.failureCategory === 'connectivity'
-                ? 'Cannot reach opencode \u2014 check path and settings in Org Profile'
-                : '';
+              const progress = getJobProgress(job.stage);
+              const isRunning = job.status === 'running';
+              const failureMsg =
+                job.failureCategory && job.status === 'failed'
+                  ? jobFailureMessages[job.failureCategory]
+                  : null;
               return (
                 <div key={job.id} className="activity-item">
                   <div>
-                    <div className="activity-text"><strong>{job.jobType}</strong> \u00b7 {job.status}{job.failureCategory ? ` \u00b7 ${job.failureCategory}` : ''}</div>
-                    <div className="activity-time">{job.stage ?? 'queued'} \u00b7 {job.lastUpdate ?? job.createdAt}</div>
-                    {failureMessage && <div className="drawer-note">{failureMessage}</div>}
-                    {job.errorMessage && <div className="drawer-note">{job.errorMessage}</div>}
+                    <div className="activity-text">
+                      <strong>{job.jobType}</strong> \u00b7 {job.status}
+                      {job.failureCategory ? ` \u00b7 ${job.failureCategory}` : ''}
+                    </div>
+                    {/* Stage description */}
+                    <div className="activity-time">
+                      {stageDescription(job.stage)}
+                    </div>
+                    {/* Progress bar */}
+                    <div
+                      className="job-progress-container"
+                      data-testid={`dashboard-job-progress-${job.id}`}
+                    >
+                      <div
+                        className={`job-progress-bar ${isRunning ? 'indeterminate' : ''}`}
+                        role="progressbar"
+                        aria-valuenow={isRunning ? undefined : progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-label={`Job progress: ${job.stage ?? 'unknown'}`}
+                        style={isRunning ? undefined : { width: `${progress}%` }}
+                      />
+                    </div>
+                    {/* Timestamps */}
+                    <div className="activity-time">
+                      {job.lastUpdate
+                        ? `Updated: ${new Date(job.lastUpdate).toLocaleTimeString()}`
+                        : `Created: ${new Date(job.createdAt).toLocaleTimeString()}`}
+                    </div>
+                    {/* Failure guidance from failure-messages.ts */}
+                    {failureMsg && (
+                      <div
+                        className="failure-guidance failure-guidance-compact"
+                        data-testid={`dashboard-job-failure-${job.id}`}
+                      >
+                        <span className="failure-guidance-title">{failureMsg.title}</span>
+                        {' \u2014 '}
+                        <span className="failure-guidance-action">{failureMsg.action}</span>
+                      </div>
+                    )}
+                    {job.errorMessage && (
+                      <div className="drawer-note" data-testid={`dashboard-job-error-${job.id}`}>
+                        {job.errorMessage}
+                      </div>
+                    )}
                   </div>
                 </div>
               );

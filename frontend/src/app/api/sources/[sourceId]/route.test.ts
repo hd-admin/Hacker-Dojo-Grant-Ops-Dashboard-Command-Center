@@ -29,6 +29,8 @@ function createSource(id: string, overrides: Partial<Source> = {}): Source {
     reviewStatus: 'approved',
     suggestedBy: 'ai',
     category: 'foundation',
+    sourceCrawlState: 'never-crawled',
+    crawlAccessCategory: 'crawlable',
     ...overrides,
   };
 }

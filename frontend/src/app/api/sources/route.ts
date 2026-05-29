@@ -5,10 +5,24 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const filter = searchParams.get('filter');
+    const sourceId = searchParams.get('sourceId');
+
+    // If sourceId is provided, return crawl history for that source
+    if (sourceId) {
+      const history = await sourceService.getSourceCrawlHistory(sourceId);
+      return NextResponse.json(history);
+    }
+
     const sources = await sourceService.getAllSources();
+
+    // Enrich sources with crawl state
+    const enriched = await Promise.all(
+      sources.map((source) => sourceService.enrichSourceWithCrawlState(source)),
+    );
+
     const filtered = filter === 'pending-review'
-      ? sources.filter((source) => source.reviewStatus === 'pending-review')
-      : sources;
+      ? enriched.filter((source) => source.reviewStatus === 'pending-review')
+      : enriched;
     return NextResponse.json(filtered);
   } catch (error) {
     console.error('Error getting sources:', error);
@@ -33,6 +47,7 @@ export async function POST(request: NextRequest) {
     if (typeof body.suggestionReason === 'string') sourceInput.suggestionReason = body.suggestionReason;
     if (body.category === 'foundation' || body.category === 'government' || body.category === 'corporate' || body.category === 'community' || body.category === 'other') sourceInput.category = body.category;
     if (typeof body.categoryRationale === 'string') sourceInput.categoryRationale = body.categoryRationale;
+    if (body.crawlAccessCategory === 'crawlable' || body.crawlAccessCategory === 'manual-only' || body.crawlAccessCategory === 'unsupported') sourceInput.crawlAccessCategory = body.crawlAccessCategory;
     const source = await sourceService.addSource(sourceInput);
 
     return NextResponse.json({ success: true, source }, { status: 201 });

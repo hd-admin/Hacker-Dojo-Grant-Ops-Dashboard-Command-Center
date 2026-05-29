@@ -22,6 +22,15 @@ import { escapeForHtml } from "../../lib/sanitize-html";
 import { type Clock, getDependencies, type IdGenerator } from "./dependencies";
 import { scoreGrantByThemes } from "./theme-service";
 
+export class NoSourcesConfiguredError extends Error {
+	public readonly code = 'NO_SOURCES_CONFIGURED';
+
+	constructor() {
+		super('No sources configured. Add funding sources in Sources before running discovery.');
+		this.name = 'NoSourcesConfiguredError';
+	}
+}
+
 /**
  * Create a default fit score breakdown when none is provided.
  * Returns null to indicate no breakdown is available - scoring should be done properly.
@@ -95,14 +104,9 @@ export async function runResearch(
 			}
 		}
 
-		// If no sources, create a default one based on search themes
+		// If no sources, return an error instead of silently creating a default
 		if (sources.length === 0) {
-			const defaultSource = await deps.sourceService.addSource({
-				name: "Default Search",
-				url: "https://www.candid.org",
-				type: "website",
-			});
-			sources.push(defaultSource);
+			throw new NoSourcesConfiguredError();
 		}
 
 		const settings = await deps.repository.getOpencodeSettings();
@@ -138,6 +142,11 @@ export async function runResearch(
 		);
 		return result;
 	} catch (error) {
+		// Let NoSourcesConfiguredError propagate to the API route for proper HTTP 409
+		if (error instanceof NoSourcesConfiguredError) {
+			throw error;
+		}
+
 		const errorMessage =
 			error instanceof Error ? error.message : "Unknown error";
 
@@ -169,6 +178,7 @@ async function performResearch(
 ): Promise<ResearchResult> {
 	let totalGrantsFound = 0;
 	let totalGrantsMatched = 0;
+	let hadPartialOutput = false;
 	const existingGrants = await deps.repository.getGrants();
 	const perGrantNotifications: Notification[] = [];
 
@@ -185,14 +195,26 @@ async function performResearch(
 
 			await deps.sourceService.updateSourceLastCrawled(source.id);
 
-			if (!response.success) {
+			// Determine if we should attempt to process content despite failure
+			const shouldProcessContent =
+				response.success ||
+				(response.failureMode === "partial-output" && !!response.content);
+
+			if (response.failureMode === "partial-output" && response.content) {
+				hadPartialOutput = true;
+				console.warn(
+					`Research for source ${source.name} produced partial results. Persisting extracted grants.`,
+				);
+			}
+
+			if (!response.success && !shouldProcessContent) {
 				console.warn(
 					`Research failed for source ${source.name}:`,
 					response.error,
 				);
 			}
 
-			if (response.success) {
+			if (shouldProcessContent) {
 				if (response.content) {
 					// Parse the response (expecting JSON)
 					let researchData: {
@@ -353,7 +375,7 @@ async function performResearch(
 
 	// Update crawl run with results and persist the initial crawlRun record directly
 	initialCrawlRun.completedAt = clock.now().toISOString();
-	initialCrawlRun.status = "completed";
+	initialCrawlRun.status = hadPartialOutput ? "partial-results" : "completed";
 	initialCrawlRun.sourcesCrawled = sources.length;
 	initialCrawlRun.grantsFound = totalGrantsFound;
 	initialCrawlRun.grantsMatched = totalGrantsMatched;

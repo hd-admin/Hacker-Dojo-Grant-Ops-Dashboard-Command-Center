@@ -15,6 +15,8 @@ function createSource(id: string): Source {
     reviewStatus: 'pending-review',
     suggestedBy: 'ai',
     suggestionReason: 'Suggested for testing',
+    sourceCrawlState: 'never-crawled',
+    crawlAccessCategory: 'crawlable',
   };
 }
 

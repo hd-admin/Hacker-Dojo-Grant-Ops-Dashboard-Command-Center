@@ -19,11 +19,23 @@ export interface OpencodeRequest {
 	maxTokens?: number;
 }
 
+export interface GroundingSection {
+	sectionTitle: string;
+	evidence: string[];
+	isGrounded: boolean;
+}
+
 export interface OpencodeResponse {
 	success: boolean;
 	content?: string;
 	error?: string;
 	exitCode?: number;
+	failureMode?: OpencodeFailureMode;
+	/**
+	 * Section-level grounding metadata provided by opencode.
+	 * When absent, groundingSections should fall back to empty array - never fabricate.
+	 */
+	groundingSections?: GroundingSection[];
 }
 
 export interface GrantResearchRequest {
@@ -351,19 +363,27 @@ class CliOpencodeProvider implements OpencodeAdapter {
 						exitCode: code ?? 0,
 					});
 				} else {
+					const errorMessage = stderr.trim() || `Opencode exited with code ${code}`;
+					const exitCode = code ?? 1;
+					const failureMode = classifyOpencodeError(errorMessage, stderr, exitCode);
+					const partialContent = stdout.trim() || undefined;
 					settle({
 						success: false,
-						error: stderr.trim() || `Opencode exited with code ${code}`,
-						exitCode: code ?? 1,
+						content: partialContent,
+						error: errorMessage,
+						exitCode: exitCode,
+						failureMode,
 					});
 				}
 			});
 
 			proc.on("error", (err) => {
+				const errorMessage = `Failed to execute Opencode: ${err.message}`;
 				settle({
 					success: false,
-					error: `Failed to execute Opencode: ${err.message}`,
+					error: errorMessage,
 					exitCode: 1,
+					failureMode: classifyOpencodeError(errorMessage),
 				});
 			});
 
@@ -376,10 +396,13 @@ class CliOpencodeProvider implements OpencodeAdapter {
 							proc.kill('SIGKILL');
 						}
 					}, 5000);
+					const partialContent = stdout.trim() || undefined;
 					settle({
 						success: false,
+						content: partialContent,
 						error: `Opencode timed out after ${timeoutMs}ms`,
 						exitCode: 124,
+						failureMode: "timeout",
 					});
 				}
 			}, timeoutMs)
@@ -473,11 +496,25 @@ ${request.missionStatement}
 }
 
 // Factory function to create the appropriate provider
+// NOTE: 'fake' provider is test-only. In production, only 'cli' is allowed.
+// Attempts to use 'fake' in non-test environments will throw an error.
 export function createOpencodeAdapter(
 	settings: OpencodeSettings,
 	providerType: OpencodeProvider = "cli",
 ): OpencodeAdapter {
 	if (providerType === "fake") {
+		// 'fake' provider is test-only — reject in production to prevent
+		// synthetic data from masquerading as real grant/research output
+		const env = process.env.NODE_ENV ?? "";
+		const isTestEnv = env === "test";
+		if (!isTestEnv) {
+			throw new Error(
+				"InvalidOperation: 'fake' opencode provider is test-only and cannot be used in " +
+				`current environment (NODE_ENV=${env}). ` +
+				"If opencode is not configured, the application will return explicit errors " +
+				"rather than synthetic data. Configure opencode settings or use the CLI provider.",
+			);
+		}
 		return new FakeOpencodeProvider();
 	}
 	return new CliOpencodeProvider(settings);

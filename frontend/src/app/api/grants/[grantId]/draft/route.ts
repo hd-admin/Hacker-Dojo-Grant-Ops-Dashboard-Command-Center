@@ -1,8 +1,10 @@
-import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import * as draftingService from '@/server/grant-ops/drafting-service';
 import { enqueueJob } from '@/server/grant-ops/job-queue-service';
+import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
 export const dynamic = 'force-dynamic';
 
 
@@ -16,7 +18,7 @@ export async function GET(
     return NextResponse.json(drafts);
   } catch (error) {
     console.error('Error getting drafts:', error);
-    return NextResponse.json({ error: 'Failed to get drafts' }, { status: 500 });
+    return NextResponse.json({ error: 'Failed to get drafts', failureCategory: 'unknown' }, { status: 500 });
   }
 }
 
@@ -69,6 +71,18 @@ export async function POST(
   } catch (error) {
     console.error('Error generating draft:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate draft';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    const failureMode = classifyOpencodeError(errorMessage);
+    const guidance = opencodeFailureMessages[failureMode];
+    const retryable = ['rate-limit', 'malformed-output', 'model-unavailable', 'timeout', 'unknown'].includes(failureMode);
+
+    return NextResponse.json(
+      {
+        error: errorMessage,
+        failureMode,
+        retryable,
+        guidance,
+      },
+      { status: 500 },
+    );
   }
 }
