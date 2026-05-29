@@ -894,16 +894,17 @@ textarea:focus-visible {
   position: fixed;
   top: 0;
   right: 0;
-  width: 640px;
-  max-width: 95vw;
+  width: min(540px, 100vw);
   height: 100vh;
   background: var(--bg-2);
-  border-left: 1px solid var(--border-light);
+  border-left: 1px solid var(--border);
+  box-shadow: -20px 0 48px rgba(0, 0, 0, 0.35);
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   z-index: 101;
-  overflow-y: auto;
-  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.4);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .drawer.open {
@@ -1469,33 +1470,26 @@ textarea:focus-visible {
   border-color: var(--accent);
 }
 
-/* === GRANT DRAWER === */
-.drawer-overlay {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 220px;
-  background: rgba(18, 16, 13, 0.72);
-  border: 0;
-  padding: 0;
-  z-index: 40;
+.form-input.input-error {
+  border-color: var(--danger);
 }
 
-.drawer {
-  position: fixed;
-  top: 0;
-  right: 0;
-  width: min(540px, 100vw);
-  height: 100vh;
-  background: var(--bg-2);
-  border-left: 1px solid var(--border);
-  box-shadow: -20px 0 48px rgba(0, 0, 0, 0.35);
-  z-index: 50;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+.form-input.input-success {
+  border-color: var(--success);
 }
+
+/* Generic interactive card — hover lift effect */
+.card-interactive {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.card-interactive:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* === GRANT DRAWER === */
+/* .drawer-overlay and .drawer consolidated above under /* === DRAWER === */
 
 .drawer-header {
   padding: 24px 24px 18px;

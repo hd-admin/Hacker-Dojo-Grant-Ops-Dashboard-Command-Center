@@ -10,6 +10,7 @@ import type {
 	SubmissionMethod,
 } from "../../../shared/types";
 import { client } from "../lib/grant-ops-client";
+import { AlertTriangle } from "lucide-react";
 import GroundingReview from "./GroundingReview";
 
 interface GrantDrawerProps {
@@ -1169,7 +1170,7 @@ export default function GrantDrawer({
 															</span>
 														</div>
 														<div className="drawer-list-title" style={{ color: overdue ? 'var(--danger)' : undefined }}>
-															{overdue && <span aria-label="Warning" role="img" style={{ marginRight: '4px' }}>⚠️</span>}
+															{overdue && <AlertTriangle size={16} aria-label="Warning" style={{ color: 'var(--warning)', marginRight: '4px', flexShrink: 0 }} />}
 															{followUp.title}
 														</div>
 														{followUp.description && (
@@ -1237,7 +1238,7 @@ export default function GrantDrawer({
 							{/* Grounding warning dialog */}
 							{showGroundingWarning && detail?.latestDraft && (
 								<div className="drawer-section" data-testid="grounding-warning-dialog" role="alert">
-									<h3 style={{ color: 'var(--warning)' }}>{'⚠'} Ungrounded Claims Detected</h3>
+									<h3 style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={18} /> Ungrounded Claims Detected</h3>
 									<p>
 										This draft contains sections with unsupported claims that lack evidence from your sources.
 										Approving a draft with ungrounded claims may result in a weaker submission.
