@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { ClipboardList, MessageCircle, Search } from 'lucide-react';
 import type { FollowUp, Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
 import { jobFailureMessages } from '../lib/failure-messages';
@@ -195,7 +196,7 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
           </div>
         </div>
         <div className="empty-state-guide" data-testid="dashboard-empty-state">
-          <div className="empty-state-icon" aria-hidden="true">{'\u{1F4CB}'}</div>
+          <div className="empty-state-icon" aria-hidden="true"><ClipboardList size={48} /></div>
           <div className="empty-state-title">Get started with Grant Ops</div>
           <div className="empty-state-description">
             Add your first grant source to discover funding opportunities,
@@ -232,7 +233,7 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
           </div>
         </div>
         <div className="empty-state-guide" data-testid="dashboard-empty-grants">
-          <div className="empty-state-icon" aria-hidden="true">{'\u{1F50D}'}</div>
+          <div className="empty-state-icon" aria-hidden="true"><Search size={48} /></div>
           <div className="empty-state-title">No grants discovered yet</div>
           <div className="empty-state-description">
             Add funding sources and run discovery to find grants that match your organization.
@@ -346,7 +347,7 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
             </div>
           ) : (
             <div className="empty-state-guide" data-testid="activity-empty-state">
-              <div className="empty-state-icon" aria-hidden="true">{'\u{1F4AC}'}</div>
+              <div className="empty-state-icon" aria-hidden="true"><MessageCircle size={48} /></div>
               <div className="empty-state-title">No activity yet</div>
               <div className="empty-state-description">
                 Activity will appear here as the system processes grants, generates drafts, and surfaces new matches.

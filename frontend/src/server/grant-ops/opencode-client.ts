@@ -570,9 +570,12 @@ ${request.missionStatement}
 	}
 
 	isConfigured(): boolean {
-		if (!this.settings.isConfigured) return false;
+		// Priority 1: Explicit binary path configured
 		if (this.settings.binaryPath) return true;
-		return getCachedOpencodePath() !== null;
+		// Priority 2: Opencode auto-detected on PATH
+		if (getCachedOpencodePath() !== null) return true;
+		// Priority 3: Settings flag explicitly set
+		return this.settings.isConfigured === true;
 	}
 }
 

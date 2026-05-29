@@ -33,6 +33,33 @@ const opencodeStatusGuidance: Record<string, { title: string; description: strin
   },
 };
 
+// Status class helper for guidance block
+function getStatusGuidanceClass(status: string): string {
+  if (status === 'ok') return 'settings-status-ok';
+  if (status === 'incompatible') return 'settings-status-warn';
+  return 'settings-status-error';
+}
+
+// Status class helper for dot color
+function getStatusDotStyle(status: string): React.CSSProperties {
+  return {
+    background: status === 'ok' ? 'var(--success)' : status === 'incompatible' ? 'var(--warning)' : 'var(--danger)',
+    boxShadow: status === 'ok' ? '0 0 8px var(--success)' : status === 'incompatible' ? '0 0 8px var(--warning)' : '0 0 8px var(--danger)',
+  };
+}
+
+// Status label text
+function getStatusLabelText(status: string): string {
+  switch (status) {
+    case 'ok': return 'Connected';
+    case 'incompatible': return 'Incompatible';
+    case 'not-installed': return 'Not Installed';
+    case 'not-reachable': return 'Not Reachable';
+    case 'error': return 'Error';
+    default: return 'Unknown';
+  }
+}
+
 interface SettingsViewProps {
   onRefreshAppState?: () => Promise<void> | void;
   initiallyEditing?: boolean;
@@ -281,11 +308,11 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
           <div className="setting-card-header"><div className="setting-card-title">Organization Profile</div></div>
           <div className="setting-card-body">
             {isEditing ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div className="settings-form">
                 {/* Identity */}
-                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
-                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Identity</legend>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <fieldset className="settings-fieldset">
+                  <legend className="settings-legend">Identity</legend>
+                  <div className="settings-form-grid">
                     <div>
                       <label className="setting-label">Legal Name</label>
                       <input className="form-input" value={editForm.legalName ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, legalName: e.target.value }))} placeholder="e.g., Hacker Dojo" />
@@ -306,9 +333,9 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 </fieldset>
 
                 {/* Contact */}
-                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
-                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Contact</legend>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <fieldset className="settings-fieldset">
+                  <legend className="settings-legend">Contact</legend>
+                  <div className="settings-form-grid">
                     <div>
                       <label className="setting-label">Address</label>
                       <input className="form-input" value={editForm.contactInfo?.address ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, contactInfo: { ...prev.contactInfo, address: e.target.value } }))} placeholder="Street address" />
@@ -329,9 +356,9 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 </fieldset>
 
                 {/* Mission & Geography */}
-                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
-                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Mission &amp; Geography</legend>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <fieldset className="settings-fieldset">
+                  <legend className="settings-legend">Mission &amp; Geography</legend>
+                  <div className="settings-form">
                     <div>
                       <label className="setting-label">Mission Statement</label>
                       <textarea className="form-input" rows={3} value={editForm.mission ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, mission: e.target.value }))} placeholder="Describe your organization's mission" />
@@ -344,9 +371,9 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 </fieldset>
 
                 {/* Programs */}
-                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
-                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Programs &amp; Audiences</legend>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <fieldset className="settings-fieldset">
+                  <legend className="settings-legend">Programs &amp; Audiences</legend>
+                  <div className="settings-form-grid">
                     <div>
                       <label className="setting-label">Program Areas</label>
                       <textarea className="form-input" rows={3} value={editForm.programAreas?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, programAreas: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="STEM, Workforce Development, Community Learning (comma-separated)" />
@@ -367,9 +394,9 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 </fieldset>
 
                 {/* Compliance */}
-                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
-                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Compliance &amp; History</legend>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <fieldset className="settings-fieldset">
+                  <legend className="settings-legend">Compliance &amp; History</legend>
+                  <div className="settings-form-grid">
                     <div>
                       <label className="setting-label">Compliance Facts</label>
                       <textarea className="form-input" rows={2} value={editForm.complianceFacts?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, complianceFacts: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="SAM registration active, audit current (comma-separated)" />
@@ -382,9 +409,9 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 </fieldset>
 
                 {/* Agent Behavior */}
-                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
-                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Agent Behavior</legend>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <fieldset className="settings-fieldset">
+                  <legend className="settings-legend">Agent Behavior</legend>
+                  <div className="settings-form-grid">
                     <div>
                       <label className="setting-label">Notification Email</label>
                       <input type="email" className="form-input" value={editForm.agentBehavior?.notifyEmail ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, agentBehavior: { ...prev.agentBehavior, notifyEmail: e.target.value, autoDraftThreshold: prev.agentBehavior?.autoDraftThreshold ?? 75, submissionPolicy: prev.agentBehavior?.submissionPolicy ?? '', voiceAndTone: prev.agentBehavior?.voiceAndTone ?? '' } }))} placeholder="ops@hackerdojo.com" />
@@ -409,13 +436,13 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                   </div>
                 </fieldset>
 
-                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                <div className="settings-form-row">
                   <button type="button" className="btn btn-primary" onClick={() => void handleSave()}>Save Profile</button>
                   <button type="button" className="btn" onClick={() => { setEditForm(profile); setIsEditing(false); }}>Cancel</button>
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div className="settings-readonly-grid">
                 <div className="setting-row"><span className="setting-label">Legal Name</span><span className="setting-value">{profile.legalName || '—'}</span></div>
                 <div className="setting-row"><span className="setting-label">EIN</span><span className="setting-value mono">{profile.ein || '—'}</span></div>
                 <div className="setting-row"><span className="setting-label">SAM / UEI</span><span className="setting-value mono">{profile.samUEI || '—'}</span></div>
@@ -468,7 +495,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
         <section className="setting-card">
           <div className="setting-card-header"><div className="setting-card-title">Safety &amp; Lock</div></div>
           <div className="setting-card-body">
-            <p style={{ fontSize: '13px', color: 'var(--text-dim)', marginBottom: '12px' }}>
+            <p className="settings-card-description">
               Configure application lock to protect sensitive grant data with a passcode.
             </p>
             <button type="button" className="btn btn-primary btn-sm" onClick={() => { void fetch('/api/safety/lock', { method: 'POST' }); }}>Lock app now</button>
@@ -478,37 +505,31 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
         <section className="setting-card" data-testid="opencode-status-card">
           <div className="setting-card-header">
             <div className="setting-card-title">Opencode Status</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="settings-status-header-row">
               <span
                 className="status-dot"
-                style={{
-                  background: health?.opencode === 'ok' ? 'var(--success)' : health?.opencode === 'incompatible' ? 'var(--warning)' : 'var(--danger)',
-                  boxShadow: health?.opencode === 'ok' ? '0 0 8px var(--success)' : health?.opencode === 'incompatible' ? '0 0 8px var(--warning)' : '0 0 8px var(--danger)',
-                }}
+                style={health?.opencode ? getStatusDotStyle(health.opencode) : undefined}
               />
-              <span style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-dim)' }}>
-                {health?.opencode === 'ok' ? 'Connected' : health?.opencode === 'incompatible' ? 'Incompatible' : health?.opencode === 'not-installed' ? 'Not Installed' : health?.opencode === 'not-reachable' ? 'Not Reachable' : health?.opencode === 'error' ? 'Error' : 'Unknown'}
+              <span className="settings-status-label">
+                {health?.opencode ? getStatusLabelText(health.opencode) : 'Unknown'}
               </span>
             </div>
           </div>
           <div className="setting-card-body">
             {/* Status guidance */}
             {health?.opencode && opencodeStatusGuidance[health.opencode] && (
-              <div style={{
-                background: health.opencode === 'ok' ? 'rgba(138, 171, 111, 0.08)' : health.opencode === 'incompatible' ? 'rgba(224, 137, 74, 0.08)' : 'rgba(198, 107, 90, 0.08)',
-                border: `1px solid ${health.opencode === 'ok' ? 'rgba(138, 171, 111, 0.2)' : health.opencode === 'incompatible' ? 'rgba(224, 137, 74, 0.2)' : 'rgba(198, 107, 90, 0.2)'}`,
-                borderRadius: 'var(--radius)',
-                padding: '14px 16px',
-                marginBottom: '16px',
-              }}>
-                <div style={{ fontWeight: 600, fontSize: '13px', marginBottom: '6px', color: 'var(--text)' }}>
+              <div className={`settings-status-guidance ${health.opencode ? getStatusGuidanceClass(health.opencode) : ''}`}>
+                <div className="settings-status-guidance-title">
                   {opencodeStatusGuidance[health.opencode].title}
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-dim)', lineHeight: 1.6, marginBottom: health.opencode !== 'ok' ? '10px' : 0 }}>
+                <div
+                  className="settings-status-guidance-desc"
+                  style={{ marginBottom: health.opencode !== 'ok' ? '10px' : 0 }}
+                >
                   {opencodeStatusGuidance[health.opencode].description}
                 </div>
                 {health.opencode !== 'ok' && opencodeStatusGuidance[health.opencode].action && (
-                  <div style={{ fontSize: '12px', color: 'var(--accent)', lineHeight: 1.5 }}>
+                  <div className="settings-status-guidance-action">
                     <strong>What to do:</strong> {opencodeStatusGuidance[health.opencode].action}
                   </div>
                 )}
@@ -516,41 +537,32 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
             )}
 
             {/* Diagnostics grid */}
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '12px',
-              marginBottom: '16px',
-              padding: '12px',
-              background: 'var(--surface-2)',
-              borderRadius: 'var(--radius)',
-              border: '1px solid var(--border)',
-            }}>
+            <div className="settings-diag-grid">
               <div>
-                <div className="setting-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Version</div>
-                <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                <div className="setting-label settings-diag-label">Version</div>
+                <div className="settings-diag-value">
                   {health?.opencodeVersion ? `v${health.opencodeVersion}` : (health?.opencode === 'not-installed' ? '—' : 'Unknown')}
                 </div>
               </div>
               <div>
-                <div className="setting-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Response Time</div>
-                <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                <div className="setting-label settings-diag-label">Response Time</div>
+                <div className="settings-diag-value">
                   {health?.handshakeResponseTimeMs != null ? `${health.handshakeResponseTimeMs}ms` : '—'}
                 </div>
               </div>
               <div>
-                <div className="setting-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Handshake</div>
-                <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                <div className="setting-label settings-diag-label">Handshake</div>
+                <div className="settings-diag-value">
                   {health?.handshakeSuccess === true ? (
-                    <span style={{ color: 'var(--success)' }}>✓ Success</span>
+                    <span className="settings-diag-success">✓ Success</span>
                   ) : health?.handshakeSuccess === false ? (
-                    <span style={{ color: 'var(--danger)' }}>✗ Failed</span>
+                    <span className="settings-diag-danger">✗ Failed</span>
                   ) : '—'}
                 </div>
               </div>
               <div>
-                <div className="setting-label" style={{ fontSize: '9px', marginBottom: '2px' }}>Last Handshake</div>
-                <div style={{ fontSize: '13px', fontWeight: 500 }}>
+                <div className="setting-label settings-diag-label">Last Handshake</div>
+                <div className="settings-diag-value">
                   {lastHandshakeAt ? new Date(lastHandshakeAt).toLocaleString() : 'Never'}
                 </div>
               </div>
@@ -558,22 +570,11 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
 
             {/* Capabilities */}
             {health?.capabilities && health.capabilities.length > 0 && (
-              <div style={{ marginBottom: '16px' }}>
-                <div className="setting-label" style={{ fontSize: '9px', marginBottom: '6px' }}>Detected Capabilities</div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+              <div className="settings-cap-section">
+                <div className="setting-label settings-cap-label">Detected Capabilities</div>
+                <div className="settings-cap-list">
                   {health.capabilities.map((cap) => (
-                    <span
-                      key={cap}
-                      style={{
-                        fontFamily: 'var(--mono)',
-                        fontSize: '10px',
-                        padding: '2px 8px',
-                        background: 'rgba(123, 163, 184, 0.12)',
-                        color: 'var(--info)',
-                        borderRadius: '10px',
-                        border: '1px solid rgba(123, 163, 184, 0.2)',
-                      }}
-                    >
+                    <span key={cap} className="settings-cap-tag">
                       {cap}
                     </span>
                   ))}
@@ -583,83 +584,71 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
 
             {/* Error details */}
             {health?.opencodeError && (
-              <div style={{
-                background: 'rgba(198, 107, 90, 0.06)',
-                border: '1px solid rgba(198, 107, 90, 0.15)',
-                borderRadius: 'var(--radius)',
-                padding: '10px 14px',
-                marginBottom: '16px',
-              }}>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--danger)', marginBottom: '4px' }}>
+              <div className="settings-error-block">
+                <div className="settings-error-header">
                   Opencode Error
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-dim)', fontFamily: 'var(--mono)', lineHeight: 1.5 }}>
+                <div className="settings-error-detail">
                   {health.opencodeError}
                 </div>
               </div>
             )}
 
             {health?.handshakeError && !health?.handshakeSuccess && (
-              <div style={{
-                background: 'rgba(224, 137, 74, 0.06)',
-                border: '1px solid rgba(224, 137, 74, 0.15)',
-                borderRadius: 'var(--radius)',
-                padding: '10px 14px',
-                marginBottom: '16px',
-              }}>
-                <div style={{ fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--warning)', marginBottom: '4px' }}>
+              <div className="settings-warning-block">
+                <div className="settings-warning-header">
                   Handshake Error
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-dim)', fontFamily: 'var(--mono)', lineHeight: 1.5 }}>
+                <div className="settings-error-detail">
                   {health.handshakeError}
                 </div>
               </div>
             )}
 
             {/* Configuration section */}
-            <div style={{ borderTop: '1px solid var(--border)', paddingTop: '16px', marginTop: '4px' }}>
-              <div className="setting-label" style={{ fontSize: '9px', marginBottom: '12px' }}>Connection Configuration</div>
+            <div className="settings-connection-config">
+              <div className="setting-label settings-connection-config-label">Connection Configuration</div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div className="settings-form-stack">
                 <div>
-                  <label htmlFor="opencode-binary-path" style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  <label htmlFor="opencode-binary-path" className="settings-field-label-mono">
                     Binary Path
                   </label>
                   <input
                     id="opencode-binary-path"
+                    className="settings-input-full"
                     value={opencodeForm.binaryPath ?? ''}
                     onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, binaryPath: e.target.value })); setOpencodeSaveSuccess(false); }}
                     placeholder="/usr/local/bin/opencode"
-                    style={{ width: '100%' }}
                   />
                 </div>
                 <div>
-                  <label htmlFor="opencode-working-directory" style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  <label htmlFor="opencode-working-directory" className="settings-field-label-mono">
                     Working Directory
                   </label>
                   <input
                     id="opencode-working-directory"
+                    className="settings-input-full"
                     value={opencodeForm.workingDirectory ?? ''}
                     onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, workingDirectory: e.target.value })); setOpencodeSaveSuccess(false); }}
                     placeholder="/home/user/projects"
-                    style={{ width: '100%' }}
                   />
                 </div>
                 <div>
-                  <label htmlFor="opencode-timeout" style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                  <label htmlFor="opencode-timeout" className="settings-field-label-mono">
                     Timeout (ms)
                   </label>
                   <input
                     id="opencode-timeout"
                     type="number"
+                    className="settings-input-full"
                     value={opencodeForm.timeoutMs ?? 60000}
                     onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, timeoutMs: Number(e.target.value) })); setOpencodeSaveSuccess(false); }}
-                    style={{ width: '100%' }}
                   />
                 </div>
               </div>
 
-              <div style={{ marginTop: '14px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div className="settings-button-row">
                 <button type="button" className="btn btn-primary btn-sm" onClick={() => void handleSaveOpencode()}>
                   Save Configuration
                 </button>
@@ -673,36 +662,29 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                   {testConnectionLoading ? 'Testing…' : 'Test Connection'}
                 </button>
                 {opencodeSaveSuccess && (
-                  <span style={{ fontSize: '12px', color: 'var(--success)' }}>✓ Saved</span>
+                  <span className="settings-save-indicator">✓ Saved</span>
                 )}
               </div>
 
               {/* Test connection result */}
               {testConnectionResult && (
-                <div style={{
-                  marginTop: '12px',
-                  padding: '10px 14px',
-                  borderRadius: 'var(--radius)',
-                  background: testConnectionResult === 'success' ? 'rgba(138, 171, 111, 0.06)' : 'rgba(198, 107, 90, 0.06)',
-                  border: `1px solid ${testConnectionResult === 'success' ? 'rgba(138, 171, 111, 0.15)' : 'rgba(198, 107, 90, 0.15)'}`,
-                  fontSize: '12px',
-                }}>
-                  <div style={{ fontWeight: 600, marginBottom: '4px', color: testConnectionResult === 'success' ? 'var(--success)' : 'var(--danger)' }}>
+                <div className={`settings-test-result ${testConnectionResult === 'success' ? 'settings-test-result-success' : 'settings-test-result-failed'}`}>
+                  <div className={`settings-test-result-title ${testConnectionResult === 'success' ? 'settings-test-result-title-success' : 'settings-test-result-title-failed'}`}>
                     {testConnectionResult === 'success' ? '✓ Connection successful' : '✗ Connection failed'}
                   </div>
                   {testConnectionResult === 'success' && health?.handshakeResponseTimeMs != null && (
-                    <div style={{ color: 'var(--text-dim)' }}>
+                    <div className="settings-test-result-detail">
                       Response time: {health.handshakeResponseTimeMs}ms
                       {health?.opencodeVersion && ` • Version: v${health.opencodeVersion}`}
                     </div>
                   )}
                   {testConnectionResult === 'failed' && health?.opencodeError && (
-                    <div style={{ color: 'var(--text-dim)', fontFamily: 'var(--mono)', fontSize: '11px' }}>
+                    <div className="settings-test-result-mono">
                       {health.opencodeError}
                     </div>
                   )}
                   {testConnectionResult === 'failed' && health?.handshakeError && (
-                    <div style={{ color: 'var(--text-dim)', fontFamily: 'var(--mono)', fontSize: '11px', marginTop: '4px' }}>
+                    <div className="settings-test-result-mono settings-test-result-mono-mt">
                       {health.handshakeError}
                     </div>
                   )}
@@ -715,66 +697,45 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
         <section className="setting-card" data-testid="diagnostics-panel-card">
           <div className="setting-card-header"><div className="setting-card-title">Diagnostics &amp; Failure History</div></div>
           <div className="setting-card-body">
-            <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '12px' }}>
+            <p className="settings-card-description">
               Recent opencode failures, root-cause analysis, and recommended resolution steps.
             </p>
 
             {/* Failure History Timeline */}
             {health?.failureHistory && health.failureHistory.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }} data-testid="failure-history-list">
+              <div className="settings-failure-list" data-testid="failure-history-list">
                 {health.failureHistory.map((entry: FailureHistoryEntry) => (
                   <div
                     key={entry.id}
                     data-testid={`failure-entry-${entry.id}`}
-                    style={{
-                      background: entry.resolved ? 'rgba(138, 171, 111, 0.04)' : 'rgba(198, 107, 90, 0.04)',
-                      border: `1px solid ${entry.resolved ? 'rgba(138, 171, 111, 0.18)' : 'rgba(198, 107, 90, 0.18)'}`,
-                      borderRadius: 'var(--radius)',
-                      padding: '12px 14px',
-                    }}
+                    className={`settings-failure-entry ${entry.resolved ? 'settings-failure-resolved' : 'settings-failure-unresolved'}`}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <span style={{
-                          fontFamily: 'var(--mono)',
-                          fontSize: '9px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.1em',
-                          padding: '2px 6px',
-                          borderRadius: '3px',
-                          background: entry.resolved ? 'rgba(138, 171, 111, 0.12)' : 'rgba(198, 107, 90, 0.12)',
-                          color: entry.resolved ? 'var(--success)' : 'var(--danger)',
-                        }}>
+                    <div className="settings-failure-entry-header">
+                      <div className="settings-failure-badges">
+                        <span className={`settings-failure-badge ${entry.resolved ? 'settings-failure-badge-resolved' : 'settings-failure-badge-mode'}`}>
                           {entry.resolved ? 'Resolved' : entry.failureMode}
                         </span>
                         {entry.rootCauseCategory && (
-                          <span style={{
-                            fontFamily: 'var(--mono)',
-                            fontSize: '9px',
-                            padding: '2px 6px',
-                            borderRadius: '3px',
-                            background: 'rgba(123, 163, 184, 0.1)',
-                            color: 'var(--info)',
-                          }}>
+                          <span className="settings-failure-badge settings-failure-badge-category">
                             {entry.rootCauseCategory.replace(/-/g, ' ')}
                           </span>
                         )}
                       </div>
-                      <span style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-muted)' }}>
+                      <span className="settings-failure-timestamp">
                         {new Date(entry.timestamp).toLocaleString()}
                       </span>
                     </div>
-                    <div style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-dim)', marginBottom: '8px', lineHeight: 1.5 }}>
+                    <div className="settings-failure-message">
                       {entry.errorMessage.length > 200
                         ? `${entry.errorMessage.substring(0, 200)}...`
                         : entry.errorMessage}
                     </div>
                     {entry.resolutionSteps && entry.resolutionSteps.length > 0 && (
                       <div>
-                        <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                        <div className="settings-failure-resolution-label">
                           Resolution steps:
                         </div>
-                        <ol style={{ margin: 0, paddingLeft: '18px', fontSize: '11px', color: 'var(--text-dim)', lineHeight: 1.6 }}>
+                        <ol className="settings-failure-resolution-list">
                           {entry.resolutionSteps.map((step, idx) => (
                             <li key={idx}>{step}</li>
                           ))}
@@ -785,28 +746,21 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 ))}
               </div>
             ) : (
-              <div style={{
-                padding: '24px',
-                textAlign: 'center',
-                color: 'var(--text-muted)',
-                background: 'var(--surface-2)',
-                borderRadius: 'var(--radius)',
-                border: '1px solid var(--border)',
-              }}>
-                <div style={{ fontSize: '24px', marginBottom: '8px' }}>{'✅'}</div>
-                <div style={{ fontSize: '13px', fontWeight: 500 }}>No recorded failures</div>
-                <div style={{ fontSize: '11px', marginTop: '4px', color: 'var(--text-dim)' }}>
+              <div className="settings-empty-state">
+                <div className="settings-empty-icon">{'✅'}</div>
+                <div className="settings-empty-title">No recorded failures</div>
+                <div className="settings-empty-desc">
                   Failure history will appear here when opencode encounters errors during operation.
                 </div>
               </div>
             )}
 
             {/* Backoff multiplier setting */}
-            <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
-              <label htmlFor="opencode-backoff-multiplier" style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '4px' }}>
+            <div className="settings-backoff-row">
+              <label htmlFor="opencode-backoff-multiplier" className="settings-backoff-label">
                 Retry Backoff Multiplier (ms)
               </label>
-              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+              <div className="settings-backoff-input-row">
                 <input
                   id="opencode-backoff-multiplier"
                   type="number"
@@ -815,9 +769,9 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                   step={500}
                   value={opencodeForm.backoffMultiplier ?? 1000}
                   onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, backoffMultiplier: Number(e.target.value) })); setOpencodeSaveSuccess(false); }}
-                  style={{ width: '140px' }}
+                  className="settings-backoff-input"
                 />
-                <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+                <span className="settings-backoff-hint">
                   Base delay for retry backoff. Actual delay = multiplier × 2<sup>attempt</sup>
                 </span>
               </div>
@@ -828,7 +782,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
         <section className="setting-card">
           <div className="setting-card-header"><div className="setting-card-title">Theme Configuration</div></div>
           <div className="setting-card-body">
-            <p className="setting-card-description">
+            <p className="settings-card-description">
               Configure matching themes, keyword clusters, and scoring thresholds for grant discovery.
             </p>
             <div>

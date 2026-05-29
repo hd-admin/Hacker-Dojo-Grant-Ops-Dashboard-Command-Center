@@ -12,6 +12,20 @@ import type {
 } from "../../../shared/types";
 import React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  AlertTriangle,
+  Bell,
+  Check,
+  Columns3,
+  Database,
+  FileText,
+  LayoutDashboard,
+  ListChecks,
+  Search,
+  Settings,
+  UserCircle,
+  X,
+} from "lucide-react";
 import { client } from "../lib/grant-ops-client";
 import DashboardView from "./DashboardView";
 import DiscoveryView from "./DiscoveryView";
@@ -40,7 +54,7 @@ type HealthTier = "fully_online" | "partially_degraded" | "fully_offline";
 interface NavItem {
   view?: ViewType;
   label: string;
-  icon?: string;
+  icon?: React.ReactNode;
   ariaLabel?: string;
 }
 
@@ -52,18 +66,18 @@ interface SetupData {
 }
 
 const workspaceNav: NavItem[] = [
-  { view: 'dashboard', label: 'Dashboard', icon: '◐', ariaLabel: 'View dashboard' },
-  { view: 'discovery', label: 'Discovery', icon: '◇', ariaLabel: 'Discover grants' },
-  { view: 'pipeline', label: 'Pipeline', icon: '▤', ariaLabel: 'View grant pipeline' },
-  { view: 'sources', label: 'Sources', icon: '◈', ariaLabel: 'Manage sources' },
-  { view: 'settings', label: 'Org Profile', icon: '◯', ariaLabel: 'Organization profile settings' },
+  { view: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} />, ariaLabel: 'View dashboard' },
+  { view: 'discovery', label: 'Discovery', icon: <Search size={20} />, ariaLabel: 'Discover grants' },
+  { view: 'pipeline', label: 'Pipeline', icon: <Columns3 size={20} />, ariaLabel: 'View grant pipeline' },
+  { view: 'sources', label: 'Sources', icon: <Database size={20} />, ariaLabel: 'Manage sources' },
+  { view: 'settings', label: 'Org Profile', icon: <UserCircle size={20} />, ariaLabel: 'Organization profile settings' },
 ];
 
 const activityNav: NavItem[] = [
-  { view: 'notifications', label: 'Notifications', icon: '✉', ariaLabel: 'View notifications' },
-  { view: 'tasks', label: 'Tasks', icon: '⌶', ariaLabel: 'View tasks' },
-  { view: 'jobs', label: 'Jobs', icon: '⚙', ariaLabel: 'View job queue' },
-  { view: 'audit', label: 'Audit', icon: '✎', ariaLabel: 'View audit trail' },
+  { view: 'notifications', label: 'Notifications', icon: <Bell size={20} />, ariaLabel: 'View notifications' },
+  { view: 'tasks', label: 'Tasks', icon: <ListChecks size={20} />, ariaLabel: 'View tasks' },
+  { view: 'jobs', label: 'Jobs', icon: <Settings size={20} />, ariaLabel: 'View job queue' },
+  { view: 'audit', label: 'Audit', icon: <FileText size={20} />, ariaLabel: 'View audit trail' },
 ];
 
 const WORKING_CONTEXT_KEY = 'grantops.workingContext';
@@ -614,7 +628,7 @@ export default function AppShell() {
             data-testid="health-banner"
           >
             <span className="health-banner-icon" aria-hidden="true">
-              {healthTier === 'partially_degraded' ? '\u26A0' : '\u2716'}
+              {healthTier === 'partially_degraded' ? <AlertTriangle size={16} /> : <X size={16} />}
             </span>
             <span className="health-banner-text">
               {healthTier === 'partially_degraded'
@@ -640,7 +654,7 @@ export default function AppShell() {
             aria-live="polite"
             data-testid="health-banner-online"
           >
-            <span className="health-banner-icon" aria-hidden="true">\u2714</span>
+            <span className="health-banner-icon" aria-hidden="true"><Check size={16} /></span>
             <span className="health-banner-text">
               All systems operational
               {crawlStatus.lastSync && (
