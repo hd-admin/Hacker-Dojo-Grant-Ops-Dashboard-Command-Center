@@ -11,6 +11,7 @@ const manualGrantSchema = z.object({
 	deadline: z.string().optional(),
 	tags: z.array(z.string()).optional(),
 	notes: z.string().optional(),
+	eligibility: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
@@ -62,20 +63,31 @@ export async function POST(request: NextRequest) {
 
 		const deps = getDependencies();
 		const now = new Date().toISOString();
+
+		// Compute daysOut from deadline if provided
+		let daysOut = 0;
+		if (parsed.data.deadline && parsed.data.deadline !== 'Rolling') {
+			const dl = new Date(parsed.data.deadline);
+			const diffMs = dl.getTime() - new Date().getTime();
+			daysOut = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+		}
+
 		const grant: Grant = {
 			id: deps.idGenerator.generateId('grant'),
 			title: parsed.data.title,
 			funder: parsed.data.funder,
-			funderShort: parsed.data.funder,
+			funderShort: parsed.data.funder.substring(0, 20),
 			award: parsed.data.award ?? '—',
-			awardSort: 0,
+			awardSort: parseAwardSort(parsed.data.award),
 			deadline: parsed.data.deadline ?? 'Rolling',
-			daysOut: 0,
+			daysOut,
 			fit: 60,
 			tags: parsed.data.tags ?? [],
 			status: 'matched',
 			statusLabel: 'Matched',
 			manualSource: true,
+			manualOrigin: true,
+			grantType: 'manual',
 			matchedAt: now,
 			checklist: [],
 		};
@@ -96,4 +108,11 @@ export async function POST(request: NextRequest) {
 		console.error('Error creating grant:', error);
 		return NextResponse.json({ error: 'Failed to create grant' }, { status: 500 });
 	}
+}
+
+function parseAwardSort(award?: string): number {
+  if (!award || award === '—') return 0;
+  const cleaned = award.replace(/[$,]/g, '').trim();
+  const num = Number.parseFloat(cleaned);
+  return Number.isFinite(num) ? Math.round(num) : 0;
 }

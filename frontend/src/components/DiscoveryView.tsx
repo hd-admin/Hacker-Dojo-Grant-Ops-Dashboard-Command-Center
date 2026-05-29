@@ -59,6 +59,11 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
   const [showManualIntake, setShowManualIntake] = useState(false);
   const [manualTitle, setManualTitle] = useState('');
   const [manualFunder, setManualFunder] = useState('');
+  const [manualAward, setManualAward] = useState('');
+  const [manualDeadline, setManualDeadline] = useState('');
+  const [manualTags, setManualTags] = useState('');
+  const [manualNotes, setManualNotes] = useState('');
+  const [manualEligibility, setManualEligibility] = useState('');
   const [newSourceName, setNewSourceName] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [isAddingSource, setIsAddingSource] = useState(false);
@@ -118,10 +123,23 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
     await fetch('/api/grants', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ title: manualTitle, funder: manualFunder, notes: 'Manual intake' }),
+      body: JSON.stringify({
+        title: manualTitle.trim(),
+        funder: manualFunder.trim(),
+        award: manualAward.trim() || undefined,
+        deadline: manualDeadline || undefined,
+        tags: manualTags ? manualTags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,
+        notes: manualNotes.trim() || undefined,
+        eligibility: manualEligibility.trim() || undefined,
+      }),
     });
     setManualTitle('');
     setManualFunder('');
+    setManualAward('');
+    setManualDeadline('');
+    setManualTags('');
+    setManualNotes('');
+    setManualEligibility('');
     setShowManualIntake(false);
     await Promise.all([client.grants.getAll().then(setGrants), onRefreshAppState?.()]);
   };
@@ -192,10 +210,29 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           </div>
         </div>
         {showManualIntake && (
-          <form onSubmit={handleManualSubmit} className="manual-intake-form">
-            <input data-testid="manual-title" value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} placeholder="Title" />
-            <input data-testid="manual-funder" value={manualFunder} onChange={(e) => setManualFunder(e.target.value)} placeholder="Funder" />
-            <button type="submit" data-testid="manual-submit-btn">Save grant</button>
+          <form onSubmit={handleManualSubmit} className="manual-intake-form" data-testid="manual-intake-form">
+            <label htmlFor="manual-title">Grant Title (required)</label>
+            <input id="manual-title" data-testid="manual-title" value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} placeholder="e.g., NSF STEM Education Grant" required />
+            <label htmlFor="manual-funder">Funder (required)</label>
+            <input id="manual-funder" data-testid="manual-funder" value={manualFunder} onChange={(e) => setManualFunder(e.target.value)} placeholder="e.g., National Science Foundation" required />
+            <label htmlFor="manual-award">Award Amount</label>
+            <input id="manual-award" data-testid="manual-award" value={manualAward} onChange={(e) => setManualAward(e.target.value)} placeholder="e.g., $50,000" />
+            <label htmlFor="manual-deadline">Deadline</label>
+            <input id="manual-deadline" type="date" data-testid="manual-deadline" value={manualDeadline} onChange={(e) => setManualDeadline(e.target.value)} />
+            <label htmlFor="manual-tags">Tags (comma-separated)</label>
+            <input id="manual-tags" data-testid="manual-tags" value={manualTags} onChange={(e) => setManualTags(e.target.value)} placeholder="e.g., STEM, Community, Education" />
+            <label htmlFor="manual-eligibility">Eligibility Notes</label>
+            <textarea id="manual-eligibility" data-testid="manual-eligibility" rows={3} value={manualEligibility} onChange={(e) => setManualEligibility(e.target.value)} placeholder="Describe eligibility requirements..." />
+            <label htmlFor="manual-notes">Source Notes</label>
+            <textarea id="manual-notes" data-testid="manual-notes" rows={2} value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="Where did you find this opportunity? Any additional context..." />
+            <div className="manual-intake-actions">
+              <button type="submit" className="btn btn-primary" data-testid="manual-submit-btn">
+                Add Grant Opportunity
+              </button>
+              <button type="button" className="btn btn-ghost" onClick={() => { setShowManualIntake(false); setManualTitle(''); setManualFunder(''); setManualAward(''); setManualDeadline(''); setManualTags(''); setManualNotes(''); setManualEligibility(''); }}>
+                Cancel
+              </button>
+            </div>
           </form>
         )}
         {showAddSourceForm && (
@@ -259,10 +296,29 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
       )}
 
       {showManualIntake && (
-        <form onSubmit={handleManualSubmit} className="manual-intake-form">
-          <input data-testid="manual-title" value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} placeholder="Title" />
-          <input data-testid="manual-funder" value={manualFunder} onChange={(e) => setManualFunder(e.target.value)} placeholder="Funder" />
-          <button type="submit" data-testid="manual-submit-btn">Save grant</button>
+        <form onSubmit={handleManualSubmit} className="manual-intake-form" data-testid="manual-intake-form">
+          <label htmlFor="manual-title-main">Grant Title (required)</label>
+          <input id="manual-title-main" data-testid="manual-title" value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} placeholder="e.g., NSF STEM Education Grant" required />
+          <label htmlFor="manual-funder-main">Funder (required)</label>
+          <input id="manual-funder-main" data-testid="manual-funder" value={manualFunder} onChange={(e) => setManualFunder(e.target.value)} placeholder="e.g., National Science Foundation" required />
+          <label htmlFor="manual-award-main">Award Amount</label>
+          <input id="manual-award-main" data-testid="manual-award" value={manualAward} onChange={(e) => setManualAward(e.target.value)} placeholder="e.g., $50,000" />
+          <label htmlFor="manual-deadline-main">Deadline</label>
+          <input id="manual-deadline-main" type="date" data-testid="manual-deadline" value={manualDeadline} onChange={(e) => setManualDeadline(e.target.value)} />
+          <label htmlFor="manual-tags-main">Tags (comma-separated)</label>
+          <input id="manual-tags-main" data-testid="manual-tags" value={manualTags} onChange={(e) => setManualTags(e.target.value)} placeholder="e.g., STEM, Community, Education" />
+          <label htmlFor="manual-eligibility-main">Eligibility Notes</label>
+          <textarea id="manual-eligibility-main" data-testid="manual-eligibility" rows={3} value={manualEligibility} onChange={(e) => setManualEligibility(e.target.value)} placeholder="Describe eligibility requirements..." />
+          <label htmlFor="manual-notes-main">Source Notes</label>
+          <textarea id="manual-notes-main" data-testid="manual-notes" rows={2} value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="Where did you find this opportunity? Any additional context..." />
+          <div className="manual-intake-actions">
+            <button type="submit" className="btn btn-primary" data-testid="manual-submit-btn">
+              Add Grant Opportunity
+            </button>
+            <button type="button" className="btn btn-ghost" onClick={() => { setShowManualIntake(false); setManualTitle(''); setManualFunder(''); setManualAward(''); setManualDeadline(''); setManualTags(''); setManualNotes(''); setManualEligibility(''); }}>
+              Cancel
+            </button>
+          </div>
         </form>
       )}
 

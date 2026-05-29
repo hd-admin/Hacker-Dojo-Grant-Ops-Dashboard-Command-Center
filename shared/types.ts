@@ -317,6 +317,8 @@ export interface Grant {
 	researchRationale?: string;
 	category?: string;
 	manualSource?: boolean;
+	manualOrigin?: boolean;
+	grantType?: string;
 	humanOverrides?: HumanOverride[];
 }
 
