@@ -92,6 +92,16 @@ describe('/api/jobs/[jobId]/retry route', () => {
   });
 
   it('creates a queued retry job for a failed job', async () => {
+    // Add an approved source so the research job can run
+    await repository.addSource({
+      id: 'source-retry-test',
+      name: 'Test Source',
+      url: 'https://example.com',
+      type: 'website',
+      createdAt: new Date().toISOString(),
+      isActive: true,
+      reviewStatus: 'approved',
+    });
     await repository.addJobQueueItem(createJob('job-failed', 'failed'));
 
     const response = await POST(new Request('http://localhost/api/jobs/job-failed/retry', {

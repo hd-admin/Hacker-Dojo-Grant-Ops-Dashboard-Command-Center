@@ -154,12 +154,12 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
   const reviewQueue = grants.filter((g) => g.status === 'review');
 
   // Follow-up data
-  const pendingFollowUps = followUps.filter((f) => f.status === 'pending');
-  const overdueFollowUps = followUps.filter((f) => {
+  const _pendingFollowUps = followUps.filter((f) => f.status === 'pending');
+  const _overdueFollowUps = followUps.filter((f) => {
     if (f.status !== 'pending' || !f.dueDate) return false;
     return new Date(f.dueDate) < new Date();
   });
-  const upcomingFollowUps = followUps.filter((f) => {
+  const _upcomingFollowUps = followUps.filter((f) => {
     if (f.status !== 'pending' || !f.dueDate) return false;
     const dueDate = new Date(f.dueDate);
     return dueDate >= new Date() && dueDate <= new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);

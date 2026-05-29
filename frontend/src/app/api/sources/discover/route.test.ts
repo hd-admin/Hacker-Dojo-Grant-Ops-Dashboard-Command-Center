@@ -48,6 +48,9 @@ describe('/api/sources/discover route', () => {
   });
 
   it('returns unavailable when opencode is not configured', async () => {
+    // When opencode is not on PATH, the PATH fallback throws ENOENT
+    execFileSyncMock.mockImplementation(() => { throw Object.assign(new Error('ENOENT: which not found'), { code: 'ENOENT' }); });
+
     const response = await POST(new Request('http://localhost/api/sources/discover', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -57,7 +60,6 @@ describe('/api/sources/discover route', () => {
 
     expect(response.status).toBe(200);
     expect(data).toEqual({ suggestions: [], unavailable: true });
-    expect(execFileSyncMock).not.toHaveBeenCalled();
   });
 
   it('returns source suggestions when opencode is configured', async () => {

@@ -5,12 +5,11 @@
  * and submission-blocking logic.
  */
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { withTempDataDir } from '../../../../shared/grant-ops-persistence';
 import { setDependencies, resetDependencies, createDependencies } from './dependencies';
-import type { Dependencies, Clock, IdGenerator } from './dependencies';
+import type { Dependencies, Clock } from './dependencies';
 import type { Grant, Task, TaskStatus, AuditEvent } from '../../../../shared/types';
-import * as repository from './repository';
 import * as taskService from './task-service';
 
 const mockGrant: Grant = {

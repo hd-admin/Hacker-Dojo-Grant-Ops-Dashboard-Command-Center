@@ -123,7 +123,7 @@ describe('job-queue-service', () => {
 		});
 
 		it('defaults retryCount to 0 when missing', async () => {
-			const { retryCount, ...rest } = createFailedJob('job-no-count');
+			const { retryCount: _retryCount, ...rest } = createFailedJob('job-no-count');
 			const failedJob: JobQueueItem = rest as unknown as JobQueueItem;
 			const newJob = await retryQueuedJob(failedJob);
 			expect(newJob?.retryCount).toBe(1);

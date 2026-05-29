@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
 import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
-import * as repository from '../../../../server/grant-ops/repository';
+import * as repository from '@/server/grant-ops/repository';
 import { POST } from './route';
 
 describe('POST /api/tasks/[taskId]/override', () => {

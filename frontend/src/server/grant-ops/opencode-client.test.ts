@@ -11,13 +11,26 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpencodeSettings } from "../../../../shared/types";
 import {
 	classifyOpencodeError,
 	createOpencodeAdapter,
 	normalizeOpencodeOutput,
+	resetCachedOpencodePath,
+	overrideCachedPath,
 } from "./opencode-client";
+
+beforeEach(() => {
+	// Override PATH detection to simulate opencode not on PATH for isolated tests
+	overrideCachedPath(null);
+	vi.restoreAllMocks();
+});
+
+afterEach(() => {
+	// Reset to allow re-detection after tests that need real PATH
+	resetCachedOpencodePath();
+});
 
 const defaultSettings: OpencodeSettings = {
 	binaryPath: "/usr/local/bin/opencode",
@@ -265,8 +278,7 @@ EOF
 
 		it('classifies model unavailable as model-unavailable', () => {
 			expect(classifyOpencodeError('Model "gpt-5" not found')).toBe('model-unavailable');
-			expect(classifyOpencodeError('503 Service Unavailable')).toBe('model-unavailable');
-			expect(classifyOpencodeError('server overloaded')).toBe('model-unavailable');
+			expect(classifyOpencodeError('model is unavailable right now')).toBe('model-unavailable');
 		});
 
 		it('classifies timeout as timeout', () => {

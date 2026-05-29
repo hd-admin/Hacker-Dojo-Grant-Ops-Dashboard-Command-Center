@@ -46,23 +46,33 @@ export async function resolveOpencodePath(configuredPath: string): Promise<strin
 
 // Module-level cached PATH resolution for synchronous isConfigured() check.
 // Uses the same platform-aware execFileSync + which/where detection as resolveOpencodePath.
-let cachedResolvedPath: string | null = null;
+// undefined = not yet tried; null = tried and not found; string = found at path
+let cachedResolvedPath: string | null | undefined = undefined;
+
+export function resetCachedOpencodePath(): void {
+	cachedResolvedPath = undefined; // allow re-detection next call
+}
+
+export function overrideCachedPath(path: string | null): void {
+	cachedResolvedPath = path; // set to null to simulate opencode not on PATH
+}
 
 function getCachedOpencodePath(): string | null {
-	if (cachedResolvedPath === null) {
-		const { execFileSync } = require('node:child_process');
-		try {
-			const isWindows = process.platform === 'win32';
-			const locateCmd = isWindows ? 'where' : 'which';
-			const output = execFileSync(locateCmd, ['opencode'], {
-				encoding: 'utf8',
-				timeout: 5000,
-			});
-			const firstLine = output.trim().split(/\r?\n/)[0]?.trim();
-			cachedResolvedPath = firstLine && firstLine.length > 0 ? firstLine : null;
-		} catch {
-			cachedResolvedPath = null;
-		}
+	if (cachedResolvedPath !== undefined) {
+		return cachedResolvedPath;
+	}
+	const { execFileSync } = require('node:child_process');
+	try {
+		const isWindows = process.platform === 'win32';
+		const locateCmd = isWindows ? 'where' : 'which';
+		const output = execFileSync(locateCmd, ['opencode'], {
+			encoding: 'utf8',
+			timeout: 5000,
+		});
+		const firstLine = output.trim().split(/\r?\n/)[0]?.trim();
+		cachedResolvedPath = firstLine && firstLine.length > 0 ? firstLine : null;
+	} catch {
+		cachedResolvedPath = null;
 	}
 	return cachedResolvedPath;
 }
@@ -150,14 +160,14 @@ export function classifyOpencodeError(
 		return 'config-error';
 	}
 
+	// Rate-limit: provider throttling (transient, not quota) - check before quota-exhausted
+	if (/429|rate.limit|too many requests|rate exceeded/i.test(combined)) {
+		return 'rate-limit';
+	}
+
 	// Quota-exhausted: explicit quota exceeded (separate from rate-limit throttling)
 	if (/quota exceeded|quota exhausted|billing.*limit|usage limit reached/i.test(combined)) {
 		return 'quota-exhausted';
-	}
-
-	// Rate-limit: provider throttling (transient, not quota)
-	if (/429|rate.limit|too many requests|rate exceeded/i.test(combined)) {
-		return 'rate-limit';
 	}
 
 	// Malformed-output: unparseable response, invalid JSON, unexpected format
@@ -574,8 +584,8 @@ ${request.missionStatement}
 		if (this.settings.binaryPath) return true;
 		// Priority 2: Opencode auto-detected on PATH
 		if (getCachedOpencodePath() !== null) return true;
-		// Priority 3: Settings flag explicitly set
-		return this.settings.isConfigured === true;
+		// Not configured: no usable binary path found
+		return false;
 	}
 }
 

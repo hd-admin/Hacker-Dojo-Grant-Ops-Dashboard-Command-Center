@@ -1,7 +1,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import type { Source, SourceCategory, SourceDiscoverySuggestion } from '../../../shared/types';
+import type { Source, SourceDiscoverySuggestion } from '../../../shared/types';
 
 const {
   onRefreshAppState,
@@ -144,7 +144,7 @@ describe('SourcesView', () => {
 
   it('shows pending review section with approve/reject buttons when pending sources exist', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.querySelector('[data-testid="sources-pending-review-section"]') !== null);
+    await waitFor(() => container.querySelector('[data-testid="approve-source-btn-pending-1"]') !== null);
 
     expect(container.textContent).toContain('Pending review');
     expect(container.textContent).toContain('Pending Source 1');
@@ -298,5 +298,123 @@ describe('SourcesView', () => {
     await waitFor(() => container.textContent?.includes('0 sources awaiting review') === true);
 
     expect(container.textContent).toContain('No sources pending review');
+  });
+});
+
+describe('ProPublica search section', () => {
+  it('renders ProPublica search input and button', async () => {
+    root.render(React.createElement(SourcesView, { onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('Sources') === true);
+
+    expect(container.querySelector('[data-testid="propublica-search-input"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="propublica-search-btn"]')).not.toBeNull();
+  });
+
+  it('shows propublica-unavailable-msg on unavailable response', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('propublica')) {
+        return new Response(JSON.stringify({ unavailable: true, grants: [] }), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url.includes('/api/sources?filter=pending-review')) {
+        return new Response(JSON.stringify([]), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url.includes('/api/sources')) {
+        return new Response(JSON.stringify(mockSources), { headers: { 'content-type': 'application/json' } });
+      }
+      return new Response('{}', { headers: { 'content-type': 'application/json' } });
+    }));
+
+    root.render(React.createElement(SourcesView, { onRefreshAppState }));
+    await waitFor(() => container.querySelector('[data-testid="propublica-search-input"]') !== null);
+
+    const input = container.querySelector('[data-testid="propublica-search-input"]') as HTMLInputElement;
+    // Use native setter to bypass React's internal value tracking
+    const nativeInputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    nativeInputSetter?.call(input, 'STEM education');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await waitFor(() => !(container.querySelector('[data-testid="propublica-search-btn"]') as HTMLButtonElement | null)?.disabled);
+
+    const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { bubbles: true }));
+
+    await waitFor(() => container.querySelector('[data-testid="propublica-unavailable-msg"]') !== null);
+    expect(container.querySelector('[data-testid="propublica-unavailable-msg"]')).not.toBeNull();
+  });
+
+  it('shows propublica-empty-results when grants array is empty', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('propublica')) {
+        return new Response(JSON.stringify({ grants: [] }), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url.includes('/api/sources?filter=pending-review')) {
+        return new Response(JSON.stringify([]), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url.includes('/api/sources')) {
+        return new Response(JSON.stringify(mockSources), { headers: { 'content-type': 'application/json' } });
+      }
+      return new Response('{}', { headers: { 'content-type': 'application/json' } });
+    }));
+
+    root.render(React.createElement(SourcesView, { onRefreshAppState }));
+    await waitFor(() => container.querySelector('[data-testid="propublica-search-input"]') !== null);
+
+    const input = container.querySelector('[data-testid="propublica-search-input"]') as HTMLInputElement;
+    const nativeInputSetter2 = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    nativeInputSetter2?.call(input, 'STEM education');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await waitFor(() => !(container.querySelector('[data-testid="propublica-search-btn"]') as HTMLButtonElement | null)?.disabled);
+
+    const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { bubbles: true }));
+
+    await waitFor(() => container.querySelector('[data-testid="propublica-empty-results"]') !== null);
+    expect(container.querySelector('[data-testid="propublica-empty-results"]')).not.toBeNull();
+  });
+
+  it('shows propublica-results-list when grants returned', async () => {
+    const mockGrant = {
+      id: 'pp-1',
+      title: 'Test Grant',
+      funder: 'SVCF',
+      funderShort: 'SVCF',
+      award: '$50,000',
+      awardSort: 50000,
+      deadline: 'Rolling',
+      daysOut: 365,
+      fit: 80,
+      tags: [],
+      status: 'matched',
+      statusLabel: 'Matched',
+    };
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('propublica')) {
+        return new Response(JSON.stringify({ grants: [mockGrant] }), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url.includes('/api/sources?filter=pending-review')) {
+        return new Response(JSON.stringify([]), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url.includes('/api/sources')) {
+        return new Response(JSON.stringify(mockSources), { headers: { 'content-type': 'application/json' } });
+      }
+      return new Response('{}', { headers: { 'content-type': 'application/json' } });
+    }));
+
+    root.render(React.createElement(SourcesView, { onRefreshAppState }));
+    await waitFor(() => container.querySelector('[data-testid="propublica-search-input"]') !== null);
+
+    const input = container.querySelector('[data-testid="propublica-search-input"]') as HTMLInputElement;
+    const nativeInputSetter3 = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    nativeInputSetter3?.call(input, 'STEM education');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await waitFor(() => !(container.querySelector('[data-testid="propublica-search-btn"]') as HTMLButtonElement | null)?.disabled);
+
+    const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
+    form.dispatchEvent(new Event('submit', { bubbles: true }));
+
+    await waitFor(() => container.querySelector('[data-testid="propublica-results-list"]') !== null);
+    expect(container.querySelector('[data-testid="propublica-results-list"]')).not.toBeNull();
   });
 });

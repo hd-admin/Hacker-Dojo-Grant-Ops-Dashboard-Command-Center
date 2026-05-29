@@ -19,6 +19,7 @@ export default defineConfig({
       'react/jsx-dev-runtime': require.resolve('next/dist/compiled/react/jsx-dev-runtime'),
       'react-dom': require.resolve('next/dist/compiled/react-dom'),
       'react-dom/client': require.resolve('next/dist/compiled/react-dom/client'),
+      'lucide-react': path.resolve(__dirname, './__mocks__/lucide-react.tsx'),
     },
   },
 });

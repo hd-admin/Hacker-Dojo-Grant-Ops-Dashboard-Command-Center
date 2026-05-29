@@ -23,7 +23,7 @@ function parseBoolean(value: FormDataEntryValue | null): boolean | undefined {
 // GET: List all documents, with optional search
 export async function GET(request: NextRequest) {
   try {
-    const searchQuery = request.nextUrl.searchParams.get('q');
+    const searchQuery = new URL(request.url).searchParams.get('q');
 
     if (searchQuery) {
       const results = await documentService.searchDocuments(searchQuery);

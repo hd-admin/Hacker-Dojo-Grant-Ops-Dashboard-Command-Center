@@ -34,7 +34,9 @@ describe('/api/documents route', () => {
   });
 
   it('GET returns persisted documents', async () => {
-    const response = await GET();
+    const response = await GET(
+      new Request('http://localhost/api/documents') as never,
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);

@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { NextRequest } from 'next/server';
 
-import { createDependencies, resetDependencies, setDependencies } from '../../../server/grant-ops/dependencies';
-import { invalidateCache, withTempDataDir } from '../../../../../shared/grant-ops-persistence';
-import * as repository from '../../../server/grant-ops/repository';
-import type { Grant } from '../../../../../shared/types';
+import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
+import { invalidateCache, withTempDataDir } from '../../../../../../shared/grant-ops-persistence';
+import * as repository from '@/server/grant-ops/repository';
+import type { Grant } from '../../../../../../shared/types';
 import { GET } from './route';
 
 function createGrant(overrides: Partial<Grant> & Pick<Grant, 'id' | 'title' | 'funder' | 'award' | 'awardSort' | 'deadline' | 'daysOut' | 'fit' | 'tags' | 'status' | 'statusLabel'>): Grant {

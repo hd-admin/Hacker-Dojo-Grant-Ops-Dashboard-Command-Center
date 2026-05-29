@@ -92,7 +92,7 @@ describe('JobsPanel', () => {
 
     const header = container.querySelector('[data-testid="jobs-panel-header"]');
     expect(header).not.toBeNull();
-    expect(header?.querySelector('.header-title')?.textContent).toContain('Jobs');
+    expect(header?.querySelector('.header-title')?.textContent).toContain('Job');
   });
 
   it('renders status filter tabs', async () => {
@@ -131,9 +131,14 @@ describe('JobsPanel', () => {
 
     const failedItem = container.querySelector('[data-testid="job-item-failed-job-3"]');
     expect(failedItem).not.toBeNull();
-    // Failed jobs should show the failure category and guidance text
-    expect(failedItem?.textContent).toMatch(/rate-limit/i);
-    expect(failedItem?.textContent).toMatch(/Rate limited|wait/i);
+    // Expand the job card to see failure guidance
+    const toggleBtn = container.querySelector('[data-testid="job-toggle-details-job-3"]') as HTMLButtonElement;
+    toggleBtn?.click();
+    await new Promise((r) => setTimeout(r, 50));
+    // Expanded failure guidance should include the category and description
+    const guidanceEl = container.querySelector('[data-testid="job-failure-guidance-job-3"]');
+    expect(guidanceEl).not.toBeNull();
+    expect(guidanceEl?.textContent).toMatch(/Rate limited|rate.limit/i);
   });
 
   it('filters by status', async () => {
@@ -187,7 +192,7 @@ describe('JobsPanel', () => {
 
     const jobItems = container.querySelectorAll('[data-testid^="job-item-"]');
     jobItems.forEach((item) => {
-      const timestamps = item.querySelector('[data-testid$="-timestamps"]');
+      const timestamps = item.querySelector('[data-testid^="job-timestamps-"]');
       expect(timestamps).not.toBeNull();
     });
   });

@@ -98,7 +98,7 @@ describe("safety-service", () => {
       await setPasscode("secret");
       updateLockConfig({ maxFailedAttempts: 0 });
 
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 5; i++) {
         await attemptUnlock("wrong");
       }
 

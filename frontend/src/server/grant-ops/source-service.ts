@@ -124,7 +124,6 @@ export async function updateSourceLastCrawled(id: string): Promise<boolean> {
  * Compute the crawl state for a source based on its crawl run history.
  */
 export async function computeSourceCrawlState(sourceId: string): Promise<SourceCrawlState> {
-  const deps = getDependencies();
   const runs = await getSourceCrawlHistory(sourceId);
 
   if (runs.length === 0) {

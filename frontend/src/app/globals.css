@@ -15,6 +15,11 @@
   --danger: #c66b5a;
   --info: #7ba3b8;
 
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--danger);
+  --color-info: var(--info);
+
   --serif: 'Fraunces', Georgia, serif;
   --sans: 'Funnel Sans', system-ui, sans-serif;
   --mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -3386,4 +3391,10 @@ input.input-success:focus {
   .settings-diag-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* ProPublica search section */
+.propublica-section {
+  padding: 16px 0;
+  border-top: 1px solid var(--border);
 }

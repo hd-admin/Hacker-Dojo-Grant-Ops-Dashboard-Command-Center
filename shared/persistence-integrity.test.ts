@@ -171,7 +171,7 @@ describe('Shared Persistence Integrity', () => {
 
       expect(profile.legalName).toBe(defaultProfile.legalName);
       expect(grants.some((item) => item.id === grant.id)).toBe(false);
-      expect(grants.length).toBeGreaterThan(0);
+      expect(grants.length).toBe(0);
       expect(persisted.sources).toEqual([]);
       expect(persisted.crawlRuns).toEqual([]);
       expect(persisted.lastSync).toBeTruthy();

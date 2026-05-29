@@ -1,6 +1,5 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { z } from 'zod';
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
 import {
@@ -9,10 +8,6 @@ import {
 } from '@/server/grant-ops/propublica-service';
 
 export const dynamic = 'force-dynamic';
-
-const querySchema = z.object({
-  query: z.string().min(1).max(500),
-});
 
 export async function GET(request: NextRequest) {
   try {

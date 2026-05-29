@@ -106,7 +106,7 @@ describe('/api/research route', () => {
       new Request('http://localhost/api/sources', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: 'Candid', url: 'https://www.candid.org', type: 'website' }),
+        body: JSON.stringify({ name: 'Candid', url: 'https://www.candid.org', type: 'website', reviewStatus: 'approved' }),
       }) as never,
     );
     expect(createResponse.status).toBe(201);

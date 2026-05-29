@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
-import type { Task, TaskStatus } from '../../../../../../../shared/types';
+import type { Task } from '../../../../../../../shared/types';
 
 export const dynamic = 'force-dynamic';
 

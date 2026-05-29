@@ -367,8 +367,7 @@ describe("ResearchService", () => {
 			await sourceService.addSource({
 				name: "Test Source",
 				url: "https://example.com/grants",
-				type: "website",
-			});
+				type: "website", reviewStatus: 'approved' });
 
 			// Run research
 			const result = await researchService.runResearch(mockProfile, {
@@ -401,8 +400,7 @@ describe("ResearchService", () => {
 			await sourceService.addSource({
 				name: "Test Source",
 				url: "https://example.com/grants",
-				type: "website",
-			});
+				type: "website", reviewStatus: 'approved' });
 
 			// Run research
 			const result = await researchService.runResearch(mockProfile, {
@@ -427,8 +425,7 @@ describe("ResearchService", () => {
 			await sourceService.addSource({
 				name: "Test Source",
 				url: "https://example.com/grants",
-				type: "website",
-			});
+				type: "website", reviewStatus: 'approved' });
 
 			// Run research
 			const result = await researchService.runResearch(mockProfile, {
@@ -456,7 +453,7 @@ describe('auto-draft triggering', () => {
 	afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
 
 	it('does not auto-draft during research, grants remain matched', async () => {
-		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
+		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website', reviewStatus: 'approved' });
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
 		const grants = await repository.getGrants();
 		const mockGrant = grants.find((g) => g.id === 'mock-grant-001');
@@ -505,7 +502,7 @@ describe('auto-draft triggering', () => {
 			}),
 		}));
 
-		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
+		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website', reviewStatus: 'approved' });
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
 		const grants = await repository.getGrants();
 		const mockFoundationGrant = grants.find((g) => g.id === 'multi-grant-001');
@@ -540,7 +537,7 @@ describe('auto-draft triggering', () => {
 				isConfigured: () => true,
 			}),
 		}));
-		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
+		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website', reviewStatus: 'approved' });
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
 		const grants = await repository.getGrants();
 		const lowFitGrant = grants.find((g) => g.id === 'grant-low-fit');
@@ -549,7 +546,7 @@ describe('auto-draft triggering', () => {
 	});
 
 	it('research run does not change grant status on repeat runs when grant already exists', async () => {
-		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website' });
+		await sourceService.addSource({ name: 'Test Source', url: 'https://example.com/grants', type: 'website', reviewStatus: 'approved' });
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
 		const grantsAfterFirst = await repository.getGrants();
 		const grantAfterFirst = grantsAfterFirst.find((g) => g.id === 'mock-grant-001');
@@ -568,7 +565,7 @@ describe('per-grant and summary notifications during research', () => {
 	afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
 
 	it('emits accent notification with escaped strong title, award, and fit for each new matching grant AND suppresses auto-draft notification', async () => {
-		await sourceService.addSource({ name: 'Test', url: 'https://example.com', type: 'website' });
+		await sourceService.addSource({ name: 'Test', url: 'https://example.com', type: 'website', reviewStatus: 'approved' });
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
 		const notifications = await repository.getNotifications();
 		expect(notifications.some(n => n.dot === 'accent' && /New match/i.test(n.text))).toBe(true);
@@ -585,7 +582,7 @@ describe('per-grant and summary notifications during research', () => {
 
 	it('retains prior notifications and orders per-grant before summary before prior', async () => {
 		await repository.updateNotifications([{ id: 'prior-1', dot: 'info', time: '2026-01-01T00:00:00.000Z', text: 'Prior notification' }]);
-		await sourceService.addSource({ name: 'Test', url: 'https://example.com', type: 'website' });
+		await sourceService.addSource({ name: 'Test', url: 'https://example.com', type: 'website', reviewStatus: 'approved' });
 		await researchService.runResearch(mockProfile, { _providerType: 'fake' });
 		const notifications = await repository.getNotifications();
 		expect(notifications.some(n => n.text === 'Prior notification')).toBe(true);
@@ -606,7 +603,7 @@ describe('notification emission', () => {
     beforeEach(async () => { tempDataDir = await withTempDataDir(); });
     afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
     it('emits a notification after runResearch completes', async () => {
-      await sourceService.addSource({ name: 'Test', url: 'https://example.com', type: 'website' });
+      await sourceService.addSource({ name: 'Test', url: 'https://example.com', type: 'website', reviewStatus: 'approved' });
       await researchService.runResearch(mockProfile, { _providerType: 'fake' });
       const notifications = await repository.getNotifications();
       expect(notifications.length).toBeGreaterThan(0);

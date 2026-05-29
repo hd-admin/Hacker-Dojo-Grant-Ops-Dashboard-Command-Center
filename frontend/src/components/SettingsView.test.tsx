@@ -233,7 +233,7 @@ describe('SettingsView', () => {
     expect(container.textContent).toContain('Hacker Dojo Program Summary.pdf');
     expect(container.textContent).toContain('Budget FY2025.xlsx');
     expect(container.textContent).toContain('Opencode');
-    expect(container.textContent).toContain('Edit Opencode');
+    expect(container.textContent).toContain('Opencode Status');
   });
 
   it('requires confirmation before starting a backup restore', async () => {

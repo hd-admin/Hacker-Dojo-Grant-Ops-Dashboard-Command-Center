@@ -79,8 +79,11 @@ describe('AuditView', () => {
     expect(container.textContent).toContain('Audit Trail');
   });
 
-  it('shows loading state ("Loading audit trail...") initially', () => {
+  it('shows loading state ("Loading audit trail...") initially', async () => {
+    // Block fetch so loading state persists long enough to assert
+    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
     root.render(React.createElement(AuditView));
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
     expect(container.textContent).toContain('Loading audit trail...');
   });
 
@@ -108,7 +111,6 @@ describe('AuditView', () => {
     await waitFor(() => container.textContent?.includes('Audit Trail') === true);
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('entityId=grant-123'),
-      undefined
     );
   });
 
@@ -118,7 +120,6 @@ describe('AuditView', () => {
     await waitFor(() => container.textContent?.includes('Audit Trail') === true);
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('entityType=grant'),
-      undefined
     );
   });
 

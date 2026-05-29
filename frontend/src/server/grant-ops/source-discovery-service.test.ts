@@ -38,10 +38,12 @@ describe('source-discovery-service', () => {
   });
 
   it('returns unavailable when opencode is not configured', async () => {
+    // When opencode is not on PATH, the PATH fallback throws ENOENT
+    execFileSyncMock.mockImplementation(() => { throw Object.assign(new Error('ENOENT: which not found'), { code: 'ENOENT' }); });
+
     const result = await discoverSourcesFromPrompt('Find education grants');
 
     expect(result).toEqual({ suggestions: [], unavailable: true });
-    expect(execFileSyncMock).not.toHaveBeenCalled();
   });
 
   it('returns parsed source suggestions from opencode output', async () => {

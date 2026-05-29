@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
 import { saveCrawlSchedule, loadCrawlSchedules } from '../../../../shared/grant-ops-persistence';
 import { defaultProfile } from '../../../../shared/seed-data';
+import * as repository from './repository';
 
 import { checkAndRunDue, disableScheduleForSource, getScheduleForSource, upsertScheduleForSource } from './crawl-scheduler-service';
 
@@ -58,6 +59,18 @@ describe('crawl-scheduler-service', () => {
   });
 
   it('triggers due schedules with the real research path and persists the rescheduled time', async () => {
+    // Set up profile and an approved source (required by checkAndRunDue)
+    await repository.updateOrgProfile(defaultProfile);
+    await repository.addSource({
+      id: 'source-1',
+      name: 'Test Source',
+      url: 'https://example.com',
+      type: 'website',
+      createdAt: new Date().toISOString(),
+      isActive: true,
+      reviewStatus: 'approved',
+    });
+
     const schedule = await upsertScheduleForSource('source-1', 1);
     await saveCrawlSchedule({
       ...schedule,

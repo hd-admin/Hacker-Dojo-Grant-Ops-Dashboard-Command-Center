@@ -164,15 +164,6 @@ export default function AppShell() {
     return diffDays > 7;
   }, [crawlStatus.lastSync]);
 
-  // Check setup completion on mount
-  useEffect(() => {
-    const storage = getWorkingContextStorage();
-    if (storage) {
-      const completed = storage.getItem(SETUP_COMPLETED_KEY) === 'true';
-      setSetupCompleted(completed);
-    }
-  }, []);
-
   const saveWorkingContext = useCallback((next: {
     activeView?: ViewType;
     selectedGrantId?: string | null;
@@ -488,8 +479,6 @@ export default function AppShell() {
       healthResult.opencode === 'incompatible' ||
       healthResult.opencode === 'error');
 
-  const profileExists = profile !== null && profile.legalName && profile.legalName.trim().length > 0;
-
   // ============ Render ============
 
   if (!isMounted) {
@@ -560,7 +549,7 @@ export default function AppShell() {
                 aria-label={item.ariaLabel}
                 aria-current={activeView === item.view ? 'page' : undefined}
                 tabIndex={0}
-                disabled={(item.view === 'discovery' || item.view === 'sources') && (healthResult === null || opencodeBlocked)}
+                disabled={false}
                 onClick={() => handleNavClick(item)}
                 onKeyDown={(e) => handleNavKeyDown(e, item)}
               >
@@ -704,21 +693,13 @@ export default function AppShell() {
           />
         </div>
         <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`} role="tabpanel" aria-label="Discovery">
-          {healthResult === null || opencodeBlocked ? (
-            <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
-          ) : (
-            <DiscoveryView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} />
-          )}
+          <DiscoveryView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} />
         </div>
         <div id="view-pipeline" className={`view ${activeView === 'pipeline' ? 'active' : ''}`} role="tabpanel" aria-label="Pipeline">
           <PipelineView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} />
         </div>
         <div id="view-sources" className={`view ${activeView === 'sources' ? 'active' : ''}`} role="tabpanel" aria-label="Sources">
-          {healthResult === null || opencodeBlocked ? (
-            <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
-          ) : (
-            <SourcesView onRefreshAppState={refreshAppState} />
-          )}
+          <SourcesView onRefreshAppState={refreshAppState} />
         </div>
         <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`} role="tabpanel" aria-label="Organization Profile Settings">
           <SettingsView onRefreshAppState={refreshAppState} />

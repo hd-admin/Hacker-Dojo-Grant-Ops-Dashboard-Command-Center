@@ -17,9 +17,22 @@ import {
 	getHealth,
 	recordFailure,
 	resolveFailure,
-	resolveOpencodePath,
 	getFailureHistory,
 } from './health-service';
+import { resolveOpencodePath } from './opencode-client';
+
+const execFileSyncMock = vi.hoisted(() => vi.fn());
+const accessMock = vi.hoisted(() => vi.fn(async () => undefined));
+
+vi.mock('node:child_process', () => ({
+  execFileSync: execFileSyncMock,
+  spawn: vi.fn(),
+  default: { execFileSync: execFileSyncMock, spawn: vi.fn() },
+}));
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return { ...actual, default: actual, access: accessMock };
+});
 
 function createMockDeps(
 	overrides: Partial<{
@@ -102,6 +115,14 @@ describe('checkStorage', () => {
 });
 
 describe('checkOpencode', () => {
+	// Default: opencode not on PATH (which throws ENOENT)
+	beforeEach(() => {
+		execFileSyncMock.mockReset();
+		execFileSyncMock.mockImplementation(() => { throw Object.assign(new Error('ENOENT: which not found'), { code: 'ENOENT' }); });
+		accessMock.mockReset();
+		accessMock.mockResolvedValue(undefined);
+	});
+
 	it('returns not-installed when binaryPath is empty', async () => {
 		const deps = createMockDeps();
 		(deps.repository.getOpencodeSettings as ReturnType<typeof vi.fn>).mockResolvedValue({
@@ -115,7 +136,7 @@ describe('checkOpencode', () => {
 		expect(result.opencode).toBe('not-installed');
 	});
 
-	it('returns ok when opencode is on PATH but binaryPath is empty', async () => {
+	it('returns not-installed when binaryPath is empty and opencode not on PATH', async () => {
 		const deps = createMockDeps();
 		(deps.repository.getOpencodeSettings as ReturnType<typeof vi.fn>).mockResolvedValue({
 			binaryPath: '',
@@ -124,29 +145,12 @@ describe('checkOpencode', () => {
 			isConfigured: false,
 		});
 
-		// Mock resolveOpencodePath to simulate opencode found on PATH
-		const originalResolve = resolveOpencodePath;
-		try {
-			// Replace resolveOpencodePath to return a mock path
-			// This verifies checkOpencode uses the resolved path correctly
-			// (test doesn't actually run `which opencode` — that's an integration concern)
-			const result = await checkOpencode({
-				...deps,
-				// The resolveOpencodePath call is internal to checkOpencode,
-				// we test indirectly: when binaryPath is empty, the function
-				// now calls resolveOpencodePath instead of returning immediately.
-				// The unit test for resolveOpencodePath itself verifies path resolution.
-			});
-			// With empty binaryPath and no opencode on test PATH,
-			// resolveOpencodePath returns null → 'not-installed'
-			expect(result.opencode).toBe('not-installed');
-		} finally {
-			// No cleanup needed — each test uses fresh mock deps
-		}
+		const result = await checkOpencode(deps);
+		expect(result.opencode).toBe('not-installed');
 	});
 
 	it('resolveOpencodePath returns null when opencode not on PATH', async () => {
-		// In test environment, opencode is typically not installed
+		// execFileSyncMock throws ENOENT in beforeEach
 		const result = await resolveOpencodePath('');
 		expect(result).toBeNull();
 	});
@@ -172,7 +176,7 @@ describe('checkOpencode', () => {
 
 		const result = await checkOpencode(deps);
 		expect(result.opencode).toBe('error');
-		expect(result.opencodeError).toContain('Failed to check opencode');
+		expect(result.opencodeError).toContain('database locked');
 	});
 });
 
@@ -297,6 +301,13 @@ describe('checkDocumentIndexer', () => {
 });
 
 describe('getHealth', () => {
+	beforeEach(() => {
+		execFileSyncMock.mockReset();
+		execFileSyncMock.mockImplementation(() => { throw Object.assign(new Error('ENOENT: which not found'), { code: 'ENOENT' }); });
+		accessMock.mockReset();
+		accessMock.mockResolvedValue(undefined);
+	});
+
 	it('aggregates all health checks', async () => {
 		const deps = createMockDeps({
 			clock: { now: () => new Date('2026-05-28T12:00:00Z') },

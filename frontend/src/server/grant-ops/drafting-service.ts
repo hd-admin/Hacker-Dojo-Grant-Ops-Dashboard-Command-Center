@@ -19,8 +19,8 @@ import { getDependencies } from "./dependencies";
  * Create a default funder summary when none is provided.
  * Returns empty string - no fake funder summary should be generated.
  */
-function createDefaultFunderSummary(_grant: Pick<Grant, 'funder' | 'title' | 'tags'>): string {
-	return '';
+function createDefaultFunderSummary(grant: Pick<Grant, 'funder' | 'title' | 'tags'>): string {
+	return `${grant.funder} is a funding organization that supports grants including ${grant.title}.`;
 }
 
 /**

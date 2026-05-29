@@ -8,6 +8,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
+  clearDatabase,
   getSqliteState,
   readAuditEvents as readAuditEventsFromSqlite,
   readConflictRecords as readConflictRecordsFromSqlite,
@@ -275,32 +276,14 @@ export async function copyPersistedData(
 }
 
 export async function resetPersistentStateForTests(): Promise<void> {
-  const dataDir = getDATA_DIR();
-  const emptyPersistedData: PersistedData = {
-    sources: [],
-    crawlRuns: [],
-    draftArtifacts: [],
-    revisionRequests: [],
-    approvalRecords: [],
-    submissionRecords: [],
-    followUps: [],
-    opencodeSettings: null,
-    notifications: [],
-    tasks: [],
-    documents: [],
-    lastSync: new Date().toISOString(),
-  };
-
-  dataCache.delete(dataDir);
-  grantsCache.delete(dataDir);
-  await savePersistedData(emptyPersistedData);
-  // GAP-05: seedGrants, seedNotifications, seedTasks eliminated - use empty arrays for test reset
-  await saveGrants([]);
-  await saveTasks([]);
-  await saveNotifications([]);
+  // Clear in-memory caches first
+  invalidateCache();
+  const state = getSqliteState();
+  // Clear the entire database (drops all tables including audit_events and job_queue)
+  await clearDatabase(state);
+  // Re-initialize with default seed state
   await saveProfile({ ...defaultProfile });
   await saveOpencodeSettings({ ...defaultOpencodeSettings });
-  await loadPersistedData();
 }
 
 export async function loadAuditEvents(limit?: number): Promise<AuditEvent[]> {

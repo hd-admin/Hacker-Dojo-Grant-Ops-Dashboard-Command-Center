@@ -19,7 +19,9 @@ describe('/api/follow-ups route', () => {
   });
 
   it('GET returns an empty array when no follow-ups exist', async () => {
-    const response = await GET();
+    const response = await GET(
+      new Request('http://localhost/api/follow-ups') as never,
+    );
     const followUps = await response.json();
 
     expect(response.status).toBe(200);
@@ -61,7 +63,9 @@ describe('/api/follow-ups route', () => {
     expect(created.id).toBe('followup-1');
     expect(created.grantId).toBe('grant-1');
 
-    const getResponse = await GET();
+    const getResponse = await GET(
+      new Request('http://localhost/api/follow-ups') as never,
+    );
     const followUps = await getResponse.json();
     expect(followUps).toHaveLength(1);
     expect(followUps[0]?.title).toBe('Check in with funder');
@@ -112,7 +116,9 @@ describe('/api/follow-ups route', () => {
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
 
-    const getResponse = await GET();
+    const getResponse = await GET(
+      new Request('http://localhost/api/follow-ups') as never,
+    );
     const followUps = await getResponse.json();
     expect(followUps[0]?.status).toBe('completed');
     expect(followUps[0]?.completedAt).toBeDefined();

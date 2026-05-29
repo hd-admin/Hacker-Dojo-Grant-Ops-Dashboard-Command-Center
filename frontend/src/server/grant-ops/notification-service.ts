@@ -297,7 +297,7 @@ export function createNotificationService(
 						),
 					);
 				}
-			} else {
+			} else if (crawlRun.status === 'completed') {
 				const rule = getRule('crawl_complete');
 				if (rule) {
 					notifications.push(
@@ -362,7 +362,7 @@ export function createNotificationService(
 				}
 
 				const deadlineDate = new Date(grant.deadline);
-				const daysUntil = Math.ceil(
+				const daysUntil = Math.floor(
 					(deadlineDate.getTime() - now) / (1000 * 60 * 60 * 24),
 				);
 
@@ -518,7 +518,7 @@ export function createNotificationService(
 					case 'exact':
 						return rule.urgency;
 					case 'estimated':
-						return 'warning';
+						return 'informational';
 					case 'rolling':
 						return 'informational';
 					case 'unknown':
@@ -538,6 +538,7 @@ export function createNotificationService(
 			const context: Record<string, string> = {
 				grantTitle: event.grantTitle ?? '',
 				error: event.override ?? '',
+				grantsFound: event.override ?? '',
 				date: event.deadline
 					? new Date(event.deadline).toLocaleDateString()
 					: '',
@@ -554,9 +555,13 @@ export function createNotificationService(
 				sourceName: '',
 			};
 
+			// Use the rule's urgency, adjusted for deadline confidence if applicable
+			const urgency = event.type === 'deadline_proximity' && event.deadlineConfidence
+				? this.classifyUrgency(event)
+				: rule.urgency;
 			return createNotification(
 				interpolate(rule.template, context),
-				this.classifyUrgency(event),
+				urgency,
 				event.grantId,
 			);
 		},

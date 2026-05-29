@@ -173,7 +173,7 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
   };
 
   if (loading) {
-    return <div className="header-title">Loading...</div>;
+    return <div className="header-title" role="status" aria-busy="true" aria-label="Loading grants">Loading...</div>;
   }
 
   // Empty state: no grants discovered

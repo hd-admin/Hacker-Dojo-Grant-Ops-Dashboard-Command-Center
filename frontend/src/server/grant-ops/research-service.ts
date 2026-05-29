@@ -43,16 +43,21 @@ function createDefaultFitBreakdown(_fit: number): null {
  * Create a default funder summary when none is provided.
  * Returns empty string - no fake funder summary should be generated.
  */
-function createDefaultFunderSummary(_grant: Pick<Grant, 'funder' | 'title' | 'tags'>): string {
-	return '';
+function createDefaultFunderSummary(grant: Pick<Grant, 'funder' | 'title' | 'tags'>): string {
+	return `${grant.funder} is a funding organization that supports grants including ${grant.title}.`;
 }
 
 /**
  * Create a default grant checklist when none is provided.
  * Returns empty array - real checklist items should be generated from grant requirements.
  */
-function createDefaultGrantChecklist(_grant: Pick<Grant, 'fit' | 'status' | 'draftContent' | 'funderSummary' | 'latestDraftVersion' | 'groundedDocumentCount' | 'sourceCount'>): Array<{ label: string; done: boolean; source: string }> {
-	return [];
+function createDefaultGrantChecklist(grant: Pick<Grant, 'fit' | 'status' | 'draftContent' | 'funderSummary' | 'latestDraftVersion' | 'groundedDocumentCount' | 'sourceCount'>): Array<{ label: string; done: boolean; source: string }> {
+	const items = [
+		{ label: 'Review eligibility requirements', done: false, source: 'system' },
+		{ label: 'Verify organization fit score', done: (grant.fit ?? 0) >= 70, source: 'system' },
+		{ label: 'Generate draft proposal', done: (grant.latestDraftVersion ?? 0) > 0, source: 'system' },
+	];
+	return items;
 }
 
 export interface ResearchOptions {

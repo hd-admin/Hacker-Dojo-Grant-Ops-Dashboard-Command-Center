@@ -59,6 +59,14 @@ vi.mock('./DiscoveryView', () => ({
   ),
 }));
 
+vi.mock('./SourcesView', () => ({
+  default: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
+    <button type="button" onClick={() => onRefreshAppState?.()}>
+      refresh sources
+    </button>
+  ),
+}));
+
 vi.mock('./PipelineView', () => ({ default: () => <div>pipeline</div> }));
 vi.mock('./SettingsView', () => ({
   default: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
@@ -343,6 +351,9 @@ describe('AppShell', () => {
     sourcesGetAll.mockResolvedValue([]);
     researchGetRuns.mockResolvedValue({ latestRun: null, allRuns: [] });
 
+    // Mark setup as completed so the wizard doesn't suppress the first-run card
+    window.localStorage.setItem('grantops.setupCompleted', 'true');
+
     root.render(React.createElement(AppShell));
     await waitFor(() => container.querySelector('[data-testid="first-run-guidance-card"]') !== null);
 
@@ -360,6 +371,35 @@ describe('AppShell', () => {
     root.render(React.createElement(AppShell));
     await waitFor(() => capturedDashboardNotifications !== undefined && capturedDashboardNotifications.length > 0);
     expect(capturedDashboardNotifications).toEqual(notifications);
+  });
+
+  it('Discovery and Sources nav items are not disabled in degraded mode', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/health') return new Response(JSON.stringify({ storage: 'ok', opencode: 'not-installed', crawlerStatus: 'never-run', documentIndexer: 'ok' }), { headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+    });
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null);
+    const discoveryBtn = container.querySelector('button.nav-item[data-view="discovery"]') as HTMLButtonElement | null;
+    const sourcesBtn = container.querySelector('button.nav-item[data-view="sources"]') as HTMLButtonElement | null;
+    expect(discoveryBtn?.disabled).toBe(false);
+    expect(sourcesBtn?.disabled).toBe(false);
+  });
+
+  it('DiscoveryView renders in degraded mode rather than being replaced by a blocking banner', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/health') return new Response(JSON.stringify({ storage: 'ok', opencode: 'not-installed', crawlerStatus: 'never-run', documentIndexer: 'ok' }), { headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+    });
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null);
+    const discoveryBtn = container.querySelector('button.nav-item[data-view="discovery"]');
+    discoveryBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await waitFor(() => container.querySelector('#view-discovery')?.classList.contains('active') === true);
+    const refreshBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes('refresh discovery'));
+    expect(refreshBtn).not.toBeNull();
   });
 
   it('preserves recentDraftId in the stored working context', async () => {

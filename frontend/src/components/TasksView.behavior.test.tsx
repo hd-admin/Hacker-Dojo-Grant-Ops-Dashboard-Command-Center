@@ -86,8 +86,8 @@ describe('TasksView behavior', () => {
     Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Save override')?.click();
     await waitFor(() => tasksOverrideMock.mock.calls.length === 1);
 
-    expect(tasksOverrideMock.mock.calls[0]?.[0]).toMatchObject({
-      id: 'task-1',
+    expect(tasksOverrideMock.mock.calls[0]?.[0]).toBe('task-1');
+    expect(tasksOverrideMock.mock.calls[0]?.[1]).toMatchObject({
       newValue: 'waived',
       rationale: 'Operator reviewed and waived the task.',
       overrideType: 'task',

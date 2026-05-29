@@ -77,10 +77,9 @@ describe('/api/testing/reset route', () => {
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
 
-    // Verify state was reset (seed data should be restored)
+    // Verify state was reset (grants are cleared on reset)
     const grantsAfter = await repository.getGrants();
-    // Seed data has a specific set of grants - they should be present
-    expect(grantsAfter.length).toBeGreaterThan(0);
+    expect(grantsAfter.length).toBe(0);
   });
 
   it('can be called multiple times', async () => {

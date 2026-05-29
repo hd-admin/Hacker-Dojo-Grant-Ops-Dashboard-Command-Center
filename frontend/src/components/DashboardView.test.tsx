@@ -206,10 +206,11 @@ describe('DashboardView', () => {
     });
 
     it('renders default activity feed with HTML markup when no notifications prop provided', async () => {
+      // Without grants/profile, the dashboard shows the empty state
       root.render(React.createElement(DashboardView, requiredProps));
       await new Promise((r) => setTimeout(r, 0));
-      expect(container.querySelectorAll('.activity-item').length).toBeGreaterThanOrEqual(1);
-      expect(container.querySelector('.activity-text strong')).not.toBeNull();
+      // With grants=[], profile=null: renders dashboard-empty-state
+      expect(container.querySelector('[data-testid="dashboard-empty-state"]')).not.toBeNull();
     });
 
     it('uses notifications prop for activity feed when notifications are provided', async () => {
@@ -219,7 +220,9 @@ describe('DashboardView', () => {
         text: '<strong>Grant matched</strong>',
         time: '1h ago',
       };
-      root.render(React.createElement(DashboardView, { ...requiredProps, notifications: [testNotification] }));
+      // Provide grants and profile so the main view (with Agent Activity) renders
+      const profileWithName = { legalName: 'Test Org', agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile;
+      root.render(React.createElement(DashboardView, { ...requiredProps, grants: [...mockGrants], notifications: [testNotification], profile: profileWithName }));
       await new Promise((r) => setTimeout(r, 0));
       expect(container.querySelector('.activity-text strong')).not.toBeNull();
       expect(container.querySelector('.activity-text')?.innerHTML).toContain('Grant matched');

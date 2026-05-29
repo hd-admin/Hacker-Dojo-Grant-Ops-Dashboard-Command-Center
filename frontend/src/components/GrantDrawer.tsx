@@ -590,7 +590,7 @@ export default function GrantDrawer({
 				) : detail ? (
 					<>
 						<div className="drawer-header">
-							<button type="button" className="drawer-close" onClick={handleRequestClose}>
+							<button type="button" className="drawer-close" onClick={handleRequestClose} aria-label="Close">
 								×
 							</button>
 							<div className="drawer-funder">{detail.grant.funder}</div>
