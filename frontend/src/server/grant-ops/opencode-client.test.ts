@@ -245,6 +245,34 @@ EOF
 			expect(classifyOpencodeError('process exited', '', 124)).toBe('timeout');
 		});
 
+		it('classifies network unreachable as connectivity', () => {
+			expect(classifyOpencodeError('network is unreachable')).toBe('connectivity');
+			expect(classifyOpencodeError('ECONNREFUSED')).toBe('connectivity');
+			expect(classifyOpencodeError('ENOTFOUND: dns resolve failed')).toBe('connectivity');
+		});
+
+		it('classifies quota exceeded as quota-exhausted', () => {
+			expect(classifyOpencodeError('quota exceeded for this billing period')).toBe('quota-exhausted');
+			expect(classifyOpencodeError('usage limit reached')).toBe('quota-exhausted');
+			expect(classifyOpencodeError('billing limit exceeded')).toBe('quota-exhausted');
+		});
+
+		it('classifies resource exhaustion as capacity', () => {
+			expect(classifyOpencodeError('resource exhausted', 'server busy')).toBe('capacity');
+			expect(classifyOpencodeError('503 Service Unavailable')).toBe('capacity');
+			expect(classifyOpencodeError('server overloaded')).toBe('capacity');
+		});
+
+		it('classifies session termination as interrupted-session', () => {
+			expect(classifyOpencodeError('session terminated unexpectedly')).toBe('interrupted-session');
+			expect(classifyOpencodeError('connection closed by remote host')).toBe('interrupted-session');
+			expect(classifyOpencodeError('stream interrupted')).toBe('interrupted-session');
+		});
+
+		it('detects interrupted-session by exit code 141 (SIGPIPE)', () => {
+			expect(classifyOpencodeError('process exited', '', 141)).toBe('interrupted-session');
+		});
+
 		it('returns unknown for unrecognized errors', () => {
 			expect(classifyOpencodeError('something went wrong')).toBe('unknown');
 		});

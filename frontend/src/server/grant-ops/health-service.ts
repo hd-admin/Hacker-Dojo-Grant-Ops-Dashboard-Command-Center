@@ -5,7 +5,7 @@
  * All functions accept Dependencies for testability.
  */
 
-import type { HealthCheckResult } from '../../../../shared/types';
+import type { FailureHistoryEntry, FailureRootCauseCategory, HealthCheckResult } from '../../../../shared/types';
 import type { Dependencies } from './dependencies';
 
 const MIN_OPENCODE_VERSION = '0.1.0';
@@ -262,6 +262,187 @@ export async function checkDocumentIndexer(deps: Dependencies): Promise<
 	}
 }
 
+// Maximum failure history entries to retain
+const MAX_FAILURE_HISTORY = 10;
+
+// In-memory failure history store (persisted across requests but lost on restart)
+const failureHistory: FailureHistoryEntry[] = [];
+
+/**
+ * Classify a failure message into a root-cause category for operator guidance.
+ */
+export function classifyRootCause(
+	failureMode: string,
+	errorMessage: string,
+): { category: FailureRootCauseCategory; resolutionSteps: string[] } {
+	const lower = errorMessage.toLowerCase();
+
+	// Binary missing
+	if (failureMode === 'install-missing' || /command not found|no such file|enoent|not installed/i.test(lower)) {
+		return {
+			category: 'binary-missing',
+			resolutionSteps: [
+				'Verify opencode is installed: run `which opencode` or `opencode --version`',
+				'Check the binary path in Settings → Opencode Status is correct',
+				'Install opencode from https://opencode.ai if not present',
+			],
+		};
+	}
+
+	// Binary incompatible
+	if (failureMode === 'incompatible' || /version.*incompatible|minimum.*required/i.test(lower)) {
+		return {
+			category: 'binary-incompatible',
+			resolutionSteps: [
+				'Run `opencode --version` to check your installed version',
+				'Update opencode to the latest version',
+				'Check the application minimum version requirement in Settings',
+			],
+		};
+	}
+
+	// API key invalid
+	if (failureMode === 'config-error' || /api.key|unauthorized|authentication/i.test(lower)) {
+		return {
+			category: 'api-key-invalid',
+			resolutionSteps: [
+				'Verify your API key in opencode configuration',
+				'Check that the profile is properly configured',
+				'Regenerate API keys if they have been revoked',
+			],
+		};
+	}
+
+	// Network blocked
+	if (failureMode === 'connectivity' || /network.*unreachable|connection refused|econnrefused|enotfound|dns.*resolve/i.test(lower)) {
+		return {
+			category: 'network-blocked',
+			resolutionSteps: [
+				'Check your internet connection',
+				'Verify firewall/proxy settings allow outbound connections',
+				'If behind a corporate network, check VPN/proxy configuration',
+				'Try accessing the provider endpoint directly to verify connectivity',
+			],
+		};
+	}
+
+	// Provider overloaded
+	if (failureMode === 'capacity' || failureMode === 'rate-limit' || /503|service unavailable|overloaded|busy/i.test(lower)) {
+		return {
+			category: 'provider-overloaded',
+			resolutionSteps: [
+				'Wait 1-5 minutes and retry the operation',
+				'Check the provider status page for ongoing incidents',
+				'Consider switching to a different provider if available',
+			],
+		};
+	}
+
+	// Quota depleted
+	if (failureMode === 'quota-exhausted' || /quota exceeded|quota exhausted|billing.*limit/i.test(lower)) {
+		return {
+			category: 'quota-depleted',
+			resolutionSteps: [
+				'Check your current quota usage and billing status',
+				'Upgrade your plan or purchase additional quota',
+				'Wait for the next billing cycle if quota resets automatically',
+			],
+		};
+	}
+
+	// Session interrupted
+	if (failureMode === 'interrupted-session' || failureMode === 'partial-output' || /session.*terminat|connection.*closed|stream.*interrupted/i.test(lower)) {
+		return {
+			category: 'session-interrupted',
+			resolutionSteps: [
+				'Check job details for partial output that may be recoverable',
+				'Retry the operation — interrupted sessions often succeed on retry',
+				'If persistent, reduce the scope or complexity of the request',
+			],
+		};
+	}
+
+	// Disk full
+	if (/disk.*full|no space|enospc/i.test(lower)) {
+		return {
+			category: 'disk-full',
+			resolutionSteps: [
+				'Free up disk space on the machine running opencode',
+				'Check available disk space with `df -h`',
+				'Clear temporary files and caches',
+			],
+		};
+	}
+
+	// Memory exhausted
+	if (/memory|out of memory|oom/i.test(lower)) {
+		return {
+			category: 'memory-exhausted',
+			resolutionSteps: [
+				'Reduce the scope of the request (fewer sources, smaller context)',
+				'Close other applications to free memory',
+				'Consider increasing system memory if this occurs frequently',
+			],
+		};
+	}
+
+	return {
+		category: 'unknown',
+		resolutionSteps: [
+			'Review the full error message for clues',
+			'Check application logs for additional context',
+			'Try restarting the application',
+			'Contact support with the error details',
+		],
+	};
+}
+
+/**
+ * Record a failure event in the history log.
+ * Automatically trims history to MAX_FAILURE_HISTORY entries.
+ */
+export function recordFailure(
+	failureMode: string,
+	errorMessage: string,
+	idGenerator: { generateId: (prefix: string) => string },
+): void {
+	const { category, resolutionSteps } = classifyRootCause(failureMode, errorMessage);
+	const entry: FailureHistoryEntry = {
+		id: idGenerator.generateId('failure'),
+		timestamp: new Date().toISOString(),
+		failureMode,
+		errorMessage,
+		resolved: false,
+		rootCauseCategory: category,
+		resolutionSteps,
+	};
+
+	failureHistory.unshift(entry);
+
+	// Trim to max entries
+	while (failureHistory.length > MAX_FAILURE_HISTORY) {
+		failureHistory.pop();
+	}
+}
+
+/**
+ * Mark a failure history entry as resolved.
+ */
+export function resolveFailure(failureId: string): boolean {
+	const entry = failureHistory.find((e) => e.id === failureId);
+	if (!entry) return false;
+	entry.resolved = true;
+	entry.resolvedAt = new Date().toISOString();
+	return true;
+}
+
+/**
+ * Get the current failure history (most recent first).
+ */
+export function getFailureHistory(): FailureHistoryEntry[] {
+	return [...failureHistory];
+}
+
 /**
  * Run all health checks and return a complete HealthCheckResult.
  */
@@ -273,5 +454,11 @@ export async function getHealth(deps: Dependencies): Promise<HealthCheckResult> 
 		checkDocumentIndexer(deps),
 	]);
 
-	return { ...storage, ...opencode, ...crawler, ...documentIndexer };
+	return {
+		...storage,
+		...opencode,
+		...crawler,
+		...documentIndexer,
+		failureHistory: getFailureHistory(),
+	};
 }

@@ -66,6 +66,10 @@ export type OpencodeFailureMode =
 	| 'partial-output'
 	| 'model-unavailable'
 	| 'timeout'
+	| 'connectivity'
+	| 'quota-exhausted'
+	| 'capacity'
+	| 'interrupted-session'
 	| 'unknown';
 
 export type OpencodeProvider = "cli" | "fake";
@@ -91,8 +95,13 @@ export function classifyOpencodeError(
 		return 'config-error';
 	}
 
-	// Rate-limit: provider throttling
-	if (/429|rate.limit|too many requests|quota exceeded|rate exceeded/i.test(combined)) {
+	// Quota-exhausted: explicit quota exceeded (separate from rate-limit throttling)
+	if (/quota exceeded|quota exhausted|billing.*limit|usage limit reached/i.test(combined)) {
+		return 'quota-exhausted';
+	}
+
+	// Rate-limit: provider throttling (transient, not quota)
+	if (/429|rate.limit|too many requests|rate exceeded/i.test(combined)) {
 		return 'rate-limit';
 	}
 
@@ -106,19 +115,34 @@ export function classifyOpencodeError(
 		return 'context-overflow';
 	}
 
+	// Interrupted-session: session terminated, connection closed mid-stream
+	if (/session.*terminat|connection.*closed|stream.*interrupted|hang.?up|sigpipe/i.test(combined) || exitCode === 141) {
+		return 'interrupted-session';
+	}
+
 	// Partial-output: output truncated, cut off, incomplete response
-	if (/truncated|incomplete|partial|cut off|stream.*closed|broken pipe/i.test(combined)) {
+	if (/truncated|incomplete|partial|cut off|broken pipe/i.test(combined)) {
 		return 'partial-output';
 	}
 
-	// Model-unavailable: model overloaded, not found, temporarily unavailable
-	if (/model.*not found|model.*unavailable|overloaded|capacity|503|service unavailable/i.test(combined)) {
+	// Capacity: resource exhausted, busy, 503 service unavailable
+	if (/resource exhausted|busy|503|service unavailable|overloaded/i.test(combined)) {
+		return 'capacity';
+	}
+
+	// Model-unavailable: model not found or temporarily unavailable
+	if (/model.*not found|model.*unavailable/i.test(combined)) {
 		return 'model-unavailable';
 	}
 
 	// Timeout: execution exceeded deadline
 	if (/timed out|timeout|deadline exceeded/i.test(combined) || exitCode === 124) {
 		return 'timeout';
+	}
+
+	// Connectivity: network unreachable, connection refused (not binary-not-found)
+	if (/network.*unreachable|connection refused|econnrefused|enotfound|dns.*resolve/i.test(combined)) {
+		return 'connectivity';
 	}
 
 	return 'unknown';

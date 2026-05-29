@@ -3,7 +3,6 @@
 import React, { useMemo, useState } from "react";
 import type {
 	ApprovalRecord,
-	ChecklistItem,
 	DocumentMetadata,
 	DraftArtifact,
 	Grant,
@@ -36,6 +35,7 @@ function computeReadiness(
 	latestDraft: DraftArtifact | null,
 	approvalRecord: ApprovalRecord | null,
 	documents: DocumentMetadata[],
+	manifest: SubmissionManifest | null,
 ): ReadinessItem[] {
 	const items: ReadinessItem[] = [];
 
@@ -48,11 +48,15 @@ function computeReadiness(
 			detail: "No draft exists. Generate a draft first.",
 		});
 	} else {
+		const ungroundedCount = latestDraft.groundingSections?.filter((s) => !s.isGrounded).length ?? 0;
+		const totalSections = latestDraft.groundingSections?.length ?? 0;
 		items.push({
 			id: "draft",
 			label: "Completed draft",
-			status: "green",
-			detail: `Draft version ${latestDraft.version} ready.`,
+			status: ungroundedCount > 0 ? "yellow" : "green",
+			detail: ungroundedCount > 0
+				? `Draft version ${latestDraft.version} ready, but ${ungroundedCount}/${totalSections} sections are ungrounded.`
+				: `Draft version ${latestDraft.version} ready.`,
 		});
 	}
 
@@ -90,7 +94,27 @@ function computeReadiness(
 		});
 	}
 
-	// 3. Required org docs check
+	// 3. Grounding check
+	if (latestDraft?.groundingSections) {
+		const ungroundedSections = latestDraft.groundingSections.filter((s) => !s.isGrounded);
+		if (ungroundedSections.length > 0) {
+			items.push({
+				id: "grounding",
+				label: "Grounded claims",
+				status: "yellow",
+				detail: `${ungroundedSections.length} section(s) lack evidence: ${ungroundedSections.map((s) => s.sectionTitle).join(", ")}`,
+			});
+		} else {
+			items.push({
+				id: "grounding",
+				label: "Grounded claims",
+				status: "green",
+				detail: "All draft sections are grounded in source evidence.",
+			});
+		}
+	}
+
+	// 4. Required org docs check
 	const hasOrgDocs = documents.length > 0;
 	items.push({
 		id: "org-docs",
@@ -101,8 +125,34 @@ function computeReadiness(
 			: "No organization documents uploaded. May be needed for submission.",
 	});
 
-	// 4. Checklist items
+	// 5. Manifest check
+	const manifestSection: ReadinessItem = manifest
+		? {
+				id: "manifest",
+				label: "Submission manifest",
+				status: manifest.materialRefs.length === 0 ? "yellow" : "green",
+				detail: manifest.materialRefs.length === 0
+					? `Manifest version ${manifest.version} exists, but has no materials listed.`
+					: `Manifest version ${manifest.version} with ${manifest.materialRefs.length} material(s).`,
+		  }
+		: {
+				id: "manifest",
+				label: "Submission manifest",
+				status: "red" as ReadinessStatus,
+				detail: "Create a submission manifest to track materials and portal requirements.",
+		  };
+	items.push(manifestSection);
+
+	// 6. Checklist items
 	const checklist = grant.checklist || [];
+	if (checklist.length === 0) {
+		items.push({
+			id: "checklist",
+			label: "Requirements checklist",
+			status: "yellow",
+			detail: "No checklist items defined. Review the grant for required materials.",
+		});
+	}
 	checklist.forEach((item, idx) => {
 		const required = item.required === true;
 		if (required && !item.done) {
@@ -156,8 +206,8 @@ export default function SubmissionReadiness({
 	const [submitted, setSubmitted] = useState(false);
 
 	const readinessItems = useMemo(
-		() => computeReadiness(grant, latestDraft, approvalRecord, documents),
-		[grant, latestDraft, approvalRecord, documents],
+		() => computeReadiness(grant, latestDraft, approvalRecord, documents, manifest),
+		[grant, latestDraft, approvalRecord, documents, manifest],
 	);
 
 	const allGreen = readinessItems.every((item) => item.status === "green");

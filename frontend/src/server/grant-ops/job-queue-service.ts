@@ -17,6 +17,16 @@ function now(): string {
   return getDependencies().clock.now().toISOString();
 }
 
+async function getBackoffMultiplier(): Promise<number> {
+	try {
+		const deps = getDependencies();
+		const settings = await deps.repository.getOpencodeSettings();
+		return settings?.backoffMultiplier ?? 1000;
+	} catch {
+		return 1000;
+	}
+}
+
 export function classifyJobFailureCategory(error: unknown): JobFailureCategory {
   const message = error instanceof Error ? error.message : String(error ?? '');
   if (/429|rate[- ]?limit/i.test(message)) return 'rate-limit';
@@ -104,8 +114,9 @@ export async function executeQueuedJob(
 				break;
 			}
 
-			// Exponential backoff: 1s, 2s, 4s for attempts 0, 1, 2
-			const backoffMs = 1000 * 2 ** attempt;
+			// Exponential backoff using configurable multiplier from opencode settings
+			const multiplier = await getBackoffMultiplier();
+			const backoffMs = multiplier * 2 ** attempt;
 			if (totalDelayMs + backoffMs > MAX_TOTAL_DELAY_MS) {
 				break;
 			}

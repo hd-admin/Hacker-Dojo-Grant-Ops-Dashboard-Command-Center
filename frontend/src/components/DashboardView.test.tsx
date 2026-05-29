@@ -231,5 +231,23 @@ describe('DashboardView', () => {
       expect(container.querySelector('[data-testid="activity-empty-state"]')).not.toBeNull();
       expect(container.querySelector('[data-testid="activity-empty-state"] .empty-state-title')?.textContent).toBe('No activity yet');
     });
+
+    it('shows empty state with no synthetic KPI fallbacks when grants are empty', async () => {
+      root.render(React.createElement(DashboardView, { ...requiredProps }));
+      await new Promise((r) => setTimeout(r, 0));
+      // Should show empty state, not synthetic KPI cards
+      expect(container.querySelector('[data-testid="dashboard-empty-state"]')).not.toBeNull();
+      // KPI grid should not exist when no grants
+      expect(container.querySelector('.kpi-grid')).toBeNull();
+    });
+
+    it('renders KPI cards with real data when grants exist', async () => {
+      root.render(React.createElement(DashboardView, { ...requiredProps, grants: [...mockGrants], profile: { agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile }));
+      await new Promise((r) => setTimeout(r, 0));
+      // KPI grid should exist
+      expect(container.querySelector('.kpi-grid')).not.toBeNull();
+      // KPI values should reflect actual data, not synthetic placeholders
+      expect(container.textContent).toContain('Active Pipeline');
+    });
   });
 });

@@ -645,4 +645,125 @@ describe("GrantDrawer", () => {
 			expect(/\d+ words \· \d+ pages/.test(container.textContent ?? '')).toBe(true)
 		});
 	});
+
+	describe('grounding approval blocking', () => {
+		it('blocks approval when grounding sections have ungrounded claims', async () => {
+			const detail = buildGeneratedDetail();
+			// Add grounding sections with one ungrounded
+			detail.latestDraft = {
+				...detail.latestDraft!,
+				groundingSections: [
+					{ sectionTitle: 'Executive Summary', evidence: ['Doc A'], isGrounded: true },
+					{ sectionTitle: 'Budget', evidence: [], isGrounded: false },
+				],
+			};
+			currentDetail = detail;
+
+			root.render(
+				React.createElement(GrantDrawer, {
+					grantId,
+					onClose: vi.fn(),
+					onRefreshAppState: vi.fn(),
+				}),
+			);
+
+			await waitFor(() => container.textContent?.includes('Approve & lock') === true);
+
+			// Click Approve & lock
+			Array.from(container.querySelectorAll('button'))
+				.find((button) => button.textContent === 'Approve & lock')
+				?.click();
+
+			await waitFor(() => container.textContent?.includes('Ungrounded Claims Detected') === true);
+
+			// Warning dialog should be visible
+			const warningDialog = container.querySelector('[data-testid="grounding-warning-dialog"]');
+			expect(warningDialog).not.toBeNull();
+			expect(warningDialog?.textContent).toContain('Ungrounded Claims Detected');
+			expect(warningDialog?.textContent).toContain('Budget');
+
+			// Approve Anyway should be disabled until checkbox is checked
+			const approveAnywayBtn = container.querySelector('[data-testid="grounding-approve-anyway-btn"]') as HTMLButtonElement;
+			expect(approveAnywayBtn).not.toBeNull();
+			expect(approveAnywayBtn?.disabled).toBe(true);
+
+			// Check the override checkbox
+			const checkbox = container.querySelector('[data-testid="grounding-override-checkbox"]') as HTMLInputElement;
+			expect(checkbox).not.toBeNull();
+			checkbox?.click();
+			await new Promise((r) => setTimeout(r, 20));
+
+			// Approve Anyway should now be enabled
+			expect((container.querySelector('[data-testid="grounding-approve-anyway-btn"]') as HTMLButtonElement)?.disabled).toBe(false);
+		});
+
+		it('approves without warning when all grounding sections are grounded', async () => {
+			const detail = buildGeneratedDetail();
+			// Add grounding sections all grounded
+			detail.latestDraft = {
+				...detail.latestDraft!,
+				groundingSections: [
+					{ sectionTitle: 'Executive Summary', evidence: ['Doc A'], isGrounded: true },
+					{ sectionTitle: 'Budget', evidence: ['Doc B'], isGrounded: true },
+				],
+			};
+			currentDetail = detail;
+
+			root.render(
+				React.createElement(GrantDrawer, {
+					grantId,
+					onClose: vi.fn(),
+					onRefreshAppState: vi.fn(),
+				}),
+			);
+
+			await waitFor(() => container.textContent?.includes('Approve & lock') === true);
+
+			// Click Approve & lock — should proceed without warning
+			Array.from(container.querySelectorAll('button'))
+				.find((button) => button.textContent === 'Approve & lock')
+				?.click();
+
+			// Should not show the warning dialog
+			await new Promise((r) => setTimeout(r, 100));
+			const warningDialog = container.querySelector('[data-testid="grounding-warning-dialog"]');
+			expect(warningDialog).toBeNull();
+		});
+
+		it('cancel button dismisses the grounding warning dialog', async () => {
+			const detail = buildGeneratedDetail();
+			detail.latestDraft = {
+				...detail.latestDraft!,
+				groundingSections: [
+					{ sectionTitle: 'Budget', evidence: [], isGrounded: false },
+				],
+			};
+			currentDetail = detail;
+
+			root.render(
+				React.createElement(GrantDrawer, {
+					grantId,
+					onClose: vi.fn(),
+					onRefreshAppState: vi.fn(),
+				}),
+			);
+
+			await waitFor(() => container.textContent?.includes('Approve & lock') === true);
+
+			Array.from(container.querySelectorAll('button'))
+				.find((button) => button.textContent === 'Approve & lock')
+				?.click();
+
+			await waitFor(() => container.textContent?.includes('Ungrounded Claims Detected') === true);
+
+			// Click Cancel
+			Array.from(container.querySelectorAll('button'))
+				.find((button) => button.textContent === 'Cancel')
+				?.click();
+
+			await new Promise((r) => setTimeout(r, 50));
+			const warningDialog = container.querySelector('[data-testid="grounding-warning-dialog"]');
+			expect(warningDialog).toBeNull();
+		});
+	});
 });

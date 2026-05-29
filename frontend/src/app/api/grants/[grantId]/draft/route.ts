@@ -54,6 +54,7 @@ export async function POST(
       );
     }
 
+    let draftJobId: string | undefined;
     const job = await enqueueJob(
       { jobType: 'draft', entityId: grantId, retryCount: 0 },
       'drafting',
@@ -61,11 +62,15 @@ export async function POST(
         const draft = await draftingService.generateDraft(
           grant,
           profile,
-          body.revisionNotes ? { revisionNotes: body.revisionNotes } : {},
+          {
+            ...(body.revisionNotes ? { revisionNotes: body.revisionNotes } : {}),
+            _jobId: draftJobId,
+          },
         );
         return `Draft v${draft.version} generated for ${grant.title}`;
       },
     );
+    draftJobId = job.id;
 
     return NextResponse.json({ queued: true, job }, { status: 202 });
   } catch (error) {

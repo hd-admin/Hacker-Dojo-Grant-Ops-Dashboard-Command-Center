@@ -86,6 +86,29 @@ export interface AuditEvent {
 	metadata?: Record<string, unknown>;
 }
 
+export interface FailureHistoryEntry {
+	id: string;
+	timestamp: string;
+	failureMode: string;
+	errorMessage: string;
+	resolved: boolean;
+	resolvedAt?: string;
+	rootCauseCategory?: FailureRootCauseCategory;
+	resolutionSteps?: string[];
+}
+
+export type FailureRootCauseCategory =
+	| 'binary-missing'
+	| 'binary-incompatible'
+	| 'api-key-invalid'
+	| 'network-blocked'
+	| 'disk-full'
+	| 'memory-exhausted'
+	| 'provider-overloaded'
+	| 'quota-depleted'
+	| 'session-interrupted'
+	| 'unknown';
+
 export interface HealthCheckResult {
 	storage: "ok" | "error";
 	storageError?: string;
@@ -101,6 +124,8 @@ export interface HealthCheckResult {
 	documentIndexer: "ok" | "degraded" | "error";
 	documentIndexerError?: string;
 	documentIndexerFailedCount?: number;
+	/** Recent failure history for diagnostics (max 10 entries) */
+	failureHistory?: FailureHistoryEntry[];
 }
 
 export interface BackupManifest {
@@ -530,6 +555,8 @@ export interface OpencodeSettings {
 	timeoutMs: number;
 	profile?: string;
 	isConfigured: boolean;
+	/** Configurable backoff multiplier for retry delays (default: 1000ms). Operator can tune from Settings. */
+	backoffMultiplier?: number;
 }
 
 export interface StoreData {

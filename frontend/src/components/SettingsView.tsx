@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import type { BackupFreshnessStatus, DocumentMetadata, HealthCheckResult, OpencodeSettings, OrganizationProfile } from '../../../shared/types';
+import type { BackupFreshnessStatus, DocumentMetadata, HealthCheckResult, OpencodeSettings, OrganizationProfile, FailureHistoryEntry } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
 
 // Guidance messages keyed by opencode health status
@@ -574,6 +574,119 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                   )}
                 </div>
               )}
+            </div>
+          </div>
+        </section>
+
+        <section className="setting-card" data-testid="diagnostics-panel-card">
+          <div className="setting-card-header"><div className="setting-card-title">Diagnostics &amp; Failure History</div></div>
+          <div className="setting-card-body">
+            <p style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '12px' }}>
+              Recent opencode failures, root-cause analysis, and recommended resolution steps.
+            </p>
+
+            {/* Failure History Timeline */}
+            {health?.failureHistory && health.failureHistory.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }} data-testid="failure-history-list">
+                {health.failureHistory.map((entry: FailureHistoryEntry) => (
+                  <div
+                    key={entry.id}
+                    data-testid={`failure-entry-${entry.id}`}
+                    style={{
+                      background: entry.resolved ? 'rgba(138, 171, 111, 0.04)' : 'rgba(198, 107, 90, 0.04)',
+                      border: `1px solid ${entry.resolved ? 'rgba(138, 171, 111, 0.18)' : 'rgba(198, 107, 90, 0.18)'}`,
+                      borderRadius: 'var(--radius)',
+                      padding: '12px 14px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span style={{
+                          fontFamily: 'var(--mono)',
+                          fontSize: '9px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.1em',
+                          padding: '2px 6px',
+                          borderRadius: '3px',
+                          background: entry.resolved ? 'rgba(138, 171, 111, 0.12)' : 'rgba(198, 107, 90, 0.12)',
+                          color: entry.resolved ? 'var(--success)' : 'var(--danger)',
+                        }}>
+                          {entry.resolved ? 'Resolved' : entry.failureMode}
+                        </span>
+                        {entry.rootCauseCategory && (
+                          <span style={{
+                            fontFamily: 'var(--mono)',
+                            fontSize: '9px',
+                            padding: '2px 6px',
+                            borderRadius: '3px',
+                            background: 'rgba(123, 163, 184, 0.1)',
+                            color: 'var(--info)',
+                          }}>
+                            {entry.rootCauseCategory.replace(/-/g, ' ')}
+                          </span>
+                        )}
+                      </div>
+                      <span style={{ fontFamily: 'var(--mono)', fontSize: '10px', color: 'var(--text-muted)' }}>
+                        {new Date(entry.timestamp).toLocaleString()}
+                      </span>
+                    </div>
+                    <div style={{ fontFamily: 'var(--mono)', fontSize: '11px', color: 'var(--text-dim)', marginBottom: '8px', lineHeight: 1.5 }}>
+                      {entry.errorMessage.length > 200
+                        ? `${entry.errorMessage.substring(0, 200)}...`
+                        : entry.errorMessage}
+                    </div>
+                    {entry.resolutionSteps && entry.resolutionSteps.length > 0 && (
+                      <div>
+                        <div style={{ fontSize: '10px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px' }}>
+                          Resolution steps:
+                        </div>
+                        <ol style={{ margin: 0, paddingLeft: '18px', fontSize: '11px', color: 'var(--text-dim)', lineHeight: 1.6 }}>
+                          {entry.resolutionSteps.map((step, idx) => (
+                            <li key={idx}>{step}</li>
+                          ))}
+                        </ol>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                padding: '24px',
+                textAlign: 'center',
+                color: 'var(--text-muted)',
+                background: 'var(--surface-2)',
+                borderRadius: 'var(--radius)',
+                border: '1px solid var(--border)',
+              }}>
+                <div style={{ fontSize: '24px', marginBottom: '8px' }}>{'✅'}</div>
+                <div style={{ fontSize: '13px', fontWeight: 500 }}>No recorded failures</div>
+                <div style={{ fontSize: '11px', marginTop: '4px', color: 'var(--text-dim)' }}>
+                  Failure history will appear here when opencode encounters errors during operation.
+                </div>
+              </div>
+            )}
+
+            {/* Backoff multiplier setting */}
+            <div style={{ marginTop: '16px', borderTop: '1px solid var(--border)', paddingTop: '14px' }}>
+              <label htmlFor="opencode-backoff-multiplier" style={{ display: 'block', fontFamily: 'var(--mono)', fontSize: '9px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                Retry Backoff Multiplier (ms)
+              </label>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <input
+                  id="opencode-backoff-multiplier"
+                  type="number"
+                  min={500}
+                  max={30000}
+                  step={500}
+                  value={opencodeForm.backoffMultiplier ?? 1000}
+                  onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, backoffMultiplier: Number(e.target.value) })); setOpencodeSaveSuccess(false); }}
+                  style={{ width: '140px' }}
+                />
+                <span style={{ fontSize: '11px', color: 'var(--text-dim)' }}>
+                  Base delay for retry backoff. Actual delay = multiplier × 2<sup>attempt</sup>
+                </span>
+              </div>
             </div>
           </div>
         </section>

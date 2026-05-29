@@ -19,14 +19,19 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     }
 
     const newJobId = deps.idGenerator.generateId('job');
+    // Preserve partialOutput from the failed job so operators can inspect partial content
+    const partialOutput = existing.partialOutput;
     await deps.repository.addJobQueueItem({
-      ...existing,
       id: newJobId,
+      jobType: existing.jobType,
       status: 'queued',
       stage: 'retrying',
       lastUpdate: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       retryCount: (existing.retryCount ?? 0) + 1,
+      entityId: existing.entityId,
+      // Preserve partialOutput from the original failed job
+      ...(partialOutput ? { partialOutput } : {}),
     });
 
     void executeQueuedJob(newJobId, 'retrying', async () => {
@@ -58,7 +63,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       const draft = await draftingService.generateDraft(
         grant,
         profile,
-        latestRevisionNotes ? { revisionNotes: latestRevisionNotes } : {},
+        {
+          ...(latestRevisionNotes ? { revisionNotes: latestRevisionNotes } : {}),
+          _jobId: newJobId,
+        },
       );
       return `Draft v${draft.version} generated for ${grant.title}`;
     }).catch((error) => {

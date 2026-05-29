@@ -12,8 +12,12 @@ import {
 	checkDocumentIndexer,
 	checkOpencode,
 	checkStorage,
+	classifyRootCause,
 	compareVersions,
 	getHealth,
+	recordFailure,
+	resolveFailure,
+	getFailureHistory,
 } from './health-service';
 
 function createMockDeps(
@@ -274,5 +278,112 @@ describe('getHealth', () => {
 		expect(result.opencode).toBe('not-installed');
 		expect(result.crawlerStatus).toBe('ok');
 		expect(result.documentIndexer).toBe('ok');
+	});
+});
+
+describe('classifyRootCause', () => {
+	it('classifies install-missing as binary-missing', () => {
+		const result = classifyRootCause('install-missing', 'command not found: opencode');
+		expect(result.category).toBe('binary-missing');
+		expect(result.resolutionSteps.length).toBeGreaterThan(0);
+	});
+
+	it('classifies config-error as api-key-invalid', () => {
+		const result = classifyRootCause('config-error', 'API key not set');
+		expect(result.category).toBe('api-key-invalid');
+		expect(result.resolutionSteps.length).toBeGreaterThan(0);
+	});
+
+	it('classifies connectivity as network-blocked', () => {
+		const result = classifyRootCause('connectivity', 'ECONNREFUSED');
+		expect(result.category).toBe('network-blocked');
+		expect(result.resolutionSteps.length).toBeGreaterThan(0);
+	});
+
+	it('classifies capacity as provider-overloaded', () => {
+		const result = classifyRootCause('capacity', '503 Service Unavailable');
+		expect(result.category).toBe('provider-overloaded');
+	});
+
+	it('classifies quota-exhausted as quota-depleted', () => {
+		const result = classifyRootCause('quota-exhausted', 'quota exceeded');
+		expect(result.category).toBe('quota-depleted');
+	});
+
+	it('classifies interrupted-session as session-interrupted', () => {
+		const result = classifyRootCause('interrupted-session', 'session terminated');
+		expect(result.category).toBe('session-interrupted');
+	});
+
+	it('returns unknown for unrecognized failure modes', () => {
+		const result = classifyRootCause('something-else', 'generic error');
+		expect(result.category).toBe('unknown');
+		expect(result.resolutionSteps.length).toBeGreaterThan(0);
+	});
+
+	it('detects disk-full from error message', () => {
+		const result = classifyRootCause('unknown', 'ENOSPC: no space left on device');
+		expect(result.category).toBe('disk-full');
+	});
+
+	it('detects memory-exhausted from error message', () => {
+		const result = classifyRootCause('unknown', 'JavaScript heap out of memory');
+		expect(result.category).toBe('memory-exhausted');
+	});
+
+	it('detects binary-incompatible', () => {
+		const result = classifyRootCause('incompatible', 'version 0.0.5 but minimum 0.1.0 required');
+		expect(result.category).toBe('binary-incompatible');
+	});
+});
+
+describe('failure history management', () => {
+	it('records and retrieves failure entries', () => {
+		const idGen = { generateId: (prefix: string) => `${prefix}-test-1` };
+		recordFailure('connectivity', 'Network unreachable', idGen);
+		const history = getFailureHistory();
+		expect(history.length).toBeGreaterThan(0);
+		expect(history[0]?.failureMode).toBe('connectivity');
+		expect(history[0]?.resolved).toBe(false);
+		expect(history[0]?.rootCauseCategory).toBeDefined();
+		expect(history[0]?.resolutionSteps?.length).toBeGreaterThan(0);
+	});
+
+	it('resolves a failure entry', () => {
+		const idGen = { generateId: (prefix: string) => `${prefix}-resolve-test` };
+		recordFailure('timeout', 'Operation timed out', idGen);
+		const history = getFailureHistory();
+		const entry = history.find((e) => e.id === 'failure-resolve-test');
+		expect(entry).toBeDefined();
+
+		const result = resolveFailure('failure-resolve-test');
+		expect(result).toBe(true);
+
+		// Check it's now resolved
+		const updatedHistory = getFailureHistory();
+		const updated = updatedHistory.find((e) => e.id === 'failure-resolve-test');
+		expect(updated?.resolved).toBe(true);
+		expect(updated?.resolvedAt).toBeDefined();
+	});
+
+	it('returns false for non-existent failure id', () => {
+		expect(resolveFailure('nonexistent')).toBe(false);
+	});
+
+	it('trims history to max entries', () => {
+		const MAX = 10;
+		// Clear existing history by resolving all
+		const current = getFailureHistory();
+		for (const entry of current) {
+			resolveFailure(entry.id);
+		}
+
+		for (let i = 0; i < MAX + 5; i++) {
+			recordFailure('capacity', `error ${i}`, { generateId: () => `failure-bulk-${i}` });
+		}
+		const history = getFailureHistory();
+		expect(history.length).toBeLessThanOrEqual(MAX);
+		// Most recent should be first
+		expect(history[0]?.id).toBe(`failure-bulk-${MAX + 4}`);
 	});
 });

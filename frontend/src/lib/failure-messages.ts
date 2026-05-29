@@ -56,6 +56,30 @@ export const opencodeFailureMessages: Record<OpencodeFailureMode, FailureMessage
       'The opencode operation exceeded its time deadline and was terminated.',
     action: 'Retry with a smaller scope, or increase the timeout in settings.',
   },
+  'connectivity': {
+    title: 'Network not reachable',
+    description:
+      'Cannot reach the opencode provider — network is unreachable or the connection was refused. This is not a binary installation issue.',
+    action: 'Check your network connection and verify the provider endpoint is accessible. If behind a proxy, configure it in settings.',
+  },
+  'quota-exhausted': {
+    title: 'Quota exhausted',
+    description:
+      'The opencode provider has exhausted its usage quota or billing limit. Requests are blocked until quota is restored.',
+    action: 'Check your opencode quota and billing status. Upgrade your plan or wait for quota reset.',
+  },
+  'capacity': {
+    title: 'Service overloaded',
+    description:
+      'The opencode provider is experiencing high load or has exhausted available resources (503). This is a provider-side capacity issue.',
+    action: 'Wait and retry later. If the issue persists, contact the provider or switch to a different provider.',
+  },
+  'interrupted-session': {
+    title: 'Session interrupted',
+    description:
+      'The opencode session was terminated mid-execution — the connection was closed or the process received an interrupt signal. Partial output may be available.',
+    action: 'Check for partial output in the job details. Retry the operation or restart the session.',
+  },
   'unknown': {
     title: 'Unknown error',
     description:

@@ -171,6 +171,10 @@ export default function GrantDrawer({
 	const [showOutcomeForm, setShowOutcomeForm] = useState(false);
 	const [outcomeNotes, setOutcomeNotes] = useState('');
 
+	// Grounding approval state
+	const [showGroundingWarning, setShowGroundingWarning] = useState(false);
+	const [groundingOverrideConfirmed, setGroundingOverrideConfirmed] = useState(false);
+
 	const viewModel = buildGrantDrawerViewModel(detail);
 	const hasDirtyNotes = revisionNote.trim().length > 0 || submitNotes.trim().length > 0;
 
@@ -340,8 +344,26 @@ export default function GrantDrawer({
 
 	const handleApproveAndLock = async () => {
 		if (!detail) return;
+
+		// Check grounding: block approval if any section has isGrounded: false
+		const hasUngroundedSections = detail.latestDraft?.groundingSections?.some(
+			(section) => !section.isGrounded,
+		);
+
+		if (hasUngroundedSections) {
+			setShowGroundingWarning(true);
+			return;
+		}
+
+		await doApproveAndLock();
+	};
+
+	const doApproveAndLock = async () => {
+		if (!detail) return;
 		try {
 			await client.approvals.create(detail.grant.id, { approvedBy: "human" });
+			setShowGroundingWarning(false);
+			setGroundingOverrideConfirmed(false);
 			await refreshAfterMutation();
 		} catch (error) {
 			console.error("Error approving grant:", error);
@@ -1201,13 +1223,69 @@ export default function GrantDrawer({
 								)}
 							</div>
 
-							{closeWarningOpen && (
+						{closeWarningOpen && (
 								<div className="drawer-section" data-testid="grant-drawer-unsaved-warning">
 									<h3>Discard unsaved notes?</h3>
 									<p>Your revision note or submission notes will be lost if you close the drawer now.</p>
 									<div style={{ display: 'flex', gap: '8px' }}>
 										<button type="button" onClick={handleDiscardUnsavedNotes}>Discard</button>
 										<button type="button" onClick={() => setCloseWarningOpen(false)}>Keep editing</button>
+									</div>
+								</div>
+							)}
+
+							{/* Grounding warning dialog */}
+							{showGroundingWarning && detail?.latestDraft && (
+								<div className="drawer-section" data-testid="grounding-warning-dialog" role="alert">
+									<h3 style={{ color: 'var(--warning)' }}>{'⚠'} Ungrounded Claims Detected</h3>
+									<p>
+										This draft contains sections with unsupported claims that lack evidence from your sources.
+										Approving a draft with ungrounded claims may result in a weaker submission.
+									</p>
+									<div style={{ marginBottom: '12px' }}>
+										<strong>Ungrounded sections:</strong>
+										<ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: 'var(--text-dim)' }}>
+											{detail.latestDraft.groundingSections
+												?.filter((s) => !s.isGrounded)
+												.map((s) => (
+													<li key={s.sectionTitle}>
+														<strong>{s.sectionTitle}</strong>{' — no evidence found'}
+													</li>
+												))}
+										</ul>
+									</div>
+									<div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
+										<label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer' }}>
+											<input
+												type="checkbox"
+												checked={groundingOverrideConfirmed}
+												onChange={(e) => setGroundingOverrideConfirmed(e.target.checked)}
+												data-testid="grounding-override-checkbox"
+											/>
+											I understand the risk and want to approve anyway
+										</label>
+									</div>
+									<div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+										<button
+											type="button"
+											className="btn btn-primary"
+											onClick={() => void doApproveAndLock()}
+											disabled={!groundingOverrideConfirmed}
+											data-testid="grounding-approve-anyway-btn"
+										>
+											Approve Anyway
+										</button>
+										<button
+											type="button"
+											className="btn"
+											onClick={() => {
+												setShowGroundingWarning(false);
+												setGroundingOverrideConfirmed(false);
+											}}
+											data-testid="grounding-cancel-btn"
+										>
+											Cancel
+										</button>
 									</div>
 								</div>
 							)}

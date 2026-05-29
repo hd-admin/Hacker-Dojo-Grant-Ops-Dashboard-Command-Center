@@ -10,6 +10,7 @@ import type {
 	CrawlRun,
 	DocumentMetadata,
 	DraftArtifact,
+	DuplicateCandidate,
 	FollowUp,
 	Grant,
 	GrantDetailResponse,
@@ -456,6 +457,26 @@ export const documentsApi = {
 		}),
 };
 
+// ============ Duplicates API ============
+
+export const duplicatesApi = {
+	getAll: () => apiFetch<DuplicateCandidate[]>(`/api/duplicates`),
+
+	getById: (id: string) =>
+		apiFetchOptional<DuplicateCandidate>(
+			`/api/duplicates/${encodeURIComponent(id)}`,
+		),
+
+	resolve: (id: string, action: 'merge' | 'keep-separate' | 'defer') =>
+		apiFetch<DuplicateCandidate>(
+			`/api/duplicates/${encodeURIComponent(id)}`,
+			{
+				method: 'PATCH',
+				body: JSON.stringify({ action }),
+			},
+		),
+};
+
 // ============ Grant Ops Client ============
 
 /**
@@ -479,6 +500,7 @@ export function createGrantOpsClient() {
 		notifications: notificationsApi,
 		tasks: tasksApi,
 		documents: documentsApi,
+		duplicates: duplicatesApi,
 	};
 }
 

@@ -38,6 +38,10 @@ export interface GenerateDraftOptions {
 	 * @internal Test-only option. Do not use in production code.
 	 */
 	_providerType?: "cli" | "fake";
+	/**
+	 * @internal Job ID for progress reporting. Set by the job queue when drafting is enqueued.
+	 */
+	_jobId?: string;
 }
 
 function getGroundingDocuments(documents: DocumentMetadata[]): string[] {
@@ -77,6 +81,12 @@ export async function generateDraft(
 	const deps = getDependencies();
 	const clock = deps.clock;
 	const idGenerator = deps.idGenerator;
+
+	// Report progress: preparing stage
+	if (options._jobId) {
+		const { updateJobProgress } = await import('./job-queue-service');
+		await updateJobProgress(options._jobId, 'preparing');
+	}
 
 	const existingDrafts = await deps.repository.getDraftArtifacts(grant.id);
 	const latestVersion =
@@ -118,6 +128,12 @@ export async function generateDraft(
 		revisionNotes: options.revisionNotes || "",
 		groundingDocuments: groundedDocuments,
 	});
+
+	// Report progress: drafting stage (after adapter begins generating)
+	if (options._jobId) {
+		const { updateJobProgress } = await import('./job-queue-service');
+		await updateJobProgress(options._jobId, 'drafting');
+	}
 
 	// Handle partial-output: when opencode fails mid-generation but produced partial draft content
 	if (!response.success && response.failureMode === "partial-output" && response.content) {
