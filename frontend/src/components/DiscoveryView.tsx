@@ -161,6 +161,12 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
     }
   };
 
+  const handleDeleteSource = async (sourceId: string) => {
+    if (!window.confirm('Delete this source? This cannot be undone.')) return;
+    await client.sources.remove(sourceId);
+    await Promise.all([client.sources.getAll().then(setSources), onRefreshAppState?.()]);
+  };
+
   const handleExportCsv = () => {
     const rows = ['title,funder,award,deadline,fit', ...filtered.map((grant) => [grant.title, grant.funder, grant.award, grant.deadline, String(grant.fit)].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))];
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
@@ -252,18 +258,13 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
                 <div className="source-name">{source.name}</div>
                 <div className="source-url">{source.url}</div>
               </div>
-              <button type="button" onClick={() => void handleDeleteSource(source.id)}>Delete</button>
+              <button type="button" aria-label="Delete source" onClick={() => void handleDeleteSource(source.id)}>Delete</button>
             </div>
           ))}
         </div>
       </>
     );
   }
-
-  const handleDeleteSource = async (sourceId: string) => {
-    await client.sources.remove(sourceId);
-    await Promise.all([client.sources.getAll().then(setSources), onRefreshAppState?.()]);
-  };
 
   return (
     <>
@@ -385,7 +386,7 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
               <div className="source-url">{source.url}</div>
               {source.reviewStatus === 'pending-review' && <div data-testid="sources-pending-review-section">pending review</div>}
             </div>
-            <button type="button" onClick={() => void handleDeleteSource(source.id)}>
+            <button type="button" aria-label="Delete source" onClick={() => void handleDeleteSource(source.id)}>
               Delete
             </button>
           </div>

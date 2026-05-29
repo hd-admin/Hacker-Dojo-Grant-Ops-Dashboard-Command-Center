@@ -708,7 +708,7 @@ export default function AppShell() {
           <NotificationsView notifications={notifications} />
         </div>
         <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`} role="tabpanel" aria-label="Tasks">
-          <TasksView onRefreshAppState={refreshAppState} tasks={tasks} />
+          <TasksView onRefreshAppState={refreshAppState} tasks={tasks} onNavigate={handleNavigate} />
         </div>
         <div id="view-jobs" className={`view ${activeView === 'jobs' ? 'active' : ''}`} role="tabpanel" aria-label="Job Queue">
           <JobsPanel onRefreshAppState={refreshAppState} />

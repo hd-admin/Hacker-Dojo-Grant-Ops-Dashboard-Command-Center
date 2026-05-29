@@ -5,12 +5,15 @@ import { useEffect, useState } from 'react';
 import type { FollowUp, Task, TaskStatus, ResponsibilityTag } from '../../../shared/types';
 import { tasksApi, followUpsApi, grantsApi } from '../lib/grant-ops-client';
 
+type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'sources' | 'settings' | 'notifications' | 'tasks';
+
 interface TasksViewProps {
   onRefreshAppState?: () => Promise<void> | void;
   tasks?: Task[];
+  onNavigate?: (view: ViewType) => void;
 }
 
-export default function TasksView({ onRefreshAppState, tasks: tasksProp }: TasksViewProps) {
+export default function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: TasksViewProps) {
   const [tasks, setTasks] = useState<Task[]>(tasksProp ?? []);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(false);
@@ -192,8 +195,20 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp }: Tasks
             <div className="header-sub">No tasks</div>
           </div>
         </div>
-        <div className="empty-state">
-          <p>No tasks yet.</p>
+        <div className="empty-state-guide" data-testid="tasks-empty-state">
+          <div className="empty-state-title">No tasks yet</div>
+          <div className="empty-state-description">
+            Tasks are automatically generated when grants are added to your pipeline.
+            Discover and add grants to start tracking your requirements.
+          </div>
+          <div className="empty-state-actions">
+            <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('pipeline')} aria-label="Go to Pipeline">
+              View Pipeline
+            </button>
+            <button type="button" className="btn" onClick={() => onNavigate?.('discovery')} aria-label="Go to Discovery">
+              Discover grants
+            </button>
+          </div>
         </div>
       </>
     );

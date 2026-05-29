@@ -766,4 +766,35 @@ describe("GrantDrawer", () => {
 			expect(warningDialog).toBeNull();
 		});
 	});
+
+	describe('deadline confidence display', () => {
+		it('shows (estimated) badge when deadlineConfidence is estimated', async () => {
+			currentDetail = makeGrantDetail({ grant: { ...makeGrantDetail().grant, deadlineConfidence: 'estimated' } });
+			root.render(
+				React.createElement(GrantDrawer, { grantId, onClose: vi.fn(), onRefreshAppState: vi.fn() }),
+			);
+			await waitFor(() => container.querySelector('[data-testid="deadline-confidence-badge"]') !== null);
+			const badge = container.querySelector('[data-testid="deadline-confidence-badge"]');
+			expect(badge?.textContent).toBe('(estimated)');
+		});
+
+		it('shows (date uncertain) badge when deadlineConfidence is unknown', async () => {
+			currentDetail = makeGrantDetail({ grant: { ...makeGrantDetail().grant, deadlineConfidence: 'unknown' } });
+			root.render(
+				React.createElement(GrantDrawer, { grantId, onClose: vi.fn(), onRefreshAppState: vi.fn() }),
+			);
+			await waitFor(() => container.querySelector('[data-testid="deadline-confidence-badge"]') !== null);
+			const badge = container.querySelector('[data-testid="deadline-confidence-badge"]');
+			expect(badge?.textContent).toBe('(date uncertain)');
+		});
+
+		it('renders no confidence badge when deadlineConfidence is exact or undefined', async () => {
+			currentDetail = makeGrantDetail({ grant: { ...makeGrantDetail().grant, deadlineConfidence: 'exact' } });
+			root.render(
+				React.createElement(GrantDrawer, { grantId, onClose: vi.fn(), onRefreshAppState: vi.fn() }),
+			);
+			await waitFor(() => container.textContent?.includes('NSF Technology Access and Adoption Program') === true);
+			expect(container.querySelector('[data-testid="deadline-confidence-badge"]')).toBeNull();
+		});
+	});
 });

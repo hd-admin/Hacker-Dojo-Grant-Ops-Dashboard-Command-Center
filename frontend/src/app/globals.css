@@ -3398,3 +3398,41 @@ input.input-success:focus {
   padding: 16px 0;
   border-top: 1px solid var(--border);
 }
+
+.propublica-search-form {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+  margin-bottom: 12px;
+  align-items: center;
+}
+
+.propublica-search-form .form-input { flex: 1; min-width: 0; }
+
+.propublica-results { margin-top: 12px; }
+
+.propublica-results h3 {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.propublica-result-item {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  margin-bottom: 6px;
+}
+
+.propublica-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}

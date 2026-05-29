@@ -101,6 +101,8 @@ beforeEach(() => {
     allRuns: [],
   });
 
+  vi.stubGlobal('confirm', vi.fn().mockReturnValue(true));
+
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
@@ -109,6 +111,7 @@ beforeEach(() => {
 afterEach(() => {
   root.unmount();
   container.remove();
+  vi.unstubAllGlobals();
 });
 
 describe('DiscoveryView', () => {

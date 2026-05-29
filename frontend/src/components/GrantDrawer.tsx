@@ -606,6 +606,12 @@ export default function GrantDrawer({
 										{detail.grant.deadline === "Rolling"
 											? "Rolling"
 											: formatDate(detail.grant.deadline)}
+										{detail.grant.deadlineConfidence === 'estimated' && (
+											<span data-testid="deadline-confidence-badge" style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '4px' }}>(estimated)</span>
+										)}
+										{detail.grant.deadlineConfidence === 'unknown' && (
+											<span data-testid="deadline-confidence-badge" style={{ fontSize: '11px', color: 'var(--warning)', marginLeft: '4px' }}>(date uncertain)</span>
+										)}
 									</div>
 								</div>
 								<div className="meta-item">
