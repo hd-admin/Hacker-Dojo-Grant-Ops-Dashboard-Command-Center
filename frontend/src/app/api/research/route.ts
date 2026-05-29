@@ -15,7 +15,10 @@ export async function POST(_request: NextRequest) {
 
     if (!profile) {
       return NextResponse.json(
-        { error: 'Organization profile not configured. Please set up your profile in Settings.' },
+        {
+          error: 'ORG_PROFILE_NOT_CONFIGURED',
+          message: 'Organization profile not configured. Please set up your profile in Settings.',
+        },
         { status: 400 },
       );
     }
@@ -23,7 +26,10 @@ export async function POST(_request: NextRequest) {
     const settings = await deps.repository.getOpencodeSettings();
     if (!settings?.isConfigured) {
       return NextResponse.json(
-        { error: 'Opencode is not configured. Please set up Opencode settings in the application before running research.' },
+        {
+          error: 'OPENCODE_NOT_CONFIGURED',
+          message: 'Opencode is not configured. Please set up Opencode settings in the application before running research.',
+        },
         { status: 400 },
       );
     }

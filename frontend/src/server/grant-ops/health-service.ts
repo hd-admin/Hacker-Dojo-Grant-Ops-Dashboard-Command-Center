@@ -155,12 +155,46 @@ async function performHandshake(
 	}
 }
 
+/**
+ * Resolve the opencode binary path, falling back to PATH search when
+ * the configured binaryPath is empty.
+ *
+ * On Unix: uses `which opencode` to locate the binary.
+ * On Windows: uses `where opencode` to locate the binary.
+ * Falls back to returning null when opencode cannot be found on PATH.
+ */
+export async function resolveOpencodePath(configuredPath: string): Promise<string | null> {
+	if (configuredPath) {
+		return configuredPath;
+	}
+
+	const { execFileSync } = await import('node:child_process');
+	try {
+		const isWindows = process.platform === 'win32';
+		const locateCmd = isWindows ? 'where' : 'which';
+		const output = execFileSync(locateCmd, ['opencode'], {
+			encoding: 'utf8',
+			timeout: 5000,
+		});
+		const firstLine = output.trim().split(/\r?\n/)[0]?.trim();
+		if (firstLine && firstLine.length > 0) {
+			return firstLine;
+		}
+	} catch {
+		// `which`/`where` failed — opencode not on PATH
+	}
+
+	return null;
+}
+
 export async function checkOpencode(deps: Dependencies): Promise<
 	Pick<HealthCheckResult, 'opencode' | 'opencodeError' | 'opencodeVersion' | 'handshakeSuccess' | 'handshakeResponseTimeMs' | 'handshakeError' | 'capabilities'>
 > {
 	try {
 		const settings = await deps.repository.getOpencodeSettings();
-		const binaryPath = settings?.binaryPath?.trim() ?? '';
+		const configuredPath = settings?.binaryPath?.trim() ?? '';
+
+		const binaryPath = await resolveOpencodePath(configuredPath);
 		if (!binaryPath) {
 			return { opencode: 'not-installed' };
 		}

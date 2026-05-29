@@ -277,25 +277,159 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
           </div>
         </section>
 
-        <section className="setting-card">
-          <div className="setting-card-header"><div className="setting-card-title">Organization</div></div>
+        <section className="setting-card" data-testid="org-profile-card">
+          <div className="setting-card-header"><div className="setting-card-title">Organization Profile</div></div>
           <div className="setting-card-body">
             {isEditing ? (
-              <>
-                <input value={editForm.legalName ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, legalName: e.target.value }))} />
-                <input value={editForm.ein ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, ein: e.target.value }))} />
-                <input value={editForm.samUEI ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, samUEI: e.target.value }))} />
-                <textarea value={editForm.mission ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, mission: e.target.value }))} />
-                <button type="button" onClick={() => void handleSave()}>Save</button>
-                <button type="button" onClick={() => { setEditForm(profile); setIsEditing(false); }}>Cancel</button>
-              </>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {/* Identity */}
+                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
+                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Identity</legend>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label className="setting-label">Legal Name</label>
+                      <input className="form-input" value={editForm.legalName ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, legalName: e.target.value }))} placeholder="e.g., Hacker Dojo" />
+                    </div>
+                    <div>
+                      <label className="setting-label">EIN</label>
+                      <input className="form-input" value={editForm.ein ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, ein: e.target.value }))} placeholder="e.g., 26-3375350" />
+                    </div>
+                    <div>
+                      <label className="setting-label">SAM / UEI</label>
+                      <input className="form-input" value={editForm.samUEI ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, samUEI: e.target.value }))} placeholder="e.g., ABC123DEF456" />
+                    </div>
+                    <div>
+                      <label className="setting-label">Nonprofit Status</label>
+                      <input className="form-input" value={editForm.nonprofitStatus ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, nonprofitStatus: e.target.value }))} placeholder="e.g., 501(c)(3)" />
+                    </div>
+                  </div>
+                </fieldset>
+
+                {/* Contact */}
+                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
+                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Contact</legend>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label className="setting-label">Address</label>
+                      <input className="form-input" value={editForm.contactInfo?.address ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, contactInfo: { ...prev.contactInfo, address: e.target.value } }))} placeholder="Street address" />
+                    </div>
+                    <div>
+                      <label className="setting-label">Phone</label>
+                      <input className="form-input" value={editForm.contactInfo?.phone ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, contactInfo: { ...prev.contactInfo, phone: e.target.value } }))} placeholder="Phone number" />
+                    </div>
+                    <div>
+                      <label className="setting-label">Email</label>
+                      <input type="email" className="form-input" value={editForm.contactInfo?.email ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, contactInfo: { ...prev.contactInfo, email: e.target.value } }))} placeholder="contact@example.org" />
+                    </div>
+                    <div>
+                      <label className="setting-label">Website</label>
+                      <input type="url" className="form-input" value={editForm.contactInfo?.website ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, contactInfo: { ...prev.contactInfo, website: e.target.value } }))} placeholder="https://example.org" />
+                    </div>
+                  </div>
+                </fieldset>
+
+                {/* Mission & Geography */}
+                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
+                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Mission &amp; Geography</legend>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <div>
+                      <label className="setting-label">Mission Statement</label>
+                      <textarea className="form-input" rows={3} value={editForm.mission ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, mission: e.target.value }))} placeholder="Describe your organization's mission" />
+                    </div>
+                    <div>
+                      <label className="setting-label">Geography / Service Area</label>
+                      <input className="form-input" value={editForm.geography ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, geography: e.target.value }))} placeholder="e.g., Regional, Bay Area, National" />
+                    </div>
+                  </div>
+                </fieldset>
+
+                {/* Programs */}
+                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
+                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Programs &amp; Audiences</legend>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label className="setting-label">Program Areas</label>
+                      <textarea className="form-input" rows={3} value={editForm.programAreas?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, programAreas: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="STEM, Workforce Development, Community Learning (comma-separated)" />
+                    </div>
+                    <div>
+                      <label className="setting-label">Populations Served</label>
+                      <textarea className="form-input" rows={3} value={editForm.populationsServed?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, populationsServed: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="Youth, Veterans, Low-income (comma-separated)" />
+                    </div>
+                    <div>
+                      <label className="setting-label">Partnerships</label>
+                      <textarea className="form-input" rows={2} value={editForm.partnerships?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, partnerships: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="Org A, Org B (comma-separated)" />
+                    </div>
+                    <div>
+                      <label className="setting-label">Search Themes</label>
+                      <textarea className="form-input" rows={2} value={editForm.searchThemes?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, searchThemes: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="EdTech, AI Literacy, STEM (comma-separated)" />
+                    </div>
+                  </div>
+                </fieldset>
+
+                {/* Compliance */}
+                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
+                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Compliance &amp; History</legend>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label className="setting-label">Compliance Facts</label>
+                      <textarea className="form-input" rows={2} value={editForm.complianceFacts?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, complianceFacts: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="SAM registration active, audit current (comma-separated)" />
+                    </div>
+                    <div>
+                      <label className="setting-label">Document Types</label>
+                      <textarea className="form-input" rows={2} value={editForm.docTypes?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, docTypes: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="PDF, DOCX, XLSX (comma-separated)" />
+                    </div>
+                  </div>
+                </fieldset>
+
+                {/* Agent Behavior */}
+                <fieldset style={{ border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px' }}>
+                  <legend style={{ fontFamily: 'var(--mono)', fontSize: '10px', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)' }}>Agent Behavior</legend>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label className="setting-label">Notification Email</label>
+                      <input type="email" className="form-input" value={editForm.agentBehavior?.notifyEmail ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, agentBehavior: { ...prev.agentBehavior, notifyEmail: e.target.value, autoDraftThreshold: prev.agentBehavior?.autoDraftThreshold ?? 75, submissionPolicy: prev.agentBehavior?.submissionPolicy ?? '', voiceAndTone: prev.agentBehavior?.voiceAndTone ?? '' } }))} placeholder="ops@hackerdojo.com" />
+                    </div>
+                    <div>
+                      <label className="setting-label">Auto-Draft Threshold (0-100)</label>
+                      <input type="number" min={0} max={100} className="form-input" value={editForm.agentBehavior?.autoDraftThreshold ?? 75} onChange={(e) => setEditForm((prev) => ({ ...prev, agentBehavior: { notifyEmail: prev.agentBehavior?.notifyEmail ?? '', autoDraftThreshold: Number(e.target.value), submissionPolicy: prev.agentBehavior?.submissionPolicy ?? '', voiceAndTone: prev.agentBehavior?.voiceAndTone ?? '' } }))} />
+                    </div>
+                    <div>
+                      <label className="setting-label">Submission Policy</label>
+                      <select className="form-input" value={editForm.agentBehavior?.submissionPolicy ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, agentBehavior: { notifyEmail: prev.agentBehavior?.notifyEmail ?? '', autoDraftThreshold: prev.agentBehavior?.autoDraftThreshold ?? 75, submissionPolicy: e.target.value, voiceAndTone: prev.agentBehavior?.voiceAndTone ?? '' } }))}>
+                        <option value="">Select policy...</option>
+                        <option value="Human approval required">Human approval required</option>
+                        <option value="Auto-submit drafts above threshold">Auto-submit drafts above threshold</option>
+                        <option value="Manual submission only">Manual submission only</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="setting-label">Voice &amp; Tone</label>
+                      <input className="form-input" value={editForm.agentBehavior?.voiceAndTone ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, agentBehavior: { notifyEmail: prev.agentBehavior?.notifyEmail ?? '', autoDraftThreshold: prev.agentBehavior?.autoDraftThreshold ?? 75, submissionPolicy: prev.agentBehavior?.submissionPolicy ?? '', voiceAndTone: e.target.value } }))} placeholder="e.g., Plain-spoken, Professional, Community-focused" />
+                    </div>
+                  </div>
+                </fieldset>
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+                  <button type="button" className="btn btn-primary" onClick={() => void handleSave()}>Save Profile</button>
+                  <button type="button" className="btn" onClick={() => { setEditForm(profile); setIsEditing(false); }}>Cancel</button>
+                </div>
+              </div>
             ) : (
-              <>
-                <div>{profile.legalName}</div>
-                <div>{profile.ein}</div>
-                <div>{profile.samUEI}</div>
-                <div>{profile.mission}</div>
-              </>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div className="setting-row"><span className="setting-label">Legal Name</span><span className="setting-value">{profile.legalName || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">EIN</span><span className="setting-value mono">{profile.ein || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">SAM / UEI</span><span className="setting-value mono">{profile.samUEI || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">Nonprofit Status</span><span className="setting-value">{profile.nonprofitStatus || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">Contact</span><span className="setting-value">{profile.contactInfo?.email || profile.contactInfo?.website || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">Geography</span><span className="setting-value">{profile.geography || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">Mission</span><span className="setting-value">{profile.mission || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">Program Areas</span><span className="setting-value">{profile.programAreas?.join(', ') || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">Populations Served</span><span className="setting-value">{profile.populationsServed?.join(', ') || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">Search Themes</span><span className="setting-value">{profile.searchThemes?.join(', ') || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">Auto-Draft Threshold</span><span className="setting-value mono">{profile.agentBehavior?.autoDraftThreshold ?? 75}</span></div>
+                <div className="setting-row"><span className="setting-label">Submission Policy</span><span className="setting-value">{profile.agentBehavior?.submissionPolicy || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">Voice &amp; Tone</span><span className="setting-value">{profile.agentBehavior?.voiceAndTone || '—'}</span></div>
+              </div>
             )}
           </div>
         </section>

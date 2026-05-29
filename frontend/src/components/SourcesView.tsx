@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import type {
   CrawlRun,
+  Grant,
   JobFailureCategory,
   Source,
   SourceCategory,
@@ -119,6 +120,13 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
   const [crawlNowIds, setCrawlNowIds] = useState<Set<string>>(new Set());
   const [scheduleStatuses, setScheduleStatuses] = useState<Record<string, { isEnabled: boolean; loading: boolean }>>({});
 
+  // ProPublica search state
+  const [propublicaQuery, setPropublicaQuery] = useState('');
+  const [propublicaResults, setPropublicaResults] = useState<Grant[]>([]);
+  const [propublicaLoading, setPropublicaLoading] = useState(false);
+  const [propublicaUnavailable, setPropublicaUnavailable] = useState(false);
+  const [propublicaSearched, setPropublicaSearched] = useState(false);
+
   const pendingCount = pendingSources.length;
 
   const loadSources = useCallback(async (): Promise<void> => {
@@ -161,6 +169,37 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
       setDiscoverUnavailable(true);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleProPublicaSearch = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!propublicaQuery.trim()) return;
+
+    setPropublicaLoading(true);
+    setPropublicaUnavailable(false);
+    setPropublicaSearched(false);
+    try {
+      const response = await fetch(
+        `/api/sources/propublica?query=${encodeURIComponent(propublicaQuery.trim())}`,
+      );
+      const data = await response.json();
+      if (data.unavailable) {
+        setPropublicaUnavailable(true);
+        setPropublicaResults([]);
+      } else if (Array.isArray(data.grants)) {
+        setPropublicaResults(data.grants);
+      } else {
+        setPropublicaResults([]);
+      }
+      setPropublicaSearched(true);
+    } catch (error) {
+      console.error('Error searching ProPublica:', error);
+      setPropublicaUnavailable(true);
+      setPropublicaResults([]);
+      setPropublicaSearched(true);
+    } finally {
+      setPropublicaLoading(false);
     }
   };
 
@@ -1081,6 +1120,69 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
           ))}
         </section>
       )}
+
+      {/* ProPublica Nonprofit Explorer Search */}
+      <section className="propublica-section" data-testid="propublica-search-section">
+        <div className="panel-header">
+          <div className="panel-title">
+            Search ProPublica Nonprofit Explorer
+          </div>
+        </div>
+        <form onSubmit={handleProPublicaSearch} className="propublica-search-form">
+          <input
+            type="text"
+            data-testid="propublica-search-input"
+            value={propublicaQuery}
+            onChange={(e) => setPropublicaQuery(e.target.value)}
+            placeholder="Search for grants (e.g., education grants for nonprofits in California)"
+            className="form-input"
+          />
+          <button
+            type="submit"
+            data-testid="propublica-search-btn"
+            disabled={propublicaLoading || !propublicaQuery.trim()}
+            className="btn btn-primary"
+          >
+            {propublicaLoading ? 'Searching...' : 'Search ProPublica'}
+          </button>
+        </form>
+
+        {propublicaUnavailable && (
+          <div data-testid="propublica-unavailable-msg" className="blocking-message">
+            ProPublica is currently unavailable. Your local data is unaffected.
+          </div>
+        )}
+
+        {propublicaSearched && !propublicaUnavailable && propublicaResults.length === 0 && (
+          <div className="empty-state-guide" data-testid="propublica-empty-results">
+            <div className="empty-state-title">No results found</div>
+            <div className="empty-state-description">
+              Try a different search query or check if ProPublica has data for your area of interest.
+            </div>
+          </div>
+        )}
+
+        {propublicaResults.length > 0 && (
+          <div className="propublica-results" data-testid="propublica-results-list">
+            <h3>Results ({propublicaResults.length})</h3>
+            {propublicaResults.map((grant) => (
+              <div key={grant.id} className="propublica-result-item">
+                <div className="grant-title">{grant.title}</div>
+                <div className="grant-funder">{grant.funder}</div>
+                <div className="propublica-result-meta">
+                  <span>{grant.award}</span>
+                  {grant.deadline && grant.deadline !== 'Rolling' && (
+                    <span>Deadline: {grant.deadline}</span>
+                  )}
+                  {grant.tags && grant.tags.length > 0 && (
+                    <span>Tags: {grant.tags.join(', ')}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
 
       {pendingSourcesPanel}
 

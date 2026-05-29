@@ -641,7 +641,22 @@ export default function AppShell() {
             data-testid="health-banner-online"
           >
             <span className="health-banner-icon" aria-hidden="true">\u2714</span>
-            <span className="health-banner-text">All systems operational</span>
+            <span className="health-banner-text">
+              All systems operational
+              {crawlStatus.lastSync && (
+                <>
+                  {' · '}
+                  <span data-testid="health-banner-crawl-sync">
+                    Last crawl: {getRelativeTime(crawlStatus.lastSync)}
+                    {isCrawlStale && (
+                      <span className="health-banner-stale-badge" data-testid="health-banner-stale">
+                        {' '}Stale
+                      </span>
+                    )}
+                  </span>
+                </>
+              )}
+            </span>
           </div>
         )}
 

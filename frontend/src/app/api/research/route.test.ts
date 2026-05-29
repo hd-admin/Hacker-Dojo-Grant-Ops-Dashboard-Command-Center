@@ -135,7 +135,8 @@ describe('/api/research route', () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toMatch(/Opencode is not configured/i);
+    expect(data.error).toBe('OPENCODE_NOT_CONFIGURED');
+    expect(data.message).toMatch(/Opencode is not configured/i);
   });
 
   describe('null crawlRun guard', () => {
