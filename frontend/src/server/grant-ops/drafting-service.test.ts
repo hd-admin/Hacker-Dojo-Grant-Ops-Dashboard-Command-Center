@@ -333,3 +333,22 @@ describe("DraftingService", () => {
       expect(draftingService.generateDraft).toBeDefined();
     });
   });
+
+  describe('PATH-fallback: no early isConfigured throw', () => {
+    let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+    beforeEach(async () => { tempDataDir = await withTempDataDir(); });
+    afterEach(async () => { await tempDataDir.cleanup(); });
+
+    it('proceeds without early throw when settings are present (isConfigured check delegated to adapter)', async () => {
+      // The early isConfigured throw was removed from generateDraft.
+      // The service now creates the adapter and lets the adapter
+      // handle configuration checks at runtime.
+      const mockGrant = createMockGrant('no-early-throw-' + Date.now());
+      await repository.addGrant(mockGrant);
+      const draft = await draftingService.generateDraft(mockGrant, mockProfile, {
+        _providerType: 'fake',
+      });
+      expect(draft).toBeDefined();
+      expect(draft.version).toBe(1);
+    });
+  });

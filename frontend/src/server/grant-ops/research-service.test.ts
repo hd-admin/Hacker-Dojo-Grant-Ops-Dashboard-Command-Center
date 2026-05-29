@@ -616,3 +616,45 @@ describe('notification emission', () => {
     });
   });
 
+	describe('PATH-fallback: no early isConfigured throw', () => {
+		let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+		beforeEach(async () => {
+			tempDataDir = await withTempDataDir();
+			setDependencies(createDependencies({
+				createOpencodeAdapter: () => ({
+					executeResearch: async () => ({
+						success: true,
+						content: JSON.stringify({
+							grants: [{
+								id: 'mock-grant-001',
+								title: 'Mock Foundation Grant',
+								funder: 'Mock Foundation',
+								award: '$10,000',
+								awardSort: 10000,
+								deadline: '2026-09-30',
+								daysOut: 127,
+								fit: 80,
+								tags: ['funding', 'tech']
+							}]
+						}),
+					}),
+					generateDraft: async () => ({ success: true, content: '' }),
+					isConfigured: () => true,
+				}),
+			}));
+		});
+		afterEach(async () => { resetDependencies(); await tempDataDir.cleanup(); });
+
+		it('proceeds without early throw when settings are present (isConfigured check delegated to adapter)', async () => {
+			// The early isConfigured throw was removed from runResearch.
+			// The service now creates the adapter and lets the adapter
+			// handle configuration checks at runtime.
+			await sourceService.addSource({ name: 'Test', url: 'https://example.com', type: 'website', reviewStatus: 'approved' });
+			const result = await researchService.runResearch(mockProfile, {
+				_providerType: 'fake',
+			});
+			expect(result).toBeDefined();
+			expect(result.crawlRun.status).toBe('completed');
+		});
+	});
+

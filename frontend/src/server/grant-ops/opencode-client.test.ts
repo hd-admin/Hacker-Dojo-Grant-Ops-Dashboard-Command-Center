@@ -145,6 +145,39 @@ EOF
 			expect(result.success).toBe(false);
 			expect(result.error).toContain("not configured");
 		});
+
+		it("isConfigured returns false when binaryPath empty, isConfigured true, but opencode not on PATH (PATH-fallback)", () => {
+			// In CI/test environment, opencode is typically not on PATH.
+			// The getCachedOpencodePath() will try which/where and fail,
+			// so isConfigured() should return false via the PATH-fallback branch.
+			const settings: OpencodeSettings = {
+				...defaultSettings,
+				binaryPath: "",
+				isConfigured: true,
+			};
+			const adapter = createOpencodeAdapter(settings, "cli");
+			expect(adapter.isConfigured()).toBe(false);
+		});
+
+		it("runCommand uses PATH-fallback when binaryPath is empty", async () => {
+			// The runCommand method uses getCachedOpencodePath() as fallback
+			// when binaryPath is empty. In CI, opencode is not on PATH,
+			// so the spawn will fail with ENOENT, which executeResearch
+			// handles gracefully via the isConfigured guard.
+			const settings: OpencodeSettings = {
+				...defaultSettings,
+				binaryPath: "",
+				isConfigured: true,
+			};
+			const adapter = createOpencodeAdapter(settings, "cli");
+			const result = await adapter.executeResearch({
+				organizationProfile: "Test Org",
+				searchThemes: ["EdTech"],
+			});
+			// Without opencode on PATH, the adapter's isConfigured guard
+			// returns an error response rather than throwing.
+			expect(result.success).toBe(false);
+		});
 	});
 
 	describe("Fake provider", () => {
