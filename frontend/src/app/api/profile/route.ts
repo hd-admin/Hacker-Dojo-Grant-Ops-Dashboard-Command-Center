@@ -58,7 +58,7 @@ export async function PUT(request: NextRequest) {
     if (Array.isArray(parsed.data.searchThemes)) {
       void (async () => {
         try {
-          const { loadGrants, saveGrants } = await import('../../../../shared/grant-ops-persistence');
+          const { loadGrants, saveGrants } = await import('../../../../../shared/grant-ops-persistence');
           const { scoreGrantByThemes } = await import('@/server/grant-ops/theme-service');
           const grants = await loadGrants();
           let changed = 0;

@@ -8,7 +8,8 @@ export default defineConfig({
   test: {
     globals: true,
     include: ['tests/**/*.test.ts', 'frontend/src/**/*.test.ts', 'frontend/src/**/*.test.tsx', 'shared/**/*.test.ts'],
-    environment: 'jsdom',
+    environment: 'node',
+    env: { NODE_ENV: 'test' },
     setupFiles: [path.resolve(__dirname, './tests/vitest-setup.ts')],
   },
   resolve: {

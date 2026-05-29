@@ -35,6 +35,9 @@
     "pdf-parse": "^1.1.1",
     "zod": "^3.24.2"
   },
+  "pnpm": {
+    "onlyBuiltDependencies": ["better-sqlite3", "esbuild", "sharp", "unrs-resolver"]
+  },
   "devDependencies": {
     "@next/eslint-plugin-next": "15.5.18",
     "@playwright/test": "^1.48.0",

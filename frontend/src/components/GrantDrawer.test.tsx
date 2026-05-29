@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { createRoot } from "next/dist/compiled/react-dom/client";
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
