@@ -85,9 +85,6 @@ export async function executeQueuedJob(
 				completedAt: now(),
 				lastUpdate: now(),
 				resultSummary,
-				errorMessage: undefined,
-				failureCategory: undefined,
-				partialOutput: undefined,
 			});
 			return;
 		} catch (error) {
@@ -174,7 +171,7 @@ export async function retryQueuedJob(
 		id: deps.idGenerator.generateId('job'),
 		jobType: failedJob.jobType,
 		status: 'queued',
-		stage: 'retrying' as JobQueueItem['stage'],
+		stage: 'retrying',
 		lastUpdate: timestamp,
 		createdAt: timestamp,
 		retryCount: currentRetries + 1,
@@ -304,8 +301,8 @@ export async function getJobProgress(
 		progress: stageProgress[job.stage ?? 'queued'] ?? 0,
 		retryCount: job.retryCount ?? 0,
 		createdAt: job.createdAt,
-		lastUpdate: job.lastUpdate,
-		completedAt: job.completedAt,
-		errorMessage: job.errorMessage,
+		...(job.lastUpdate ? { lastUpdate: job.lastUpdate } : {}),
+		...(job.completedAt ? { completedAt: job.completedAt } : {}),
+		...(job.errorMessage ? { errorMessage: job.errorMessage } : {}),
 	};
 }

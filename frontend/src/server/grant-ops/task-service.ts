@@ -132,12 +132,12 @@ export async function createTask(input: CreateTaskInput): Promise<CreateTaskResu
       id: idGenerator.generateId('task'),
       text: input.text.trim(),
       completed: false,
-      grantId: input.grantId,
+      ...(input.grantId ? { grantId: input.grantId } : {}),
       taskStatus: input.taskStatus ?? 'blocked',
       responsibilityTag: input.responsibilityTag,
       dependsOn: input.dependsOn ?? [],
-      dueDate: input.dueDate,
-      notes: input.notes,
+      ...(input.dueDate ? { dueDate: input.dueDate } : {}),
+      ...(input.notes ? { notes: input.notes } : {}),
       blockSubmission: input.blockSubmission ?? false,
     };
 

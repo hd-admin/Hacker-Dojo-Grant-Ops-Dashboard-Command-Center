@@ -173,14 +173,16 @@ export async function checkOpencode(deps: Dependencies): Promise<
 			return { opencode: 'not-installed' };
 		}
 
-		const { execFileSync } = await import('node:child_process');
+		const { execFile } = await import('node:child_process');
 		const { access } = await import('node:fs/promises');
 
 		try {
 			await access(binaryPath);
-			const output = execFileSync(binaryPath, ['--version'], {
-				encoding: 'utf8',
-				timeout: 3000,
+			const output = await new Promise<string>((resolve, reject) => {
+				execFile(binaryPath, ['--version'], { encoding: 'utf8', timeout: 3000 }, (err, stdout, stderr) => {
+					if (err) reject(err);
+					else resolve(stdout || stderr || '');
+				});
 			});
 			const versionMatch = /(?:(\d+)\.(\d+)\.(\d+))/u.exec(output);
 			if (!versionMatch) {

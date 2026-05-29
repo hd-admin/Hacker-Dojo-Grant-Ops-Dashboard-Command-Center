@@ -69,9 +69,7 @@ describe('/api/testing/reset route', () => {
     expect(grantsBefore.length).toBeGreaterThan(0);
 
     // Perform reset
-    const response = await POST(
-      new Request('http://localhost/api/testing/reset', { method: 'POST' }) as never,
-    );
+    const response = await POST();
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -83,15 +81,11 @@ describe('/api/testing/reset route', () => {
   });
 
   it('can be called multiple times', async () => {
-    const response1 = await POST(
-      new Request('http://localhost/api/testing/reset', { method: 'POST' }) as never,
-    );
+    const response1 = await POST();
     expect(response1.status).toBe(200);
     expect((await response1.json()).success).toBe(true);
 
-    const response2 = await POST(
-      new Request('http://localhost/api/testing/reset', { method: 'POST' }) as never,
-    );
+    const response2 = await POST();
     expect(response2.status).toBe(200);
     expect((await response2.json()).success).toBe(true);
   });
@@ -110,9 +104,7 @@ describe('/api/testing/reset route', () => {
     const eventsBefore = await repository.getAuditEvents();
     expect(eventsBefore.length).toBeGreaterThan(0);
 
-    const response = await POST(
-      new Request('http://localhost/api/testing/reset', { method: 'POST' }) as never,
-    );
+    const response = await POST();
     expect(response.status).toBe(200);
 
     const eventsAfter = await repository.getAuditEvents();
@@ -134,9 +126,7 @@ describe('/api/testing/reset route', () => {
     const jobsBefore = await repository.getJobQueue();
     expect(jobsBefore.length).toBeGreaterThan(0);
 
-    const response = await POST(
-      new Request('http://localhost/api/testing/reset', { method: 'POST' }) as never,
-    );
+    const response = await POST();
     expect(response.status).toBe(200);
 
     const jobsAfter = await repository.getJobQueue();

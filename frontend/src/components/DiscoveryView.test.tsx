@@ -152,8 +152,10 @@ describe('DiscoveryView', () => {
       name: 'Candid',
       url: 'https://www.candid.org',
       type: 'website',
-      createdAt: '',
+      createdAt: '2026-01-01T00:00:00.000Z',
       isActive: true,
+      sourceCrawlState: 'never-crawled',
+      crawlAccessCategory: 'crawlable',
     };
     sourcesGetAll.mockResolvedValueOnce([testSource]).mockResolvedValue([]);
     grantsGetAll.mockResolvedValueOnce(initialGrants).mockResolvedValue(initialGrants);

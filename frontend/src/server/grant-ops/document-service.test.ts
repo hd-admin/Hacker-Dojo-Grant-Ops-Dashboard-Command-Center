@@ -90,10 +90,10 @@ describe('DocumentService', () => {
     });
 
     it('marks document as not indexed when no text is available', async () => {
-      const doc = makeDoc({
-        extractedText: undefined,
-        extractionStatus: 'stored_unparsed',
-      });
+      const baseDoc = makeDoc({ extractionStatus: 'stored_unparsed' });
+       
+      const { extractedText: _text, ...docFields } = baseDoc;
+      const doc = docFields as DocumentMetadata;
 
       const result = await documentService.indexDocument(doc);
       expect(result.indexed).toBe(false);
@@ -212,7 +212,9 @@ describe('DocumentService', () => {
     });
 
     it('returns null for document without storage path', async () => {
-      const doc = makeDoc({ storagePath: undefined });
+       
+      const { storagePath: _sp, ...docFields } = makeDoc();
+      const doc = docFields as DocumentMetadata;
       const sp = documentService.getStoragePath(doc);
       expect(sp).toBeNull();
     });
@@ -226,7 +228,9 @@ describe('DocumentService', () => {
     });
 
     it('returns default version when not set', async () => {
-      const doc = makeDoc({ version: undefined });
+       
+      const { version: _v, ...docFields } = makeDoc();
+      const doc = docFields as DocumentMetadata;
       const v = documentService.getDocumentVersion(doc);
       expect(v).toBe('1.0');
     });

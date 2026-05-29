@@ -25,13 +25,15 @@ export async function resolveOpencodePath(configuredPath: string): Promise<strin
 		return configuredPath;
 	}
 
-	const { execFileSync } = await import('node:child_process');
+	const { execFile } = await import('node:child_process');
 	try {
 		const isWindows = process.platform === 'win32';
 		const locateCmd = isWindows ? 'where' : 'which';
-		const output = execFileSync(locateCmd, ['opencode'], {
-			encoding: 'utf8',
-			timeout: 5000,
+		const output = await new Promise<string>((resolve, reject) => {
+			execFile(locateCmd, ['opencode'], { encoding: 'utf8', timeout: 5000 }, (err, stdout) => {
+				if (err) reject(err);
+				else resolve(stdout);
+			});
 		});
 		const firstLine = output.trim().split(/\r?\n/)[0]?.trim();
 		if (firstLine && firstLine.length > 0) {
@@ -74,7 +76,7 @@ function getCachedOpencodePath(): string | null {
 	} catch {
 		cachedResolvedPath = null;
 	}
-	return cachedResolvedPath;
+	return cachedResolvedPath ?? null;
 }
 
 export interface OpencodeRequest {
@@ -458,7 +460,7 @@ class CliOpencodeProvider implements OpencodeAdapter {
 					const partialContent = stdout.trim() || undefined;
 					settle({
 						success: false,
-						content: partialContent,
+						...(partialContent ? { content: partialContent } : {}),
 						error: errorMessage,
 						exitCode: exitCode,
 						failureMode,
@@ -488,7 +490,7 @@ class CliOpencodeProvider implements OpencodeAdapter {
 					const partialContent = stdout.trim() || undefined;
 					settle({
 						success: false,
-						content: partialContent,
+						...(partialContent ? { content: partialContent } : {}),
 						error: `Opencode timed out after ${timeoutMs}ms`,
 						exitCode: 124,
 						failureMode: "timeout",

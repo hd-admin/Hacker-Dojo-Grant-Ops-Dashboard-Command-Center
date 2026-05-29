@@ -10,7 +10,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import { exportGrantsToCsv, exportPipelineToCsv } from "@/server/grant-ops/dashboard-service";
-import type { Grant } from "../../../../../shared/types";
+import type { Grant } from "../../../../../../shared/types";
 
 export const runtime = "nodejs";
 

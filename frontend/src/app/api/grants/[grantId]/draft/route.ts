@@ -64,7 +64,7 @@ export async function POST(
           profile,
           {
             ...(body.revisionNotes ? { revisionNotes: body.revisionNotes } : {}),
-            _jobId: draftJobId,
+            ...(draftJobId ? { _jobId: draftJobId } : {}),
           },
         );
         return `Draft v${draft.version} generated for ${grant.title}`;

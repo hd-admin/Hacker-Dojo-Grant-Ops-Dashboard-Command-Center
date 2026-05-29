@@ -101,6 +101,8 @@ describe('/api/jobs/[jobId]/retry route', () => {
       createdAt: new Date().toISOString(),
       isActive: true,
       reviewStatus: 'approved',
+      sourceCrawlState: 'never-crawled',
+      crawlAccessCategory: 'crawlable',
     });
     await repository.addJobQueueItem(createJob('job-failed', 'failed'));
 

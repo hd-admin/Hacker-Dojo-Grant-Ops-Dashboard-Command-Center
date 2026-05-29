@@ -137,7 +137,7 @@ export async function computeSourceCrawlState(sourceId: string): Promise<SourceC
   }
 
   // Check for queued runs (status queued isn't in CrawlRun, but we handle it)
-  const queuedRun = runs.find((r) => (r as CrawlRun & { status: string }).status === 'queued');
+  const queuedRun = runs.find((r) => (r as unknown as { status: string }).status === 'queued');
   if (queuedRun) {
     return 'queued';
   }
@@ -189,11 +189,14 @@ export async function enrichSourceWithCrawlState(source: Source): Promise<Source
   const latestFailed = runs.find((r) => r.status === 'failed');
   const latestSucceeded = runs.find((r) => r.status === 'completed');
 
+  const computedLastCrawledAt = source.lastCrawledAt ?? latestSucceeded?.completedAt;
   return {
     ...source,
     sourceCrawlState: crawlState,
-    lastFailedAt: latestFailed?.completedAt || latestFailed?.startedAt,
-    failureCategory: latestFailed?.failureCategory,
-    lastCrawledAt: source.lastCrawledAt ?? latestSucceeded?.completedAt,
+    ...(latestFailed?.completedAt || latestFailed?.startedAt
+      ? { lastFailedAt: latestFailed.completedAt ?? latestFailed.startedAt }
+      : {}),
+    ...(latestFailed?.failureCategory ? { failureCategory: latestFailed.failureCategory } : {}),
+    ...(computedLastCrawledAt ? { lastCrawledAt: computedLastCrawledAt } : {}),
   };
 }

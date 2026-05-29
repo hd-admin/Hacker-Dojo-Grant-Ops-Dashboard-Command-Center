@@ -39,12 +39,12 @@ function createMockDeps(): Dependencies {
 			getGrants: vi.fn().mockResolvedValue([]),
 			getNotifications: vi.fn().mockResolvedValue([]),
 			updateNotifications: vi.fn().mockResolvedValue(undefined),
-			getProfile: vi.fn().mockResolvedValue(null),
+			getOrgProfile: vi.fn().mockResolvedValue(null),
 			getDocuments: vi.fn().mockResolvedValue([]),
 			getSources: vi.fn().mockResolvedValue([]),
 			getCrawlRuns: vi.fn().mockResolvedValue([]),
 			getLatestCrawlRun: vi.fn().mockResolvedValue(null),
-			getJobs: vi.fn().mockResolvedValue([]),
+			getJobQueue: vi.fn().mockResolvedValue([]),
 			getOpencodeSettings: vi.fn().mockResolvedValue(null),
 			saveGrant: vi.fn().mockResolvedValue(undefined),
 			saveSource: vi.fn().mockResolvedValue(undefined),
@@ -88,21 +88,8 @@ function createMockDeps(): Dependencies {
 			saveThemesData: vi.fn().mockResolvedValue(undefined),
 			getAuditEvents: vi.fn().mockResolvedValue([]),
 			saveAuditEvent: vi.fn().mockResolvedValue(undefined),
-		},
-		sourceService: {
-			discover: vi.fn().mockResolvedValue([]),
-			approve: vi.fn().mockResolvedValue({
-				id: 'source-1',
-				name: 'Test Source',
-				url: 'https://example.com',
-				type: 'website',
-				createdAt: new Date().toISOString(),
-				isActive: true,
-				reviewStatus: 'approved',
-				approvedAt: new Date().toISOString(),
-			}),
-			reject: vi.fn().mockResolvedValue(undefined),
-		},
+		} as unknown as Dependencies['repository'],
+		sourceService: {} as Dependencies['sourceService'],
 		createOpencodeAdapter: vi.fn().mockReturnValue({
 			executePrompt: vi.fn().mockResolvedValue({ text: '' }),
 			validateConnection: vi.fn().mockResolvedValue(true),
@@ -282,10 +269,10 @@ describe('notification-service', () => {
 			);
 
 			expect(notifications).toHaveLength(1);
-			expect(notifications[0].text).toBe(
+			expect(notifications[0]!.text).toBe(
 				'Crawl completed: 15 grants found, 8 matched',
 			);
-			expect(notifications[0].dot).toBe('info');
+			expect(notifications[0]!.dot).toBe('info');
 		});
 
 		it('generates warning notification for failed crawl', () => {
@@ -302,8 +289,8 @@ describe('notification-service', () => {
 			);
 
 			expect(notifications).toHaveLength(1);
-			expect(notifications[0].text).toContain('Connection timeout');
-			expect(notifications[0].dot).toBe('warning');
+			expect(notifications[0]!.text).toContain('Connection timeout');
+			expect(notifications[0]!.dot).toBe('warning');
 		});
 
 		it('returns empty array when crawl is still running', () => {
@@ -371,10 +358,10 @@ describe('notification-service', () => {
 			);
 
 			expect(notifications).toHaveLength(1);
-			expect(notifications[0].text).toBe(
+			expect(notifications[0]!.text).toBe(
 				'Grant "Test Grant" submitted',
 			);
-			expect(notifications[0].dot).toBe('info');
+			expect(notifications[0]!.dot).toBe('info');
 		});
 	});
 
@@ -558,7 +545,7 @@ describe('notification-service', () => {
 			const notifications = service.generateTaskNotifications(tasks);
 
 			expect(notifications).toHaveLength(1);
-			expect(notifications[0].text).toBe(
+			expect(notifications[0]!.text).toBe(
 				'Task "Review budget section" completed',
 			);
 		});
@@ -576,8 +563,8 @@ describe('notification-service', () => {
 			const notifications = service.generateTaskNotifications(tasks);
 
 			expect(notifications).toHaveLength(1);
-			expect(notifications[0].text).toContain('blocked');
-			expect(notifications[0].dot).toBe('warning');
+			expect(notifications[0]!.text).toContain('blocked');
+			expect(notifications[0]!.dot).toBe('warning');
 		});
 
 		it('skips in-progress tasks', () => {

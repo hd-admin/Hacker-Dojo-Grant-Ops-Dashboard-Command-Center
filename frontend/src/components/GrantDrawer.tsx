@@ -514,12 +514,14 @@ export default function GrantDrawer({
 		if (!detail || !newFollowUpTitle.trim()) return;
 		try {
 			const id = `followup-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+			const descVal = newFollowUpDescription.trim();
+			const dueVal = newFollowUpDueDate;
 			const followUp: Omit<FollowUp, 'id' | 'createdAt'> = {
 				grantId: detail.grant.id,
 				type: newFollowUpType,
 				title: newFollowUpTitle.trim(),
-				description: newFollowUpDescription.trim() || undefined,
-				dueDate: newFollowUpDueDate || undefined,
+				...(descVal ? { description: descVal } : {}),
+				...(dueVal ? { dueDate: dueVal } : {}),
 				status: 'pending',
 			};
 			await client.followUps.create({ ...followUp, id, createdAt: new Date().toISOString() } as FollowUp);
@@ -568,7 +570,6 @@ export default function GrantDrawer({
 		try {
 			const id = `followup-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 			await client.followUps.create({
-				id,
 				grantId: detail.grant.id,
 				type: 'next_steps',
 				title: `Outcome: ${detail.grant.statusLabel}`,
@@ -576,7 +577,8 @@ export default function GrantDrawer({
 				status: 'completed',
 				completedAt: new Date().toISOString(),
 				createdAt: new Date().toISOString(),
-			});
+				id,
+			} as FollowUp);
 			setShowOutcomeForm(false);
 			setOutcomeNotes('');
 			const data = await client.followUps.getFiltered({ grantId: detail.grant.id });

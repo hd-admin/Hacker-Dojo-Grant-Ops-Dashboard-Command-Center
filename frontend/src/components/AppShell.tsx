@@ -470,7 +470,8 @@ export default function AppShell() {
 
   // ============ Compute derived state ============
 
-  const isFirstRun = grants.length === 0 && sources.length === 0 && tasks.length === 0 && notifications.length === 0;
+  const userSources = sources.filter((s) => s.suggestedBy !== 'system');
+  const isFirstRun = grants.length === 0 && userSources.length === 0 && tasks.length === 0 && notifications.length === 0;
   const hasStorageError = healthResult?.storage === 'error';
   const opencodeBlocked =
     healthResult !== null &&

@@ -235,7 +235,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
       binaryPath: opencodeForm.binaryPath ?? '',
       workingDirectory: opencodeForm.workingDirectory ?? '',
       timeoutMs: opencodeForm.timeoutMs ?? 60000,
-      profile: opencodeForm.profile,
+      ...(opencodeForm.profile ? { profile: opencodeForm.profile } : {}),
       isConfigured: true,
     };
     await client.opencodeSettings.update(nextSettings);
@@ -517,24 +517,28 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
           </div>
           <div className="setting-card-body">
             {/* Status guidance */}
-            {health?.opencode && opencodeStatusGuidance[health.opencode] && (
-              <div className={`settings-status-guidance ${health.opencode ? getStatusGuidanceClass(health.opencode) : ''}`}>
-                <div className="settings-status-guidance-title">
-                  {opencodeStatusGuidance[health.opencode].title}
-                </div>
-                <div
-                  className="settings-status-guidance-desc"
-                  style={{ marginBottom: health.opencode !== 'ok' ? '10px' : 0 }}
-                >
-                  {opencodeStatusGuidance[health.opencode].description}
-                </div>
-                {health.opencode !== 'ok' && opencodeStatusGuidance[health.opencode].action && (
-                  <div className="settings-status-guidance-action">
-                    <strong>What to do:</strong> {opencodeStatusGuidance[health.opencode].action}
+            {(() => {
+              const statusGuidance = health?.opencode ? opencodeStatusGuidance[health.opencode] : undefined;
+              if (!statusGuidance || !health?.opencode) return null;
+              return (
+                <div className={`settings-status-guidance ${getStatusGuidanceClass(health.opencode)}`}>
+                  <div className="settings-status-guidance-title">
+                    {statusGuidance.title}
                   </div>
-                )}
-              </div>
-            )}
+                  <div
+                    className="settings-status-guidance-desc"
+                    style={{ marginBottom: health.opencode !== 'ok' ? '10px' : 0 }}
+                  >
+                    {statusGuidance.description}
+                  </div>
+                  {health.opencode !== 'ok' && statusGuidance.action && (
+                    <div className="settings-status-guidance-action">
+                      <strong>What to do:</strong> {statusGuidance.action}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* Diagnostics grid */}
             <div className="settings-diag-grid">

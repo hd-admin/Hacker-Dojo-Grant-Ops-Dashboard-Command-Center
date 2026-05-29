@@ -29,7 +29,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       lastUpdate: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       retryCount: (existing.retryCount ?? 0) + 1,
-      entityId: existing.entityId,
+      ...(existing.entityId ? { entityId: existing.entityId } : {}),
       // Preserve partialOutput from the original failed job
       ...(partialOutput ? { partialOutput } : {}),
     });

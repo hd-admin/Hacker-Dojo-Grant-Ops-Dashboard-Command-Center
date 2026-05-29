@@ -55,7 +55,9 @@ const RESTRICTED_PATTERNS = [
  */
 export async function getProfile(): Promise<OrganizationProfile> {
   const deps = getDependencies();
-  return deps.repository.getOrgProfile();
+  const profile = await deps.repository.getOrgProfile();
+  if (!profile) throw new Error('Organization profile not initialized');
+  return profile;
 }
 
 /**
@@ -79,7 +81,7 @@ export function getMissingRequiredFields(
   const missing: string[] = [];
 
   for (const field of REQUIRED_PROFILE_FIELDS) {
-    const value = getNestedValue(profile, field);
+    const value = getNestedValue(profile as unknown as Record<string, unknown>, field);
     if (isEmpty(value)) {
       missing.push(field);
     }

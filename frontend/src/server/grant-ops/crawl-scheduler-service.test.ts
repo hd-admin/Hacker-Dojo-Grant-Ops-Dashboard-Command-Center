@@ -69,6 +69,8 @@ describe('crawl-scheduler-service', () => {
       createdAt: new Date().toISOString(),
       isActive: true,
       reviewStatus: 'approved',
+      sourceCrawlState: 'never-crawled',
+      crawlAccessCategory: 'crawlable',
     });
 
     const schedule = await upsertScheduleForSource('source-1', 1);

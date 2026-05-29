@@ -6,7 +6,7 @@ import type { FollowUp, Grant, OrganizationProfile, ActivityEvent, Notification,
 import { client } from '../lib/grant-ops-client';
 import { jobFailureMessages } from '../lib/failure-messages';
 
-type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'settings' | 'notifications' | 'tasks';
+type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'sources' | 'settings' | 'notifications' | 'tasks';
 
 interface DashboardViewProps {
   onGrantSelect: (grantId: string) => void;

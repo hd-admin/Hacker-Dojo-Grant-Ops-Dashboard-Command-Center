@@ -232,7 +232,10 @@ describe('job-queue-service', () => {
 		});
 
 		it('defaults stage to queued for missing stage', async () => {
-			const job = createFailedJob('job-progress-4', { status: 'queued', stage: undefined });
+			const baseJob = createFailedJob('job-progress-4', { status: 'queued' });
+			 
+			const { stage: _stage, ...jobFields } = baseJob;
+			const job = jobFields as JobQueueItem;
 			await repository.addJobQueueItem(job);
 
 			const progress = await getJobProgress('job-progress-4');

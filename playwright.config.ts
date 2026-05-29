@@ -25,7 +25,16 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: {
+          cookies: [],
+          origins: [{
+            origin: 'http://127.0.0.1:3000',
+            localStorage: [{ name: 'grantops.setupCompleted', value: 'true' }],
+          }],
+        },
+      },
     },
   ],
 });

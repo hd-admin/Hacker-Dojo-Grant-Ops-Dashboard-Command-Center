@@ -239,9 +239,10 @@ export async function resolveDuplicateCandidate(
 	resolvedBy?: string,
 ): Promise<boolean> {
 	const deps = getDependencies();
-	return deps.repository.resolveDuplicateCandidate(candidateId, {
+	await deps.repository.updateDuplicateCandidate(candidateId, {
 		status: resolution,
 		resolvedAt: new Date().toISOString(),
 		resolvedBy: resolvedBy ?? 'operator',
 	});
+	return true;
 }

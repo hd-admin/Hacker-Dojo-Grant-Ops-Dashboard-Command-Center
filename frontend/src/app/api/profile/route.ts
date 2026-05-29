@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { OrganizationProfileSchema } from '../../../../../shared/schemas';
+import type { OrganizationProfile } from '../../../../../shared/types';
 import * as profileService from '@/server/grant-ops/profile-service';
 
 export const dynamic = 'force-dynamic';
@@ -51,7 +52,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    await profileService.updateProfile(parsed.data);
+    await profileService.updateProfile(parsed.data as OrganizationProfile);
 
     // Return updated profile with meta
     const updated = await profileService.getProfile();

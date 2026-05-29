@@ -159,41 +159,6 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
     return <div className="header-title">Loading...</div>;
   }
 
-  // Empty state: no grants in pipeline
-  if (grants.length === 0 && !loading) {
-    return (
-      <>
-        <div className="header">
-          <div>
-            <h1 className="header-title">
-              Pipeline <span className="accent">Grant board</span>
-            </h1>
-            <div className="header-sub">0 active grants</div>
-          </div>
-          <div className="header-actions">
-            <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('discovery')}>+ Add to pipeline</button>
-          </div>
-        </div>
-        <div className="empty-state-guide" data-testid="pipeline-empty-state">
-          <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F4CB)}</div>
-          <div className="empty-state-title">Your pipeline is empty</div>
-          <div className="empty-state-description">
-            Grants move through your pipeline from discovery to submission.
-            Start by discovering grants in the Discovery view and add them to your pipeline.
-          </div>
-          <div className="empty-state-actions">
-            <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('discovery')} aria-label="Go to discovery">
-              Discover grants
-            </button>
-            <button type="button" className="btn" onClick={() => onNavigate?.('sources')} aria-label="Manage sources">
-              Manage sources
-            </button>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   const boardCounts = new Map(columns.map((column) => [column.key, 0]));
   for (const grant of filteredGrants) {
     boardCounts.set(grant.status, (boardCounts.get(grant.status) ?? 0) + 1);
@@ -240,6 +205,25 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
           <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('discovery')}>+ Add to pipeline</button>
         </div>
       </div>
+
+      {grants.length === 0 && (
+        <div className="empty-state-guide" data-testid="pipeline-empty-state">
+          <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F4CB)}</div>
+          <div className="empty-state-title">Your pipeline is empty</div>
+          <div className="empty-state-description">
+            Grants move through your pipeline from discovery to submission.
+            Start by discovering grants in the Discovery view and add them to your pipeline.
+          </div>
+          <div className="empty-state-actions">
+            <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('discovery')} aria-label="Go to discovery">
+              Discover grants
+            </button>
+            <button type="button" className="btn" onClick={() => onNavigate?.('sources')} aria-label="Manage sources">
+              Manage sources
+            </button>
+          </div>
+        </div>
+      )}
 
       {viewMode === 'list' ? (
         <div data-testid="pipeline-list-view" className="pipeline-list-view">

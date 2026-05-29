@@ -59,7 +59,7 @@ function normalizeSuggestion(
   item: SourceDiscoverySuggestionInput,
   deps: Dependencies,
 ): SourceDiscoverySuggestion | null {
-  const parsed = SourceDiscoverySuggestionSchema.safeParse({
+  const suggestionInput: Record<string, unknown> = {
     id: item.id ?? deps.idGenerator.generateId('suggestion'),
     name: item.name,
     url: item.url,
@@ -68,13 +68,14 @@ function normalizeSuggestion(
     confidence: item.confidence,
     suggestedBy: item.suggestedBy ?? 'ai',
     createdAt: item.createdAt ?? new Date().toISOString(),
-    suggestedCategory: item.suggestedCategory,
-    suggestedCrawlAccess: item.suggestedCrawlAccess,
-    authMethodDescription: item.authMethodDescription,
-    crawlFrequencyRecommendation: item.crawlFrequencyRecommendation,
-  });
+  };
+  if (item.suggestedCategory) suggestionInput['suggestedCategory'] = item.suggestedCategory;
+  if (item.suggestedCrawlAccess) suggestionInput['suggestedCrawlAccess'] = item.suggestedCrawlAccess;
+  if (item.authMethodDescription) suggestionInput['authMethodDescription'] = item.authMethodDescription;
+  if (item.crawlFrequencyRecommendation) suggestionInput['crawlFrequencyRecommendation'] = item.crawlFrequencyRecommendation;
+  const parsed = SourceDiscoverySuggestionSchema.safeParse(suggestionInput);
 
-  return parsed.success ? parsed.data : null;
+  return parsed.success ? parsed.data as SourceDiscoverySuggestion : null;
 }
 
 function buildPrompt(prompt: string): string {

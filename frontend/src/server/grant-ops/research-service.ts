@@ -33,11 +33,18 @@ export class NoSourcesConfiguredError extends Error {
 }
 
 /**
- * Create a default fit score breakdown when none is provided.
- * Returns null to indicate no breakdown is available - scoring should be done properly.
+ * Create a default fit score breakdown from an overall fit score.
+ * Distributes the score evenly across all dimensions.
  */
-function createDefaultFitBreakdown(_fit: number): null {
-	return null;
+function createDefaultFitBreakdown(fit: number): import('../../../../shared/types').FitScoreBreakdown {
+	const normalized = Math.min(100, Math.max(0, fit)) / 100;
+	return {
+		missionAlignment: normalized,
+		geographicFocus: normalized,
+		programTrackrecord: normalized,
+		budgetCapacity: normalized,
+		partnershipReadiness: normalized,
+	};
 }
 
 /**
@@ -339,9 +346,7 @@ async function performResearch(
 							);
 							const updatedGrant: Partial<Grant> = {
 								sourceCount: updatedSourceCount,
-								fitBreakdown:
-									existing.fitBreakdown ??
-									createDefaultFitBreakdown(existing.fit),
+								fitBreakdown: existing.fitBreakdown ?? createDefaultFitBreakdown(existing.fit),
 								funderSummary:
 									existing.funderSummary ??
 									createDefaultFunderSummary(existing),

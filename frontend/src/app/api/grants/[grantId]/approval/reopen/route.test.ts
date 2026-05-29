@@ -121,8 +121,8 @@ describe('/api/grants/[grantId]/approval/reopen route', () => {
     expect(response.status).toBe(200);
 
     const events = await repository.getAuditEvents();
-    expect(events[0]?.metadata.reason).toBe(reason);
-    expect(events[0]?.metadata.previousApprovedBy).toBe('operator');
+    expect(events[0]?.metadata?.['reason']).toBe(reason);
+    expect(events[0]?.metadata?.['previousApprovedBy']).toBe('operator');
   });
 
   it('returns 400 when reason is too short', async () => {

@@ -267,7 +267,7 @@ export function recordAudit(
     actorLabel,
     timestamp: new Date().toISOString(),
     consequence,
-    metadata,
+    ...(metadata ? { metadata } : {}),
   };
   auditTrail.push(entry);
 

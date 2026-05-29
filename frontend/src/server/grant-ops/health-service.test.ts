@@ -4,7 +4,7 @@
  * Tests all health check scenarios using injected mock dependencies.
  */
 
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CrawlRun } from '../../../../shared/types';
 import type { Clock, Dependencies } from './dependencies';
 import {
@@ -24,10 +24,21 @@ import { resolveOpencodePath } from './opencode-client';
 const execFileSyncMock = vi.hoisted(() => vi.fn());
 const accessMock = vi.hoisted(() => vi.fn(async () => undefined));
 
+// Wrapper that adapts the sync mock to the callback-based execFile API
+const execFileMock = vi.hoisted(() => vi.fn((_file: string, _args: string[], _opts: unknown, callback: (err: Error | null, stdout: string, stderr: string) => void) => {
+  try {
+    const result = execFileSyncMock(_file, _args, _opts) as string;
+    callback(null, result ?? '', '');
+  } catch (err) {
+    callback(err as Error, '', '');
+  }
+}));
+
 vi.mock('node:child_process', () => ({
   execFileSync: execFileSyncMock,
+  execFile: execFileMock,
   spawn: vi.fn(),
-  default: { execFileSync: execFileSyncMock, spawn: vi.fn() },
+  default: { execFileSync: execFileSyncMock, execFile: execFileMock, spawn: vi.fn() },
 }));
 vi.mock('node:fs/promises', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs/promises')>();
@@ -53,6 +64,13 @@ function createMockDeps(
 		clock: overrides.clock ?? { now: () => new Date('2026-05-28T12:00:00Z') },
 		idGenerator: { generateId: vi.fn(() => 'test-id') },
 		persistenceRoot: { getBaseDir: vi.fn(() => '/tmp/test-data') },
+		backup: {
+			exportBackupSnapshot: vi.fn(),
+			importBackupSnapshot: vi.fn(),
+			recordBackupVerification: vi.fn(),
+		} as Dependencies['backup'],
+		loadBackupFreshness: vi.fn() as Dependencies['loadBackupFreshness'],
+		resetPersistentStateForTests: vi.fn() as Dependencies['resetPersistentStateForTests'],
 	};
 }
 

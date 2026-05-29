@@ -582,7 +582,7 @@ export function createNotificationService(
 				return Promise.resolve(false);
 			}
 
-			return Notification.requestPermission();
+			return Notification.requestPermission().then((p) => p === 'granted');
 		},
 
 		showDesktopNotification(notification: Notification): void {
