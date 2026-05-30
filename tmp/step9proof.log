@@ -1,1 +1,0 @@
-scripts/verify-opencode-backend.sh: line 52: 38469 Terminated: 15          curl -sS -o "$body_file" -w '%{http_code}' -X "$method" "$url" "$@" > "$status_file"

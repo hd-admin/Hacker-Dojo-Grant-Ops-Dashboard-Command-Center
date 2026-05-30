@@ -1,32 +1,59 @@
-.agent/
-/PROMPT*
-wt-*/
-
+# Dependencies
 node_modules/
 frontend/.next/
+.next/
+
+# Build output
 frontend/tsconfig.tsbuildinfo
 
-release/
-playwright-report/
+# Agent runtime (logs, temp files, checkpoints)
+.agent/
+.agent-*.log
+.agent-reset-body.txt
+checkpoint.json
+
+# Grant Ops data (local, never committed)
+.grant-ops-data/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+
+# Tmp directory (agent artifacts, build logs, test outputs)
+tmp/
+.tmp/
+.tmp-*.log
+
+# Test outputs & fixtures
 test-results/
-.next/
-generate-icon.js
+playwright-report/
+.vitest-*
+vitest-*.out
+.uservitest-output.txt
+*-response.json
+
+# One-off scripts (not part of the application)
+test-fix.mjs
+verify-debug.sh
+playwright-start.sh
+start-dev-server.sh
 start-dev.sh
 start-server.js
 start-server.sh
 start-server.ts
-.grant-ops-data/
+generate-icon.js
 
-tmp/*
-
+# Playwright MCP
 .playwright-mcp/
-checkpoint.json
-.agent-*.log
-.tmp-*.log
-.vitest-*
-.uservitest-output.txt
-vitest-*.out
-.tmp/*
-*.sqlite
-*.sqlite-shm
-*.sqlite-wal
+
+# Release artifacts
+release/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
