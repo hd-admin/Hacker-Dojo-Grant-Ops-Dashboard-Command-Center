@@ -39,6 +39,7 @@ import TasksView from "./TasksView";
 import AuditView from "./AuditView";
 import DuplicatesView from "./DuplicatesView";
 import JobsPanel from "./JobsPanel";
+import LockScreen from "./LockScreen";
 
 type ViewType =
   | "dashboard"
@@ -141,6 +142,54 @@ export default function AppShell() {
 
   // Keyboard navigation
   const mainRef = useRef<HTMLElement>(null);
+
+  // Lock screen state
+  const [isLocked, setIsLocked] = useState(false);
+  const [lockConfigIdleMs, setLockConfigIdleMs] = useState(0);
+  const idleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastActivityRef = useRef(Date.now());
+
+  // Fetch lock status on mount
+  useEffect(() => {
+    fetch('/api/safety/status')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.lockConfig?.lockOnLaunch && data.isPasscodeSet) {
+          setIsLocked(true);
+        }
+        setLockConfigIdleMs(data.lockConfig?.lockOnIdleMs ?? 0);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Idle timer for auto-lock
+  useEffect(() => {
+    if (lockConfigIdleMs <= 0 || isLocked) return;
+
+    const resetIdleTimer = () => {
+      lastActivityRef.current = Date.now();
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
+      idleTimerRef.current = setTimeout(() => {
+        setIsLocked(true);
+      }, lockConfigIdleMs);
+    };
+
+    const events: Array<keyof WindowEventMap> = ['mousemove', 'keydown', 'mousedown', 'touchstart', 'scroll'];
+    for (const event of events) {
+      window.addEventListener(event, resetIdleTimer as EventListener);
+    }
+
+    resetIdleTimer();
+
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      for (const event of events) {
+        window.removeEventListener(event, resetIdleTimer as EventListener);
+      }
+    };
+  }, [lockConfigIdleMs, isLocked]);
 
   const unreadTaskCount = useMemo(() => tasks.filter((task) => !task.completed).length, [tasks]);
   const pendingSourcesCount = useMemo(
@@ -932,6 +981,17 @@ export default function AppShell() {
         onClose={handleDrawerClose}
         onRefreshAppState={refreshSelectedGrant}
       />
+
+      {/* Lock Screen Overlay */}
+      {isLocked && (
+        <LockScreen
+          onUnlock={() => {
+            setIsLocked(false);
+            lastActivityRef.current = Date.now();
+          }}
+          lockOnIdleMs={lockConfigIdleMs}
+        />
+      )}
     </div>
   );
 }

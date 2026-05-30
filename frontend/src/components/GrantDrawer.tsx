@@ -181,6 +181,12 @@ export default function GrantDrawer({
 	const [showGroundingWarning, setShowGroundingWarning] = useState(false);
 	const [groundingOverrideConfirmed, setGroundingOverrideConfirmed] = useState(false);
 
+	// Submission runbook state
+	const [runbookExpanded, setRunbookExpanded] = useState(false);
+	const [runbookConfirmationNumber, setRunbookConfirmationNumber] = useState('');
+	const [runbookCompleted, setRunbookCompleted] = useState(false);
+	const [runbookSaving, setRunbookSaving] = useState(false);
+
 	// Focus trap for dialog accessibility
 	const drawerRef = useRef<HTMLDivElement>(null);
 	const previousActiveElementRef = useRef<HTMLElement | null>(null);
@@ -501,6 +507,34 @@ export default function GrantDrawer({
 			console.error("Error creating submission manifest:", error);
 		}
 	};
+
+	const handleSaveRunbook = async () => {
+		if (!grantId) return;
+		setRunbookSaving(true);
+		try {
+			await fetch(`/api/grants/${encodeURIComponent(grantId)}/manifest`, {
+				method: 'PATCH',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({
+					confirmationNumber: runbookConfirmationNumber || undefined,
+					runbookCompleted,
+				}),
+			});
+			await loadManifest();
+		} catch (error) {
+			console.error('Error saving runbook:', error);
+		} finally {
+			setRunbookSaving(false);
+		}
+	};
+
+	// Sync runbook state from manifest when it loads
+	useEffect(() => {
+		if (manifest) {
+			setRunbookConfirmationNumber(manifest.confirmationNumber ?? '');
+			setRunbookCompleted(manifest.runbookCompleted ?? false);
+		}
+	}, [manifest]);
 
 	const handleCancelRevision = () => {
 		setShowRevision(false);
@@ -880,6 +914,162 @@ export default function GrantDrawer({
 									</>
 								)}
 							</div>
+
+							{/* Submission Runbook */}
+							{(detail.grant.status === 'submission-ready' || detail.grant.status === 'submitted') && (
+								<div className="drawer-section" data-testid="submission-runbook-section">
+									<button
+										type="button"
+										className="drawer-section-toggle"
+										aria-expanded={runbookExpanded}
+										aria-controls="submission-runbook-content"
+										onClick={() => setRunbookExpanded(!runbookExpanded)}
+										data-testid="runbook-toggle-btn"
+										style={{
+											width: '100%',
+											textAlign: 'left',
+											background: 'none',
+											border: 'none',
+											cursor: 'pointer',
+											color: 'var(--text)',
+											font: 'inherit',
+										}}
+									>
+										<h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 0 }}>
+											Submission Runbook
+											{manifest?.runbookCompleted && (
+												<span style={{ color: 'var(--success)', fontSize: '11px' }} data-testid="runbook-completed-badge">
+													✓ Completed
+												</span>
+											)}
+											<span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+												{runbookExpanded ? '▲' : '▼'}
+											</span>
+										</h3>
+									</button>
+									{runbookExpanded && (
+										<div id="submission-runbook-content" data-testid="runbook-content">
+											{/* Submission method badge */}
+											{manifest?.submissionMethod && (
+												<div style={{ marginBottom: '12px' }}>
+													<span
+														data-testid="runbook-method-badge"
+														style={{
+															display: 'inline-block',
+															padding: '4px 8px',
+															borderRadius: '4px',
+															fontSize: '11px',
+															fontWeight: 600,
+															textTransform: 'uppercase',
+															letterSpacing: '0.05em',
+															background: 'var(--surface-2)',
+															border: '1px solid var(--border)',
+															color: 'var(--text)',
+														}}
+													>
+														{manifest.submissionMethod === 'portal' && '🌐 Portal'}
+														{manifest.submissionMethod === 'email' && '✉️ Email'}
+														{manifest.submissionMethod === 'mail' && '📮 Mail'}
+														{manifest.submissionMethod === 'other' && '❓ Other'}
+													</span>
+												</div>
+											)}
+
+											{/* Step-by-step guidance per method */}
+											<div style={{ marginBottom: '16px' }}>
+												<strong style={{ fontSize: '13px' }}>Step-by-step guidance:</strong>
+												<ol style={{
+													margin: '8px 0 0 0',
+													paddingLeft: '20px',
+													fontSize: '12px',
+													color: 'var(--text-dim)',
+													lineHeight: '1.7',
+												}}
+													data-testid="runbook-steps"
+												>
+													{(!manifest?.submissionMethod || manifest.submissionMethod === 'portal') && (
+														<>
+															<li>Log in at {manifest?.portalUrl || 'the submission portal'}</li>
+															<li>Navigate to the submissions section</li>
+															<li>Upload required files{manifest?.fileConstraints ? ` (${manifest.fileConstraints})` : ''}</li>
+															<li>Review and confirm submission</li>
+															<li>Save the confirmation number below</li>
+														</>
+													)}
+													{manifest?.submissionMethod === 'email' && (
+														<>
+															<li>Compose email to the funder contact</li>
+															<li>Attach required files{manifest.fileConstraints ? ` (${manifest.fileConstraints})` : ''}</li>
+															<li>Include confirmation request in the email body</li>
+															<li>Send and save the confirmation reply number below</li>
+														</>
+													)}
+													{manifest?.submissionMethod === 'mail' && (
+														<>
+															<li>Print all required documents</li>
+															<li>Package securely with tracking</li>
+															<li>Mail to the funder address</li>
+															<li>Record tracking number below</li>
+														</>
+													)}
+													{manifest?.submissionMethod === 'other' && (
+														<>
+															<li>Follow the funder&apos;s specific submission instructions</li>
+															<li>Record any confirmation details below</li>
+														</>
+													)}
+												</ol>
+											</div>
+
+											{/* Confirmation number input */}
+											<div style={{ marginBottom: '12px' }}>
+												<label
+													htmlFor="runbook-confirmation-number"
+													style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--text-dim)' }}
+												>
+													Confirmation number / tracking info:
+												</label>
+												<input
+													id="runbook-confirmation-number"
+													type="text"
+													className="form-input"
+													placeholder="Enter confirmation number"
+													value={runbookConfirmationNumber}
+													onChange={(e) => setRunbookConfirmationNumber(e.target.value)}
+													data-testid="runbook-confirmation-input"
+													aria-describedby="runbook-confirmation-help"
+												/>
+											</div>
+
+											{/* I have completed checkbox */}
+											<div style={{ marginBottom: '12px' }}>
+												<label
+													style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}
+												>
+													<input
+														type="checkbox"
+														checked={runbookCompleted}
+														onChange={(e) => setRunbookCompleted(e.target.checked)}
+														data-testid="runbook-completed-checkbox"
+													/>
+													I have completed this step
+												</label>
+											</div>
+
+											{/* Save button */}
+											<button
+												type="button"
+												className="btn btn-primary"
+												onClick={handleSaveRunbook}
+												disabled={runbookSaving}
+												data-testid="runbook-save-btn"
+											>
+												{runbookSaving ? 'Saving...' : 'Save runbook progress'}
+											</button>
+										</div>
+									)}
+								</div>
+							)}
 
 							{detail.workflow.canSubmit && (
 								<SubmissionReadiness

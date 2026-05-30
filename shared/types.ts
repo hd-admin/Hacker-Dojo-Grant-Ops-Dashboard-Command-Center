@@ -47,7 +47,7 @@ export type JobFailureCategory =
 	| "unknown";
 export type PipelineViewMode = "board" | "list";
 export type SourceCrawlState = 'never-crawled' | 'queued' | 'running' | 'succeeded' | 'partially-failed' | 'failed';
-export type SourceCrawlAccessCategory = 'crawlable' | 'manual-only' | 'unsupported';
+export type SourceCrawlAccessCategory = 'crawlable' | 'crawlable-with-auth' | 'manual-only' | 'unsupported';
 
 export interface JobQueueItem {
 	id: string;

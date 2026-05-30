@@ -290,7 +290,7 @@ describe('SourcesView', () => {
 
   it('editing a source shows edit panel with save button', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.querySelector('[data-testid="sources-pending-review-section"]') !== null);
+    await waitFor(() => container.querySelector('[data-testid="edit-source-btn-pending-1"]') !== null);
 
     const editBtn = container.querySelector('[data-testid="edit-source-btn-pending-1"]');
     editBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));

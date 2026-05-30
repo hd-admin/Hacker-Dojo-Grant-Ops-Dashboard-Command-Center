@@ -25,7 +25,7 @@ const sourceCategories: SourceCategory[] = [
   'other',
 ];
 
-type SourceFilter = 'all' | 'failing' | 'stale' | 'manual-only';
+type SourceFilter = 'all' | 'failing' | 'stale' | 'manual-only' | 'credentials-needed';
 
 /**
  * Relative time display (similar to AppShell's getRelativeTime).
@@ -96,6 +96,7 @@ function crawlStateColor(state: SourceCrawlState): string {
 function crawlAccessLabel(cat: SourceCrawlAccessCategory): string {
   const labels: Record<SourceCrawlAccessCategory, string> = {
     crawlable: 'Crawlable',
+    'crawlable-with-auth': 'Crawlable w/ Auth',
     'manual-only': 'Manual Only',
     unsupported: 'Unsupported',
   };
@@ -451,6 +452,8 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         return sources.filter((s) => isCrawlStale(s.lastCrawledAt));
       case 'manual-only':
         return sources.filter((s) => s.crawlAccessCategory === 'manual-only');
+      case 'credentials-needed':
+        return sources.filter((s) => s.crawlAccessCategory === 'crawlable-with-auth');
       default:
         return sources;
     }
@@ -561,6 +564,51 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         title={`Source type: ${crawlAccessLabel(cat)}`}
       >
         {crawlAccessLabel(cat)}
+      </span>
+    );
+  }
+
+  function renderAuthBadge(source: Source) {
+    if (!source.authMethodDescription) {
+      if (source.crawlAccessCategory === 'crawlable-with-auth') {
+        return (
+          <span
+            className="auth-badge auth-warning"
+            data-testid={`auth-warning-${source.id}`}
+            title="This source may require credentials to crawl. Configure auth details."
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '2px',
+              color: '#e0a040',
+              fontSize: '14px',
+            }}
+            aria-label="Auth configuration warning"
+          >
+            ⚠️
+          </span>
+        );
+      }
+      return null;
+    }
+
+    const desc = source.authMethodDescription.toLowerCase();
+    const isApiKey = desc.includes('api key') || desc.includes('token');
+    const isOauth = desc.includes('oauth') || desc.includes('login');
+
+    return (
+      <span
+        className="auth-badge"
+        data-testid={`auth-badge-${source.id}`}
+        title={`Auth: ${source.authMethodDescription}`}
+        style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '2px',
+          fontSize: '12px',
+        }}
+      >
+        {isApiKey ? '🔑' : isOauth ? '🔒' : '⚙️'}
       </span>
     );
   }
@@ -802,6 +850,11 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
       key: 'stale',
       label: 'Stale',
       count: sources.filter((s) => isCrawlStale(s.lastCrawledAt)).length,
+    },
+    {
+      key: 'credentials-needed',
+      label: 'Credentials needed',
+      count: sources.filter((s) => s.crawlAccessCategory === 'crawlable-with-auth').length,
     },
     {
       key: 'manual-only',
@@ -1266,6 +1319,7 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
               <div className="source-main">
                 <div className="source-header">
                   <strong>{source.name}</strong>
+                  {renderAuthBadge(source)}
                   {renderCrawlStatusBadge(source)}
                   {renderCrawlAccessBadge(source)}
                   {/* Approval gate indicator */}

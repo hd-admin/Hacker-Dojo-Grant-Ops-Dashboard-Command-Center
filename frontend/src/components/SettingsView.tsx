@@ -94,10 +94,25 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const [showOpencodeConfig, setShowOpencodeConfig] = useState(false);
   const [themesSaving, setThemesSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [expandedDocVersions, setExpandedDocVersions] = useState<Record<string, boolean>>({});
 
   function showToast(message: string) {
     setToast(message);
     setTimeout(() => setToast(null), 3000);
+  }
+
+  function getRelativeTime(isoString: string): string {
+    const now = new Date();
+    const date = new Date(isoString);
+    const diffMs = now.getTime() - date.getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffMins < 1) return 'just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
   }
 
   useEffect(() => {
@@ -584,9 +599,162 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
         <section className="setting-card">
           <div className="setting-card-header"><div className="setting-card-title">Reference Documents</div></div>
           <div className="setting-card-body">
+            {/* Restricted document warning banner */}
+            {documents.some((d) => d.classification === 'restricted') && (
+              <div
+                style={{
+                  background: 'rgba(198,107,90,0.1)',
+                  border: '1px solid rgba(198,107,90,0.3)',
+                  borderRadius: 'var(--radius)',
+                  padding: '10px 14px',
+                  marginBottom: '16px',
+                  color: 'var(--color-error, #c66b5a)',
+                  fontSize: '13px',
+                }}
+                data-testid="restricted-docs-warning"
+                role="alert"
+              >
+                <strong>⚠️ Restricted documents exist.</strong>{' '}
+                Restricted documents are excluded from AI drafting, exports, and submission packages by default.
+              </div>
+            )}
             <button type="button" className="upload-item" onClick={handleUploadDocument}>Upload document</button>
             {documents.map((doc) => (
-              <div key={doc.id} className="doc-item">{doc.name}</div>
+              <div key={doc.id} className="doc-item" data-testid={`doc-item-${doc.id}`}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
+                  <span style={{ fontWeight: 600 }}>{doc.name}</span>
+                  {doc.type && (
+                    <span style={{
+                      fontSize: '10px',
+                      fontFamily: 'var(--mono)',
+                      textTransform: 'uppercase',
+                      color: 'var(--text-muted)',
+                      padding: '1px 6px',
+                      background: 'var(--surface-2)',
+                      borderRadius: '3px',
+                    }}>{doc.type}</span>
+                  )}
+                  {doc.classification && (
+                    <span style={{
+                      fontSize: '10px',
+                      fontFamily: 'var(--mono)',
+                      textTransform: 'uppercase',
+                      fontWeight: 600,
+                      padding: '1px 6px',
+                      borderRadius: '3px',
+                      ...(doc.classification === 'canonical' ? { background: '#2e7d3222', color: '#4caf50' } : {}),
+                      ...(doc.classification === 'draft-only' ? { background: 'var(--surface-2)', color: 'var(--text-muted)' } : {}),
+                      ...(doc.classification === 'archived' ? { background: '#e6510022', color: '#ff9800' } : {}),
+                      ...(doc.classification === 'restricted' ? { background: '#c6282822', color: '#ef5350' } : {}),
+                    }} data-testid={`doc-classification-${doc.id}`}>
+                      {doc.classification}
+                    </span>
+                  )}
+                  {doc.lastUsed && (
+                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }} data-testid={`doc-lastused-${doc.id}`}>
+                      Last used: {getRelativeTime(doc.lastUsed)}
+                    </span>
+                  )}
+                </div>
+                <select
+                  value={doc.classification ?? ''}
+                  onChange={async (e) => {
+                    const newClass = e.target.value as DocumentMetadata['classification'] | '';
+                    try {
+                      await fetch('/api/documents', {
+                        method: 'PATCH',
+                        headers: { 'content-type': 'application/json' },
+                        body: JSON.stringify({ id: doc.id, classification: newClass || undefined }),
+                      });
+                      setDocuments((prev) =>
+                        prev.map((d) => {
+                          if (d.id !== doc.id) return d;
+                          const updated = { ...d };
+                          if (newClass) {
+                            (updated as Record<string, unknown>).classification = newClass;
+                          } else {
+                            delete (updated as Record<string, unknown>).classification;
+                          }
+                          return updated;
+                        }),
+                      );
+                      showToast(newClass ? `Marked as ${newClass}` : 'Classification cleared');
+                    } catch (err) {
+                      console.error('Error updating classification:', err);
+                    }
+                  }}
+                  style={{
+                    fontSize: '11px',
+                    padding: '2px 6px',
+                    background: 'var(--surface-2)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '3px',
+                    color: 'var(--text)',
+                  }}
+                  data-testid={`doc-classification-select-${doc.id}`}
+                  aria-label={`Classification for ${doc.name}`}
+                >
+                  <option value="">No classification</option>
+                  <option value="canonical">Canonical</option>
+                  <option value="draft-only">Draft Only</option>
+                  <option value="archived">Archived</option>
+                  <option value="restricted">Restricted</option>
+                </select>
+                {/* Version history toggle */}
+                {doc.versions && doc.versions.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedDocVersions((prev) => ({
+                        ...prev,
+                        [doc.id]: !prev[doc.id],
+                      }))
+                    }
+                    style={{
+                      fontSize: '11px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: 'var(--text-muted)',
+                    }}
+                    aria-expanded={expandedDocVersions[doc.id] ?? false}
+                    data-testid={`doc-versions-toggle-${doc.id}`}
+                  >
+                    {expandedDocVersions[doc.id] ? '▲' : '▼'} {doc.versions.length} version{doc.versions.length !== 1 ? 's' : ''}
+                  </button>
+                )}
+                {/* Version history panel */}
+                {expandedDocVersions[doc.id] && doc.versions && doc.versions.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: '8px',
+                      padding: '8px',
+                      background: 'var(--surface-2)',
+                      borderRadius: '4px',
+                      fontSize: '11px',
+                      color: 'var(--text-dim)',
+                    }}
+                    data-testid={`doc-versions-panel-${doc.id}`}
+                  >
+                    <div style={{ fontWeight: 600, marginBottom: '4px' }}>Version History</div>
+                    {doc.versions.map((v) => (
+                      <div
+                        key={v.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '2px 0',
+                          borderBottom: '1px solid var(--border)',
+                        }}
+                        data-testid={`doc-version-${v.id}`}
+                      >
+                        <span>v{v.versionNumber} — {new Date(v.uploadedAt).toLocaleDateString()}</span>
+                        {v.notes && <span style={{ color: 'var(--text-muted)' }}>{v.notes}</span>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </section>
