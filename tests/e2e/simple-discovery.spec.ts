@@ -63,7 +63,7 @@ test("simple-discovery: add source and refresh crawl state", async ({
 
 	await page.click("[data-view=\"settings\"]");
 	await page.waitForSelector("#view-settings.active", { timeout: 10000 });
-	await expect(page.locator(".setting-card").filter({ hasText: "Agent Behavior" })).toContainText("ed@hackerdojo.com");
+	await expect(page.locator(".setting-card").filter({ hasText: "Organization Profile" })).toContainText("ed@hackerdojo.com");
 	await page.click("[data-view=\"discovery\"]");
 
 	await page.click('[data-view="discovery"]');

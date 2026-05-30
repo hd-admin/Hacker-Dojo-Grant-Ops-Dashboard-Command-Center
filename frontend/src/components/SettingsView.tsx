@@ -531,6 +531,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 <div className="setting-row"><span className="setting-label">Search Themes</span><span className="setting-value">{profile.searchThemes?.join(', ') || '—'}</span></div>
                 <div className="setting-row"><span className="setting-label">Auto-Draft Threshold</span><span className="setting-value mono">{profile.agentBehavior?.autoDraftThreshold ?? 75}</span></div>
                 <div className="setting-row"><span className="setting-label">Submission Policy</span><span className="setting-value">{profile.agentBehavior?.submissionPolicy || '—'}</span></div>
+                <div className="setting-row"><span className="setting-label">Notification Email</span><span className="setting-value mono">{profile.agentBehavior?.notifyEmail || '—'}</span></div>
                 <div className="setting-row"><span className="setting-label">Voice &amp; Tone</span><span className="setting-value">{profile.agentBehavior?.voiceAndTone || '—'}</span></div>
               </div>
             )}

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { BASE_URL, resetAppState } from './test-utils';
+import { BASE_URL, markScheduleDue, resetAppState } from './test-utils';
 
 test('scheduled-crawl: due schedules trigger a real crawl run', async ({
   request,
@@ -29,7 +29,7 @@ test('scheduled-crawl: due schedules trigger a real crawl run', async ({
   expect(saveScheduleResponse.ok()).toBeTruthy();
   const savedSchedule = (await saveScheduleResponse.json()) as { id: string };
 
-  markScheduleDue(savedSchedule.id);
+  await markScheduleDue(request, createdSource.source.id);
 
   const triggerResponse = await request.post(
     `${BASE_URL}/api/crawl/scheduled`,

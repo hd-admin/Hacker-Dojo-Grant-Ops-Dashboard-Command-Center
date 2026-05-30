@@ -86,8 +86,17 @@ export async function configureOpencodeThroughSettingsView(
 	await page.waitForFunction((expectedPath) => {
 		const cards = Array.from(document.querySelectorAll(".setting-card"));
 		const opencode = cards.find((node) => node.textContent?.includes("Opencode Agent"));
-		return Boolean(opencode?.textContent?.includes(expectedPath));
+		if (!opencode) return false;
+		const input = opencode.querySelector("input");
+		return Boolean(input?.value?.includes(expectedPath));
 	}, binaryPath);
+}
+
+export async function markScheduleDue(request: APIRequestContext, sourceId: string): Promise<void> {
+	const response = await request.post(`${BASE_URL}/api/sources/${encodeURIComponent(sourceId)}/schedule/mark-due`);
+	if (!response.ok()) {
+		throw new Error(`Failed to mark schedule due for source ${sourceId}: ${response.status()}`);
+	}
 }
 
 export async function uploadDocumentThroughSettingsView(

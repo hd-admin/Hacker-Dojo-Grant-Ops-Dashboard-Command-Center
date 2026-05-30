@@ -93,7 +93,7 @@ test.describe('Submission Notification', () => {
 	}) => {
 		await page.click('[data-view="settings"]');
 		await page.waitForSelector('#view-settings.active', { timeout: 10000 });
-		await expect(page.locator('.setting-card').filter({ hasText: 'Agent Behavior' })).toContainText('ed@hackerdojo.com');
+		await expect(page.locator('.setting-card').filter({ hasText: 'Organization Profile' })).toContainText('ed@hackerdojo.com');
 	});
 
 	test('approval-submission-artifacts: approve, submit, and surface follow-up artifacts', async ({
@@ -118,9 +118,9 @@ test.describe('Submission Notification', () => {
 		await expect(page.locator('.ai-badge')).toContainText('Drafted by agent');
 
 		await page.getByRole('button', { name: 'Approve & lock' }).click();
-		await expect(page.locator('.drawer-actions')).toContainText('Submit');
+		await expect(page.locator('.drawer-actions').first()).toContainText('Submit');
 
-		await page.locator('.drawer-actions').getByRole('button', { name: 'Submit' }).click();
+		await page.locator('.drawer-actions').first().getByRole('button', { name: 'Submit' }).click();
 		await page
 			.locator('.drawer-section')
 			.filter({ hasText: 'Submit grant' })

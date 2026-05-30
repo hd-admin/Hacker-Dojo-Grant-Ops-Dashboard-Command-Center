@@ -102,7 +102,7 @@ test.describe("Grant Operations Center smoke", () => {
 	test("discovery exposes source-intake controls", async ({ page }) => {
 		await page.click('[data-view="discovery"]');
 		await expect(page.locator('button:has-text("+ Add source")')).toBeVisible();
-		await expect(page.locator('button:has-text("Export CSV")')).toBeVisible();
+		await expect(page.locator('#view-discovery button:has-text("Export CSV")')).toBeVisible();
 	});
 
 	test("pipeline and settings sections render expected controls", async ({
