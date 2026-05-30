@@ -275,6 +275,14 @@ export interface SubmissionManifestItem {
 	role: string;
 }
 
+export interface GrantAttachment {
+	id: string;
+	name: string;
+	type: 'file' | 'note';
+	contentOrPath: string;
+	uploadedAt: string;
+}
+
 export interface SubmissionManifest {
 	id: string;
 	grantId: string;
@@ -287,6 +295,9 @@ export interface SubmissionManifest {
 	dueDate?: string;
 	materialRefs: SubmissionManifestItem[];
 	notes?: string;
+	submissionMethod?: 'portal' | 'email' | 'mail' | 'other';
+	confirmationNumber?: string;
+	runbookCompleted?: boolean;
 }
 
 export interface Grant {
@@ -318,8 +329,10 @@ export interface Grant {
 	category?: string;
 	manualSource?: boolean;
 	manualOrigin?: boolean;
+	enteredAt?: string;
 	grantType?: string;
 	humanOverrides?: HumanOverride[];
+	attachments?: GrantAttachment[];
 }
 
 export interface ContactInfo {
@@ -375,6 +388,16 @@ export interface Notification {
 	text: string;
 	time: string;
 	dot: string;
+	urgency?: 'info' | 'warning' | 'urgent';
+}
+
+export interface DocumentVersion {
+	id: string;
+	documentId: string;
+	versionNumber: number;
+	uploadedAt: string;
+	storagePath: string;
+	notes?: string;
 }
 
 export interface DocumentMetadata {
@@ -391,6 +414,8 @@ export interface DocumentMetadata {
 	contentSnippet?: string;
 	extractionError?: string;
 	mimeType?: string;
+	classification?: 'canonical' | 'draft-only' | 'archived' | 'restricted';
+	versions?: DocumentVersion[];
 }
 
 export type DocumentExtractionStatus =

@@ -72,16 +72,16 @@ function formatDate(dateStr: string): string {
 function renderDeadlineCell(grant: Grant): React.ReactNode {
   const confidence = grant.deadlineConfidence;
   if (confidence === 'unknown') {
-    return <span className="deadline-confidence deadline-confidence-unknown">Deadline unknown</span>;
+    return <span className="deadline-confidence deadline-confidence-unknown" title="Deadline confidence is unknown">Deadline unknown</span>;
   }
   if (confidence === 'rolling') {
-    return <span className="deadline-confidence deadline-confidence-rolling">Rolling</span>;
+    return <span className="deadline-confidence deadline-confidence-rolling" title="Rolling deadline — no fixed cutoff">Rolling</span>;
   }
   const dateStr = formatDate(grant.deadline);
   if (confidence === 'estimated') {
-    return <span className="deadline-confidence deadline-confidence-estimated">~{dateStr}</span>;
+    return <span className="deadline-confidence deadline-confidence-estimated" title="Estimated from source date range">~{dateStr}</span>;
   }
-  return <span className="deadline-confidence deadline-confidence-exact">{dateStr}</span>;
+  return <span className="deadline-confidence deadline-confidence-exact" title="Exact deadline from source">{dateStr}</span>;
 }
 
 function getUrgency(grant: Grant): UrgencyFilter {

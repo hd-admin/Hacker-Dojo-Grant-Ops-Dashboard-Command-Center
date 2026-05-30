@@ -269,12 +269,34 @@ export function createNotificationService(
 			warning: 'warning',
 			urgent: 'urgent',
 		};
+		const urgencyMap: Record<NotificationUrgency, 'info' | 'warning' | 'urgent'> = {
+			informational: 'info',
+			warning: 'warning',
+			urgent: 'urgent',
+		};
 		return {
 			id: idGenerator.generateId('notif'),
 			text,
 			time: clock.now().toISOString(),
 			dot: dotMap[urgency],
+			urgency: urgencyMap[urgency],
 		};
+	}
+
+	function classifyUrgency(grant: Grant): NotificationUrgency {
+		const confidence = grant.deadlineConfidence;
+		const daysOut = grant.daysOut;
+
+		if (confidence === 'rolling') return 'informational';
+		if (confidence === 'unknown') return 'informational';
+		if (daysOut === undefined || daysOut === null || Number.isNaN(daysOut)) return 'informational';
+
+		if (confidence === 'exact' || confidence === 'estimated') {
+			if (daysOut < 3) return 'urgent';
+			if (daysOut >= 3 && daysOut <= 14) return 'warning';
+		}
+
+		return 'informational';
 	}
 
 	return {
@@ -370,13 +392,7 @@ export function createNotificationService(
 					const rule = getRule('deadline_proximity');
 					if (rule) {
 						const confidence = grant.deadlineConfidence ?? 'unknown';
-						// Adjust urgency based on deadline confidence
-						const adjustedUrgency =
-							confidence === 'exact'
-								? rule.urgency
-								: confidence === 'estimated'
-									? 'informational'
-									: 'informational';
+						const urgency = classifyUrgency(grant);
 
 						notifications.push(
 							createNotification(
@@ -385,7 +401,7 @@ export function createNotificationService(
 									days: String(daysUntil),
 									deadlineConfidence: confidence,
 								}),
-								adjustedUrgency,
+								urgency === 'urgent' ? 'urgent' : urgency === 'warning' ? 'warning' : 'informational',
 								grant.id,
 							),
 						);

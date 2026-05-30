@@ -63,11 +63,41 @@ function removeFromIndex(docId: string): void {
 // --- Public API ---
 
 /**
- * List all documents.
+ * List all documents, optionally excluding restricted documents.
  */
-export async function listDocuments(): Promise<DocumentMetadata[]> {
+export async function listDocuments(excludeRestricted = false): Promise<DocumentMetadata[]> {
   const deps = getDependencies();
-  return deps.repository.getDocuments();
+  const docs = await deps.repository.getDocuments();
+  if (excludeRestricted) {
+    return docs.filter((d) => d.classification !== 'restricted');
+  }
+  return docs;
+}
+
+/**
+ * Get documents available for AI drafting context (excludes restricted).
+ */
+export async function getDocumentsForDrafting(): Promise<DocumentMetadata[]> {
+  return listDocuments(true);
+}
+
+/**
+ * Get documents available for export (excludes restricted).
+ */
+export async function getDocumentsForExport(): Promise<DocumentMetadata[]> {
+  return listDocuments(true);
+}
+
+/**
+ * Get documents available for submission packages (excludes restricted unless explicitly included).
+ */
+export async function getDocumentsForSubmission(includeRestrictedIds?: string[]): Promise<DocumentMetadata[]> {
+  const deps = getDependencies();
+  const docs = await deps.repository.getDocuments();
+  if (!includeRestrictedIds || includeRestrictedIds.length === 0) {
+    return docs.filter((d) => d.classification !== 'restricted');
+  }
+  return docs.filter((d) => d.classification !== 'restricted' || includeRestrictedIds.includes(d.id));
 }
 
 /**

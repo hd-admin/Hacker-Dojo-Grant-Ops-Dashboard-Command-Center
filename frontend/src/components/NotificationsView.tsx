@@ -10,9 +10,19 @@ interface NotificationsViewProps {
   notifications?: Notification[];
 }
 
+type UrgencyFilter = 'all' | 'urgent' | 'warning' | 'info';
+
+function getUrgencyDotClass(urgency?: 'info' | 'warning' | 'urgent', dot?: string): string {
+  if (urgency === 'urgent') return 'notification-dot urgent';
+  if (urgency === 'warning') return 'notification-dot warning';
+  if (urgency === 'info') return 'notification-dot info';
+  return `notification-dot ${dot || 'info'}`;
+}
+
 export default function NotificationsView({ notifications: notificationsProp }: NotificationsViewProps) {
   const [notifications, setNotifications] = useState<Notification[]>(notificationsProp ?? []);
   const [loading, setLoading] = useState(false);
+  const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');
 
   useEffect(() => {
     if (notificationsProp) {
@@ -60,6 +70,12 @@ export default function NotificationsView({ notifications: notificationsProp }: 
     );
   }
 
+  const filteredNotifications = urgencyFilter === 'all'
+    ? notifications
+    : notifications.filter((n) => n.urgency === urgencyFilter);
+
+  const urgentCount = notifications.filter((n) => n.urgency === 'urgent').length;
+
   return (
     <>
       <div className="header">
@@ -67,13 +83,28 @@ export default function NotificationsView({ notifications: notificationsProp }: 
           <h1 className="header-title">
             Notifications <span className="accent">Activity</span>
           </h1>
-          <div className="header-sub">{notifications.length} notifications</div>
+          <div className="header-sub">
+            {urgentCount > 0 ? `${urgentCount} urgent, ` : ''}{notifications.length} total
+          </div>
         </div>
       </div>
+      <div className="filter-bar" data-testid="notifications-urgency-filter-bar">
+        {(['all', 'urgent', 'warning', 'info'] as const).map((level) => (
+          <button
+            key={level}
+            type="button"
+            className={`filter-pill ${urgencyFilter === level ? 'active' : ''}`}
+            onClick={() => setUrgencyFilter(level)}
+            data-testid={`notifications-filter-${level}`}
+          >
+            {level === 'all' ? 'All' : level === 'urgent' ? 'Urgent' : level === 'warning' ? 'Warning' : 'Info'}
+          </button>
+        ))}
+      </div>
       <div className="notifications-list">
-        {notifications.map((notification) => (
+        {filteredNotifications.map((notification) => (
           <div key={notification.id} className="notification-item">
-            <div className={`notification-dot ${notification.dot}`} />
+            <div className={getUrgencyDotClass(notification.urgency, notification.dot)} />
             <div className="notification-content">
               <div className="notification-text" dangerouslySetInnerHTML={{ __html: sanitizeNotificationText(notification.text) }} />
               <div className="notification-time">{notification.time}</div>

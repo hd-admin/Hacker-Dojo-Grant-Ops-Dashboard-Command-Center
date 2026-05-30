@@ -123,6 +123,7 @@ export async function PATCH(request: NextRequest) {
     if (body.lastUsed !== undefined) updates.lastUsed = body.lastUsed;
     if (body.version !== undefined) updates.version = body.version;
     if (body.audited !== undefined) updates.audited = body.audited;
+    if (body.classification !== undefined) updates.classification = body.classification;
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: 'At least one document field is required' }, { status: 400 });

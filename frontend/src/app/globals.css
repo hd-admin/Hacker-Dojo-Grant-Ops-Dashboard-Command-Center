@@ -3648,3 +3648,90 @@ textarea:focus-visible,
   font-size: 13px;
   font-weight: 500;
 }
+
+/* Keyboard focus ring for accessibility */
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* LockScreen overlay */
+.lockscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.lockscreen-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(28, 26, 23, 0.92);
+  backdrop-filter: blur(8px);
+}
+.lockscreen-panel {
+  position: relative;
+  background: var(--surface, #25221d);
+  border: 1px solid var(--border, #36322c);
+  border-radius: 12px;
+  padding: 2.5rem;
+  max-width: 400px;
+  width: 90%;
+  text-align: center;
+  z-index: 1;
+}
+.lockscreen-icon {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+}
+.lockscreen-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text, #ebe6dc);
+  margin-bottom: 1rem;
+}
+.lockscreen-description {
+  color: var(--text-dim, #b3ac9e);
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+.lockscreen-input {
+  width: 100%;
+  padding: 0.75rem;
+  background: var(--bg, #1c1a17);
+  border: 1px solid var(--border, #36322c);
+  border-radius: 8px;
+  color: var(--text, #ebe6dc);
+  font-size: 1.1rem;
+  text-align: center;
+  letter-spacing: 0.5em;
+  margin-bottom: 1rem;
+}
+.lockscreen-input:focus {
+  border-color: var(--accent, #d4a943);
+  outline: none;
+}
+.lockscreen-error {
+  color: var(--danger, #c66b5a);
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+.lockscreen-submit {
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+.lockscreen-forgot,
+.lockscreen-back {
+  font-size: 0.8rem;
+  color: var(--text-muted, #807a6d);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+.lockscreen-forgot:hover,
+.lockscreen-back:hover {
+  color: var(--text-dim, #b3ac9e);
+}

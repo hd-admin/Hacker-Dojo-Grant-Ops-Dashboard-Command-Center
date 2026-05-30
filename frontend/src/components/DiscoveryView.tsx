@@ -50,16 +50,16 @@ function formatDate(dateStr: string): string {
 function renderDeadlineCell(grant: Grant): React.ReactNode {
   const confidence = grant.deadlineConfidence;
   if (confidence === 'unknown') {
-    return <span className="deadline-confidence deadline-confidence-unknown">Deadline unknown</span>;
+    return <span className="deadline-confidence deadline-confidence-unknown" title="Deadline confidence is unknown">Deadline unknown</span>;
   }
   if (confidence === 'rolling') {
-    return <span className="deadline-confidence deadline-confidence-rolling">Rolling</span>;
+    return <span className="deadline-confidence deadline-confidence-rolling" title="Rolling deadline — no fixed cutoff">Rolling</span>;
   }
   const dateStr = formatDate(grant.deadline);
   if (confidence === 'estimated') {
-    return <span className="deadline-confidence deadline-confidence-estimated">~{dateStr}</span>;
+    return <span className="deadline-confidence deadline-confidence-estimated" title="Estimated from source date range">~{dateStr}</span>;
   }
-  return <span className="deadline-confidence deadline-confidence-exact">{dateStr}</span>;
+  return <span className="deadline-confidence deadline-confidence-exact" title="Exact deadline from source">{dateStr}</span>;
 }
 
 export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: DiscoveryViewProps) {
@@ -76,12 +76,14 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
   const [manualFunder, setManualFunder] = useState('');
   const [manualAward, setManualAward] = useState('');
   const [manualDeadline, setManualDeadline] = useState('');
+  const [manualDeadlineConfidence, setManualDeadlineConfidence] = useState<'exact' | 'estimated' | 'rolling' | 'unknown'>('unknown');
   const [manualTags, setManualTags] = useState('');
   const [manualNotes, setManualNotes] = useState('');
   const [manualEligibility, setManualEligibility] = useState('');
   const [newSourceName, setNewSourceName] = useState('');
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [isAddingSource, setIsAddingSource] = useState(false);
+  const [exactDeadlinesOnly, setExactDeadlinesOnly] = useState(false);
 
   useEffect(() => {
     const context = readWorkingContext();
@@ -123,6 +125,7 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
     return [...grants]
       .filter((g) => !search || g.title.toLowerCase().includes(searchLower) || g.funder.toLowerCase().includes(searchLower) || g.tags.some((t) => t.toLowerCase().includes(searchLower)))
       .filter((g) => category === 'All' || g.tags.some((t) => t === category || t.includes(category)))
+      .filter((g) => !exactDeadlinesOnly || g.deadlineConfidence === 'exact')
       .sort((a, b) => {
         switch (sortBy) {
           case 'fit': return b.fit - a.fit;
@@ -132,28 +135,31 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           default: return 0;
         }
       });
-  }, [grants, search, category, sortBy]);
+  }, [grants, search, category, sortBy, exactDeadlinesOnly]);
 
   const handleManualSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!manualTitle.trim() || !manualFunder.trim()) return;
+    const body: Record<string, unknown> = {
+      title: manualTitle.trim(),
+      funder: manualFunder.trim(),
+      award: manualAward.trim() || undefined,
+      deadline: manualDeadline || undefined,
+      deadlineConfidence: manualDeadlineConfidence,
+      tags: manualTags ? manualTags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,
+      notes: manualNotes.trim() || undefined,
+      eligibility: manualEligibility.trim() || undefined,
+    };
     await fetch('/api/grants', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        title: manualTitle.trim(),
-        funder: manualFunder.trim(),
-        award: manualAward.trim() || undefined,
-        deadline: manualDeadline || undefined,
-        tags: manualTags ? manualTags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,
-        notes: manualNotes.trim() || undefined,
-        eligibility: manualEligibility.trim() || undefined,
-      }),
+      body: JSON.stringify(body),
     });
     setManualTitle('');
     setManualFunder('');
     setManualAward('');
     setManualDeadline('');
+    setManualDeadlineConfidence('unknown');
     setManualTags('');
     setManualNotes('');
     setManualEligibility('');
@@ -185,7 +191,15 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
   };
 
   const handleExportCsv = () => {
-    const rows = ['title,funder,award,deadline,fit', ...filtered.map((grant) => [grant.title, grant.funder, grant.award, grant.deadline, String(grant.fit)].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))];
+    const rows = ['title,funder,award,deadline,deadlineConfidence,daysOut,fit', ...filtered.map((grant) => [
+      grant.title,
+      grant.funder,
+      grant.award,
+      grant.deadline,
+      grant.deadlineConfidence ?? 'unknown',
+      String(grant.daysOut),
+      String(grant.fit),
+    ].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))];
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -242,6 +256,13 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
             <input id="manual-award" data-testid="manual-award" value={manualAward} onChange={(e) => setManualAward(e.target.value)} placeholder="e.g., $50,000" />
             <label htmlFor="manual-deadline">Deadline</label>
             <input id="manual-deadline" type="date" data-testid="manual-deadline" value={manualDeadline} onChange={(e) => setManualDeadline(e.target.value)} />
+            <label htmlFor="manual-deadline-confidence">Deadline Confidence</label>
+            <select id="manual-deadline-confidence" data-testid="manual-deadline-confidence" value={manualDeadlineConfidence} onChange={(e) => setManualDeadlineConfidence(e.target.value as 'exact' | 'estimated' | 'rolling' | 'unknown')}>
+              <option value="exact">Exact</option>
+              <option value="estimated">Estimated</option>
+              <option value="rolling">Rolling</option>
+              <option value="unknown">Unknown</option>
+            </select>
             <label htmlFor="manual-tags">Tags (comma-separated)</label>
             <input id="manual-tags" data-testid="manual-tags" value={manualTags} onChange={(e) => setManualTags(e.target.value)} placeholder="e.g., STEM, Community, Education" />
             <label htmlFor="manual-eligibility">Eligibility Notes</label>
@@ -252,7 +273,7 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
               <button type="submit" className="btn btn-primary" data-testid="manual-submit-btn">
                 Add Grant Opportunity
               </button>
-              <button type="button" className="btn btn-ghost" onClick={() => { setShowManualIntake(false); setManualTitle(''); setManualFunder(''); setManualAward(''); setManualDeadline(''); setManualTags(''); setManualNotes(''); setManualEligibility(''); }}>
+              <button type="button" className="btn btn-ghost" onClick={() => { setShowManualIntake(false); setManualTitle(''); setManualFunder(''); setManualAward(''); setManualDeadline(''); setManualDeadlineConfidence('unknown'); setManualTags(''); setManualNotes(''); setManualEligibility(''); }}>
                 Cancel
               </button>
             </div>
@@ -296,7 +317,7 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           <button type="button" data-testid="add-manually-btn" onClick={() => setShowManualIntake((value) => !value)}>
             + Add manually
           </button>
-          <button type="button" onClick={() => { void handleExportCsv(); }}>
+          <button type="button" onClick={() => { void handleExportCsv(); }} aria-label="Export results as CSV">
             Export CSV
           </button>
           <button type="button" className="btn btn-primary" onClick={() => setShowAddSourceForm((value) => !value)}>
@@ -323,6 +344,13 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           <input id="manual-award-main" data-testid="manual-award" value={manualAward} onChange={(e) => setManualAward(e.target.value)} placeholder="e.g., $50,000" />
           <label htmlFor="manual-deadline-main">Deadline</label>
           <input id="manual-deadline-main" type="date" data-testid="manual-deadline" value={manualDeadline} onChange={(e) => setManualDeadline(e.target.value)} />
+          <label htmlFor="manual-deadline-confidence-main">Deadline Confidence</label>
+          <select id="manual-deadline-confidence-main" data-testid="manual-deadline-confidence" value={manualDeadlineConfidence} onChange={(e) => setManualDeadlineConfidence(e.target.value as 'exact' | 'estimated' | 'rolling' | 'unknown')}>
+            <option value="exact">Exact</option>
+            <option value="estimated">Estimated</option>
+            <option value="rolling">Rolling</option>
+            <option value="unknown">Unknown</option>
+          </select>
           <label htmlFor="manual-tags-main">Tags (comma-separated)</label>
           <input id="manual-tags-main" data-testid="manual-tags" value={manualTags} onChange={(e) => setManualTags(e.target.value)} placeholder="e.g., STEM, Community, Education" />
           <label htmlFor="manual-eligibility-main">Eligibility Notes</label>
@@ -333,7 +361,7 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
             <button type="submit" className="btn btn-primary" data-testid="manual-submit-btn">
               Add Grant Opportunity
             </button>
-            <button type="button" className="btn btn-ghost" onClick={() => { setShowManualIntake(false); setManualTitle(''); setManualFunder(''); setManualAward(''); setManualDeadline(''); setManualTags(''); setManualNotes(''); setManualEligibility(''); }}>
+            <button type="button" className="btn btn-ghost" onClick={() => { setShowManualIntake(false); setManualTitle(''); setManualFunder(''); setManualAward(''); setManualDeadline(''); setManualDeadlineConfidence('unknown'); setManualTags(''); setManualNotes(''); setManualEligibility(''); }}>
               Cancel
             </button>
           </div>
@@ -358,6 +386,14 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           <option value="award">Award size</option>
           <option value="recently-added">Recently added</option>
         </select>
+        <button
+          type="button"
+          className={`filter-pill ${exactDeadlinesOnly ? 'active' : ''}`}
+          onClick={() => setExactDeadlinesOnly((v) => !v)}
+          data-testid="exact-deadlines-only-btn"
+        >
+          Only exact deadlines
+        </button>
         {['All', 'EdTech', 'Community', 'Science & Tech', 'Federal', 'Foundation', 'Corporate'].map((cat) => (
           <button
             key={cat}
@@ -391,6 +427,9 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           <button key={grant.id} type="button" className="grants-row" onClick={() => onGrantSelect(grant.id)}>
             <div>
               {grant.title}
+              {grant.manualOrigin && (
+                <span data-testid="manual-origin-badge" className="ai-badge">Manual</span>
+              )}
               {grant.humanOverrides?.some((override) => override.field === 'fit' || override.field === 'category') && (
                 <span data-testid="human-confirmed-chip" className="ai-badge">Human-confirmed</span>
               )}

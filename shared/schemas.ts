@@ -6,7 +6,6 @@ import type {
   ActivityEvent,
   FitScoreBreakdown,
   CrawlStatus,
-  Notification,
   DocumentMetadata as _DocumentMetadata,
   Source as _Source,
   CrawlRun as _CrawlRun,
@@ -55,6 +54,14 @@ export const ChecklistItemSchema = z.object({
   required: z.boolean().optional(),
 });
 
+export const GrantAttachmentSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(['file', 'note']),
+  contentOrPath: z.string(),
+  uploadedAt: z.string(),
+});
+
 export const HumanOverrideSchema = z.object({
   field: z.string(),
   previousValue: z.unknown(),
@@ -83,11 +90,21 @@ export const GrantSchema = z.object({
   checklist: z.array(ChecklistItemSchema).optional(),
   draftContent: z.string().optional(),
   externalUrl: z.string().optional(),
+  deadlineConfidence: z.enum(['exact', 'estimated', 'rolling', 'unknown']).optional(),
+  funderSummary: z.string().optional(),
+  latestDraftVersion: z.number().optional(),
+  groundedDocumentCount: z.number().optional(),
+  sourceCount: z.number().optional(),
+  responsibilityTag: z.enum(['finance', 'program', 'review', 'follow-up']).optional(),
   researchEvidence: z.array(z.lazy(() => ResearchEvidenceSchema)).optional(),
   researchRationale: z.string().optional(),
   category: z.string().optional(),
   manualSource: z.boolean().optional(),
+  manualOrigin: z.boolean().optional(),
+  enteredAt: z.string().optional(),
+  grantType: z.string().optional(),
   humanOverrides: z.array(HumanOverrideSchema).optional(),
+  attachments: z.array(GrantAttachmentSchema).optional(),
 });
 
 export const ContactInfoSchema = z.object({
@@ -138,11 +155,12 @@ export const CrawlStatusSchema: z.ZodType<CrawlStatus> = z.object({
   lastSync: z.string(),
 });
 
-export const NotificationSchema: z.ZodType<Notification> = z.object({
+export const NotificationSchema = z.object({
   id: z.string(),
   text: z.string(),
   time: z.string(),
   dot: z.string(),
+  urgency: z.enum(['info', 'warning', 'urgent']).optional(),
 });
 
 export const TaskSchema = z.object({
@@ -167,6 +185,15 @@ export const DocumentExtractionStatusSchema: z.ZodType<DocumentExtractionStatus>
   'failed',
 ]);
 
+export const DocumentVersionSchema = z.object({
+  id: z.string(),
+  documentId: z.string(),
+  versionNumber: z.number().int().min(1),
+  uploadedAt: z.string(),
+  storagePath: z.string(),
+  notes: z.string().optional(),
+});
+
 export const DocumentMetadataSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -181,6 +208,8 @@ export const DocumentMetadataSchema = z.object({
   contentSnippet: z.string().optional(),
   extractionError: z.string().optional(),
   mimeType: z.string().optional(),
+  classification: z.enum(['canonical', 'draft-only', 'archived', 'restricted']).optional(),
+  versions: z.array(DocumentVersionSchema).optional(),
 });
 
 export const OpencodeSettingsSchema = z.object({
@@ -404,6 +433,9 @@ export const SubmissionManifestSchema = z.object({
   dueDate: z.string().optional(),
   materialRefs: z.array(SubmissionManifestItemSchema),
   notes: z.string().optional(),
+  submissionMethod: z.enum(['portal', 'email', 'mail', 'other']).optional(),
+  confirmationNumber: z.string().optional(),
+  runbookCompleted: z.boolean().optional(),
 });
 
 export const SubmissionRecordSchema = z.object({
