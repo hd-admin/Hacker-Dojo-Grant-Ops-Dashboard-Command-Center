@@ -357,8 +357,8 @@ textarea:focus-visible {
 }
 
 .btn-primary:hover {
-  background: #e2b850;
-  border-color: #e2b850;
+  background: var(--accent-dim);
+  border-color: var(--accent-dim);
 }
 
 .btn-primary:active {
@@ -1376,15 +1376,15 @@ textarea:focus-visible {
 }
 
 .doc-icon.pdf {
-  background: #c66b5a;
+  background: var(--danger);
   color: white;
 }
 .doc-icon.xls {
-  background: #8aab6f;
+  background: var(--success);
   color: var(--bg);
 }
 .doc-icon.doc {
-  background: #7ba3b8;
+  background: var(--info);
   color: var(--bg);
 }
 
