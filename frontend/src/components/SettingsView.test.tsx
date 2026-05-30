@@ -256,7 +256,32 @@ describe('SettingsView', () => {
   });
 
   it('shows the unsaved-change badge when profile inputs are edited', async () => {
-    root.render(React.createElement(SettingsView, { onRefreshAppState, initiallyDirty: true }));
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+
+    await waitFor(() => container.textContent?.includes('Hacker Dojo Program Summary.pdf') === true);
+
+    // Click Edit profile to enter editing mode
+    Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent === 'Edit profile')
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    // Wait for the editing form to appear
+    await waitFor(() =>
+      Array.from(container.querySelectorAll('input.form-input')).some(
+        (el) => (el as HTMLInputElement).placeholder?.includes('Hacker Dojo'),
+      ),
+    );
+
+    // Change a field to trigger dirty state — find the Legal Name input by placeholder
+    const input = Array.from(container.querySelectorAll('input.form-input')).find(
+      (el) => (el as HTMLInputElement).placeholder?.includes('Hacker Dojo'),
+    ) as HTMLInputElement | undefined;
+    if (input) {
+      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+      setter?.call(input, 'Changed Org Name');
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    }
 
     await waitFor(() => container.querySelector('[data-testid="settings-unsaved-badge"]') !== null);
     expect(container.querySelector('[data-testid="settings-unsaved-badge"]')?.textContent).toContain('Unsaved changes');

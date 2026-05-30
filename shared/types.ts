@@ -564,6 +564,7 @@ export interface GrantDetailUpdate {
 	latestDraftVersion?: number;
 	groundedDocumentCount?: number;
 	sourceCount?: number;
+	draftContent?: string;
 }
 
 export interface GrantDetailResponse {

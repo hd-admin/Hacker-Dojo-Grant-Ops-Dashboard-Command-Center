@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { BackupFreshnessStatus, DocumentMetadata, FailureHistoryEntry, HealthCheckResult, OpencodeSettings, OrganizationProfile, Theme, ThemesData } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
+import { useAutosave } from '../lib/useAutosave';
 
 // Guidance messages keyed by opencode health status
 const opencodeStatusGuidance: Record<string, { title: string; description: string; action: string }> = {
@@ -63,10 +64,9 @@ function getStatusLabelText(status: string): string {
 interface SettingsViewProps {
   onRefreshAppState?: () => Promise<void> | void;
   initiallyEditing?: boolean;
-  initiallyDirty?: boolean;
 }
 
-export default function SettingsView({ onRefreshAppState, initiallyEditing = false, initiallyDirty = false }: SettingsViewProps) {
+export default function SettingsView({ onRefreshAppState, initiallyEditing = false }: SettingsViewProps) {
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
   const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(true);
@@ -75,7 +75,6 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const [health, setHealth] = useState<HealthCheckResult | null>(null);
   const [freshness, setFreshness] = useState<BackupFreshnessStatus | null>(null);
   const [diagnosticsText, setDiagnosticsText] = useState('');
-  const [isDirty, setIsDirty] = useState(initiallyDirty);
   const [showRestoreWarning, setShowRestoreWarning] = useState(false);
   const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
   const [opencodeForm, setOpencodeForm] = useState<Partial<OpencodeSettings>>({});
@@ -150,40 +149,34 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
     void load();
   }, []);
 
-  useEffect(() => {
-    const dirty = initiallyDirty || JSON.stringify(editForm) !== JSON.stringify(profile ?? {});
-    setIsDirty(dirty);
-  }, [editForm, profile, initiallyDirty]);
-
-  const handleSave = useCallback(async () => {
-    if (!editForm) return;
-    try {
-      await client.profile.update(editForm as OrganizationProfile);
-      const updated = await client.profile.get();
+  const saveProfileToApi = useCallback(async (form: Partial<OrganizationProfile>) => {
+    await client.profile.update(form as OrganizationProfile);
+    const updated = await client.profile.get();
+    if (updated) {
       setProfile(updated);
       setEditForm(updated);
-      setIsEditing(false);
-      setIsDirty(false);
-      await onRefreshAppState?.();
-    } catch (error) {
-      console.error('Error saving profile:', error);
     }
-  }, [editForm, onRefreshAppState]);
+    await onRefreshAppState?.();
+  }, [onRefreshAppState]);
 
-  useEffect(() => {
-    if (!isDirty) return;
-    const timer = window.setTimeout(() => {
-      void handleSave();
-    }, 2000);
-    return () => window.clearTimeout(timer);
-  }, [isDirty, handleSave]);
+  const { isDirty, isSaving, lastSaved, saveNow, markClean } = useAutosave(
+    editForm,
+    saveProfileToApi,
+  );
 
+  // Reset dirty state when profile initially loads
+  const profileLoadRef = useRef(false);
   useEffect(() => {
-    window.onbeforeunload = isDirty ? () => 'You have unsaved settings changes.' : null;
-    return () => {
-      window.onbeforeunload = null;
-    };
-  }, [isDirty]);
+    if (profile && !profileLoadRef.current) {
+      profileLoadRef.current = true;
+      markClean();
+    }
+  }, [profile, markClean]);
+
+  const handleExplicitSave = useCallback(async () => {
+    await saveNow();
+    setIsEditing(false);
+  }, [saveNow]);
 
 
   const refreshHealth = async () => {
@@ -370,6 +363,8 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
           <button type="button" data-testid="refresh-health-btn" onClick={() => { void refreshHealth(); }}>Refresh</button>
           <button type="button" data-testid="rerun-health-check-btn" onClick={() => { void refreshHealth(); }}>Re-run Health Check</button>
           {isDirty && <span id="settings-unsaved-badge" data-testid="settings-unsaved-badge">Unsaved changes</span>}
+          {isSaving && <span data-testid="settings-saving-indicator">Saving...</span>}
+          {lastSaved && <span data-testid="settings-saved-timestamp">Saved at {new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
         </div>
       </div>
 
@@ -528,7 +523,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 </fieldset>
 
                 <div className="settings-form-row">
-                  <button type="button" className="btn btn-primary" onClick={() => void handleSave()}>Save changes</button>
+                  <button type="button" className="btn btn-primary" data-testid="settings-save-now-btn" onClick={() => void handleExplicitSave()} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save changes'}</button>
                   <button type="button" className="btn" onClick={() => { setEditForm(profile); setIsEditing(false); }}>Cancel</button>
                 </div>
               </div>

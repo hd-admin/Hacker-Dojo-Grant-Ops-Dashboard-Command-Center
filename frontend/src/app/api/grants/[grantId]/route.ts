@@ -28,6 +28,7 @@ const grantDetailUpdateSchema = z
 		latestDraftVersion: z.number().int().min(0).optional(),
 		groundedDocumentCount: z.number().int().min(0).optional(),
 		sourceCount: z.number().int().min(0).optional(),
+		draftContent: z.string().optional(),
 	})
 	.strict();
 

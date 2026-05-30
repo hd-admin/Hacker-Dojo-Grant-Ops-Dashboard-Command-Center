@@ -11,6 +11,7 @@ import type {
 	SubmissionMethod,
 } from "../../../shared/types";
 import { client } from "../lib/grant-ops-client";
+import { useAutosave } from "../lib/useAutosave";
 import { AlertTriangle } from "lucide-react";
 import GroundingReview from "./GroundingReview";
 import SubmissionReadiness from "./SubmissionReadiness";
@@ -177,6 +178,10 @@ export default function GrantDrawer({
 	// Submission documents for SubmissionReadiness
 	const [submissionDocuments, setSubmissionDocuments] = useState<DocumentMetadata[]>([]);
 
+	// Draft editing state
+	const [draftEditContent, setDraftEditContent] = useState('');
+	const [draftEditMode, setDraftEditMode] = useState(false);
+
 	// Grounding approval state
 	const [showGroundingWarning, setShowGroundingWarning] = useState(false);
 	const [groundingOverrideConfirmed, setGroundingOverrideConfirmed] = useState(false);
@@ -194,21 +199,55 @@ export default function GrantDrawer({
 	const viewModel = buildGrantDrawerViewModel(detail);
 	const hasDirtyNotes = revisionNote.trim().length > 0 || submitNotes.trim().length > 0;
 
-	// beforeunload handler for unsaved notes protection
+	// Initialize draft edit content from grant when detail loads
+	const draftContentInitializedRef = useRef(false);
+	useEffect(() => {
+		if (detail && !draftContentInitializedRef.current) {
+			setDraftEditContent(detail.grant.draftContent ?? '');
+			draftContentInitializedRef.current = true;
+		}
+		if (!detail) {
+			draftContentInitializedRef.current = false;
+		}
+	}, [detail]);
+
+	// Autosave draft content
+	const saveDraftContent = useCallback(async (content: string) => {
+		if (!grantId) return;
+		await client.grants.update(grantId, { draftContent: content });
+		setDetail((prev) =>
+			prev
+				? {
+						...prev,
+						grant: { ...prev.grant, draftContent: content },
+					}
+				: prev,
+		);
+	}, [grantId]);
+
+	const {
+		isDirty: draftIsDirty,
+		isSaving: draftIsSaving,
+		lastSaved: draftLastSaved,
+		saveNow: draftSaveNow,
+		markClean: draftMarkClean,
+	} = useAutosave(draftEditContent, saveDraftContent);
+
+	// beforeunload handler for unsaved notes and draft protection
 	useEffect(() => {
 		const handler = (e: BeforeUnloadEvent) => {
-			if (hasDirtyNotes) {
+			if (hasDirtyNotes || draftIsDirty) {
 				e.preventDefault();
-				e.returnValue = 'You have unsaved notes. Are you sure you want to leave?';
+				e.returnValue = 'You have unsaved changes. Are you sure you want to leave?';
 			}
 		};
-		if (hasDirtyNotes) {
+		if (hasDirtyNotes || draftIsDirty) {
 			window.addEventListener('beforeunload', handler);
 		}
 		return () => {
 			window.removeEventListener('beforeunload', handler);
 		};
-	}, [hasDirtyNotes]);
+	}, [hasDirtyNotes, draftIsDirty]);
 
 	const loadDetail = useCallback(async () => {
 		if (!grantId) {
@@ -425,7 +464,7 @@ export default function GrantDrawer({
 	};
 
 	const handleRequestClose = () => {
-		if (hasDirtyNotes) {
+		if (hasDirtyNotes || draftIsDirty) {
 			setCloseWarningOpen(true);
 			return;
 		}
@@ -828,7 +867,20 @@ export default function GrantDrawer({
 							</div>
 
 							<div className="drawer-section">
-								<h3>Drafted Letter of Intent — preview</h3>
+								<h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+									Drafted Letter of Intent — preview
+									{draftIsDirty && (
+										<span data-testid="draft-dirty-indicator" style={{ color: 'var(--warning)', fontSize: '11px' }}>Unsaved</span>
+									)}
+									{draftIsSaving && (
+										<span data-testid="draft-saving-indicator" style={{ color: 'var(--text-dim)', fontSize: '11px' }}>Saving...</span>
+									)}
+									{draftLastSaved && !draftIsDirty && (
+										<span data-testid="draft-saved-timestamp" style={{ color: 'var(--success)', fontSize: '11px' }}>
+											Saved at {new Date(draftLastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+										</span>
+									)}
+								</h3>
 								{viewModel.latestDraftPreview ? (
 									<div className="draft-meta">
 										<span className="ai-badge">
@@ -845,9 +897,57 @@ export default function GrantDrawer({
 								) : (
 									<div className="drawer-note">{viewModel.latestDraftVersionLabel}</div>
 								)}
-								<div className="draft-preview">
-									{previewText(viewModel.latestDraftPreview)}
-								</div>
+								{draftEditMode ? (
+									<>
+										<textarea
+											className="form-input"
+											rows={10}
+											value={draftEditContent}
+											onChange={(e) => setDraftEditContent(e.target.value)}
+											aria-label="Edit draft content"
+											data-testid="draft-edit-textarea"
+											style={{ fontFamily: 'var(--mono)', fontSize: '12px', marginBottom: '8px' }}
+										/>
+										<div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+											<button
+												type="button"
+												className="btn btn-primary btn-sm"
+												onClick={async () => { await draftSaveNow(); }}
+												disabled={draftIsSaving}
+												data-testid="draft-save-now-btn"
+											>
+												{draftIsSaving ? 'Saving...' : 'Save Now'}
+											</button>
+											<button
+												type="button"
+												className="btn btn-sm"
+												onClick={() => {
+													setDraftEditMode(false);
+													setDraftEditContent(detail.grant.draftContent ?? '');
+													draftMarkClean();
+												}}
+											>
+												Done Editing
+											</button>
+										</div>
+									</>
+								) : (
+									<>
+										<div className="draft-preview">
+											{previewText(viewModel.latestDraftPreview)}
+										</div>
+										{viewModel.latestDraftPreview && (
+											<button
+												type="button"
+												className="btn btn-sm"
+												onClick={() => setDraftEditMode(true)}
+												data-testid="draft-edit-btn"
+											>
+												Edit Draft
+											</button>
+										)}
+									</>
+								)}
 								<div className="drawer-note">
 									Revision requests:{" "}
 									{detail.latestRevisionRequest
