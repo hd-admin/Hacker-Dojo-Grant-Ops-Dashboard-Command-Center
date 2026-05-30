@@ -750,6 +750,7 @@ export default function AppShell() {
             profile={profile}
             notifications={notifications}
             recentGrantIds={recentGrantIds}
+            sources={sources}
           />
         </div>
         <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`} role="tabpanel" aria-label="Discovery">

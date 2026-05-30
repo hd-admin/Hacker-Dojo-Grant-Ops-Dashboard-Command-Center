@@ -270,6 +270,7 @@ export const SourceCrawlStateSchema: z.ZodType<SourceCrawlState> = z.enum([
 
 export const SourceCrawlAccessCategorySchema: z.ZodType<SourceCrawlAccessCategory> = z.enum([
   'crawlable',
+  'crawlable-with-auth',
   'manual-only',
   'unsupported',
 ]);

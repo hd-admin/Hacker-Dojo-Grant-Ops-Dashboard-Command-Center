@@ -11,6 +11,7 @@
 
 import type {
   ApprovalRecord,
+  SubmissionManifest,
   SubmissionRecord,
   SubmissionMethod,
   FollowUp,
@@ -156,6 +157,24 @@ export async function approveGrant(input: ApprovalInput): Promise<ApprovalResult
       timestamp: clock.now().toISOString(),
       metadata: { approvedBy, draftVersion: latestVersion },
     });
+
+    // Auto-create a submission manifest on approval so the Submit button is available
+    const existingManifests = await deps.repository.getSubmissionManifests(grant.id);
+    if (existingManifests.length === 0) {
+      const now = clock.now().toISOString();
+      const manifest: SubmissionManifest = {
+        id: idGenerator.generateId('manifest'),
+        grantId: grant.id,
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+        materialRefs: [],
+        runbookCompleted: false,
+      };
+      if (grant.externalUrl) manifest.portalUrl = grant.externalUrl;
+      if (grant.deadline) manifest.dueDate = grant.deadline;
+      await deps.repository.addSubmissionManifest(manifest);
+    }
 
     return {
       success: true,

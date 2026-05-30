@@ -96,7 +96,7 @@ describe('/api/grants/[grantId]/submit route', () => {
     expect(data.error).toMatch(/Grant must be approved before submission/i);
   });
 
-  it('returns 400 when the approved grant is missing a submission manifest', async () => {
+  it('returns 201 when approval auto-creates manifest allowing immediate submission', async () => {
     await approvalPOST(
       new Request(`http://localhost/api/grants/${grant.id}/approval`, {
         method: 'POST',
@@ -116,8 +116,9 @@ describe('/api/grants/[grantId]/submit route', () => {
     );
     const data = await response.json();
 
-    expect(response.status).toBe(400);
-    expect(data.error).toMatch(/Submission manifest is required before submission/i);
+    expect(response.status).toBe(201);
+    expect(data.success).toBe(true);
+    expect(data.submissionRecord.grantId).toBe(grant.id);
   });
 
   it('returns submissionRecord and followUps after approval', async () => {

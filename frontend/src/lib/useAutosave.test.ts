@@ -9,10 +9,9 @@ function renderAutosaveHook(
   saveFn: (value: string) => Promise<void>,
   options?: { delayMs?: number; onError?: (error: unknown) => void },
 ): {
-  container: HTMLDivElement;
-  root: ReturnType<typeof createRoot>;
   getState: () => AutosaveState;
-  setValue: (value: string) => Promise<void>;
+  setValue: (value: string) => void;
+  advanceTimersAndFlush: (ms: number) => Promise<void>;
   unmount: () => void;
 } {
   const container = document.createElement('div');
@@ -24,32 +23,44 @@ function renderAutosaveHook(
     saveNow: async () => {},
     markClean: () => {},
   };
+  let setRenderValue: ((v: string) => void) | null = null;
 
-  function TestComponent({ value }: { value: string }) {
+  function TestComponent() {
+    const [value, setValueInner] = React.useState(initialValue);
+    setRenderValue = setValueInner;
     const state = useAutosave(value, saveFn, options);
     currentState = state;
-    return null;
+    return React.createElement('div', null);
   }
 
-  root.render(React.createElement(TestComponent, { value: initialValue }));
+  act(() => {
+    root.render(React.createElement(TestComponent));
+  });
 
   return {
-    container,
-    root,
     getState: () => currentState,
-    setValue: async (value: string) => {
-      await act(async () => {
-        root.render(React.createElement(TestComponent, { value }));
+    setValue: (value: string) => {
+      act(() => {
+        setRenderValue?.(value);
       });
     },
+    advanceTimersAndFlush: async (ms: number) => {
+      act(() => {
+        vi.advanceTimersByTime(ms);
+      });
+      // Flush microtasks so React effects run
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+    },
     unmount: () => {
-      root.unmount();
+      act(() => {
+        root.unmount();
+      });
     },
   };
 }
 
 beforeEach(() => {
-  vi.useFakeTimers();
+  vi.useFakeTimers({ shouldAdvanceTime: true });
 });
 
 afterEach(() => {
@@ -71,7 +82,7 @@ describe('useAutosave', () => {
     const saveFn = vi.fn().mockResolvedValue(undefined);
     const { getState, setValue, unmount } = renderAutosaveHook('hello', saveFn);
 
-    await setValue('world');
+    setValue('world');
 
     expect(getState().isDirty).toBe(true);
     unmount();
@@ -79,19 +90,12 @@ describe('useAutosave', () => {
 
   it('saves after debounce delay and clears dirty state', async () => {
     const saveFn = vi.fn().mockResolvedValue(undefined);
-    const { getState, setValue, unmount } = renderAutosaveHook('hello', saveFn, { delayMs: 2000 });
+    const { getState, setValue, advanceTimersAndFlush, unmount } = renderAutosaveHook('hello', saveFn, { delayMs: 2000 });
 
-    await setValue('world');
+    setValue('world');
     expect(getState().isDirty).toBe(true);
 
-    await act(async () => {
-      vi.advanceTimersByTime(2000);
-    });
-
-    // Wait for the async save to complete
-    await act(async () => {
-      await vi.runAllTimersAsync();
-    });
+    await advanceTimersAndFlush(2000);
 
     expect(saveFn).toHaveBeenCalledWith('world');
     expect(getState().isDirty).toBe(false);
@@ -103,12 +107,13 @@ describe('useAutosave', () => {
     const saveFn = vi.fn().mockResolvedValue(undefined);
     const { getState, setValue, unmount } = renderAutosaveHook('hello', saveFn, { delayMs: 2000 });
 
-    await setValue('world');
+    setValue('world');
     expect(getState().isDirty).toBe(true);
 
     await act(async () => {
       await getState().saveNow();
     });
+    await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
     expect(saveFn).toHaveBeenCalledWith('world');
     expect(getState().isDirty).toBe(false);
@@ -120,7 +125,7 @@ describe('useAutosave', () => {
     const saveFn = vi.fn().mockResolvedValue(undefined);
     const { getState, setValue, unmount } = renderAutosaveHook('hello', saveFn);
 
-    await setValue('world');
+    setValue('world');
     expect(getState().isDirty).toBe(true);
 
     act(() => {
@@ -137,17 +142,11 @@ describe('useAutosave', () => {
     const saveFn = vi.fn().mockRejectedValue(error);
     const onError = vi.fn();
 
-    const { getState, setValue, unmount } = renderAutosaveHook('hello', saveFn, { delayMs: 100, onError });
+    const { getState, setValue, advanceTimersAndFlush, unmount } = renderAutosaveHook('hello', saveFn, { delayMs: 100, onError });
 
-    await setValue('world');
+    setValue('world');
 
-    await act(async () => {
-      vi.advanceTimersByTime(100);
-    });
-
-    await act(async () => {
-      await vi.runAllTimersAsync();
-    });
+    await advanceTimersAndFlush(100);
 
     expect(onError).toHaveBeenCalledWith(error);
     expect(getState().isDirty).toBe(true);
@@ -156,17 +155,11 @@ describe('useAutosave', () => {
 
   it('lastSaved is an ISO timestamp string after successful save', async () => {
     const saveFn = vi.fn().mockResolvedValue(undefined);
-    const { getState, setValue, unmount } = renderAutosaveHook('hello', saveFn, { delayMs: 10 });
+    const { getState, setValue, advanceTimersAndFlush, unmount } = renderAutosaveHook('hello', saveFn, { delayMs: 10 });
 
-    await setValue('world');
+    setValue('world');
 
-    await act(async () => {
-      vi.advanceTimersByTime(10);
-    });
-
-    await act(async () => {
-      await vi.runAllTimersAsync();
-    });
+    await advanceTimersAndFlush(10);
 
     const lastSaved = getState().lastSaved;
     expect(lastSaved).toBeTruthy();

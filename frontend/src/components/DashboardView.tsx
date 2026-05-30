@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ClipboardList, MessageCircle, Search } from 'lucide-react';
-import type { CrawlRun, FollowUp, Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem } from '../../../shared/types';
+import type { CrawlRun, FollowUp, Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem, Source } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
 import { jobFailureMessages } from '../lib/failure-messages';
 import { sanitizeNotificationText } from '../lib/sanitize-html';
@@ -17,6 +17,7 @@ interface DashboardViewProps {
   profile: OrganizationProfile | null;
   notifications?: Notification[];
   recentGrantIds?: string[];
+  sources?: Source[];
 }
 
 function formatDate(dateStr: string): { day: string; month: string } {
@@ -67,7 +68,7 @@ function stageDescription(stage: string | undefined): string {
   return stage;
 }
 
-export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications, recentGrantIds }: DashboardViewProps) {
+export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications, recentGrantIds, sources = [] }: DashboardViewProps) {
   const [jobs, setJobs] = useState<JobQueueItem[]>([]);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [crawlLatestRun, setCrawlLatestRun] = useState<CrawlRun | null>(null);
@@ -238,12 +239,12 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
     stalenessLabel = 'Data fresh';
     stalenessDotClass = 'staleness-dot-fresh';
     stalenessCardClass = 'success';
-  } else if (ageMs !== null && ageMs < 72 * msInHour) {
+  } else if (ageMs !== null && ageMs < 7 * msInDay) {
     stalenessLabel = 'Data may be stale';
     stalenessDotClass = 'staleness-dot-stale-warn';
     stalenessCardClass = 'warning';
   } else {
-    stalenessLabel = 'Data is stale';
+    stalenessLabel = 'Data is very stale';
     stalenessDotClass = 'staleness-dot-stale-danger';
     stalenessCardClass = 'warning';
   }
@@ -256,6 +257,21 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
     const days = Math.floor(hours / 24);
     return `${days} day${days === 1 ? '' : 's'} ago`;
   }
+
+  const perSourceStaleness = sources
+    .filter((s) => s.sourceCrawlState === 'succeeded' && s.lastCrawledAt)
+    .map((s) => {
+      const sourceAgeMs = crawlNow - new Date(s.lastCrawledAt!).getTime();
+      let tier: 'fresh' | 'stale' | 'very-stale';
+      if (sourceAgeMs < msInDay) {
+        tier = 'fresh';
+      } else if (sourceAgeMs < 7 * msInDay) {
+        tier = 'stale';
+      } else {
+        tier = 'very-stale';
+      }
+      return { id: s.id, name: s.name, ageMs: sourceAgeMs, tier };
+    });
 
   // Empty state: no grants and no profile
   if (grants.length === 0 && !profile?.legalName) {
@@ -414,6 +430,25 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
               : 'No data'}
           </div>
         </div>
+        {perSourceStaleness.length > 0 && (
+          <div className="kpi-card" data-testid="per-source-staleness">
+            <div className="kpi-label">Per-Source Freshness</div>
+            <div className="activity-list">
+              {perSourceStaleness.slice(0, 8).map((ps) => {
+                const dotClass = ps.tier === 'fresh' ? 'staleness-dot-fresh' : ps.tier === 'stale' ? 'staleness-dot-stale-warn' : 'staleness-dot-stale-danger';
+                return (
+                  <div key={ps.id} className="activity-item" data-testid={`per-source-staleness-row-${ps.id}`}>
+                    <span className={`staleness-dot ${dotClass}`} aria-hidden="true" />
+                    <div>
+                      <div className="activity-text">{ps.name}</div>
+                      <div className="activity-time">{formatAge(ps.ageMs)}</div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Panel Grid */}

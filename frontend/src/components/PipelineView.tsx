@@ -145,6 +145,24 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
     saveWorkingContextField('pipelineFunderTypeFilter', funderTypeFilter);
   }, [funderTypeFilter]);
 
+  const handleExportPipelineCsv = () => {
+    const link = document.createElement('a');
+    link.href = '/api/grants/export?view=pipeline';
+    link.download = 'grant-ops-pipeline.csv';
+    link.click();
+  };
+
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleExportPipelineCsv();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
   useEffect(() => {
     async function load() {
       try {
@@ -220,12 +238,7 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
           <button
             type="button"
             className="btn"
-            onClick={() => {
-              const link = document.createElement('a');
-              link.href = '/api/grants/export?view=pipeline';
-              link.download = 'grant-ops-pipeline.csv';
-              link.click();
-            }}
+            onClick={handleExportPipelineCsv}
             aria-label="Export pipeline as CSV"
           >
             Export CSV

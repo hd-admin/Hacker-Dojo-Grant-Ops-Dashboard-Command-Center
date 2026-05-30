@@ -209,6 +209,19 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
     URL.revokeObjectURL(url);
   };
 
+  /* eslint-disable react-hooks/exhaustive-deps */
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        handleExportCsv();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+  /* eslint-enable react-hooks/exhaustive-deps */
+
   if (loading) {
     return <div className="header-title" role="status" aria-busy="true" aria-label="Loading grants">Loading...</div>;
   }

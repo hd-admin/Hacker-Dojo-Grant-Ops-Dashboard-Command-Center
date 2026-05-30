@@ -32,12 +32,13 @@ test.describe("Keyboard navigation", () => {
   });
 
   test("navigate sidebar via Tab and Enter/Space", async ({ page }) => {
-    // Press Tab to move through sidebar nav items
-    await page.click('[data-view="dashboard"]');
-    await page.waitForSelector("#view-dashboard.active");
+    // Start from dashboard view (already active from beforeEach)
+    await expect(page.locator("#view-dashboard.active")).toBeVisible();
 
-    await page.keyboard.press("Tab");
-    await page.keyboard.press("Tab");
+    // Focus the dashboard nav button via click, then Tab to Discovery
+    await page.locator('.nav-item[data-view="dashboard"]').click();
+
+    // 1 Tab moves from Dashboard to Discovery in the sidebar nav order
     await page.keyboard.press("Tab");
 
     // Switch to discovery view via keyboard
