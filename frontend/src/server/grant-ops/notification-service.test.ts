@@ -618,6 +618,54 @@ describe('notification-service', () => {
 		});
 	});
 
+	describe('grant-level classifyGrantUrgency', () => {
+		it('exact deadline < 3 days returns urgent', () => {
+			const service = createNotificationService(deps);
+			const grant = createTestGrant({
+				deadlineConfidence: 'exact',
+				daysOut: 2,
+			});
+			expect(service.classifyGrantUrgency(grant)).toBe('urgent');
+		});
+
+		it('exact deadline 3-14 days returns warning', () => {
+			const service = createNotificationService(deps);
+			const estimateGrant = createTestGrant({
+				deadlineConfidence: 'estimated',
+				daysOut: 10,
+			});
+			expect(service.classifyGrantUrgency(estimateGrant)).toBe('warning');
+		});
+
+		it('rolling deadline always returns informational', () => {
+			const service = createNotificationService(deps);
+			const grant = createTestGrant({
+				deadlineConfidence: 'rolling',
+				daysOut: 5,
+			});
+			expect(service.classifyGrantUrgency(grant)).toBe('informational');
+		});
+
+		it('unknown confidence always returns informational', () => {
+			const service = createNotificationService(deps);
+			const grant = createTestGrant({
+				deadlineConfidence: 'unknown',
+				daysOut: 5,
+			});
+			expect(service.classifyGrantUrgency(grant)).toBe('informational');
+		});
+
+		it('null/NaN daysOut returns informational', () => {
+			const service = createNotificationService(deps);
+			const nullGrant = createTestGrant({
+				deadlineConfidence: 'exact',
+			});
+			// Force daysOut to undefined to test missing-value edge case
+			const grantWithNoDaysOut = { ...nullGrant, daysOut: undefined } as unknown as Grant;
+			expect(service.classifyGrantUrgency(grantWithNoDaysOut)).toBe('informational');
+		});
+	});
+
 	describe('applyRule', () => {
 		it('returns null for disabled rules', () => {
 			const service = createNotificationService(deps);

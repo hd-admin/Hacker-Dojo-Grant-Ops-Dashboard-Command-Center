@@ -1,20 +1,42 @@
 'use client';
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 interface LockScreenProps {
   onUnlock: () => void;
   lockOnIdleMs?: number;
 }
 
-export default function LockScreen({ onUnlock }: LockScreenProps) {
+export default function LockScreen({ onUnlock, lockOnIdleMs: _lockOnIdleMs = 0 }: LockScreenProps) {
   const [passcode, setPasscode] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showForgotHelp, setShowForgotHelp] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+  const cooldownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+    };
+  }, []);
+
+  const startCooldown = useCallback((seconds: number) => {
+    setCooldownSeconds(seconds);
+    if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+    cooldownTimer.current = setInterval(() => {
+      setCooldownSeconds((prev) => {
+        if (prev <= 1) {
+          if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }, []);
 
   const handleUnlock = useCallback(async () => {
-    if (passcode.length < 1) return;
+    if (passcode.length < 1 || cooldownSeconds > 0) return;
     setIsSubmitting(true);
     setError('');
     try {
@@ -27,14 +49,20 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
       if (data.success) {
         onUnlock();
       } else {
-        setError(data.error || 'Incorrect passcode');
+        const errMsg = data.error || 'Incorrect passcode';
+        setError(errMsg);
+        const match = errMsg.match(/Try again in (\d+)s/);
+        if (match) {
+          const secs = parseInt(match[1], 10);
+          if (!isNaN(secs) && secs > 0) startCooldown(secs);
+        }
       }
     } catch {
       setError('Unable to verify passcode. Check your connection.');
     } finally {
       setIsSubmitting(false);
     }
-  }, [passcode, onUnlock]);
+  }, [passcode, onUnlock, cooldownSeconds, startCooldown]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -80,9 +108,9 @@ export default function LockScreen({ onUnlock }: LockScreenProps) {
                 className="btn btn-primary lockscreen-submit"
                 data-testid="lockscreen-unlock-btn"
                 onClick={() => void handleUnlock()}
-                disabled={isSubmitting || passcode.length < 1}
+                disabled={isSubmitting || passcode.length < 1 || cooldownSeconds > 0}
               >
-                {isSubmitting ? 'Verifying...' : 'Unlock'}
+                {isSubmitting ? 'Verifying...' : cooldownSeconds > 0 ? `Wait ${cooldownSeconds}s` : 'Unlock'}
               </button>
               <button
                 type="button"

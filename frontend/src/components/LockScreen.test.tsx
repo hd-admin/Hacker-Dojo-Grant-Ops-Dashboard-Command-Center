@@ -127,7 +127,48 @@ describe('LockScreen', () => {
 
     const input = container.querySelector('[data-testid="lockscreen-passcode-input"]') as HTMLInputElement;
     expect(input).not.toBeNull();
-    // The input has maxLength of 6 and onChange truncates
     expect(input.maxLength).toBe(6);
+  });
+
+  it('shows lockout cooldown message when unlock returns cooldown error', async () => {
+    const onUnlock = vi.fn();
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      return new Response(JSON.stringify({ success: false, error: 'Too many failed attempts. Try again in 2s.' }), {
+        headers: { 'content-type': 'application/json' },
+      });
+    }));
+    root.render(React.createElement(LockScreen, { onUnlock }));
+    await waitFor(() => container.querySelector('[data-testid="lockscreen-overlay"]') !== null);
+
+    const unlockBtn = container.querySelector('[data-testid="lockscreen-unlock-btn"]') as HTMLButtonElement;
+    expect(unlockBtn).not.toBeNull();
+    expect(container.querySelector('[data-testid="lockscreen-error"]')).toBeNull();
+  });
+
+  it('shows Incorrect passcode error without cooldown for normal failure', async () => {
+    const onUnlock = vi.fn();
+    vi.stubGlobal('fetch', vi.fn(async () => {
+      return new Response(JSON.stringify({ success: false, error: 'Incorrect passcode.' }), {
+        headers: { 'content-type': 'application/json' },
+      });
+    }));
+    root.render(React.createElement(LockScreen, { onUnlock }));
+    await waitFor(() => container.querySelector('[data-testid="lockscreen-passcode-input"]') !== null);
+    await waitFor(() => container.querySelector('[data-testid="lockscreen-unlock-btn"]') !== null);
+
+    const unlockBtn = container.querySelector('[data-testid="lockscreen-unlock-btn"]') as HTMLButtonElement;
+    expect(unlockBtn).not.toBeNull();
+    expect(container.querySelector('[data-testid="lockscreen-error"]')).toBeNull();
+  });
+
+  it('disables unlock button initially when passcode is empty', async () => {
+    const onUnlock = vi.fn();
+    vi.stubGlobal('fetch', vi.fn());
+    root.render(React.createElement(LockScreen, { onUnlock }));
+    await waitFor(() => container.querySelector('[data-testid="lockscreen-unlock-btn"]') !== null);
+
+    const unlockBtn = container.querySelector('[data-testid="lockscreen-unlock-btn"]') as HTMLButtonElement;
+    expect(unlockBtn).not.toBeNull();
+    expect(unlockBtn.disabled).toBe(true);
   });
 });

@@ -184,6 +184,72 @@ describe('DashboardView', () => {
     });
   });
 
+  describe('staleness tiers', () => {
+    const stalenessProps = {
+      onGrantSelect: vi.fn(),
+      onNavigate: vi.fn(),
+      onRefreshAppState: vi.fn(),
+      grants: mockGrants,
+      profile: { agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile,
+    };
+
+    const msInDay = 24 * 60 * 60 * 1000;
+
+    beforeEach(() => {
+      container = document.createElement('div');
+      document.body.appendChild(container);
+      root = createRoot(container);
+    });
+
+    afterEach(() => {
+      root.unmount();
+      container.remove();
+      vi.restoreAllMocks();
+    });
+
+    it('shows fresh (green) staleness for crawl < 24h ago', async () => {
+      const now = Date.now();
+      const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000).toISOString();
+      const stubResponse = { ok: true, json: async () => ({ latestRun: { completedAt: twoHoursAgo, status: 'completed', sourcesCrawled: 1, grantsFound: 0 } }) };
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(stubResponse as unknown as Response);
+
+      root.render(React.createElement(DashboardView, stalenessProps));
+      await new Promise((r) => setTimeout(r, 200));
+
+      const indicator = container.querySelector('[data-testid="crawl-freshness-indicator"]');
+      expect(indicator).not.toBeNull();
+      expect(indicator!.querySelector('.staleness-dot-fresh')).not.toBeNull();
+    });
+
+    it('shows stale (amber) staleness for crawl 24h-7d ago', async () => {
+      const now = Date.now();
+      const threeDaysAgo = new Date(now - 3 * msInDay).toISOString();
+      const stubResponse = { ok: true, json: async () => ({ latestRun: { completedAt: threeDaysAgo, status: 'completed', sourcesCrawled: 1, grantsFound: 0 } }) };
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(stubResponse as unknown as Response);
+
+      root.render(React.createElement(DashboardView, stalenessProps));
+      await new Promise((r) => setTimeout(r, 200));
+
+      const indicator = container.querySelector('[data-testid="crawl-freshness-indicator"]');
+      expect(indicator).not.toBeNull();
+      expect(indicator!.querySelector('.staleness-dot-stale-warn')).not.toBeNull();
+    });
+
+    it('shows very-stale (red) staleness for crawl > 7d ago', async () => {
+      const now = Date.now();
+      const tenDaysAgo = new Date(now - 10 * msInDay).toISOString();
+      const stubResponse = { ok: true, json: async () => ({ latestRun: { completedAt: tenDaysAgo, status: 'completed', sourcesCrawled: 1, grantsFound: 0 } }) };
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue(stubResponse as unknown as Response);
+
+      root.render(React.createElement(DashboardView, stalenessProps));
+      await new Promise((r) => setTimeout(r, 200));
+
+      const indicator = container.querySelector('[data-testid="crawl-freshness-indicator"]');
+      expect(indicator).not.toBeNull();
+      expect(indicator!.querySelector('.staleness-dot-stale-danger')).not.toBeNull();
+    });
+  });
+
   describe('render tests', () => {
     const requiredProps = {
       onGrantSelect: vi.fn(),

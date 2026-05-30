@@ -214,11 +214,16 @@ export interface NotificationService {
 	generateTaskNotifications(tasks: Task[]): Notification[];
 
 	/**
-	 * Classify urgency based on deadline confidence
+	 * Classify urgency based on deadline confidence (event-based)
 	 */
 	classifyUrgency(
 		event: NotificationEvent,
 	): NotificationUrgency;
+
+	/**
+	 * Classify urgency for a grant based on deadline confidence and daysOut
+	 */
+	classifyGrantUrgency(grant: Grant): NotificationUrgency;
 
 	/**
 	 * Apply notification rules to generate a notification
@@ -543,6 +548,10 @@ export function createNotificationService(
 			}
 
 			return rule.urgency;
+		},
+
+		classifyGrantUrgency(grant: Grant): NotificationUrgency {
+			return classifyUrgency(grant);
 		},
 
 		applyRule(
