@@ -734,7 +734,18 @@ export default function AppShell() {
 
       {/* Safe Quit Dialog */}
       {showSafeQuit && (
-        <div className="safe-quit-overlay" role="dialog" aria-modal="true" aria-label="Safe quit confirmation">
+        <div
+          className="safe-quit-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Safe quit confirmation"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.stopPropagation();
+              setShowSafeQuit(false);
+            }
+          }}
+        >
           <div className="safe-quit-dialog">
             <h3>Safe Quit</h3>
             <p>
@@ -786,7 +797,18 @@ export default function AppShell() {
 
       {/* Guided Setup Wizard */}
       {showSetupWizard && (
-        <div className="setup-wizard-overlay" role="dialog" aria-modal="true" aria-label="First-run setup wizard">
+        <div
+          className="setup-wizard-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label="First-run setup wizard"
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.stopPropagation();
+              handleSetupSkip();
+            }
+          }}
+        >
           <div className="setup-wizard" data-testid="setup-wizard">
             <h2>Welcome to Grant Ops</h2>
             <div className="setup-subtitle">Let&apos;s get you set up in 3 steps</div>

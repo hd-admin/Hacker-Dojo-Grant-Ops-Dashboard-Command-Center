@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import type {
 	AuditEvent,
 	DocumentMetadata,
@@ -180,6 +180,10 @@ export default function GrantDrawer({
 	// Grounding approval state
 	const [showGroundingWarning, setShowGroundingWarning] = useState(false);
 	const [groundingOverrideConfirmed, setGroundingOverrideConfirmed] = useState(false);
+
+	// Focus trap for dialog accessibility
+	const drawerRef = useRef<HTMLDivElement>(null);
+	const previousActiveElementRef = useRef<HTMLElement | null>(null);
 
 	const viewModel = buildGrantDrawerViewModel(detail);
 	const hasDirtyNotes = revisionNote.trim().length > 0 || submitNotes.trim().length > 0;
@@ -431,6 +435,51 @@ export default function GrantDrawer({
 		onClose();
 	};
 
+	function getFocusableElements(container: HTMLElement): HTMLElement[] {
+		const selector = 'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+		return Array.from(container.querySelectorAll<HTMLElement>(selector));
+	}
+
+	const handleDialogKeyDown = (e: React.KeyboardEvent) => {
+		if (!drawerRef.current) return;
+		const focusables = getFocusableElements(drawerRef.current);
+		if (focusables.length === 0) return;
+		const first = focusables[0]!;
+		const last = focusables[focusables.length - 1]!;
+
+		if (e.key === 'Tab') {
+			if (e.shiftKey) {
+				if (document.activeElement === first) {
+					e.preventDefault();
+					last.focus();
+				}
+			} else {
+				if (document.activeElement === last) {
+					e.preventDefault();
+					first.focus();
+				}
+			}
+		}
+
+		if (e.key === 'Escape') {
+			e.stopPropagation();
+			handleRequestClose();
+		}
+	};
+
+	useEffect(() => {
+		if (!grantId || !drawerRef.current) return;
+		previousActiveElementRef.current = document.activeElement as HTMLElement;
+		const focusables = getFocusableElements(drawerRef.current);
+		if (focusables.length > 0) {
+			focusables[0]!.focus();
+		}
+		return () => {
+			previousActiveElementRef.current?.focus();
+			previousActiveElementRef.current = null;
+		};
+	}, [grantId]);
+
 	const handleConfirmRevision = async () => {
 		if (!detail || !revisionNote.trim()) return;
 		try {
@@ -599,7 +648,13 @@ export default function GrantDrawer({
 	}
 
 	return (
-		<React.Fragment>
+		<div
+			role="dialog"
+			aria-modal="true"
+			aria-label="Grant details"
+			ref={drawerRef}
+			onKeyDown={handleDialogKeyDown}
+		>
 			<button
 				type="button"
 				className="drawer-overlay open"
@@ -1350,6 +1405,6 @@ export default function GrantDrawer({
 					</>
 				) : null}
 			</aside>
-		</React.Fragment>
+		</div>
 	);
 }
