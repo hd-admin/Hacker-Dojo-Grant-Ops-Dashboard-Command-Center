@@ -1,4 +1,4 @@
-import type { FunderProfile, SavedSearch, Source, CrawlSchedule } from './types';
+import type { FunderProfile, Source, CrawlSchedule } from './types';
 
 export const SEED_FUNDERS: FunderProfile[] = [
   {

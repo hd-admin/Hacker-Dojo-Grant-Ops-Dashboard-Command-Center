@@ -301,7 +301,18 @@ export default function AppShell() {
     if (savedName) {
       setOperatorName(savedName);
     } else {
-      setShowOperatorPrompt(true);
+      // Try server-side storage
+      fetch('/api/operator')
+        .then((r) => r.json().catch(() => ({ name: '' })))
+        .then((data: { name: string }) => {
+          if (data.name) {
+            setOperatorName(data.name);
+            if (storage) storage.setItem(OPERATOR_NAME_KEY, data.name);
+          } else {
+            setShowOperatorPrompt(true);
+          }
+        })
+        .catch(() => setShowOperatorPrompt(true));
     }
 
     void Promise.all([refreshAppState(), refreshHealth(), loadActiveJobs()]).catch((error) => {
@@ -453,6 +464,12 @@ export default function AppShell() {
     if (storage) {
       storage.setItem(OPERATOR_NAME_KEY, trimmed);
     }
+    // Persist to server
+    fetch('/api/operator', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name: trimmed }),
+    }).catch(() => {});
     setShowOperatorPrompt(false);
   };
 
@@ -683,6 +700,7 @@ export default function AppShell() {
             notifications={notifications}
             recentGrantIds={recentGrantIds}
             sources={sources}
+            operatorName={operatorName}
           />
         </div>
         <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`} role="tabpanel" aria-label="Discovery">

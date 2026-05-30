@@ -18,6 +18,7 @@ interface DashboardViewProps {
   notifications?: Notification[];
   recentGrantIds?: string[];
   sources?: Source[];
+  operatorName?: string;
 }
 
 function formatDate(dateStr: string): { day: string; month: string } {
@@ -68,7 +69,7 @@ function stageDescription(stage: string | undefined): string {
   return stage;
 }
 
-export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications, recentGrantIds, sources = [] }: DashboardViewProps) {
+export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications, recentGrantIds, sources = [], operatorName }: DashboardViewProps) {
   const [jobs, setJobs] = useState<JobQueueItem[]>([]);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [crawlLatestRun, setCrawlLatestRun] = useState<CrawlRun | null>(null);
@@ -334,7 +335,7 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
         <div>
           <h1 className="header-title">
             {greeting},{' '}
-            <span className="accent">{profile?.agentBehavior.notifyEmail.split('@')[0] ?? 'there'}</span>.
+            <span className="accent">{operatorName || profile?.agentBehavior.notifyEmail.split('@')[0] || 'there'}</span>.
           </h1>
           <div className="header-sub">
             {dayName} \u00b7 {dateStr} \u00b7 {activeGrants.length} grants in pipeline
