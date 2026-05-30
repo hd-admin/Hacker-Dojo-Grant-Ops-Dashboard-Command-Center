@@ -4,6 +4,7 @@ import React from 'react';
 import { useEffect, useState } from 'react';
 import type { Notification } from '../../../shared/types';
 import { notificationsApi } from '../lib/grant-ops-client';
+import { sanitizeNotificationText } from '../lib/sanitize-html';
 
 interface NotificationsViewProps {
   notifications?: Notification[];
@@ -74,7 +75,7 @@ export default function NotificationsView({ notifications: notificationsProp }: 
           <div key={notification.id} className="notification-item">
             <div className={`notification-dot ${notification.dot}`} />
             <div className="notification-content">
-              <div className="notification-text" dangerouslySetInnerHTML={{ __html: notification.text }} />
+              <div className="notification-text" dangerouslySetInnerHTML={{ __html: sanitizeNotificationText(notification.text) }} />
               <div className="notification-time">{notification.time}</div>
             </div>
           </div>

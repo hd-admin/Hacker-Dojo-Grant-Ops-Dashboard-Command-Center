@@ -27,7 +27,7 @@ test('scheduled-crawl: due schedules trigger a real crawl run', async ({
     },
   );
   expect(saveScheduleResponse.ok()).toBeTruthy();
-  const savedSchedule = (await saveScheduleResponse.json()) as { id: string };
+  const _savedSchedule = (await saveScheduleResponse.json()) as { id: string };
 
   await markScheduleDue(request, createdSource.source.id);
 

@@ -5,6 +5,7 @@ import { ClipboardList, MessageCircle, Search } from 'lucide-react';
 import type { CrawlRun, FollowUp, Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
 import { jobFailureMessages } from '../lib/failure-messages';
+import { sanitizeNotificationText } from '../lib/sanitize-html';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'sources' | 'settings' | 'notifications' | 'tasks';
 
@@ -455,7 +456,7 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
                 <div key={idx} className="activity-item">
                   <div className={`activity-dot ${item.dot}`} />
                   <div>
-                    <div className="activity-text" dangerouslySetInnerHTML={{ __html: item.text }} />
+                    <div className="activity-text" dangerouslySetInnerHTML={{ __html: sanitizeNotificationText(item.text) }} />
                     <div className="activity-time">{item.time}</div>
                   </div>
                 </div>
