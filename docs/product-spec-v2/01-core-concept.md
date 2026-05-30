@@ -9,7 +9,7 @@
 1. **Hardcoded for Hacker Dojo** — No setup wizard. Org profile, programs, voice pre-loaded.
 2. **Full Lifecycle** — Discover → Draft → Submit → Track → Report. Nothing falls through cracks.
 3. **AI-First, Human-Approved** — AI assists at every stage; humans approve every submission.
-4. **Local-First, Zero Cloud** — All data on disk. Backups are folder copies. No vendor lock-in.
+4. **Local-First, Zero Cloud for Persistence** — All application data stays on disk. Backups are folder copies. No hosted database, SaaS backend, or cloud storage dependency. Optional AI features and operator-enabled external data APIs may require internet access, but the app remains fully usable for manual grant tracking when offline.
 5. **Opinionated for Makerspaces** — Categories, tags, and funder knowledge tuned for community spaces.
 
 ## Hardcoded Hacker Dojo Profile
@@ -173,7 +173,7 @@ operator:
   # - Default funding sources and crawl schedules
 ```
 
-The name is stored in `.grant-ops-data/operator.json` and read on startup. If not set, the app prompts once: "What's your name? This will be used when drafting emails and recording submissions." This is the only onboarding prompt.
+The name is stored in the SQLite `settings` table under `operator.name` and read on startup. If not set, the app prompts once: "What's your name? This will be used when drafting emails and recording submissions." This is the only onboarding prompt.
 
 ## User Model
 

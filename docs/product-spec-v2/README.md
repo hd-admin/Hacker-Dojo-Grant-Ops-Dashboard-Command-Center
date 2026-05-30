@@ -34,6 +34,8 @@ This specification defines the next evolution of Hacker Dojo Grant Ops — a loc
 | 08 | [Design System](./08-design-system.md) | Color palette, typography, components |
 | 09 | [Technical Architecture](./09-technical-architecture.md) | Agent loop, typed artifacts, tmp management, async UI |
 | 10 | [Technical Acceptance Criteria](./10-technical-acceptance-criteria.md) | **Specific, testable AC for every subsystem** |
+| 11 | [Technical Infrastructure](./11-technical-infrastructure.md) | Technology stack, API routes, document management, search, notifications, configuration, passcode, logging, backup, identity |
+| 12 | [Data Architecture](./12-data-architecture.md) | Connection configuration, complete database schema (all tables, indexes, FTS5), seed data, initialization, SQLite gotchas |
 
 ## How to Use This Spec
 

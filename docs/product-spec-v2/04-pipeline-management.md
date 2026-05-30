@@ -92,7 +92,7 @@ Tasks marked `blockSubmission: true` prevent the grant from moving to "Submissio
 For spreadsheet-minded users. Columns: Grant Title, Funder, Status, Deadline, Award, Responsibility, Urgency.
 
 ### Board View (default)
-Kanban columns per pipeline state. Drag to move between states (with confirmation for irreversible moves like "Submitted").
+Kanban columns per pipeline state. Cards do **not** move by drag-and-drop. Each card exposes an explicit "Move to…" action menu with confirmation for irreversible moves like "Submitted".
 
 ### Filters
 - By status, responsibility tag, urgency, funder type
@@ -118,13 +118,24 @@ The UI must never infer certainty where the source data is ambiguous. This is a 
 
 ## Calendar Integration
 
-Deadlines, reporting dates, and follow-up reminders sync to external calendars. The operator can connect Google Calendar or Outlook — grant deadlines appear alongside other commitments. No double data entry.
+The app does NOT sync with external calendar services — that would violate the local-first, zero-cloud principle. Instead, it generates local `.ics` files (via `ical-generator` v10.2.0) that the operator can import into any calendar application (macOS Calendar, Google Calendar, Outlook) as a one-time import or recurring manual refresh.
 
-Built-in calendar view within the app shows:
+**Export workflow:**
+1. Operator clicks "Export Calendar" from the Calendar view
+2. App generates an `.ics` file at `.grant-ops-data/exports/calendar.ics` containing:
+   - Grant deadlines with 24h and 1h before alarms
+   - Report due dates with 48h before alarms
+   - Follow-up task due dates
+3. Operator opens the `.ics` file — macOS Calendar imports it automatically
+4. To update: operator clicks "Export Calendar" again for a fresh `.ics` file
+
+**Built-in calendar view** within the app shows:
 - Grant deadlines color-coded by urgency (overdue red, urgent orange, soon yellow, normal blue)
 - Reporting due dates from awarded grants
 - Follow-up task due dates
 - Monthly and weekly toggle views
+
+No double data entry. No cloud dependency. The operator controls when and where calendar data is exported.
 
 ## Outreach Tracking
 

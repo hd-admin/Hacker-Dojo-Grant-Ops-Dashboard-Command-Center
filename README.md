@@ -6,7 +6,7 @@ A local-first, single-user grant management application for Hacker Dojo. Researc
 
 ### Prerequisites
 
-- **Node.js** 18.17 or newer
+- **Node.js** 24.x (Active LTS) or newer
 - **pnpm** (install with `npm install -g pnpm`)
 - **OpenCode CLI** (for AI-powered research and drafting — [install guide](https://opencode.ai))
 
@@ -54,7 +54,7 @@ The app includes a built-in backup/restore system accessible from the Settings v
 
 ## Architecture
 
-- **Frontend:** Next.js 15 with React, Tailwind CSS
+- **Frontend:** Next.js 16 with React, Custom CSS (design tokens) — no Tailwind
 - **Backend:** Next.js API routes (no separate server needed)
 - **Database:** SQLite via better-sqlite3 (embedded, zero-config)
 - **AI Agent:** OpenCode CLI for grant research and proposal drafting

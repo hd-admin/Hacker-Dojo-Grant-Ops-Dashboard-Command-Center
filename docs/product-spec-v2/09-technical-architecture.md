@@ -57,6 +57,7 @@ OpenCode agents never communicate results via stdout. Instead, they write struct
     .cache/                     # Agent cache (periodically cleaned)
   artifacts/                    # Persisted verified artifacts
     research/
+    crawls/
     drafts/
     matches/
     extracts/
@@ -225,7 +226,9 @@ interface AgentJob {
 
 async function executeAgentJob(job: AgentJob): Promise<void> {
   const tmpDir = path.join(DATA_DIR, "tmp");
-  const artifactPath = path.join(tmpDir, `${job.type}-${job.id}.json`);
+  const artifactPath = job.type === 'draft'
+    ? path.join(tmpDir, `${job.type}-${job.id}-${job.params.version}.json`)
+    : path.join(tmpDir, `${job.type}-${job.id}.json`);
 
   // 1. Build the prompt with artifact schema embedded
   const prompt = buildPrompt(job.type, job.params, artifactPath);
@@ -289,7 +292,20 @@ async function executeAgentJob(job: AgentJob): Promise<void> {
 
       // 6. Persist verified artifact
       const verified = parseResult.data;
-      const persistPath = path.join(DATA_DIR, "artifacts", job.type, `${job.id}.json`);
+      const artifactDirByType = {
+        research: 'research',
+        crawl: 'crawls',
+        draft: 'drafts',
+        match: 'matches',
+        extract: 'extracts',
+      } as const;
+
+      const persistPath = path.join(
+        DATA_DIR,
+        'artifacts',
+        artifactDirByType[job.type],
+        `${job.id}.json`
+      );
       fs.mkdirSync(path.dirname(persistPath), { recursive: true });
       fs.writeFileSync(persistPath, JSON.stringify(verified, null, 2));
 
@@ -337,7 +353,7 @@ export const ResearchArtifactSchema = z.object({
   })),
   evidence: z.array(z.object({
     grantTitle: z.string(),
-    evidenceType: z.enum(["fit_score","deadline","award_amount","eligibility","requirements"]),
+    evidenceType: z.enum(["fit_score","deadline","award_amount","eligibility","requirements","giving_pattern"]),
     content: z.string(),
     sourceUrl: z.string().optional(),
   })),
@@ -440,13 +456,17 @@ interface JobProgressProps {
 
 ### Progress Stages Per Job Type
 
-| Job Type | Stages |
+The OpenCode subprocess is a black box. The app MUST report only stages it can directly observe from the controller lifecycle. No fictional mid-process stages are allowed unless OpenCode writes a separate progress file.
+
+| Job Type | Observable Stages |
 |---|---|
-| research | queued → preparing → searching → analyzing → scoring → writing artifact |
-| draft | queued → loading context → generating → structuring → grounding → writing artifact |
-| crawl | queued → connecting → fetching → parsing → normalizing → writing artifact |
-| match | queued → loading grants → analyzing profile → scoring → ranking → writing artifact |
-| extract | queued → loading document → parsing → extracting → validating → writing artifact |
+| research | queued → preparing → running → verifying → completed |
+| draft | queued → preparing → running → verifying → completed |
+| crawl | queued → preparing → running → verifying → completed |
+| match | queued → preparing → running → verifying → completed |
+| extract | queued → preparing → running → verifying → completed |
+
+If a future OpenCode version emits structured progress into `tmp/progress-{jobId}.json`, these stages may be refined. Until then, the UI MUST NOT imply insight into internal agent work such as "analyzing" or "ranking".
 
 ### Polling & Subscription
 
@@ -487,6 +507,13 @@ export function periodicCleanup(): void {
 ```
 
 ## Agent Communication Contract
+
+### Subprocess Lifecycle Safeguards
+
+- The controller records the spawned process PID in the job record.
+- On startup, any job left in `running` or `verifying` state from a previous app crash is marked `failed`.
+- If the recorded PID is still alive and matches an OpenCode process for that job, the app terminates it before accepting new jobs.
+- Crawl jobs MUST honor per-source throttling settings from technical infrastructure (`crawl.requestDelayMs`, `crawl.respectRobotsTxt`, `crawl.userAgent`).
 
 ### What OpenCode MUST Do
 

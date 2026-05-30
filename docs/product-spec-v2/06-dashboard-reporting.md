@@ -99,12 +99,19 @@ For board/leadership review:
 - Projected award value based on historical success rate
 - At-risk grants (near deadline, not yet submitted)
 
+**Calculation rules (deterministic, not AI-generated):**
+- `projected submissions next 90 days` = count of grants in `approved` or `submission-ready` state with deadlines inside the next 90 days
+- `projected award value` = sum of each projected submission's `awardSort * historicalSuccessRate`, where `historicalSuccessRate = awarded / submitted` over the trailing 24 months (or 0 if fewer than 5 submitted grants exist)
+- `at-risk grants` = grants with deadline < 14 days and status not in `submitted`, `awarded`, or `declined`
+
 ### Annual Summary
 - Total grants submitted
 - Total awarded
 - Success rate
 - Top funders
 - Lessons learned (from declined grants)
+
+**Lessons learned capture**: when a grant transitions to `declined`, the operator is prompted for an optional free-text retrospective note. That note is stored on the grant record and included in the annual summary export.
 
 ## Activity Feed
 

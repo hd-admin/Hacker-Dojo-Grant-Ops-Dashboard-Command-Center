@@ -29,7 +29,7 @@ Saved search queries that automatically refresh with each crawl cycle. New oppor
 Beyond basic funder profiles: multi-year giving trends, typical award sizes, funding priorities by year, organizations commonly funded together. "This foundation has increased STEM funding 40% year-over-year."
 
 ### 7. Eligibility Vetting
-Before the operator spends time on a grant, the AI checks basic eligibility: nonprofit status, geography, budget range, program area fit. Clearly flags: "You meet all eligibility requirements" or "Requires 3 years of audited financials — Hacker Dojo has 2 years on file."
+Before the operator spends time on a grant, the AI checks basic eligibility: nonprofit status, geography, budget range, and program area fit. Clearly flags: "You meet all eligibility requirements" or "Requires uploaded audited financial statements — confirm the required documents are on file."
 
 ### 8. Hidden Giving Pattern Detection
 OpenCode analyzes funder 990 data to detect patterns a human might miss: funders that consistently support makerspaces but don't advertise it, foundations shifting focus areas, new corporate giving programs without formal RFPs yet.

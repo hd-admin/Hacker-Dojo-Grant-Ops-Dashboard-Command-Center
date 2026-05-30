@@ -55,15 +55,15 @@
 }
 ```
 
-**AC-1.4.2** — Progress MUST transition through these stages (minimum) for each job type:
+**AC-1.4.2** — Progress MUST transition only through stages the controller can directly observe. Until OpenCode emits structured progress, the required stages are:
 
 | Job Type | Required Stages (in order) |
 |---|---|
-| research | queued(0) → preparing(5) → searching(30) → analyzing(60) → writing-artifact(80) → verifying(90) → completed(100) |
-| draft | queued(0) → loading-context(5) → generating(40) → structuring(70) → writing-artifact(85) → verifying(95) → completed(100) |
-| crawl | queued(0) → connecting(5) → fetching(30) → parsing(60) → writing-artifact(80) → verifying(90) → completed(100) |
-| match | queued(0) → loading-grants(10) → analyzing-profile(40) → scoring(70) → writing-artifact(85) → verifying(95) → completed(100) |
-| extract | queued(0) → loading-document(10) → extracting(50) → writing-artifact(80) → verifying(90) → completed(100) |
+| research | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
+| draft | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
+| crawl | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
+| match | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
+| extract | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
 
 **AC-1.4.3** — The `/api/jobs/{jobId}` endpoint MUST return progress within 100ms. The frontend MUST poll every 2 seconds while a job has status `"running"` or `"verifying"` or `"retrying"`.
 
@@ -186,6 +186,10 @@
 
 **AC-4.1.3** — Crawl results MUST be deduplicated against existing grants before ingestion. Two grants are duplicates if they have the same `title` (case-insensitive, trimmed) AND same `funder` (case-insensitive, trimmed). Duplicates are logged but not ingested.
 
+**AC-4.1.4** — Crawl jobs MUST respect `crawl.requestDelayMs`, `crawl.respectRobotsTxt`, and `crawl.userAgent`. The default request delay is 2000ms between requests to the same source.
+
+**AC-4.1.5** — Deleting a source MUST NOT delete linked grant records. Instead, `grants.sourceId` is set to `NULL` and the grant remains available for manual review/history.
+
 ### 4.2 — Crawl Scheduling
 
 **AC-4.2.1** — Each source MUST have a configurable `intervalHours`. Default intervals:
@@ -196,6 +200,8 @@
 **AC-4.2.2** — The scheduler MUST check every 60 seconds whether any source is due for crawling (`now - lastCrawledAt >= intervalHours`). Due sources are queued as crawl jobs and processed sequentially (max 1 concurrent crawl).
 
 **AC-4.2.3** — Manual crawl (user clicks "Refresh crawl") MUST bypass the scheduler and queue immediately. If a crawl is already running for that source, the manual request is ignored with a message: "Crawl already in progress for {source}".
+
+**AC-4.2.4** — Every crawl request MUST create a `crawl_runs` record linked to both the `sourceId` and the spawned `agent_job`. `GET /api/sources/{id}/crawls` MUST read from that persisted history.
 
 ### 4.3 — Crawl Status Visibility
 
@@ -345,12 +351,12 @@
 
 **AC-8.1.1** — All writes to SQLite MUST use WAL mode (Write-Ahead Logging). The database file MUST be at `.grant-ops-data/grant-ops.sqlite`.
 
-**AC-8.1.2** — The app MUST run `PRAGMA integrity_check` on startup. If the check fails, the app MUST:
+**AC-8.1.2** — On startup, the app MUST run `PRAGMA quick_check`. If it fails, the app MUST fall back to `PRAGMA integrity_check`. If either check fails, the app MUST:
 - Show a blocking error: "Database integrity check failed. Your data may be corrupted."
 - Offer a restore-from-backup option
 - NOT allow any writes until resolved
 
-**AC-8.1.3** — The app MUST create automatic backups before any schema migration. The backup MUST be a file copy of the SQLite database with timestamp: `.grant-ops-data/backups/grant-ops-{ISO timestamp}.sqlite`.
+**AC-8.1.3** — Before any operator-initiated destructive schema rebuild or restore, the app MUST first run `PRAGMA wal_checkpoint(TRUNCATE)` and then create an automatic backup. That backup MUST include the SQLite database file plus all files in `.grant-ops-data/documents/` and `.grant-ops-data/artifacts/`, packaged as `.grant-ops-data/backups/grant-ops-{ISO timestamp}.zip`.
 
 ### 8.2 — Backup & Restore
 
@@ -366,6 +372,7 @@
 - Warn if the backup is older than 7 days: "This backup is {n} days old. Restoring will replace all current data."
 - Require explicit confirmation before proceeding
 - Create a backup of current state before overwriting ("pre-restore backup")
+- Pause new jobs, wait for running write transactions to finish, close all SQLite handles, perform the restore, then re-open handles only after integrity checks pass
 
 **AC-8.2.3** — The Settings view MUST show:
 - "Last backup: {relative time}" or "Never backed up"
@@ -433,6 +440,10 @@
 
 **AC-10.2.2** — Document uploads MUST be atomic: the file is written to a temp path first, then renamed to the final path only after successful database record creation. If the database write fails, the temp file is deleted.
 
+**AC-10.2.3** — On startup, any agent job still marked `running` or `verifying` from a previous process crash MUST be marked `failed`. Any orphaned matching OpenCode subprocess MUST be terminated before new jobs are accepted.
+
+**AC-10.2.4** — The job record MUST store the spawned subprocess PID and process start time so orphan detection can be implemented after a crash.
+
 ---
 
 ## 11. Performance
@@ -455,9 +466,11 @@
 
 **AC-12.1.1** — The app MUST NOT expose any API endpoints on network interfaces other than `localhost` (127.0.0.1). The Next.js server MUST bind to `localhost` only.
 
-**AC-12.1.2** — The passcode lock feature MUST use bcrypt (or equivalent) to hash the passcode. The hash MUST be stored in `.grant-ops-data/.passcode`. Plain-text passcodes MUST never be stored.
+**AC-12.1.2** — The passcode lock feature MUST use **argon2id** as the primary hash algorithm. The hash MUST be stored in the `settings` table under `passcode.hash`. If the native `argon2` package fails to compile on macOS, `bcryptjs` with cost factor 12 MAY be used as a fallback. Plain-text passcodes MUST never be stored.
 
-**AC-12.1.3** — All file reads and writes MUST be restricted to within `.grant-ops-data/`. The API MUST reject any path containing `..` or absolute paths outside this directory.
+**AC-12.1.3** — All application-managed persistent reads and writes MUST be restricted to within `.grant-ops-data/`. The only exceptions are operator-initiated backup/restore import-export targets (for example a user-selected `.zip` destination or source). The API MUST reject any path containing `..` or arbitrary absolute paths unless it is an explicit operator-selected backup/restore/export path.
+
+**AC-12.1.4** — When passcode lock is enabled and the app is locked, all protected page requests and API routes MUST reject access until unlock. Protected API routes MUST return HTTP 423 with the standard error contract. Only `/api/passcode/status`, `/api/passcode/verify`, and `/api/health*` remain accessible while locked.
 
 ---
 
@@ -578,18 +591,15 @@
 
 **AC-14.7.3** — After 1000 write transactions, the app MUST trigger an automatic WAL checkpoint to prevent unbounded WAL file growth.
 
-### 14.8 — Schema Migration Testing
+### 14.8 — Schema Initialization and Forward Migration Testing
 
-**AC-14.8.1** — Every schema migration MUST have a test that:
-1. Creates a database at the previous schema version
-2. Inserts sample data matching the old schema
-3. Runs the migration
-4. Verifies all data is preserved and matches the new schema
-5. Verifies the migration is idempotent (running it twice does not fail)
+**AC-14.8.1** — On a clean machine with no `.grant-ops-data/grant-ops.sqlite`, startup MUST create the full schema, all indexes, and all FTS5 tables in a single transaction.
 
-**AC-14.8.2** — If a migration fails mid-way, the database MUST be rolled back to the pre-migration state. No partial migration state is left behind. The rollback MUST use SQLite's `SAVEPOINT` mechanism.
+**AC-14.8.2** — If schema initialization fails mid-way, the database file MUST be deleted and recreated on the next startup attempt. No partial schema state may persist.
 
-**AC-14.8.3** — Before running any migration, the app MUST create an automatic backup (file copy of the SQLite database). If the migration fails, the user is directed to this backup.
+**AC-14.8.3** — For any released v2 build after the initial schema, forward-only migration scripts MUST be applied in order, each inside a transaction.
+
+**AC-14.8.4** — Before any migration or operator-initiated destructive schema rebuild, the app MUST create an automatic backup (file copy of the SQLite database). If the migration or rebuild fails, the user is directed to this backup.
 
 ### 14.9 — OpenCode Subprocess Lifecycle
 
@@ -804,6 +814,120 @@ The JSON must match this schema exactly:
 
 ---
 
+## 16. Technical Infrastructure (from 11-technical-infrastructure.md and 12-data-architecture.md)
+
+### 16.1 — API Route Validation
+
+**AC-16.1.1** — Every API route MUST validate request bodies with Zod schemas. Invalid requests MUST return HTTP 400 with the error contract shape from AC-14.10 and the specific Zod error details.
+
+**AC-16.1.2** — Every API route MUST validate query parameters with Zod schemas. Invalid query params MUST return HTTP 400.
+
+**AC-16.1.3** — The `GET /api/grants` endpoint MUST support pagination via `page` and `pageSize` query parameters. Default pageSize is 25, max is 100.
+
+### 16.2 — Database Connection & Integrity
+
+**AC-16.2.1** — On startup, the app MUST configure better-sqlite3 with these exact PRAGMAs: `journal_mode=WAL`, `busy_timeout=5000`, `synchronous=NORMAL`, `cache_size=-64000`, `foreign_keys=ON`, `temp_store=MEMORY`, `mmap_size=268435456`, `wal_autocheckpoint=1000`.
+
+**AC-16.2.2** — On startup, the app MUST run `PRAGMA quick_check`. If it fails, fall back to `PRAGMA integrity_check`. If either fails: block all writes, show error overlay, offer restore-from-backup.
+
+**AC-16.2.3** — On startup, if a `-wal` file exists from a previous crash, the app MUST run `PRAGMA wal_checkpoint(TRUNCATE)` before any reads.
+
+**AC-16.2.4** — On first run (database file does not exist), the app MUST create all tables, indexes, and FTS5 virtual tables in a single transaction. Seed data MUST be inserted in the same transaction.
+
+**AC-16.2.5** — All `server-only` modules containing better-sqlite3 imports MUST include `import 'server-only'` at the top. Build MUST fail if any such module is imported from a client component.
+
+**AC-16.2.6** — All synchronous better-sqlite3 queries in Route Handlers MUST call `await connection()` from `next/server` before executing. Without this, queries run during prerendering and may throw.
+
+### 16.3 — FTS5 Search
+
+**AC-16.3.1** — The `grants_fts` virtual table MUST use the contentless FTS5 design defined in `12-data-architecture.md` §2.2: it stores a `grantId` text foreign key plus indexed text fields, and AI/AD/AU triggers keep it in sync with the `grants` table.
+
+**AC-16.3.2** — `GET /api/grants?search=...` MUST return results ranked by FTS5 bm25 relevance within 200ms for 500 grants.
+
+**AC-16.3.3** — FTS5 search MUST be combinable with other filters (status, funderType, minFit, maxDeadline). Combined queries MUST return correct intersection results.
+
+**AC-16.3.4** — Soft-deleted grants (`deletedAt IS NOT NULL`) MUST NOT appear in search results.
+
+### 16.4 — Document Upload & Checksums
+
+**AC-16.4.1** — Every document upload MUST compute a SHA-256 checksum via `node:crypto` and store it in `documents.checksum`. The checksum MUST be verifiable after download.
+
+**AC-16.4.2** — Document upload MUST validate MIME type using `file-type` (magic number sniffing), not just the client-reported MIME type.
+
+**AC-16.4.3** — Files MUST be written atomically: temp path → DB record created → rename to final UUID-based filename. If DB write fails, temp file is deleted.
+
+**AC-16.4.4** — Text extraction for PDFs MUST use `pdf-parse` (simple) or `pdfjs-dist` (layout-aware). DOCX extraction MUST use `mammoth.extractRawText()`. Extraction failures MUST set `extractionStatus` to `"failed"` with `extractionError`, NOT crash the upload.
+
+### 16.5 — Notification System
+
+**AC-16.5.1** — Toast notifications MUST stack from top-right, max 3 visible. Success/info toasts auto-dismiss after 5 seconds. Error toasts are sticky until dismissed.
+
+**AC-16.5.2** — The sidebar notification badge count MUST reflect activity events since the last session start (stored in `localStorage`). Clicking the badge opens a drawer of recent activity events.
+
+**AC-16.5.3** — System-driven notifications (crawl complete, draft generated, deadline approaching, backup complete) MUST appear within 5 seconds of the triggering event.
+
+### 16.6 — Budget Import Parsing
+
+**AC-16.6.1** — CSV budget imports MUST use `csv-parse` with `columns: true, cast: true`. XLSX budget imports MUST use `xlsx` (SheetJS) `0.20.3`.
+
+**AC-16.6.2** — The budget import parser MUST detect header rows by scanning the first 10 rows for budget-related keywords (`category`, `item`, `line`, `description`, `amount`, `budget`, `total`, `cost`, `expense`).
+
+**AC-16.6.3** — After parsing, the operator MUST be presented with detected columns for review and confirmation before any data is ingested. No automatic ingestion without operator confirmation.
+
+**AC-16.6.4** — Invalid rows (non-numeric amounts, missing categories) MUST be flagged in the review table with specific error messages. The operator can fix or skip rows.
+
+### 16.7 — Passcode Lock
+
+**AC-16.7.1** — Passcodes MUST be hashed with **argon2id** using these parameters: `memoryCost=65536` (64 MB), `timeCost=3`, `parallelism=4`. If the `argon2` native package fails to compile on macOS, fall back to `bcryptjs` with cost factor 12.
+
+**AC-16.7.2** — The lock screen MUST overlay the entire app with a blurred background. Passcode input is 4–12 characters, masked. After 5 failed attempts, a 30-second cooldown MUST be enforced.
+
+**AC-16.7.3** — Inactivity detection MUST track `mousemove`, `mousedown`, `keydown`, and `touchstart` events. The timer resets on each event. When `passcode.inactivityTimeout` minutes of inactivity are reached, the lock screen appears.
+
+**AC-16.7.4** — All background operations (agent jobs, crawls, timers, backup) MUST continue while the passcode lock is active. Locking MUST NOT interrupt running operations.
+
+**AC-16.7.5** — Manual lock MUST be available via `Cmd+L` / `Ctrl+L` keyboard shortcut and sidebar action.
+
+**AC-16.7.6** — Successful unlock MUST issue an `HttpOnly`, `SameSite=Strict` session cookie. Manual lock or inactivity lock MUST clear that cookie immediately.
+
+### 16.8 — Logging
+
+**AC-16.8.1** — All app logs MUST be structured JSON (one object per line) written by **pino** v10.3.1 via **pino-roll** v4.0.0 with daily rotation, max 10 files, 20MB per file.
+
+**AC-16.8.2** — Log files MUST be written to `.grant-ops-data/logs/`. Agent session logs MUST be written to `.grant-ops-data/tmp/session-{jobId}.log`.
+
+**AC-16.8.3** — Logs MUST include at minimum: `timestamp` (ISO 8601), `level` (error/warn/info/debug), `message` (human-readable), and `module` (identifying the subsystem).
+
+**AC-16.8.4** — The Settings → Logs view MUST allow the operator to browse logs paginated and filter by level. The "View log" button on failed jobs MUST open the specific session log.
+
+**AC-16.8.5** — Debug-level logging MUST be off by default. A toggle in Settings MUST enable it. Full prompt text and raw artifact JSON MUST only be logged at debug level.
+
+**AC-16.8.6** — `activity_events` MUST be trimmed daily to the most recent 20,000 rows and rows older than 365 days MUST be deleted.
+
+### 16.9 — Automated Backup
+
+**AC-16.9.1** — Backups MUST use **`adm-zip`** v0.5.17 to create `.zip` archives. Before backup, `wal_checkpoint(TRUNCATE)` MUST run to flush WAL to the main database file.
+
+**AC-16.9.2** — After zip creation, a SHA-256 checksum MUST be computed via `node:crypto` and written to a companion `.zip.sha256` file. The checksum MUST be verified on restore before replacing any data.
+
+**AC-16.9.3** — The backup scheduler MUST check every 60 minutes whether a backup is due. When due, backup runs and `backup_schedule.nextBackupAt` is updated.
+
+**AC-16.9.4** — If the backup destination has insufficient space (< 200MB free after zip creation), the backup MUST fail with a clear error message and toast notification.
+
+**AC-16.9.5** — When `maxBackups` is exceeded, the oldest backup files MUST be deleted. Deletion happens AFTER the new backup is verified, not before.
+
+### 16.10 — Calendar (iCal Export)
+
+**AC-16.10.1** — Calendar export MUST use **`ical-generator`** v10.2.0 to generate `.ics` files at `.grant-ops-data/exports/calendar.ics`. The export MUST include grant deadlines (with 24h and 1h before alarms), report due dates (with 48h before alarms), and follow-up task due dates.
+
+**AC-16.10.2** — The `GET /api/calendar/export` endpoint MUST return the `.ics` file with `Content-Type: text/calendar` and `Content-Disposition: attachment` headers.
+
+**AC-16.10.3** — The `GET /api/calendar/export/{scope}` endpoint MUST support scoped exports: `grants` (deadlines only), `reports` (report due dates only), `all` (everything).
+
+**AC-16.10.4** — The app MUST NOT connect to any external calendar service (Google, Outlook, iCloud). Calendar integration is export-only — the operator imports the `.ics` file manually.
+
+---
+
 ## Release Gate Summary
 
 The app is NOT ready for use unless ALL acceptance criteria in sections 1–15 are verified passing. No exceptions.
@@ -825,3 +949,13 @@ The app is NOT ready for use unless ALL acceptance criteria in sections 1–15 a
 - [ ] Backup → delete data → restore round-trip verified
 - [ ] Prompt templates contain no placeholder text (verified by AC-15.7.1)
 - [ ] All quality gates (AC-15.8) pass for at least one real smoke test run per job type
+- [ ] All API routes validate inputs with Zod (AC-16.1)
+- [ ] Database PRAGMAs configured correctly on startup (AC-16.2.1)
+- [ ] FTS5 search returns correct results within 200ms (AC-16.3)
+- [ ] Document uploads compute and verify SHA-256 checksums (AC-16.4)
+- [ ] Notification toasts appear within 5s of triggering events (AC-16.5)
+- [ ] Budget import parser detects headers and presents review table (AC-16.6)
+- [ ] Passcode lock uses argon2id with correct parameters (AC-16.7)
+- [ ] Logging uses pino with structured JSON and daily rotation (AC-16.8)
+- [ ] Automated backup uses adm-zip with SHA-256 verification (AC-16.9)
+- [ ] Calendar export generates valid .ics files, no cloud connection (AC-16.10)
