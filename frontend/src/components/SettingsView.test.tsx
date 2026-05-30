@@ -341,4 +341,47 @@ describe('SettingsView', () => {
     Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Confirm restore')?.click();
     await waitFor(() => backupRestore.mock.calls.length > 0);
   });
+
+  it('renders backup-stale-warning when lastBackupAt is stale', async () => {
+    backupGetFreshness.mockResolvedValue({
+      lastBackupAt: '2025-12-01T00:00:00.000Z',
+      isStale: true,
+      lastBackupVerification: { checkedAt: '2025-12-01T00:00:00.000Z', outcome: 'Stale', grantCount: 0, documentCount: 0, type: 'backup' },
+      lastRestoreVerification: { checkedAt: '2025-12-01T00:00:00.000Z', outcome: 'Stale', grantCount: 0, documentCount: 0, type: 'restore' },
+    });
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+    await waitFor(() => container.querySelector('[data-testid="backup-stale-warning"]') !== null);
+    expect(container.querySelector('[data-testid="backup-stale-warning"]')?.textContent).toContain('No backup in the last 24 hours');
+  });
+
+  it('does not render backup-stale-warning when backup is recent', async () => {
+    const recentDate = new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString();
+    backupGetFreshness.mockResolvedValue({
+      lastBackupAt: recentDate,
+      isStale: false,
+      lastBackupVerification: { checkedAt: recentDate, outcome: 'OK', grantCount: 2, documentCount: 2, type: 'backup' },
+      lastRestoreVerification: { checkedAt: recentDate, outcome: 'OK', grantCount: 1, documentCount: 1, type: 'restore' },
+    });
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('Backup & Restore') === true);
+    expect(container.querySelector('[data-testid="backup-stale-warning"]')).toBeNull();
+  });
+
+  it('shows settings-toast after keyword cluster removal', async () => {
+    themesGet.mockResolvedValue({
+      keywordClusters: [{ id: 'kc-1', name: 'Test Cluster', keywords: ['test'], weight: 80, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }],
+      themes: [], regions: [], populations: [], strategicPriorities: [],
+    });
+    themesUpdate.mockResolvedValue({ keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] });
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('Test Cluster') === true);
+
+    const removeBtn = Array.from(container.querySelectorAll('button')).find((btn) => btn.textContent?.includes('Remove'));
+    expect(removeBtn).not.toBeNull();
+
+    removeBtn!.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await waitFor(() => container.querySelector('[data-testid="settings-toast"]') !== null);
+    expect(container.querySelector('[data-testid="settings-toast"]')?.textContent).toContain('Keyword cluster removed');
+  });
 });
+

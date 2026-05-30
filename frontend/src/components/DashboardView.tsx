@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ClipboardList, MessageCircle, Search } from 'lucide-react';
-import type { FollowUp, Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem } from '../../../shared/types';
+import type { CrawlRun, FollowUp, Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
 import { jobFailureMessages } from '../lib/failure-messages';
 
@@ -69,6 +69,8 @@ function stageDescription(stage: string | undefined): string {
 export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications, recentGrantIds }: DashboardViewProps) {
   const [jobs, setJobs] = useState<JobQueueItem[]>([]);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
+  const [crawlLatestRun, setCrawlLatestRun] = useState<CrawlRun | null>(null);
+  const [crawlFetching, setCrawlFetching] = useState(true);
   const activity: ActivityEvent[] = (notifications && notifications.length > 0)
     ? notifications.slice(0, 6).map((n) => ({ dot: n.dot, text: n.text, time: n.time }))
     : [];
@@ -84,6 +86,33 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
   };
 
   const handleNewSearch = () => { onNavigate?.('discovery'); };
+
+  const handleRetryCrawl = async () => {
+    try {
+      await client.research.trigger();
+      const data = await client.research.getRuns();
+      setCrawlLatestRun(data.latestRun ?? null);
+      await onRefreshAppState?.();
+    } catch (error) {
+      console.error('Error triggering crawl:', error);
+    }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadCrawlRuns = async () => {
+      try {
+        const data = await client.research.getRuns();
+        if (!cancelled) setCrawlLatestRun(data.latestRun ?? null);
+      } catch {
+        if (!cancelled) setCrawlLatestRun(null);
+      } finally {
+        if (!cancelled) setCrawlFetching(false);
+      }
+    };
+    void loadCrawlRuns();
+    return () => { cancelled = true; };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -181,6 +210,51 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
 
   const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
   const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+
+  // Crawl freshness computation
+  const msInHour = 3600000;
+  const msInDay = 24 * msInHour;
+  const crawlNow = Date.now();
+  const lastCompletedAt = crawlLatestRun?.completedAt;
+  const ageMs = lastCompletedAt ? crawlNow - new Date(lastCompletedAt).getTime() : null;
+  const isCrawlFailed = crawlLatestRun?.status === 'failed';
+  const isCrawlPartial = crawlLatestRun?.status === 'partial-results';
+  const neverCrawled = crawlLatestRun === null;
+
+  let stalenessLabel: string;
+  let stalenessDotClass: string;
+  let stalenessCardClass: string;
+
+  if (neverCrawled || crawlFetching) {
+    stalenessLabel = crawlFetching ? 'Loading...' : 'No crawls yet';
+    stalenessDotClass = 'staleness-dot-never';
+    stalenessCardClass = '';
+  } else if (isCrawlFailed) {
+    stalenessLabel = 'Crawl failed';
+    stalenessDotClass = 'staleness-dot-failed';
+    stalenessCardClass = 'warning';
+  } else if (ageMs !== null && ageMs < msInDay) {
+    stalenessLabel = 'Data fresh';
+    stalenessDotClass = 'staleness-dot-fresh';
+    stalenessCardClass = 'success';
+  } else if (ageMs !== null && ageMs < 72 * msInHour) {
+    stalenessLabel = 'Data may be stale';
+    stalenessDotClass = 'staleness-dot-stale-warn';
+    stalenessCardClass = 'warning';
+  } else {
+    stalenessLabel = 'Data is stale';
+    stalenessDotClass = 'staleness-dot-stale-danger';
+    stalenessCardClass = 'warning';
+  }
+
+  function formatAge(ms: number | null): string {
+    if (ms === null) return '';
+    const hours = Math.floor(ms / msInHour);
+    if (hours < 1) return `${Math.floor(ms / 60000)} minutes ago`;
+    if (hours < 24) return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+    const days = Math.floor(hours / 24);
+    return `${days} day${days === 1 ? '' : 's'} ago`;
+  }
 
   // Empty state: no grants and no profile
   if (grants.length === 0 && !profile?.legalName) {
@@ -299,6 +373,48 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
         </div>
       </div>
 
+      {/* Crawl Freshness Indicator */}
+      <div className="kpi-grid" data-testid="crawl-freshness-indicator">
+        <div className={`kpi-card ${stalenessCardClass}`}>
+          <div className="kpi-label">
+            <span className={`staleness-dot ${stalenessDotClass}`} aria-hidden="true" />{' '}
+            Crawl Freshness
+          </div>
+          <div className="kpi-value kpi-value-sm">{stalenessLabel}</div>
+          <div className="kpi-meta">
+            {neverCrawled
+              ? 'Run discovery to populate grants'
+              : isCrawlFailed
+                ? (crawlLatestRun?.errorMessage?.slice(0, 60) || 'Crawl encountered an error')
+                : `Last crawl: ${formatAge(ageMs!)}`}
+          </div>
+          {(isCrawlFailed || neverCrawled || isCrawlPartial) && (
+            <div className="kpi-meta" style={{ marginTop: '8px' }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-primary"
+                onClick={handleRetryCrawl}
+                data-testid="crawl-retry-btn"
+                aria-label="Re-run crawl"
+              >
+                {isCrawlFailed ? 'Re-run crawl' : neverCrawled ? 'Run discovery' : 'Re-crawl'}
+              </button>
+            </div>
+          )}
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-label">Crawl Status</div>
+          <div className="kpi-value kpi-value-sm">
+            {crawlFetching ? 'Checking...' : neverCrawled ? 'Never run' : crawlLatestRun?.status ?? 'Unknown'}
+          </div>
+          <div className="kpi-meta">
+            {crawlLatestRun?.sourcesCrawled !== undefined
+              ? `${crawlLatestRun.sourcesCrawled} sources \u00b7 ${crawlLatestRun.grantsFound ?? 0} found`
+              : 'No data'}
+          </div>
+        </div>
+      </div>
+
       {/* Panel Grid */}
       <div className="panel-grid">
         <div className="panel">
@@ -384,7 +500,6 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
           <div className="panel-header">
             <div className="panel-title">Job Queue</div>
           </div>
-          {/* ARIA live region for job state announcements */}
           <div
             role="status"
             aria-live="polite"
@@ -408,11 +523,9 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
                       <strong>{job.jobType}</strong> \u00b7 {job.status}
                       {job.failureCategory ? ` \u00b7 ${job.failureCategory}` : ''}
                     </div>
-                    {/* Stage description */}
                     <div className="activity-time">
                       {stageDescription(job.stage)}
                     </div>
-                    {/* Progress bar */}
                     <div
                       className="job-progress-container"
                       data-testid={`dashboard-job-progress-${job.id}`}
@@ -427,13 +540,11 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
                         style={isRunning ? undefined : { width: `${progress}%` }}
                       />
                     </div>
-                    {/* Timestamps */}
                     <div className="activity-time">
                       {job.lastUpdate
                         ? `Updated: ${new Date(job.lastUpdate).toLocaleTimeString()}`
                         : `Created: ${new Date(job.createdAt).toLocaleTimeString()}`}
                     </div>
-                    {/* Failure guidance from failure-messages.ts */}
                     {failureMsg && (
                       <div
                         className="failure-guidance failure-guidance-compact"

@@ -93,6 +93,12 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const [rescoreResult, setRescoreResult] = useState<string | null>(null);
   const [showOpencodeConfig, setShowOpencodeConfig] = useState(false);
   const [themesSaving, setThemesSaving] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  function showToast(message: string) {
+    setToast(message);
+    setTimeout(() => setToast(null), 3000);
+  }
 
   useEffect(() => {
     async function load() {
@@ -352,6 +358,12 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
         </div>
       </div>
 
+      {toast && (
+        <div data-testid="settings-toast" role="status" aria-live="polite" className="settings-toast">
+          {toast}
+        </div>
+      )}
+
       <div className="settings-grid">
         <section className="setting-card" data-testid="system-health-card">
           <div className="setting-card-header"><div className="setting-card-title">System Health</div></div>
@@ -541,7 +553,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 </div>
               </div>
               <div className="settings-form-row">
-                <button type="button" className="btn btn-primary btn-sm" onClick={() => void handleSaveMatchingPolicy()} disabled={themesSaving}>{themesSaving ? 'Saving...' : 'Save thresholds'}</button>
+                <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await handleSaveMatchingPolicy(); showToast('Matching policy updated'); }} disabled={themesSaving}>{themesSaving ? 'Saving...' : 'Save thresholds'}</button>
               </div>
             </fieldset>
             <fieldset className="settings-fieldset">
@@ -551,7 +563,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 <div key={cluster.id} className="setting-row">
                   <span className="setting-label">{cluster.name}</span>
                   <span className="setting-value">{cluster.keywords.join(', ')} &middot; weight {cluster.weight}</span>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={() => void handleRemoveKeywordCluster(cluster.id)} aria-label={`Remove cluster ${cluster.name}`}>Remove</button>
+                  <button type="button" className="btn btn-ghost btn-sm" onClick={async () => { await handleRemoveKeywordCluster(cluster.id); showToast('Keyword cluster removed'); }} aria-label={`Remove cluster ${cluster.name}`}>Remove</button>
                 </div>
               ))}
               <div className="settings-form-grid">
@@ -559,7 +571,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 <div><label className="setting-label" htmlFor="new-cluster-keywords">Keywords (comma-separated)</label><input id="new-cluster-keywords" className="form-input" value={newClusterKeywords} onChange={(e) => setNewClusterKeywords(e.target.value)} placeholder="STEM, science, technology" /></div>
                 <div><label className="setting-label" htmlFor="new-cluster-weight">Weight (0-100)</label><input id="new-cluster-weight" type="number" min={0} max={100} className="form-input" value={newClusterWeight} onChange={(e) => setNewClusterWeight(Number(e.target.value))} /></div>
               </div>
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => void handleAddKeywordCluster()} disabled={!newClusterName.trim() || !newClusterKeywords.trim()}>Add cluster</button>
+              <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await handleAddKeywordCluster(); showToast('Keyword cluster added'); }} disabled={!newClusterName.trim() || !newClusterKeywords.trim()}>Add cluster</button>
             </fieldset>
             <div className="settings-form-row">
               <button type="button" className="btn" onClick={() => void handleRescore()} disabled={rescoreLoading} aria-label="Recalculate fit scores for all grants">{rescoreLoading ? 'Rescoring...' : 'Recalculate scores'}</button>
@@ -578,6 +590,19 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
           </div>
         </section>
 
+        {(() => {
+          const now = new Date().getTime();
+          const msInDay = 24 * 60 * 60 * 1000;
+          const lastBackupAt = freshness?.lastBackupAt;
+          const backupStale = !lastBackupAt || (now - new Date(lastBackupAt).getTime() > msInDay);
+          if (!backupStale) return null;
+          return (
+            <div className="settings-backup-warning" data-testid="backup-stale-warning" role="alert">
+              No backup in the last 24 hours. Export a backup to protect your data.
+            </div>
+          );
+        })()}
+
         <section className="setting-card">
           <div className="setting-card-header"><div className="setting-card-title">Backup & Restore</div></div>
           <div className="setting-card-body">
@@ -593,6 +618,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 a.download = `grant-ops-backup-${new Date().toISOString().slice(0, 10)}.json`;
                 a.click();
                 URL.revokeObjectURL(url);
+                showToast('Backup downloaded successfully');
               } catch (err) {
                 console.error('Error exporting backup:', err);
               }

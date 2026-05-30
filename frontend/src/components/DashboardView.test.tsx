@@ -253,5 +253,14 @@ describe('DashboardView', () => {
       // KPI values should reflect actual data, not synthetic placeholders
       expect(container.textContent).toContain('Active Pipeline');
     });
+
+    it('renders crawl-freshness-indicator when grants are available', async () => {
+      root.render(React.createElement(DashboardView, { ...requiredProps, grants: [...mockGrants], profile: { agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile }));
+      await new Promise((r) => setTimeout(r, 0));
+      // Crawl freshness indicator should render
+      expect(container.querySelector('[data-testid="crawl-freshness-indicator"]')).not.toBeNull();
+      // Should show initial loading or never-run state
+      expect(container.textContent).toContain('Crawl Freshness');
+    });
   });
 });
