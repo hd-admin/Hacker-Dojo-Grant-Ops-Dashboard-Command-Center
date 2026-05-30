@@ -113,7 +113,7 @@ describe('JobsPanel', () => {
     const typeFilter = container.querySelector('[data-testid="jobs-type-filter"]');
     expect(typeFilter).not.toBeNull();
     const buttons = typeFilter?.querySelectorAll('button');
-    expect(buttons?.length).toBe(3); // All, Research, Draft
+    expect(buttons?.length).toBe(10); // All + 9 job types
   });
 
   it('renders job items with progress bars', async () => {

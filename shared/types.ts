@@ -49,10 +49,59 @@ export type PipelineViewMode = "board" | "list";
 export type SourceCrawlState = 'never-crawled' | 'queued' | 'running' | 'succeeded' | 'partially-failed' | 'failed';
 export type SourceCrawlAccessCategory = 'crawlable' | 'crawlable-with-auth' | 'manual-only' | 'unsupported';
 
+export type AgentTaskType =
+	| 'research'
+	| 'draft'
+	| 'crawl'
+	| 'match'
+	| 'extract'
+	| 'peer-discovery'
+	| 'funder-insights'
+	| 'eligibility-vetting'
+	| 'budget-import';
+
+export type JobStatus =
+	| 'queued'
+	| 'running'
+	| 'verifying'
+	| 'retrying'
+	| 'completed'
+	| 'failed'
+	| 'cancelled';
+
+export interface JobProgressUpdate {
+	status: JobStatus;
+	progress: number;
+	stage: string;
+	retryCount: number;
+	maxRetries: number;
+	errorMessage?: string;
+}
+
+export interface AgentJob {
+	id: string;
+	jobType: AgentTaskType;
+	grantId?: string;
+	params: Record<string, unknown>;
+	status: JobStatus;
+	progress: number;
+	stage: string;
+	retryCount: number;
+	maxRetries: number;
+	createdAt: string;
+	startedAt?: string;
+	completedAt?: string;
+	entityId?: string;
+	errorMessage?: string;
+	resultSummary?: string;
+	failureCategory?: JobFailureCategory;
+	partialOutput?: string;
+}
+
 export interface JobQueueItem {
 	id: string;
-	jobType: "research" | "draft";
-	status: "queued" | "running" | "completed" | "failed" | "cancelled";
+	jobType: AgentTaskType;
+	status: JobStatus;
 	stage?: string;
 	lastUpdate?: string;
 	createdAt: string;
@@ -64,6 +113,8 @@ export interface JobQueueItem {
 	resultSummary?: string;
 	failureCategory?: JobFailureCategory | undefined;
 	partialOutput?: string;
+	progress?: number;
+	maxRetries?: number;
 }
 
 export interface HumanOverride {
@@ -676,4 +727,130 @@ export interface ThemesData {
 	regions: Region[];
 	populations: Population[];
 	strategicPriorities: StrategicPriority[];
+}
+
+export interface FunderProfile {
+	id: string;
+	name: string;
+	type: 'foundation' | 'government' | 'corporate' | 'community' | 'other';
+	ein?: string;
+	givingHistory: {
+		year: number;
+		totalGiving: number;
+		grantsCount: number;
+		averageGrantSize: number;
+	}[];
+	focusAreas: string[];
+	geographicFocus: string[];
+	typicalAwardRange: { min: number; max: number };
+	applicationProcess: string;
+	deadlines: string;
+	sourceUrls: string[];
+	lastUpdated: string;
+}
+
+export interface SavedSearch {
+	id: string;
+	name: string;
+	queryText: string;
+	filters: {
+		categories?: string[];
+		funderTypes?: string[];
+		minAward?: number;
+		maxAward?: number;
+		geography?: string;
+	};
+	newResultsCount: number;
+	lastCheckedAt: string;
+	createdAt: string;
+}
+
+export interface PeerDiscoveryResult {
+	id: string;
+	funderName: string;
+	funderType: 'foundation' | 'government' | 'corporate' | 'community' | 'other';
+	relevanceRationale: string;
+	sourceOrganization: string;
+	confidence?: number;
+	createdAt: string;
+}
+
+export interface EligibilityVetting {
+	id: string;
+	grantId: string;
+	status: 'meets-all' | 'requires' | 'ineligible';
+	missingRequirements: string[];
+	recommendation?: string;
+	checks: { requirement: string; met: boolean; detail: string }[];
+	checkedAt: string;
+}
+
+export interface DraftSnippet {
+	id: string;
+	sectionTitle: string;
+	content: string;
+	sourceGrantId: string;
+	sourceFunder: string;
+	topicTags: string[];
+	programArea?: string;
+	usedCount: number;
+	lastUsedAt?: string;
+	createdAt: string;
+}
+
+export interface Award {
+	id: string;
+	grantId: string;
+	amount: string;
+	startDate: string;
+	endDate: string;
+	status: 'active' | 'completed' | 'closed';
+	createdAt: string;
+	updatedAt: string;
+}
+
+export interface AwardBudgetCategory {
+	id: string;
+	awardId: string;
+	category: string;
+	budgeted: number;
+	spent: number;
+	restrictions?: string;
+	internalCategory?: string;
+}
+
+export interface AwardExpense {
+	id: string;
+	awardId: string;
+	categoryId: string;
+	date: string;
+	description: string;
+	amount: number;
+	receipt?: string;
+}
+
+export interface AwardReportDeadline {
+	id: string;
+	awardId: string;
+	type: string;
+	dueDate: string;
+	format?: string;
+	status: 'pending' | 'submitted' | 'overdue';
+}
+
+export interface AwardComplianceItem {
+	id: string;
+	awardId: string;
+	requirement: string;
+	dueDate?: string;
+	status: 'pending' | 'completed' | 'overdue';
+}
+
+export interface PlannedExpense {
+	id: string;
+	awardId: string;
+	categoryId: string;
+	date: string;
+	description: string;
+	amount: number;
 }

@@ -364,8 +364,8 @@ describe('AppShell', () => {
     sourcesGetAll.mockResolvedValue([]);
     researchGetRuns.mockResolvedValue({ latestRun: null, allRuns: [] });
 
-    // Mark setup as completed so the wizard doesn't suppress the first-run card
-    window.localStorage.setItem('grantops.setupCompleted', 'true');
+    // Set operator name so the prompt dialog doesn't appear
+    window.localStorage.setItem('grantops.operatorName', 'Test Operator');
 
     root.render(React.createElement(AppShell));
     await waitFor(() => container.querySelector('[data-testid="first-run-guidance-card"]') !== null);

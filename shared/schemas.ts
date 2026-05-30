@@ -465,8 +465,8 @@ export const FollowUpSchema = z.object({
 
 export const JobQueueItemSchema = z.object({
   id: z.string(),
-  jobType: z.enum(['research', 'draft']),
-  status: z.enum(['queued', 'running', 'completed', 'failed', 'cancelled']),
+  jobType: z.enum(['research', 'draft', 'crawl', 'match', 'extract', 'peer-discovery', 'funder-insights', 'eligibility-vetting', 'budget-import']),
+  status: z.enum(['queued', 'running', 'verifying', 'retrying', 'completed', 'failed', 'cancelled']),
   stage: z.string().optional(),
   lastUpdate: z.string().optional(),
   createdAt: z.string(),
@@ -474,9 +474,11 @@ export const JobQueueItemSchema = z.object({
   completedAt: z.string().optional(),
   entityId: z.string().optional(),
   retryCount: z.number().optional(),
+  maxRetries: z.number().optional(),
   errorMessage: z.string().optional(),
   resultSummary: z.string().optional(),
   failureCategory: JobFailureCategorySchema.optional(),
+  progress: z.number().optional(),
 });
 
 export const DuplicateCandidateSchema = z.object({

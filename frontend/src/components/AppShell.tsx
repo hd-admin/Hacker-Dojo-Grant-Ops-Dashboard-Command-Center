@@ -62,13 +62,6 @@ interface NavItem {
   ariaLabel?: string;
 }
 
-interface SetupData {
-  orgName: string;
-  ein: string;
-  mission: string;
-  opencodePath: string;
-}
-
 const workspaceNav: NavItem[] = [
   { view: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} />, ariaLabel: 'View dashboard' },
   { view: 'discovery', label: 'Discovery', icon: <Search size={20} />, ariaLabel: 'Discover grants' },
@@ -86,7 +79,7 @@ const activityNav: NavItem[] = [
 ];
 
 const WORKING_CONTEXT_KEY = 'grantops.workingContext';
-const SETUP_COMPLETED_KEY = 'grantops.setupCompleted';
+const OPERATOR_NAME_KEY = 'grantops.operatorName';
 
 function getWorkingContextStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
@@ -130,10 +123,9 @@ export default function AppShell() {
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Setup wizard state
-  const [showSetupWizard, setShowSetupWizard] = useState(false);
-  const [setupStep, setSetupStep] = useState(0);
-  const [setupData, setSetupData] = useState<SetupData>({ orgName: '', ein: '', mission: '', opencodePath: '' });
+  // Operator name prompt state
+  const [operatorName, setOperatorName] = useState<string>('');
+  const [showOperatorPrompt, setShowOperatorPrompt] = useState(false);
 
   // Safe quit state
   const [showSafeQuit, setShowSafeQuit] = useState(false);
@@ -254,7 +246,7 @@ export default function AppShell() {
       const response = await fetch('/api/jobs');
       const data = (await response.json()) as JobQueueItem[];
       const active = Array.isArray(data)
-        ? data.filter((job) => job.status === 'queued' || job.status === 'running')
+        ? data.filter((job) => job.status === 'queued' || job.status === 'running' || job.status === 'verifying' || job.status === 'retrying')
         : [];
       setActiveJobs(active);
     } catch {
@@ -303,11 +295,13 @@ export default function AppShell() {
     if (Array.isArray(context.recentGrantIds)) setRecentGrantIds(context.recentGrantIds.slice(0, 5));
     if (context.recentDraftId !== undefined) setRecentDraftId(context.recentDraftId);
 
-    // Check if profile has been saved (guided setup trigger)
+    // Check if operator name has been set
     const storage = getWorkingContextStorage();
-    const hasCompletedSetup = storage?.getItem(SETUP_COMPLETED_KEY) === 'true';
-    if (!hasCompletedSetup) {
-      setShowSetupWizard(true);
+    const savedName = storage?.getItem(OPERATOR_NAME_KEY);
+    if (savedName) {
+      setOperatorName(savedName);
+    } else {
+      setShowOperatorPrompt(true);
     }
 
     void Promise.all([refreshAppState(), refreshHealth(), loadActiveJobs()]).catch((error) => {
@@ -376,7 +370,7 @@ export default function AppShell() {
       await loadActiveJobs();
       // Check if there are active jobs after load
       const currentActiveJobs = activeJobs.filter(
-        (job) => job.status === 'queued' || job.status === 'running',
+        (job) => job.status === 'queued' || job.status === 'running' || job.status === 'verifying' || job.status === 'retrying',
       );
       if (currentActiveJobs.length > 0) {
         e.preventDefault();
@@ -450,78 +444,16 @@ export default function AppShell() {
     mainRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
-  // ============ Setup Wizard ============
+  // ============ Operator Name Prompt ============
 
-  const handleSetupNext = () => {
-    if (setupStep === 0 && (!setupData.orgName.trim() || !setupData.ein.trim() || !setupData.mission.trim())) {
-      return;
-    }
-    if (setupStep === 1 && !setupData.opencodePath.trim()) {
-      return;
-    }
-    if (setupStep < 2) {
-      setSetupStep((s) => s + 1);
-    }
-  };
-
-  const handleSetupPrevious = () => {
-    if (setupStep > 0) {
-      setSetupStep((s) => s - 1);
-    }
-  };
-
-  const handleSetupComplete = async () => {
-    try {
-      if (setupData.orgName.trim() && setupData.ein.trim() && setupData.mission.trim()) {
-        await client.profile.update({
-          legalName: setupData.orgName.trim(),
-          ein: setupData.ein.trim(),
-          samUEI: profile?.samUEI ?? '',
-          nonprofitStatus: profile?.nonprofitStatus ?? '501(c)(3)',
-          contactInfo: profile?.contactInfo ?? {},
-          geography: profile?.geography ?? '',
-          mission: setupData.mission.trim(),
-          programAreas: profile?.programAreas ?? [],
-          populationsServed: profile?.populationsServed ?? [],
-          fundingHistory: profile?.fundingHistory ?? [],
-          partnerships: profile?.partnerships ?? [],
-          complianceFacts: profile?.complianceFacts ?? [],
-          docTypes: profile?.docTypes ?? ['PDF'],
-          searchThemes: profile?.searchThemes ?? [],
-          agentBehavior: profile?.agentBehavior ?? {
-            autoDraftThreshold: 75,
-            submissionPolicy: 'Human approval required',
-            notifyEmail: 'ed@hackerdojo.com',
-            voiceAndTone: 'Plain-spoken',
-          },
-        });
-      }
-      if (setupData.opencodePath.trim()) {
-        await client.opencodeSettings.update({
-          binaryPath: setupData.opencodePath.trim(),
-          workingDirectory: setupData.opencodePath.trim().replace(/\/opencode$/i, ''),
-          timeoutMs: 60000,
-          isConfigured: true,
-        });
-      }
-      const storage = getWorkingContextStorage();
-      if (storage) {
-        storage.setItem(SETUP_COMPLETED_KEY, 'true');
-      }
-      setShowSetupWizard(false);
-      await refreshAppState();
-      await refreshHealth();
-    } catch (error) {
-      console.error('Error completing setup:', error);
-    }
-  };
-
-  const handleSetupSkip = () => {
+  const handleOperatorNameSave = () => {
+    const trimmed = operatorName.trim();
+    if (!trimmed) return;
     const storage = getWorkingContextStorage();
     if (storage) {
-      storage.setItem(SETUP_COMPLETED_KEY, 'true');
+      storage.setItem(OPERATOR_NAME_KEY, trimmed);
     }
-    setShowSetupWizard(false);
+    setShowOperatorPrompt(false);
   };
 
   // ============ Compute derived state ============
@@ -658,7 +590,7 @@ export default function AppShell() {
           Last sync: {crawlStatus.lastSync ? getRelativeTime(crawlStatus.lastSync) : '\u2014'}
           <br />
           <br />
-          Logged in as
+          {operatorName ? `Logged in as ${operatorName}` : 'Not logged in'}
           <br />
           <strong style={{ color: 'var(--text-dim)' }}>
             {profile?.agentBehavior.notifyEmail || 'ed@hackerdojo.com'}
@@ -731,7 +663,7 @@ export default function AppShell() {
           {(healthResult?.opencode === 'not-installed' || healthResult?.opencode === 'not-reachable') && (
             <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
           )}
-          {isFirstRun && !showSetupWizard && (
+          {isFirstRun && (
             <div data-testid="first-run-guidance-card">
               Welcome to Hacker Dojo Grant Ops
               <button type="button" data-testid="first-run-add-source-btn" onClick={() => handleNavigate('sources')}>Add Your First Source</button>
@@ -845,131 +777,43 @@ export default function AppShell() {
         </div>
       )}
 
-      {/* Guided Setup Wizard */}
-      {showSetupWizard && (
+      {/* Operator Name Prompt */}
+      {showOperatorPrompt && (
         <div
-          className="setup-wizard-overlay"
+          className="operator-prompt-overlay"
           role="dialog"
           aria-modal="true"
-          aria-label="First-run setup wizard"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              e.stopPropagation();
-              handleSetupSkip();
-            }
-          }}
+          aria-label="Operator name prompt"
         >
-          <div className="setup-wizard" data-testid="setup-wizard">
-            <h2>Welcome to Grant Ops</h2>
-            <div className="setup-subtitle">Let&apos;s get you set up in 3 steps</div>
-
-            {/* Progress indicator */}
-            <div className="setup-progress" role="progressbar" aria-valuenow={setupStep + 1} aria-valuemin={1} aria-valuemax={3} aria-label={`Step ${setupStep + 1} of 3`}>
-              <div className={`setup-progress-dot ${setupStep >= 0 ? 'active' : ''} ${setupStep > 0 ? 'done' : ''}`} />
-              <div className={`setup-progress-dot ${setupStep >= 1 ? 'active' : ''} ${setupStep > 1 ? 'done' : ''}`} />
-              <div className={`setup-progress-dot ${setupStep >= 2 ? 'active' : ''}`} />
+          <div className="operator-prompt-dialog" data-testid="operator-prompt">
+            <h2>Welcome to Hacker Dojo Grant Ops</h2>
+            <div className="operator-prompt-subtitle">
+              What&apos;s your name? This will be used when drafting emails and recording submissions.
+            </div>
+            <div className="operator-prompt-body">
+              <label htmlFor="operator-name-input">Your Name</label>
+              <input
+                id="operator-name-input"
+                type="text"
+                placeholder="e.g., Jane Smith"
+                value={operatorName}
+                onChange={(e) => setOperatorName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleOperatorNameSave();
+                }}
+                autoFocus
+              />
             </div>
 
-            {/* Step 0: Organization Profile */}
-            {setupStep === 0 && (
-              <div className="setup-step">
-                <div className="setup-step-label">Step 1 of 3</div>
-                <div className="setup-step-title">Organization Profile</div>
-                <div className="setup-step-body">
-                  <label htmlFor="setup-org-name">Organization Name</label>
-                  <input
-                    id="setup-org-name"
-                    type="text"
-                    placeholder="e.g., Hacker Dojo"
-                    value={setupData.orgName}
-                    onChange={(e) => setSetupData((prev) => ({ ...prev, orgName: e.target.value }))}
-                    required
-                  />
-                  <label htmlFor="setup-ein">EIN (Employer Identification Number)</label>
-                  <input
-                    id="setup-ein"
-                    type="text"
-                    placeholder="e.g., 26-3375350"
-                    value={setupData.ein}
-                    onChange={(e) => setSetupData((prev) => ({ ...prev, ein: e.target.value }))}
-                    required
-                  />
-                  <label htmlFor="setup-mission">Mission Statement</label>
-                  <textarea
-                    id="setup-mission"
-                    placeholder="Describe your organization's mission..."
-                    value={setupData.mission}
-                    onChange={(e) => setSetupData((prev) => ({ ...prev, mission: e.target.value }))}
-                    required
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Step 1: Opencode Path */}
-            {setupStep === 1 && (
-              <div className="setup-step">
-                <div className="setup-step-label">Step 2 of 3</div>
-                <div className="setup-step-title">AI Agent Configuration</div>
-                <div className="setup-step-body">
-                  <label htmlFor="setup-opencode-path">Opencode Binary Path</label>
-                  <input
-                    id="setup-opencode-path"
-                    type="text"
-                    placeholder="e.g., /usr/local/bin/opencode"
-                    value={setupData.opencodePath}
-                    onChange={(e) => setSetupData((prev) => ({ ...prev, opencodePath: e.target.value }))}
-                    required
-                  />
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '8px' }}>
-                    Leave blank if you don&apos;t have opencode installed. AI features can be configured later in Settings.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: Reference Documents */}
-            {setupStep === 2 && (
-              <div className="setup-step">
-                <div className="setup-step-label">Step 3 of 3</div>
-                <div className="setup-step-title">Reference Documents</div>
-                <div className="setup-step-body">
-                  <p style={{ fontSize: '13px', color: 'var(--text-dim)' }}>
-                    You can upload reference documents (budgets, impact reports, board lists, and
-                    organizational documents) to help the AI write stronger grant proposals.
-                  </p>
-                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                    Document upload is available from the Settings page after setup. Click
-                    &ldquo;Complete setup&rdquo; below or &ldquo;Skip setup&rdquo; to proceed without
-                    uploading documents now.
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Navigation */}
-            <div className="setup-nav">
-              <div>
-                {setupStep > 0 && (
-                  <button type="button" className="btn btn-ghost" onClick={handleSetupPrevious}>
-                    Back
-                  </button>
-                )}
-              </div>
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button type="button" className="btn btn-ghost" onClick={handleSetupSkip}>
-                  Skip setup
-                </button>
-                {setupStep < 2 ? (
-                  <button type="button" className="btn btn-primary" onClick={handleSetupNext}>
-                    Next
-                  </button>
-                ) : (
-                  <button type="button" className="btn btn-primary" onClick={() => { void handleSetupComplete(); }}>
-                    Complete setup
-                  </button>
-                )}
-              </div>
+            <div className="operator-prompt-nav">
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleOperatorNameSave}
+                disabled={!operatorName.trim()}
+              >
+                Get Started
+              </button>
             </div>
           </div>
         </div>

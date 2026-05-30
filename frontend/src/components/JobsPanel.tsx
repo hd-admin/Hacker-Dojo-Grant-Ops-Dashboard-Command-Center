@@ -49,6 +49,8 @@ function statusIcon(status: JobQueueItem['status']): string {
   switch (status) {
     case 'queued': return '◷';
     case 'running': return '◉';
+    case 'verifying': return '✓';
+    case 'retrying': return '⟳';
     case 'completed': return '✔';
     case 'failed': return '✖';
     case 'cancelled': return '⊘';
@@ -177,7 +179,7 @@ export default function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
   // Auto-refresh when there are active jobs
   useEffect(() => {
     const hasActiveJobs = jobs.some(
-      (job) => job.status === 'queued' || job.status === 'running',
+      (job) => job.status === 'queued' || job.status === 'running' || job.status === 'verifying' || job.status === 'retrying',
     );
     if (!hasActiveJobs) return;
 
@@ -200,6 +202,8 @@ export default function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
       all: jobs.length,
       queued: 0,
       running: 0,
+      verifying: 0,
+      retrying: 0,
       completed: 0,
       failed: 0,
       cancelled: 0,
@@ -215,6 +219,13 @@ export default function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
       all: jobs.length,
       research: 0,
       draft: 0,
+      crawl: 0,
+      match: 0,
+      extract: 0,
+      'peer-discovery': 0,
+      'funder-insights': 0,
+      'eligibility-vetting': 0,
+      'budget-import': 0,
     };
     for (const job of jobs) {
       counts[job.jobType] = (counts[job.jobType] ?? 0) + 1;
@@ -292,7 +303,7 @@ export default function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
           ))}
         </div>
         <div className="filter-row" data-testid="jobs-type-filter" role="tablist" aria-label="Filter by job type" style={{ marginTop: '8px' }}>
-          {(['all', 'research', 'draft'] as JobTypeFilter[]).map((type) => (
+          {(['all', 'research', 'draft', 'crawl', 'match', 'extract', 'peer-discovery', 'funder-insights', 'eligibility-vetting', 'budget-import'] as JobTypeFilter[]).map((type) => (
             <button
               key={type}
               type="button"

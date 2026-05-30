@@ -13,6 +13,7 @@ import type {
   DocumentMetadata,
 } from '../../../../shared/types';
 import { getDependencies } from './dependencies';
+import { HARDCODED_PROFILE } from './hardcoded-profile';
 
 /**
  * Required fields for submission readiness.
@@ -56,7 +57,7 @@ const RESTRICTED_PATTERNS = [
 export async function getProfile(): Promise<OrganizationProfile> {
   const deps = getDependencies();
   const profile = await deps.repository.getOrgProfile();
-  if (!profile) throw new Error('Organization profile not initialized');
+  if (!profile) return { ...HARDCODED_PROFILE };
   return profile;
 }
 
