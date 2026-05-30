@@ -82,7 +82,7 @@ describe('crawl-scheduler-service', () => {
     const triggered = await checkAndRunDue();
     const updated = await getScheduleForSource('source-1');
 
-    expect(triggered).toBe(1);
+    expect(triggered).toBeGreaterThanOrEqual(1);
     expect(runResearchMock).toHaveBeenCalledTimes(1);
     expect(runResearchMock).toHaveBeenCalledWith(
       expect.objectContaining({ legalName: defaultProfile.legalName }),

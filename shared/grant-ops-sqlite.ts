@@ -1,4 +1,4 @@
-import { mkdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,23 +8,38 @@ import {
 	defaultOpencodeSettings,
 	defaultProfile,
 } from "./seed-data";
+import {
+	SEED_FUNDERS,
+	SEED_SOURCES,
+	SEED_SCHEDULES,
+} from "./seed-funders";
 import type {
 	ApprovalRecord,
 	AuditEvent,
+	Award,
+	AwardBudgetCategory,
+	AwardComplianceItem,
+	AwardExpense,
+	AwardReportDeadline,
 	ConflictRecord,
 	CrawlRun,
 	CrawlSchedule,
 	DocumentMetadata,
 	DraftArtifact,
+	DraftSnippet,
 	DuplicateCandidate,
 	FollowUp,
+	FunderProfile,
 	Grant,
 	JobFailureCategory,
 	JobQueueItem,
 	Notification,
 	OpencodeSettings,
 	OrganizationProfile,
+	PeerDiscoveryResult,
+	PlannedExpense,
 	RevisionRequest,
+	SavedSearch,
 	Source,
 	SubmissionManifest,
 	SubmissionRecord,
@@ -114,12 +129,69 @@ function openDatabase(state: SqliteBootstrapState): SqliteDatabase {
 	}
 
 	mkdirSync(state.dataDir, { recursive: true });
+
+	const walPath = `${state.dbPath}-wal`;
+	if (existsSync(walPath)) {
+		try {
+			const tempDb = new Database(state.dbPath, { readonly: false });
+			tempDb.pragma('journal_mode = WAL');
+			const cpRow = tempDb.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get() as { busy: number; log: number; checkpointed: number } | undefined;
+			if (!cpRow || cpRow.busy !== 0) {
+				throw new Error('WAL checkpoint failed: database is busy from previous crash. WAL file preserved for manual recovery.');
+			}
+			tempDb.close();
+		} catch (err) {
+			throw new Error(
+				`Database recovery failed: WAL file from previous crash could not be checkpointed. ${err instanceof Error ? err.message : String(err)}`,
+			);
+		}
+	}
+
 	const db = new Database(state.dbPath);
 	db.pragma("journal_mode = WAL");
 	db.pragma("foreign_keys = ON");
+
+	try {
+		const checkRow = db.prepare('PRAGMA integrity_check').get() as { integrity_check: string } | undefined;
+		if (!checkRow || checkRow.integrity_check !== 'ok') {
+			throw new Error(
+				`Database integrity check failed: ${checkRow?.integrity_check ?? 'unknown error'}. Restore from backup or recreate the database.`,
+			);
+		}
+	} catch (err) {
+		db.close();
+		throw new Error(
+			`Database integrity check failed: ${err instanceof Error ? err.message : String(err)}. Restore from backup or recreate the database.`,
+		);
+	}
+
 	ensureSchema(db);
 	dbCache.set(state.dataDir, db);
+	dbToDataDir.set(db, state.dataDir);
 	return db;
+}
+
+const writeCounters = new Map<string, number>();
+const WAL_CHECKPOINT_INTERVAL = 1000;
+const dbToDataDir = new WeakMap<SqliteDatabase, string>();
+
+function incrementWriteCounterForDb(db: SqliteDatabase): void {
+	const dataDir = dbToDataDir.get(db);
+	if (!dataDir) return;
+	const current = writeCounters.get(dataDir) ?? 0;
+	const next = current + 1;
+	writeCounters.set(dataDir, next);
+
+	if (next >= WAL_CHECKPOINT_INTERVAL) {
+		setImmediate(() => {
+			try {
+				db.pragma('wal_checkpoint(PASSIVE)');
+			} catch {
+				// best effort checkpoint
+			}
+		});
+		writeCounters.set(dataDir, 0);
+	}
 }
 
 export function resetSqliteCache(dataDir?: string): void {
@@ -268,6 +340,46 @@ function ensureSchema(db: SqliteDatabase): void {
       id TEXT PRIMARY KEY CHECK (id = 'themes_data'),
       json TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS funder_profiles (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS saved_searches (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS awards (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS award_budget_categories (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS award_expenses (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS planned_expenses (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS award_report_deadlines (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS award_compliance_items (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS draft_snippets (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS peer_discovery_results (
+      id TEXT PRIMARY KEY,
+      json TEXT NOT NULL
+    );
   `);
 }
 
@@ -324,6 +436,7 @@ function hasAnyRows(db: SqliteDatabase): boolean {
 		"documents",
 		"profile",
 		"opencode_settings",
+		"funder_profiles",
 	];
 	return tables.some(
 		(table) => db.prepare(`SELECT 1 FROM ${table} LIMIT 1`).get() !== undefined,
@@ -349,6 +462,7 @@ function replaceTable<T extends { id: string }>(
 		}
 	});
 	tx(rows);
+	incrementWriteCounterForDb(db);
 }
 
 function loadTable<T>(db: SqliteDatabase, table: string): T[] {
@@ -378,12 +492,14 @@ function saveSingleton<T>(
 	const deleteStmt = db.prepare(`DELETE FROM ${table}`);
 	if (!row) {
 		deleteStmt.run();
+		incrementWriteCounterForDb(db);
 		return;
 	}
 	db.prepare(`INSERT OR REPLACE INTO ${table} (id, json) VALUES (?, ?)`).run(
 		id,
 		JSON.stringify(row),
 	);
+	incrementWriteCounterForDb(db);
 }
 
 function saveMeta(db: SqliteDatabase, key: string, value: string): void {
@@ -391,6 +507,7 @@ function saveMeta(db: SqliteDatabase, key: string, value: string): void {
 		key,
 		value,
 	);
+	incrementWriteCounterForDb(db);
 }
 
 function loadMeta(db: SqliteDatabase, key: string): string | null {
@@ -405,7 +522,7 @@ function seedDefaultState(db: SqliteDatabase): void {
 	saveSingleton<OrganizationProfile>(db, "profile", "profile", defaultProfile);
 	replaceTable<Notification>(db, "notifications", []);
 	replaceTable<Task>(db, "tasks", []);
-	replaceTable<Source>(db, "sources", []);
+	replaceTable<Source>(db, "sources", SEED_SOURCES);
 	replaceTable<CrawlRun>(db, "crawl_runs", []);
 	replaceTable<DraftArtifact>(db, "draft_artifacts", []);
 	replaceTable<RevisionRequest>(db, "revision_requests", []);
@@ -413,6 +530,9 @@ function seedDefaultState(db: SqliteDatabase): void {
 	replaceTable<SubmissionRecord>(db, "submission_records", []);
 	replaceTable<FollowUp>(db, "follow_ups", []);
 	replaceTable<DocumentMetadata>(db, "documents", []);
+	replaceTable<FunderProfile>(db, "funder_profiles", SEED_FUNDERS);
+	replaceTable<SavedSearch>(db, "saved_searches", []);
+	replaceTable<CrawlSchedule>(db, "crawl_schedules", SEED_SCHEDULES);
 	saveSingleton<OpencodeSettings>(
 		db,
 		"opencode_settings",
@@ -500,6 +620,16 @@ function bootstrapFromLegacy(
 		"lastSync",
 		legacy.persisted?.lastSync ?? new Date().toISOString(),
 	);
+
+	const existingFunders = loadTable<FunderProfile>(db, 'funder_profiles');
+	if (existingFunders.length === 0) {
+		replaceTable<FunderProfile>(db, 'funder_profiles', SEED_FUNDERS);
+	}
+
+	const existingSchedules = loadTable<CrawlSchedule>(db, 'crawl_schedules');
+	if (existingSchedules.length === 0) {
+		replaceTable<CrawlSchedule>(db, 'crawl_schedules', SEED_SCHEDULES);
+	}
 }
 
 function ensureBootstrapped(state: SqliteBootstrapState): SqliteDatabase {
@@ -694,6 +824,7 @@ export function setSchemaVersion(state: SqliteBootstrapState, version: number): 
 	db.prepare(
 		"INSERT OR REPLACE INTO schema_version (id, version, migrated_at) VALUES (1, ?, ?)",
 	).run(version, new Date().toISOString());
+	incrementWriteCounterForDb(db);
 }
 
 export function runMigrations(
@@ -707,10 +838,25 @@ export function runMigrations(
 	try {
 		const currentVersion = getCurrentSchemaVersion(state);
 		if (currentVersion < CURRENT_SCHEMA_VERSION) {
-			if (options?.applyMigration) {
-				options.applyMigration(currentVersion);
-			} else {
-				setSchemaVersion(state, CURRENT_SCHEMA_VERSION);
+			const backupPath = `${state.dbPath}.backup-${Date.now()}-v${currentVersion}`;
+			try {
+				copyFileSync(state.dbPath, backupPath);
+			} catch {
+				// best effort backup before migration
+			}
+
+			const db = openDatabase(state);
+			db.prepare('SAVEPOINT pre_migration').run();
+			try {
+				if (options?.applyMigration) {
+					options.applyMigration(currentVersion);
+				} else {
+					setSchemaVersion(state, CURRENT_SCHEMA_VERSION);
+				}
+				db.prepare('RELEASE SAVEPOINT pre_migration').run();
+			} catch (migrationError) {
+				db.prepare('ROLLBACK TO SAVEPOINT pre_migration').run();
+				throw migrationError;
 			}
 		}
 		return { success: true, version: CURRENT_SCHEMA_VERSION };
@@ -754,6 +900,7 @@ export function saveAuditEvent(state: SqliteBootstrapState, event: AuditEvent): 
 		...event,
 		metadata: event.metadata ? JSON.stringify(event.metadata) : null,
 	});
+	incrementWriteCounterForDb(db);
 }
 
 export function readJobQueue(state: SqliteBootstrapState, status?: string): JobQueueItem[] {
@@ -804,6 +951,7 @@ export function writeJobQueueItem(state: SqliteBootstrapState, item: JobQueueIte
 		resultSummary: item.resultSummary ?? null,
 		failureCategory: item.failureCategory ?? null,
 	});
+	incrementWriteCounterForDb(db);
 }
 
 export function saveJobQueueItem(state: SqliteBootstrapState, item: JobQueueItem): void {
@@ -852,6 +1000,7 @@ export function saveDuplicateCandidate(state: SqliteBootstrapState, item: Duplic
 		resolvedAt: item.resolvedAt ?? null,
 		resolvedBy: item.resolvedBy ?? null,
 	});
+	incrementWriteCounterForDb(db);
 }
 
 export function updateDuplicateCandidate(state: SqliteBootstrapState, id: string, updates: Partial<DuplicateCandidate>): void {
@@ -892,6 +1041,7 @@ export function saveConflictRecord(state: SqliteBootstrapState, item: ConflictRe
 		resolvedAt: item.resolvedAt ?? null,
 		resolvedBy: item.resolvedBy ?? null,
 	});
+	incrementWriteCounterForDb(db);
 }
 
 export function updateConflictRecord(state: SqliteBootstrapState, id: string, updates: Partial<ConflictRecord>): void {
@@ -940,6 +1090,7 @@ export function saveSubmissionManifest(state: SqliteBootstrapState, item: Submis
 		materialRefs: JSON.stringify(item.materialRefs),
 		notes: item.notes ?? null,
 	});
+	incrementWriteCounterForDb(db);
 }
 
 export function removeApprovalRecordByGrantId(state: SqliteBootstrapState, grantId: string): void {
@@ -958,12 +1109,14 @@ export function upsertCrawlSchedule(state: SqliteBootstrapState, schedule: Crawl
 	const schedules = readCrawlSchedules(state).filter((item) => item.id !== schedule.id);
 	schedules.push(schedule);
 	replaceTable<CrawlSchedule>(db, 'crawl_schedules', schedules);
+	incrementWriteCounterForDb(db);
 }
 
 export function deleteCrawlSchedule(state: SqliteBootstrapState, id: string): void {
 	const db = openDatabase(state);
 	const schedules = readCrawlSchedules(state).filter((schedule) => schedule.id !== id);
 	replaceTable<CrawlSchedule>(db, 'crawl_schedules', schedules);
+	incrementWriteCounterForDb(db);
 }
 
 function readJsonMeta<T>(db: SqliteDatabase, key: string): T | null {
@@ -1042,4 +1195,105 @@ export function writeThemesData(state: SqliteBootstrapState, data: ThemesData): 
 	db.prepare("INSERT OR REPLACE INTO themes_data (id, json) VALUES ('themes_data', ?)").run(
 		JSON.stringify(data),
 	);
+	incrementWriteCounterForDb(db);
+}
+
+export function readFunderProfiles(state: SqliteBootstrapState): FunderProfile[] {
+	const db = openDatabase(state);
+	return loadTable<FunderProfile>(db, 'funder_profiles');
+}
+
+export function writeFunderProfiles(state: SqliteBootstrapState, profiles: FunderProfile[]): void {
+	const db = openDatabase(state);
+	replaceTable<FunderProfile>(db, 'funder_profiles', profiles);
+}
+
+export function readSavedSearches(state: SqliteBootstrapState): SavedSearch[] {
+	const db = openDatabase(state);
+	return loadTable<SavedSearch>(db, 'saved_searches');
+}
+
+export function writeSavedSearches(state: SqliteBootstrapState, searches: SavedSearch[]): void {
+	const db = openDatabase(state);
+	replaceTable<SavedSearch>(db, 'saved_searches', searches);
+}
+
+export function readAwards(state: SqliteBootstrapState): Award[] {
+	const db = openDatabase(state);
+	return loadTable<Award>(db, 'awards');
+}
+
+export function writeAwards(state: SqliteBootstrapState, awards: Award[]): void {
+	const db = openDatabase(state);
+	replaceTable<Award>(db, 'awards', awards);
+}
+
+export function readAwardBudgetCategories(state: SqliteBootstrapState): AwardBudgetCategory[] {
+	const db = openDatabase(state);
+	return loadTable<AwardBudgetCategory>(db, 'award_budget_categories');
+}
+
+export function writeAwardBudgetCategories(state: SqliteBootstrapState, categories: AwardBudgetCategory[]): void {
+	const db = openDatabase(state);
+	replaceTable<AwardBudgetCategory>(db, 'award_budget_categories', categories);
+}
+
+export function readAwardExpenses(state: SqliteBootstrapState): AwardExpense[] {
+	const db = openDatabase(state);
+	return loadTable<AwardExpense>(db, 'award_expenses');
+}
+
+export function writeAwardExpenses(state: SqliteBootstrapState, expenses: AwardExpense[]): void {
+	const db = openDatabase(state);
+	replaceTable<AwardExpense>(db, 'award_expenses', expenses);
+}
+
+export function readPlannedExpenses(state: SqliteBootstrapState): PlannedExpense[] {
+	const db = openDatabase(state);
+	return loadTable<PlannedExpense>(db, 'planned_expenses');
+}
+
+export function writePlannedExpenses(state: SqliteBootstrapState, expenses: PlannedExpense[]): void {
+	const db = openDatabase(state);
+	replaceTable<PlannedExpense>(db, 'planned_expenses', expenses);
+}
+
+export function readAwardReportDeadlines(state: SqliteBootstrapState): AwardReportDeadline[] {
+	const db = openDatabase(state);
+	return loadTable<AwardReportDeadline>(db, 'award_report_deadlines');
+}
+
+export function writeAwardReportDeadlines(state: SqliteBootstrapState, deadlines: AwardReportDeadline[]): void {
+	const db = openDatabase(state);
+	replaceTable<AwardReportDeadline>(db, 'award_report_deadlines', deadlines);
+}
+
+export function readAwardComplianceItems(state: SqliteBootstrapState): AwardComplianceItem[] {
+	const db = openDatabase(state);
+	return loadTable<AwardComplianceItem>(db, 'award_compliance_items');
+}
+
+export function writeAwardComplianceItems(state: SqliteBootstrapState, items: AwardComplianceItem[]): void {
+	const db = openDatabase(state);
+	replaceTable<AwardComplianceItem>(db, 'award_compliance_items', items);
+}
+
+export function readDraftSnippets(state: SqliteBootstrapState): DraftSnippet[] {
+	const db = openDatabase(state);
+	return loadTable<DraftSnippet>(db, 'draft_snippets');
+}
+
+export function writeDraftSnippets(state: SqliteBootstrapState, snippets: DraftSnippet[]): void {
+	const db = openDatabase(state);
+	replaceTable<DraftSnippet>(db, 'draft_snippets', snippets);
+}
+
+export function readPeerDiscoveryResults(state: SqliteBootstrapState): PeerDiscoveryResult[] {
+	const db = openDatabase(state);
+	return loadTable<PeerDiscoveryResult>(db, 'peer_discovery_results');
+}
+
+export function writePeerDiscoveryResults(state: SqliteBootstrapState, results: PeerDiscoveryResult[]): void {
+	const db = openDatabase(state);
+	replaceTable<PeerDiscoveryResult>(db, 'peer_discovery_results', results);
 }

@@ -124,8 +124,8 @@ describe('/api/research route', () => {
 
     const getResponse = await GET(new Request('http://localhost/api/research') as never);
     const getData = await getResponse.json();
-    // sourcesCrawled is 2: Candid + ProPublica (auto-registered by runResearch)
-    expect(getData.latestRun?.sourcesCrawled).toBe(2);
+    // sourcesCrawled includes 8 seed sources + Candid + ProPublica
+    expect(getData.latestRun?.sourcesCrawled).toBe(10);
     expect(getData.allRuns).toHaveLength(1);
   });
 

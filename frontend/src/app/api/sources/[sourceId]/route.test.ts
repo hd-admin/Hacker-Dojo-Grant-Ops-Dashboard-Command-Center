@@ -74,7 +74,8 @@ describe('/api/sources/[sourceId] route', () => {
 
     // Verify persistence
     const sources = await repository.getSources();
-    expect(sources[0]?.name).toBe('Updated Name');
+    const updated = sources.find((s) => s.id === source.id);
+    expect(updated?.name).toBe('Updated Name');
   });
 
   it('updates source URL', async () => {

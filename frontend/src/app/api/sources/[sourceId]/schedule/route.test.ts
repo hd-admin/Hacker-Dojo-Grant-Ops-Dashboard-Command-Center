@@ -70,8 +70,9 @@ describe('/api/sources/[sourceId]/schedule route', () => {
     expect(fetched.id).toBe(created.id);
 
     const schedules = await loadCrawlSchedules();
-    expect(schedules).toHaveLength(1);
-    expect(schedules[0]?.sourceId).toBe(source.id);
+    // 8 seed schedules + 1 test schedule = 9
+    expect(schedules.length).toBeGreaterThanOrEqual(9);
+    expect(schedules.some((s) => s.sourceId === source.id)).toBe(true);
 
     const deleteResponse = await DELETE(new Request(`http://localhost/api/sources/${source.id}/schedule`, {
       method: 'DELETE',

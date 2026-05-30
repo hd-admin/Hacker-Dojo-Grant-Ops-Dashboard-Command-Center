@@ -5,6 +5,7 @@ import { getDataDir } from '../../../../../shared/grant-ops-persistence';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { analyzeStoredDocument } from '@/server/grant-ops/document-text-extractor';
 import * as documentService from '@/server/grant-ops/document-service';
+import { validateFileSize, validateFileExtension, validateMimeType, atomicWrite } from '@/server/grant-ops/upload-validator';
 import type { DocumentMetadata } from '../../../../../shared/types';
 
 export const dynamic = 'force-dynamic';
@@ -59,9 +60,36 @@ export async function POST(request: NextRequest) {
     const nowIso = deps.clock.now().toISOString();
     const storageDir = path.join(getDataDir(), 'documents');
     await fs.mkdir(storageDir, { recursive: true });
-    const storagePath = path.join(storageDir, `${id}-${sanitizeFileName(fileEntry.name)}`);
+
+    const sanitized = sanitizeFileName(fileEntry.name);
+    const storagePath = path.join(storageDir, `${id}-${sanitized}`);
     const bytes = Buffer.from(await fileEntry.arrayBuffer());
-    await fs.writeFile(storagePath, bytes);
+    const tmpPath = storagePath + '.tmp.upload';
+    await fs.writeFile(tmpPath, bytes);
+
+    const sizeErr = validateFileSize(tmpPath);
+    if (sizeErr) {
+      await fs.unlink(tmpPath).catch(() => {});
+      return NextResponse.json(sizeErr, { status: 400 });
+    }
+
+    const extErr = validateFileExtension(fileEntry.name);
+    if (extErr) {
+      await fs.unlink(tmpPath).catch(() => {});
+      return NextResponse.json(extErr, { status: 400 });
+    }
+
+    const mimeErr = validateMimeType(tmpPath, fileEntry.name);
+    if (mimeErr) {
+      await fs.unlink(tmpPath).catch(() => {});
+      return NextResponse.json(mimeErr, { status: 400 });
+    }
+
+    const { error: writeError } = await atomicWrite(tmpPath, storageDir, `${id}-${sanitized}`);
+    await fs.unlink(tmpPath).catch(() => {});
+    if (writeError) {
+      return NextResponse.json(writeError, { status: 500 });
+    }
 
     const extraction = await analyzeStoredDocument(storagePath, fileEntry.type || 'application/octet-stream');
 

@@ -22,6 +22,16 @@ import {
   readSubmissionManifests as readSubmissionManifestsFromSqlite,
   readBackupFreshness as readBackupFreshnessFromSqlite,
   readCrawlSchedules as readCrawlSchedulesFromSqlite,
+  readFunderProfiles as readFunderProfilesFromSqlite,
+  readSavedSearches as readSavedSearchesFromSqlite,
+  readAwards as readAwardsFromSqlite,
+  readAwardBudgetCategories as readAwardBudgetCategoriesFromSqlite,
+  readAwardExpenses as readAwardExpensesFromSqlite,
+  readPlannedExpenses as readPlannedExpensesFromSqlite,
+  readAwardReportDeadlines as readAwardReportDeadlinesFromSqlite,
+  readAwardComplianceItems as readAwardComplianceItemsFromSqlite,
+  readDraftSnippets as readDraftSnippetsFromSqlite,
+  readPeerDiscoveryResults as readPeerDiscoveryResultsFromSqlite,
   resolveDataDir,
   resetSqliteCache,
   removeApprovalRecordByGrantId as removeApprovalRecordByGrantIdFromSqlite,
@@ -38,6 +48,16 @@ import {
   updateDuplicateCandidate as updateDuplicateCandidateToSqlite,
   updateJobQueueItem as updateJobQueueItemToSqlite,
   writeGrants as writeGrantsToSqlite,
+  writeFunderProfiles as writeFunderProfilesToSqlite,
+  writeSavedSearches as writeSavedSearchesToSqlite,
+  writeAwards as writeAwardsToSqlite,
+  writeAwardBudgetCategories as writeAwardBudgetCategoriesToSqlite,
+  writeAwardExpenses as writeAwardExpensesToSqlite,
+  writePlannedExpenses as writePlannedExpensesToSqlite,
+  writeAwardReportDeadlines as writeAwardReportDeadlinesToSqlite,
+  writeAwardComplianceItems as writeAwardComplianceItemsToSqlite,
+  writeDraftSnippets as writeDraftSnippetsToSqlite,
+  writePeerDiscoveryResults as writePeerDiscoveryResultsToSqlite,
   writeOpencodeSettings as writeOpencodeSettingsToSqlite,
   writePersistedData as writePersistedDataToSqlite,
   writeProfile as writeProfileToSqlite,
@@ -55,18 +75,28 @@ import {
 import type {
   ApprovalRecord,
   AuditEvent,
+  Award,
+  AwardBudgetCategory,
+  AwardComplianceItem,
+  AwardExpense,
+  AwardReportDeadline,
   ConflictRecord,
   CrawlRun,
   DocumentMetadata,
   DraftArtifact,
+  DraftSnippet,
   DuplicateCandidate,
   FollowUp,
+  FunderProfile,
   Grant,
   JobQueueItem,
   Notification,
   OpencodeSettings,
   OrganizationProfile,
+  PeerDiscoveryResult,
+  PlannedExpense,
   RevisionRequest,
+  SavedSearch,
   Source,
   SubmissionManifest,
   SubmissionRecord,
@@ -394,4 +424,84 @@ export async function loadThemesData(): Promise<ThemesData> {
 
 export async function saveThemesData(data: ThemesData): Promise<void> {
   writeThemesDataToSqlite(getSqliteState(), data);
+}
+
+export async function loadFunderProfiles(): Promise<FunderProfile[]> {
+  return readFunderProfilesFromSqlite(getSqliteState());
+}
+
+export async function saveFunderProfiles(profiles: FunderProfile[]): Promise<void> {
+  writeFunderProfilesToSqlite(getSqliteState(), profiles);
+}
+
+export async function loadSavedSearches(): Promise<SavedSearch[]> {
+  return readSavedSearchesFromSqlite(getSqliteState());
+}
+
+export async function saveSavedSearches(searches: SavedSearch[]): Promise<void> {
+  writeSavedSearchesToSqlite(getSqliteState(), searches);
+}
+
+export async function loadAwards(): Promise<Award[]> {
+  return readAwardsFromSqlite(getSqliteState());
+}
+
+export async function saveAwards(awards: Award[]): Promise<void> {
+  writeAwardsToSqlite(getSqliteState(), awards);
+}
+
+export async function loadAwardBudgetCategories(): Promise<AwardBudgetCategory[]> {
+  return readAwardBudgetCategoriesFromSqlite(getSqliteState());
+}
+
+export async function saveAwardBudgetCategories(categories: AwardBudgetCategory[]): Promise<void> {
+  writeAwardBudgetCategoriesToSqlite(getSqliteState(), categories);
+}
+
+export async function loadAwardExpenses(): Promise<AwardExpense[]> {
+  return readAwardExpensesFromSqlite(getSqliteState());
+}
+
+export async function saveAwardExpenses(expenses: AwardExpense[]): Promise<void> {
+  writeAwardExpensesToSqlite(getSqliteState(), expenses);
+}
+
+export async function loadPlannedExpenses(): Promise<PlannedExpense[]> {
+  return readPlannedExpensesFromSqlite(getSqliteState());
+}
+
+export async function savePlannedExpenses(expenses: PlannedExpense[]): Promise<void> {
+  writePlannedExpensesToSqlite(getSqliteState(), expenses);
+}
+
+export async function loadAwardReportDeadlines(): Promise<AwardReportDeadline[]> {
+  return readAwardReportDeadlinesFromSqlite(getSqliteState());
+}
+
+export async function saveAwardReportDeadlines(deadlines: AwardReportDeadline[]): Promise<void> {
+  writeAwardReportDeadlinesToSqlite(getSqliteState(), deadlines);
+}
+
+export async function loadAwardComplianceItems(): Promise<AwardComplianceItem[]> {
+  return readAwardComplianceItemsFromSqlite(getSqliteState());
+}
+
+export async function saveAwardComplianceItems(items: AwardComplianceItem[]): Promise<void> {
+  writeAwardComplianceItemsToSqlite(getSqliteState(), items);
+}
+
+export async function loadDraftSnippets(): Promise<DraftSnippet[]> {
+  return readDraftSnippetsFromSqlite(getSqliteState());
+}
+
+export async function saveDraftSnippets(snippets: DraftSnippet[]): Promise<void> {
+  writeDraftSnippetsToSqlite(getSqliteState(), snippets);
+}
+
+export async function loadPeerDiscoveryResults(): Promise<PeerDiscoveryResult[]> {
+  return readPeerDiscoveryResultsFromSqlite(getSqliteState());
+}
+
+export async function savePeerDiscoveryResults(results: PeerDiscoveryResult[]): Promise<void> {
+  writePeerDiscoveryResultsToSqlite(getSqliteState(), results);
 }

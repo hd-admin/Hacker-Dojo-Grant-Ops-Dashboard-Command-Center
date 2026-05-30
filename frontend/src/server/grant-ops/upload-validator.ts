@@ -114,8 +114,8 @@ export function detectMimeTypeByMagic(filePath: string): string | null {
   }
 }
 
-export function validateMimeType(filePath: string): ApiErrorResponse | null {
-  const ext = path.extname(filePath).toLowerCase();
+export function validateMimeType(filePath: string, originalFilename?: string): ApiErrorResponse | null {
+  const ext = path.extname(originalFilename ?? filePath).toLowerCase();
   const expectedMimes = EXTENSION_MIME_MAP[ext];
   if (!expectedMimes) return null;
 

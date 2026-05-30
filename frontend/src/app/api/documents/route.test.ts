@@ -77,11 +77,11 @@ describe('/api/documents route', () => {
 
   it('returns stored_unparsed for accepted non-pdf uploads', async () => {
     const payload = await buildMultipartRequest(
-      { name: 'Notes', type: 'DOCX' },
+      { name: 'Notes', type: 'TXT' },
       {
-        name: 'notes.docx',
-        type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        bytes: Buffer.from([1, 2, 3]),
+        name: 'notes.txt',
+        type: 'text/plain',
+        bytes: Buffer.from('Sample text content for testing', 'utf-8'),
       },
     );
 

@@ -75,7 +75,8 @@ describe('/api/sources/[sourceId]/retry-crawl route', () => {
     expect(body.crawlRun.sourceId).toBe(source.id);
 
     const sources = await repository.getSources();
-    expect(sources[0]?.sourceCrawlState).toBe('queued');
+    const updated = sources.find((s) => s.id === source.id);
+    expect(updated?.sourceCrawlState).toBe('queued');
   });
 
   it('records audit event of type source_retry_crawl on success', async () => {

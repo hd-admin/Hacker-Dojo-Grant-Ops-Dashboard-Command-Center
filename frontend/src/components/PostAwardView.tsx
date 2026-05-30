@@ -178,8 +178,8 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
 
                     <div className="post-award-section">
                       <strong>Upcoming Reports</strong>
-                      {(reportDeadlines[award.id] || []).length === 0 && <div className="text-muted">No reports scheduled</div>}
-                      {(reportDeadlines[award.id] || []).map((rpt) => (
+                      {(_reportDeadlines[award.id] || []).length === 0 && <div className="text-muted">No reports scheduled</div>}
+                      {(_reportDeadlines[award.id] || []).map((rpt: AwardReportDeadline) => (
                         <div key={rpt.id} className="post-award-item">
                           {rpt.type} — Due: {rpt.dueDate} — <span className={`status-${rpt.status}`}>{rpt.status}</span>
                         </div>
@@ -188,8 +188,8 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
 
                     <div className="post-award-section">
                       <strong>Compliance</strong>
-                      {(complianceItems[award.id] || []).length === 0 && <div className="text-muted">No compliance items</div>}
-                      {(complianceItems[award.id] || []).map((item) => (
+                      {(_complianceItems[award.id] || []).length === 0 && <div className="text-muted">No compliance items</div>}
+                      {(_complianceItems[award.id] || []).map((item: AwardComplianceItem) => (
                         <div key={item.id} className="post-award-item">
                           {item.requirement} — <span className={`status-${item.status}`}>{item.status}</span>
                         </div>

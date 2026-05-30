@@ -405,7 +405,7 @@ describe("ResearchService", () => {
 			expect(researchedGrant?.funderSummary).toContain('Mock Foundation');
 			expect(researchedGrant?.fitBreakdown).toBeDefined();
 			// sourceCount is 2 because ProPublica is also registered as a default source
-			expect(researchedGrant?.sourceCount).toBe(2);
+			expect(researchedGrant?.sourceCount).toBe(10);
 			expect(researchedGrant?.groundedDocumentCount).toBe(0);
 			expect(researchedGrant?.latestDraftVersion).toBe(0);
 			expect(researchedGrant?.checklist?.length).toBeGreaterThan(0);
@@ -525,9 +525,9 @@ describe('auto-draft triggering', () => {
 		const allianceGrant = grants.find((g) => g.id === 'multi-grant-002');
 		expect(mockFoundationGrant?.researchRationale).toBe('Multiple aligned grants');
 		expect(allianceGrant?.status).toBe('matched');
-		// sourceCount is 2: ProPublica is also registered as a default source
-		expect(mockFoundationGrant?.sourceCount).toBe(2);
-		expect(allianceGrant?.sourceCount).toBe(2);
+		// sourceCount is 10: 8 seed sources + 2 test sources
+		expect(mockFoundationGrant?.sourceCount).toBe(10);
+		expect(allianceGrant?.sourceCount).toBe(10);
 	});
 
 	it('research creates matched grants for both high-fit and low-fit results', async () => {
@@ -572,8 +572,8 @@ describe('auto-draft triggering', () => {
 		const grantsAfterSecond = await repository.getGrants();
 		const grantAfterSecond = grantsAfterSecond.find((g) => g.id === 'mock-grant-001');
 		expect(grantAfterSecond?.status).toBe('matched');
-		// sourceCount is 4: ProPublica + Test Source each run twice (2 runs × 2 sources)
-		expect(grantAfterSecond?.sourceCount).toBe(4);
+		// sourceCount is 20: 10 sources per run × 2 runs
+		expect(grantAfterSecond?.sourceCount).toBe(20);
 	});
 });
 

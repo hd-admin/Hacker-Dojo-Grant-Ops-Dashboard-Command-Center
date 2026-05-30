@@ -9,6 +9,8 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { readJobQueue, getSqliteState } from '../../../../shared/grant-ops-sqlite';
+import { resolveDataDir } from '../../../../shared/grant-ops-sqlite';
 
 const TMP_CLEANUP_INTERVAL_MS = 6 * 60 * 60 * 1000; // 6 hours
 const ARTIFACT_MAX_AGE_MS = 24 * 60 * 60 * 1000; // 24 hours
@@ -51,7 +53,17 @@ export function ensureTmpDirectories(dataDir: string): void {
 }
 
 function getActiveJobIds(): Set<string> {
-  return new Set();
+  try {
+    const dataDir = resolveDataDir();
+    const state = getSqliteState(dataDir);
+    const activeJobs = readJobQueue(state);
+    const activeIds = activeJobs
+      .filter((job) => job.status === 'running' || job.status === 'queued' || job.status === 'retrying' || job.status === 'verifying')
+      .map((job) => job.id);
+    return new Set(activeIds);
+  } catch {
+    return new Set();
+  }
 }
 
 function isFileOpenForWriting(filePath: string): boolean {

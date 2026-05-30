@@ -61,7 +61,8 @@ describe('SourceService', () => {
 
       const sources = await sourceService.getAllSources();
 
-      expect(sources).toHaveLength(2);
+      // 8 seed sources + 2 test sources = 10
+      expect(sources).toHaveLength(10);
       expect(sources.some((s) => s.name === 'Source 1')).toBe(true);
       expect(sources.some((s) => s.name === 'Source 2')).toBe(true);
     });
@@ -82,8 +83,10 @@ describe('SourceService', () => {
 
       expect(result).toBe(true);
       const remaining = await sourceService.getAllSources();
-      expect(remaining).toHaveLength(1);
-      expect(remaining[0]!.id).toBe(source2.id);
+      // 8 seed sources + 1 remaining test source = 9
+      expect(remaining).toHaveLength(9);
+      expect(remaining.some((s) => s.id === source2.id)).toBe(true);
+      expect(remaining.some((s) => s.id === source1.id)).toBe(false);
     });
 
     it('activateSource sets isActive=true on a previously deactivated source and returns true', async () => {
@@ -143,7 +146,8 @@ describe('SourceService', () => {
 
       const activeSources = await sourceService.getActiveSources();
 
-      expect(activeSources).toHaveLength(2);
+      // 8 seed sources (all active) + 2 test active sources = 10
+      expect(activeSources).toHaveLength(10);
       expect(activeSources.some((s) => s.id === active1.id)).toBe(true);
       expect(activeSources.some((s) => s.id === active2.id)).toBe(true);
       expect(activeSources.some((s) => s.id === toDeactivate.id)).toBe(false);
