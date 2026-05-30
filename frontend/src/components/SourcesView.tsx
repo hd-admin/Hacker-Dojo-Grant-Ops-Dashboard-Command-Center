@@ -112,6 +112,7 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     useState<SourceDiscoverySuggestion[]>([]);
   const [discoverUnavailable, setDiscoverUnavailable] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<Partial<Source>>({});
   const [expandedHistory, setExpandedHistory] = useState<Record<string, boolean>>({});
@@ -141,11 +142,13 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     ]);
     setSources(Array.isArray(all) ? all : []);
     setPendingSources(Array.isArray(pending) ? pending : []);
+    setInitialLoading(false);
   }, []);
 
   useEffect(() => {
     void loadSources().catch((error) => {
       console.error('Error loading sources:', error);
+      setInitialLoading(false);
     });
   }, [loadSources]);
 
@@ -1030,6 +1033,14 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
       )}
     </section>
   );
+
+  if (initialLoading) {
+    return (
+      <div className="spinner-overlay" role="status" aria-busy="true" aria-label="Loading sources">
+        <div className="spinner" />
+      </div>
+    );
+  }
 
   return (
     <>

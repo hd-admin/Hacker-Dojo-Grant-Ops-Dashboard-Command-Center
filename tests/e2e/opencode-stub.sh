@@ -1,24 +1,6 @@
 #!/bin/sh
 set -eu
 
-all_args="$*"
-json_output=0
-case "$all_args" in
-	*"Research grants for the following organization:"*|*"--output-format json"*|*"--format json"*)
-		json_output=1
-		;;
-esac
-
-if [ "$json_output" -eq 1 ]; then
-	cat <<'EOF'
-{"grants":[{"id":"stub-grant-001","title":"Education Technology Community Grant","funder":"Mock Foundation","funderShort":"Mock","award":"$50,000","awardSort":50000,"deadline":"2026-06-30","daysOut":30,"fit":82,"tags":["EdTech","Community"],"status":"matched","statusLabel":"Matched","matchedAt":"2026-05-24T00:00:00.000Z"}],"evidence":[],"rationale":"E2E research stub response"}
+cat <<'EOF'
+OpenCode 0.1.0-stub
 EOF
-else
-	cat <<'EOF'
-## Hacker Dojo Grant Proposal
-
-Hacker Dojo expands access to technology education and community innovation in Silicon Valley.
-
-This draft is grounded in the uploaded organization profile.
-EOF
-fi
