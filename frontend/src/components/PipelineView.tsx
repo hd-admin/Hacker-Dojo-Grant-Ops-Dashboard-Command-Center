@@ -189,7 +189,11 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
   }, [grants, statusFilter, responsibilityFilter, urgencyFilter, funderTypeFilter]);
 
   if (loading) {
-    return <div className="header-title">Loading...</div>;
+    return (
+      <div className="spinner-overlay" role="status" aria-busy="true" aria-label="Loading pipeline">
+        <div className="spinner" />
+      </div>
+    );
   }
 
   const boardCounts = new Map(columns.map((column) => [column.key, 0]));

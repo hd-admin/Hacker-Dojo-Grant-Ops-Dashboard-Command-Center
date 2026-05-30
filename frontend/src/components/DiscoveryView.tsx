@@ -223,7 +223,11 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
   /* eslint-enable react-hooks/exhaustive-deps */
 
   if (loading) {
-    return <div className="header-title" role="status" aria-busy="true" aria-label="Loading grants">Loading...</div>;
+    return (
+      <div className="spinner-overlay" role="status" aria-busy="true" aria-label="Loading grants">
+        <div className="spinner" />
+      </div>
+    );
   }
 
   // Empty state: no grants discovered

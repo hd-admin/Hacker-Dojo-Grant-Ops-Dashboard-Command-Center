@@ -142,4 +142,51 @@ describe('fetchProPublicaGrants', () => {
     const result = await fetchProPublicaGrants('test', testDeps);
     expect(result).toEqual({ grants: [], unavailable: true });
   });
+
+  it('returns grants=[] and no error when opencode returns malformed JSON', async () => {
+    mockGetOpencodeSettings.mockResolvedValue({
+      isConfigured: true,
+      binaryPath: '/fake/opencode',
+      timeoutMs: 60000,
+      workingDirectory: '/tmp',
+    } as OpencodeSettings);
+    mockExecFileSync.mockReturnValue('not valid json {{{');
+    const result = await fetchProPublicaGrants('test', testDeps);
+    expect(result.grants).toEqual([]);
+    expect(result.unavailable).toBeUndefined();
+  });
+
+  it('preserves deadlineConfidence field on returned grants', async () => {
+    mockGetOpencodeSettings.mockResolvedValue({
+      isConfigured: true,
+      binaryPath: '/fake/opencode',
+      timeoutMs: 60000,
+      workingDirectory: '/tmp',
+    } as OpencodeSettings);
+    const mockGrant = {
+      id: 'pp-deadline',
+      title: 'Deadline Test',
+      funder: 'Test Funder',
+      deadline: '2026-12-31',
+      deadlineConfidence: 'estimated',
+    };
+    mockExecFileSync.mockReturnValue(JSON.stringify([mockGrant]));
+    const result = await fetchProPublicaGrants('test', testDeps);
+    expect(result.grants).toHaveLength(1);
+    expect(result.grants[0]!.deadlineConfidence).toBe('estimated');
+  });
+
+  it('handles empty grants array response gracefully', async () => {
+    mockGetOpencodeSettings.mockResolvedValue({
+      isConfigured: true,
+      binaryPath: '/fake/opencode',
+      timeoutMs: 60000,
+      workingDirectory: '/tmp',
+    } as OpencodeSettings);
+    mockExecFileSync.mockReturnValue('[]');
+    const result = await fetchProPublicaGrants('no matches', testDeps);
+    expect(result.grants).toEqual([]);
+    expect(result.unavailable).toBeUndefined();
+    expect(result.error).toBeUndefined();
+  });
 });

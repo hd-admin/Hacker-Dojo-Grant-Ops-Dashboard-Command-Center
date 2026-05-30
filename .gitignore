@@ -27,3 +27,6 @@ checkpoint.json
 .uservitest-output.txt
 vitest-*.out
 .tmp/*
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

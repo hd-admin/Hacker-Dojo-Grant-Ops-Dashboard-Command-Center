@@ -226,8 +226,8 @@ export default function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
 
   if (loading) {
     return (
-      <div className="header-title" data-testid="jobs-panel-loading">
-        Loading jobs...
+      <div className="spinner-overlay" data-testid="jobs-panel-loading" role="status" aria-busy="true" aria-label="Loading jobs">
+        <div className="spinner" />
       </div>
     );
   }

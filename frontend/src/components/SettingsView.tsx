@@ -342,7 +342,11 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const lastRestoreVerification = freshness?.lastRestoreVerification?.outcome ?? 'No restore verification result yet.';
 
   if (loading) {
-    return <div className="header-title">Loading...</div>;
+    return (
+      <div className="spinner-overlay" role="status" aria-busy="true" aria-label="Loading settings">
+        <div className="spinner" />
+      </div>
+    );
   }
 
   if (!profile) {

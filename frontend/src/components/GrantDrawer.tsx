@@ -737,7 +737,9 @@ export default function GrantDrawer({
 			<aside className="drawer open">
 				{loading ? (
 					<div className="drawer-header">
-						<div className="drawer-funder">Loading...</div>
+						<div className="spinner-overlay" style={{ padding: '24px 0' }} role="status" aria-busy="true" aria-label="Loading grant details">
+							<div className="spinner" />
+						</div>
 					</div>
 				) : detail ? (
 					<>
