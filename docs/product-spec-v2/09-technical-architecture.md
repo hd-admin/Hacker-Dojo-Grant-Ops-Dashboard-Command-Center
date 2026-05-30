@@ -50,8 +50,8 @@ OpenCode agents never communicate results via stdout. Instead, they write struct
   tmp/                          # Agent working directory
     research-{jobId}.json       # Research results
     draft-{jobId}-{version}.json # Draft artifacts
-    crawl-{runId}.json          # Crawl results
-    match-{runId}.json          # Match scoring results
+    crawl-{jobId}.json          # Crawl results
+    match-{jobId}.json          # Match scoring results
     extract-{jobId}.json        # Award letter extraction
     session-{jobId}.log         # Agent session logs
     .cache/                     # Agent cache (periodically cleaned)
@@ -90,7 +90,7 @@ interface ResearchArtifact {
   }>;
   evidence: Array<{
     grantTitle: string;
-    evidenceType: "fit_score" | "deadline" | "award_amount" | "eligibility" | "requirements";
+    evidenceType: "fit_score" | "deadline" | "award_amount" | "eligibility" | "requirements" | "giving_pattern";
     content: string;
     sourceUrl?: string;
   }>;
@@ -129,10 +129,10 @@ interface DraftArtifact {
 #### 3. Crawl Result Artifact
 
 ```typescript
-// tmp/crawl-{runId}.json
+// tmp/crawl-{jobId}.json
 interface CrawlArtifact {
   artifactType: "crawl";
-  runId: string;
+  jobId: string;
   sourceId: string;
   timestamp: string;
   status: "completed" | "partial" | "failed";
@@ -153,10 +153,10 @@ interface CrawlArtifact {
 #### 4. Match Score Artifact
 
 ```typescript
-// tmp/match-{runId}.json
+// tmp/match-{jobId}.json
 interface MatchArtifact {
   artifactType: "match";
-  runId: string;
+  jobId: string;
   timestamp: string;
   matches: Array<{
     grantTitle: string;
@@ -215,7 +215,7 @@ interface AgentJob {
   type: AgentTaskType;
   grantId?: string;
   params: Record<string, unknown>;
-  status: "queued" | "running" | "verifying" | "retrying" | "completed" | "failed";
+  status: "queued" | "running" | "verifying" | "retrying" | "completed" | "failed" | "cancelled";
   retryCount: number;
   maxRetries: number;
   artifactPath?: string;
@@ -239,12 +239,18 @@ async function executeAgentJob(job: AgentJob): Promise<void> {
   let attempt = 0;
   const maxAttempts = 3;
 
-  while (attempt < maxAttempts) {
-    attempt++;
+    while (attempt < maxAttempts) {
+      attempt++;
 
-    try {
-      // Run OpenCode with timeout
-      const result = await runOpenCode(prompt, {
+      try {
+        // Ensure no stale artifact from a previous attempt can be reused.
+        if (fs.existsSync(artifactPath)) {
+          fs.unlinkSync(artifactPath);
+        }
+        const attemptStartedAt = Date.now();
+
+        // Run OpenCode with timeout
+        const result = await runOpenCode(prompt, {
         timeoutMs: job.type === "draft" ? 300000 : 120000,
         workingDir: tmpDir,
         env: { ...process.env, ARTIFACT_PATH: artifactPath },
@@ -262,6 +268,11 @@ async function executeAgentJob(job: AgentJob): Promise<void> {
 
       // 4. Read and parse the artifact
       updateJobStatus(job, "verifying", 80, "Verifying artifact...");
+      const stat = fs.statSync(artifactPath);
+      if (stat.mtimeMs < attemptStartedAt) {
+        throw new Error("Artifact file is stale from an earlier attempt");
+      }
+
       const raw = fs.readFileSync(artifactPath, "utf-8");
       let artifact: unknown;
 
@@ -444,7 +455,7 @@ Every async operation must show:
 interface JobProgressProps {
   jobId: string;
   jobType: "research" | "draft" | "crawl" | "match" | "extract";
-  status: "queued" | "running" | "verifying" | "retrying" | "completed" | "failed";
+  status: "queued" | "running" | "verifying" | "retrying" | "completed" | "failed" | "cancelled";
   progress: number; // 0-100
   stage: string;
   errorMessage?: string;

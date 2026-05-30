@@ -173,8 +173,8 @@ CREATE INDEX idx_grants_sourceId ON grants(sourceId);
 ### 2.2 — Full-Text Search (FTS5)
 
 ```sql
--- Contentless FTS5 table with explicit TEXT foreign key.
--- Do NOT join TEXT ids to SQLite rowid.
+-- Standalone FTS5 table with explicit TEXT foreign key.
+-- The index stores a copy of searchable text plus the stable grantId.
 CREATE VIRTUAL TABLE grants_fts USING fts5(
   grantId UNINDEXED,
   title,
@@ -721,10 +721,10 @@ After zip creation, SHA-256 hash is computed via `node:crypto` and stored alongs
 - Warn if backup is > 7 days old
 - Create a pre-restore backup of current state before overwriting
 - Require explicit confirmation
-- Pause acceptance of new jobs
+- Pause acceptance of new jobs before both backup and restore operations
 - Wait for running write transactions to complete
-- Close the writer connection and all read replicas before replacing database or artifact files
-- Re-open connections only after restore completes and integrity checks pass
+- Close the writer connection and all read replicas before zipping or replacing database/artifact files
+- Re-open connections only after backup verification or restore integrity checks pass
 
 ---
 

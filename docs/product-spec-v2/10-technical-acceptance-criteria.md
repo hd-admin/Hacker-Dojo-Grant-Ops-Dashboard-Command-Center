@@ -22,6 +22,8 @@
 
 **AC-1.1.4** — The app MUST retry failed jobs up to 3 times. Each retry MUST include the specific failure reason from the previous attempt in the prompt (e.g., "Previous attempt failed: invalid JSON at line 42" or "Previous attempt failed: missing required field 'grants'").
 
+**AC-1.1.5** — Before each retry attempt, the controller MUST delete any pre-existing tmp artifact at the target path. It MUST also record the attempt start timestamp and reject any artifact file whose modification time is older than that timestamp.
+
 ### 1.2 — JSON Validation
 
 **AC-1.2.1** — After reading the artifact file, the app MUST attempt `JSON.parse()`. If parsing throws, the job enters retry (if attempts remain) with error `"Invalid JSON: {parseError.message}"`.
@@ -30,14 +32,24 @@
 
 **AC-1.2.3** — The app MUST NOT ingest partially valid data. If validation fails, no database writes occur. The tmp artifact file is preserved for debugging.
 
-**AC-1.2.4** — After 3 failed attempts (any failure mode), the job status MUST be `"failed"`, the error message MUST include all unique failure reasons across attempts, and the user MUST see an actionable error (e.g., "Draft generation failed after 3 attempts. The agent was unable to produce valid output. You can retry manually or check the session log at .grant-ops-data/tmp/session-{jobId}.log").
+**AC-1.2.4** — After 3 failed attempts caused by structural failures (missing artifact, invalid JSON, schema mismatch, timeout, process crash, or write failures), the job status MUST be `"failed"`, the error message MUST include all unique failure reasons across attempts, and the user MUST see an actionable error (e.g., "Draft generation failed after 3 attempts. The agent was unable to produce valid output. You can retry manually or check the session log at .grant-ops-data/tmp/session-{jobId}.log"). Quality-gate failures are governed separately by AC-15.8.2.
 
 ### 1.3 — Artifact Ingestion
 
 **AC-1.3.1** — On successful validation, the verified artifact MUST be:
-- Copied to `.grant-ops-data/artifacts/{jobType}/{jobId}.json` (immutable record)
+- Copied to exactly one canonical directory based on job type:
+  - research → `.grant-ops-data/artifacts/research/{jobId}.json`
+  - crawl → `.grant-ops-data/artifacts/crawls/{jobId}.json`
+  - draft → `.grant-ops-data/artifacts/drafts/{jobId}.json`
+  - match → `.grant-ops-data/artifacts/matches/{jobId}.json`
+  - extract → `.grant-ops-data/artifacts/extracts/{jobId}.json`
 - Ingested into SQLite with all fields matching the schema exactly
-- The tmp file at `.grant-ops-data/tmp/{jobType}-{jobId}.json` MAY be deleted after 24 hours
+- The tmp file MAY be deleted after 24 hours. Canonical tmp filenames are:
+  - research → `.grant-ops-data/tmp/research-{jobId}.json`
+  - crawl → `.grant-ops-data/tmp/crawl-{jobId}.json`
+  - draft → `.grant-ops-data/tmp/draft-{jobId}-{version}.json`
+  - match → `.grant-ops-data/tmp/match-{jobId}.json`
+  - extract → `.grant-ops-data/tmp/extract-{jobId}.json`
 
 **AC-1.3.2** — Ingestion MUST be transactional. If any database write fails during ingestion, the entire job MUST be marked `"failed"`, no partial data persists, and the artifact file is preserved.
 
@@ -65,7 +77,7 @@
 | match | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
 | extract | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
 
-**AC-1.4.3** — The `/api/jobs/{jobId}` endpoint MUST return progress within 100ms. The frontend MUST poll every 2 seconds while a job has status `"running"` or `"verifying"` or `"retrying"`.
+**AC-1.4.3** — The `/api/jobs/{jobId}` endpoint MUST return progress within 100ms. The frontend MUST poll every 2 seconds while a job has status `"queued"`, `"running"`, `"verifying"`, or `"retrying"`.
 
 **AC-1.4.4** — If the frontend has not received a progress update for 30 seconds while a job is `"running"`, it MUST show a warning: "The agent appears to be taking longer than expected. You can continue waiting or cancel."
 
@@ -466,11 +478,10 @@
 
 **AC-12.1.1** — The app MUST NOT expose any API endpoints on network interfaces other than `localhost` (127.0.0.1). The Next.js server MUST bind to `localhost` only.
 
-**AC-12.1.2** — The passcode lock feature MUST use **argon2id** as the primary hash algorithm. The hash MUST be stored in the `settings` table under `passcode.hash`. If the native `argon2` package fails to compile on macOS, `bcryptjs` with cost factor 12 MAY be used as a fallback. Plain-text passcodes MUST never be stored.
+**AC-12.1.2** — There is no application-level passcode or lock screen in v2. Access control relies on the local machine's own security boundary (OS account, FileVault, screen lock) plus the requirement that the app bind only to `127.0.0.1`.
 
 **AC-12.1.3** — All application-managed persistent reads and writes MUST be restricted to within `.grant-ops-data/`. The only exceptions are operator-initiated backup/restore import-export targets (for example a user-selected `.zip` destination or source). The API MUST reject any path containing `..` or arbitrary absolute paths unless it is an explicit operator-selected backup/restore/export path.
 
-**AC-12.1.4** — When passcode lock is enabled and the app is locked, all protected page requests and API routes MUST reject access until unlock. Protected API routes MUST return HTTP 423 with the standard error contract. Only `/api/passcode/status`, `/api/passcode/verify`, and `/api/health*` remain accessible while locked.
 
 ---
 
@@ -527,7 +538,7 @@
 
 **AC-14.2.2** — A test MUST verify that when the agent returns valid JSON that fails schema validation, the retry prompt includes the specific Zod error paths and messages.
 
-**AC-14.2.3** — A test MUST verify that after 3 failed attempts, the job status is `"failed"`, the error message includes all 3 failure reasons, and zero database records were created.
+**AC-14.2.3** — A test MUST verify that after 3 structural failed attempts, the job status is `"failed"`, the error message includes all 3 failure reasons, and zero database records were created.
 
 **AC-14.2.4** — A test MUST verify that a previously failed job can be manually retried via the UI and succeeds on retry.
 
@@ -797,7 +808,7 @@ The JSON must match this schema exactly:
 | Job Type | Quality Gate | Action on Failure |
 |---|---|---|
 | research | `grants.length > 0` OR `errors.length > 0` | If both empty: retry with "No grants found and no errors reported. If the source has no grants, explain why in the errors array." |
-| draft | `wordCount >= 200` | If < 200 words: retry with "Draft too short ({wordCount} words). Generate at least 500 words across all sections." |
+| draft | `wordCount >= 500` | If < 500 words: retry with "Draft too short ({wordCount} words). Generate at least 500 words across all sections." |
 | draft | At least one section with `isGrounded: true` | If none grounded: retry with "No sections are grounded. Reference specific Hacker Dojo documents in groundingSources." |
 | match | `fitScore` is not identical for all grants | If all same score: retry with "All grants received identical scores. Differentiate based on actual alignment." |
 | extract | `amount` is non-empty OR `errors` explains why | If both empty: retry with "No amount extracted and no errors reported. Either find the amount or explain why it couldn't be extracted." |
@@ -840,7 +851,7 @@ The JSON must match this schema exactly:
 
 ### 16.3 — FTS5 Search
 
-**AC-16.3.1** — The `grants_fts` virtual table MUST use the contentless FTS5 design defined in `12-data-architecture.md` §2.2: it stores a `grantId` text foreign key plus indexed text fields, and AI/AD/AU triggers keep it in sync with the `grants` table.
+**AC-16.3.1** — The `grants_fts` virtual table MUST use the standalone FTS5 design defined in `12-data-architecture.md` §2.2: it stores a stable `grantId` text foreign key plus the indexed searchable text fields, and AI/AD/AU triggers keep it in sync with the `grants` table.
 
 **AC-16.3.2** — `GET /api/grants?search=...` MUST return results ranked by FTS5 bm25 relevance within 200ms for 500 grants.
 
@@ -876,19 +887,11 @@ The JSON must match this schema exactly:
 
 **AC-16.6.4** — Invalid rows (non-numeric amounts, missing categories) MUST be flagged in the review table with specific error messages. The operator can fix or skip rows.
 
-### 16.7 — Passcode Lock
+### 16.7 — Local Access Model
 
-**AC-16.7.1** — Passcodes MUST be hashed with **argon2id** using these parameters: `memoryCost=65536` (64 MB), `timeCost=3`, `parallelism=4`. If the `argon2` native package fails to compile on macOS, fall back to `bcryptjs` with cost factor 12.
+**AC-16.7.1** — The app MUST NOT implement an application-level passcode, unlock session, inactivity lock, or lock screen in v2.
 
-**AC-16.7.2** — The lock screen MUST overlay the entire app with a blurred background. Passcode input is 4–12 characters, masked. After 5 failed attempts, a 30-second cooldown MUST be enforced.
-
-**AC-16.7.3** — Inactivity detection MUST track `mousemove`, `mousedown`, `keydown`, and `touchstart` events. The timer resets on each event. When `passcode.inactivityTimeout` minutes of inactivity are reached, the lock screen appears.
-
-**AC-16.7.4** — All background operations (agent jobs, crawls, timers, backup) MUST continue while the passcode lock is active. Locking MUST NOT interrupt running operations.
-
-**AC-16.7.5** — Manual lock MUST be available via `Cmd+L` / `Ctrl+L` keyboard shortcut and sidebar action.
-
-**AC-16.7.6** — Successful unlock MUST issue an `HttpOnly`, `SameSite=Strict` session cookie. Manual lock or inactivity lock MUST clear that cookie immediately.
+**AC-16.7.2** — Security relies on localhost-only binding plus the operator's machine-level protections (account password, FileVault, screen lock). Documentation and onboarding copy MUST make this explicit.
 
 ### 16.8 — Logging
 
@@ -898,7 +901,7 @@ The JSON must match this schema exactly:
 
 **AC-16.8.3** — Logs MUST include at minimum: `timestamp` (ISO 8601), `level` (error/warn/info/debug), `message` (human-readable), and `module` (identifying the subsystem).
 
-**AC-16.8.4** — The Settings → Logs view MUST allow the operator to browse logs paginated and filter by level. The "View log" button on failed jobs MUST open the specific session log.
+**AC-16.8.4** — The Settings → Logs view MUST allow the operator to browse logs paginated and filter by level. The backend MUST expose `GET /api/logs/app`, `GET /api/logs/error`, and `GET /api/logs/session/{jobId}`. The "View log" button on failed jobs MUST use the session-log endpoint.
 
 **AC-16.8.5** — Debug-level logging MUST be off by default. A toggle in Settings MUST enable it. Full prompt text and raw artifact JSON MUST only be logged at debug level.
 
@@ -955,7 +958,7 @@ The app is NOT ready for use unless ALL acceptance criteria in sections 1–15 a
 - [ ] Document uploads compute and verify SHA-256 checksums (AC-16.4)
 - [ ] Notification toasts appear within 5s of triggering events (AC-16.5)
 - [ ] Budget import parser detects headers and presents review table (AC-16.6)
-- [ ] Passcode lock uses argon2id with correct parameters (AC-16.7)
+- [ ] No application-level lock is implemented; localhost-only and OS-level security assumptions are documented (AC-16.7)
 - [ ] Logging uses pino with structured JSON and daily rotation (AC-16.8)
 - [ ] Automated backup uses adm-zip with SHA-256 verification (AC-16.9)
 - [ ] Calendar export generates valid .ics files, no cloud connection (AC-16.10)

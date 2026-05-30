@@ -1,7 +1,7 @@
 # 11 — Technical Infrastructure
 
 > **Status**: Draft v2 — fills gaps identified in May 2026 spec audit.
-> **Covers**: Technology stack, API routes, document management, search, notifications, configuration, passcode lock, peer discovery data sources, logging, backup scheduling, resource monitoring, app identity.
+> **Covers**: Technology stack, API routes, document management, search, notifications, configuration, peer discovery data sources, logging, backup scheduling, resource monitoring, app identity.
 > **Database schema**: See [12-data-architecture.md](./12-data-architecture.md).
 
 ---
@@ -62,8 +62,6 @@ This is a local-only desktop application. Application data persistence is fully 
 | **Server-only guard** | `server-only` | latest | Build-time guard preventing DB/filesystem modules from being imported into client components. |
 | **Logging** | `pino` | `^10.3.1` | 5-8x faster than Winston. Structured JSON output. |
 | **Log rotation** | `pino-roll` | `^4.0.0` | Daily rotation with size limits. Worker-thread transport. |
-| **Passcode hashing** | `argon2` | latest | **Primary**: argon2id (OWASP 2024+ recommended, memory-hard, GPU-resistant). |
-| **Passcode fallback** | `bcryptjs` | `^3.0.3` | Pure JS fallback if argon2 native compilation fails on macOS. |
 
 ### Testing
 
@@ -147,7 +145,7 @@ Before starting any new development cycle, run this checklist to ensure all pinn
 node --version  # compare against https://nodejs.org/en/about/previous-releases
 
 # 2. Check each npm package for newer versions
-npx npm-check-updates --filter "next,react,typescript,better-sqlite3,zod,csv-parse,mammoth,pino,pino-roll,argon2,bcryptjs,ical-generator,adm-zip,vitest,playwright,file-type,@napi-rs/canvas,server-only"
+npx npm-check-updates --filter "next,react,typescript,better-sqlite3,zod,csv-parse,mammoth,pino,pino-roll,ical-generator,adm-zip,vitest,playwright,file-type,@napi-rs/canvas,server-only"
 
 # 3. Check upstream SheetJS release notes, then refresh the vendored tarball in `vendor/`
 # Do not rely on a live CDN during install
@@ -372,7 +370,15 @@ Peer organizations are stored in the `sources` table with `type='peer'`. They us
 | `GET` | `/api/health/disk` | Disk space in `.grant-ops-data/` |
 | `GET` | `/api/health/opencode` | OpenCode detection + version |
 
-### 1.19 — Exports
+### 1.19 — Logs
+
+| Method | Route | Purpose |
+|---|---|---|
+| `GET` | `/api/logs/app` | Stream or paginate application logs |
+| `GET` | `/api/logs/error` | Stream or paginate error logs |
+| `GET` | `/api/logs/session/{jobId}` | View specific OpenCode session log |
+
+### 1.20 — Exports
 
 | Method | Route | Purpose |
 |---|---|---|
@@ -380,15 +386,6 @@ Peer organizations are stored in the `sources` table with `type='peer'`. They us
 | `GET` | `/api/exports/pipeline` | Export pipeline as CSV |
 | `GET` | `/api/exports/awards` | Export awards report as CSV |
 | `GET` | `/api/exports/activity` | Export activity log as CSV |
-
-### 1.20 — Passcode Lock
-
-| Method | Route | Purpose |
-|---|---|---|
-| `POST` | `/api/passcode/set` | Set initial passcode |
-| `POST` | `/api/passcode/verify` | Verify passcode for unlock |
-| `POST` | `/api/passcode/change` | Change passcode |
-| `GET` | `/api/passcode/status` | Whether passcode is enabled |
 
 ---
 
@@ -400,7 +397,7 @@ The complete database schema — all 19 tables, indexes, FTS5 virtual tables, co
 - better-sqlite3 v12.10.0, SQLite 3.53.1, WAL mode
 - Single writer connection + 4 read replicas (round-robin)
 - PRAGMA config: `busy_timeout=5000`, `synchronous=NORMAL`, `cache_size=-64000`, `wal_autocheckpoint=1000`, `foreign_keys=ON`, `mmap_size=268435456`
-- Contentless FTS5 table with `grantId` plus AI/AD/AU triggers on the `grants` table
+- Standalone FTS5 table with `grantId` plus AI/AD/AU triggers on the `grants` table
 - All foreign keys use `ON DELETE CASCADE` or `ON DELETE SET NULL` as appropriate
 - JSON columns (`TEXT DEFAULT '[]'` or `TEXT DEFAULT '{}'`) for flexible fields (tags, fit breakdown, custom tracker fields, agent params)
 - Soft deletes via `deletedAt` column on grants and documents
@@ -579,9 +576,6 @@ All configurable settings are stored in the SQLite `settings` key-value table. T
 | `crawl.respectRobotsTxt` | integer | `1` | Whether crawls honor `robots.txt` restrictions |
 | `crawl.userAgent` | string | `"HackerDojoGrantOps/2.0 (+https://hackerdojo.org)"` | User-Agent string used for external crawls |
 | `ui.theme` | string | `"dark"` | Theme (only "dark" supported in v2) |
-| `passcode.enabled` | integer | `0` | Whether passcode lock is active |
-| `passcode.hash` | string | `""` | argon2id hash of passcode (bcryptjs fallback) |
-| `passcode.inactivityTimeout` | integer | `0` | Minutes of inactivity before lock (0 = never) |
 | `backup.autoEnabled` | integer | `0` | Auto-backup enabled |
 | `backup.autoIntervalHours` | integer | `168` | Auto-backup interval |
 | `backup.autoPath` | string | `""` | Auto-backup directory path |
@@ -612,40 +606,9 @@ These fields are rendered in grant detail views and the pipeline list view. Chan
 
 ---
 
-## 8. Passcode Lock
+## 8. Local Access Model
 
-The passcode lock is an optional local security feature. Since the app runs on localhost, it protects against physical access to the machine — not network attacks.
-
-When enabled, the passcode is enforced by **server-side session state**, not just a client overlay. Successful unlock issues an `HttpOnly`, `SameSite=Strict`, localhost-only session cookie (for example `grant_ops_unlock`). All page requests and API routes except `GET /api/health*`, `GET /api/passcode/status`, and `POST /api/passcode/verify` MUST reject access while locked.
-
-### 8.1 — Passcode Lifecycle
-
-1. **Set**: User navigates to Settings → Passcode Lock → enters passcode twice → passcode is hashed with **argon2id** (OWASP 2024+ recommended, memory-hard, GPU-resistant) and stored in `settings` (`passcode.enabled=1`, `passcode.hash`). If argon2 native compilation fails on macOS, fall back to `bcryptjs` with cost factor 12.
-2. **Lock screen**: If `passcode.enabled=1` and `passcode.inactivityTimeout > 0`, the app shows a full-screen lock overlay after N minutes of mouse/keyboard inactivity. Countdown shows 30 seconds before locking with a "Lock now" button.
-3. **Manual lock**: User can lock immediately via sidebar or keyboard shortcut (`Cmd+L` / `Ctrl+L`).
-4. **Unlock**: Enter passcode → argon2.verify() against stored hash → server issues unlock session cookie → unlock.
-5. **Change**: Verify current passcode → enter new passcode twice → re-hash.
-6. **Disable**: Verify current passcode → set `passcode.enabled=0`.
-
-### 8.1.1 — Request Enforcement
-
-- While locked, all protected API routes return **HTTP 423 Locked** with the standard API error contract.
-- Page requests redirect to the lock screen until the unlock session cookie is present.
-- Manual lock and inactivity lock both clear the unlock session cookie immediately.
-- Unlock sessions expire after 12 hours or browser close, whichever comes first.
-
-### 8.2 — Lock Screen Behavior
-
-- Overlays entire app with blurred background
-- Shows passcode input (4–12 characters, masked)
-- Shows "Unlock" button
-- After 5 failed attempts: 30-second cooldown ("Too many attempts. Wait {n} seconds.")
-- No "forgot passcode" flow in-app. Recovery requires a maintenance script that deletes the `passcode.hash` settings row while the app is offline.
-- All background operations continue while locked (agent jobs, crawls, timers)
-
-### 8.3 — Inactivity Detection
-
-Events that reset the inactivity timer: mouse movement, mouse click, keyboard input, touch events. Tracked via `mousemove`, `mousedown`, `keydown`, `touchstart` event listeners on `document`. Timer is cleared and restarted on every event.
+There is **no application-level passcode or lock screen** in v2. This is a single-user local app bound to `127.0.0.1`, intended for use on the operator's own computer. Physical device security (macOS account password, FileVault, screen lock) is the security boundary, not an in-app credential system.
 
 ---
 
@@ -771,7 +734,7 @@ The operator can enable automated backups from Settings → Backup:
 
 1. Scheduler checks every 60 minutes whether `now >= nextBackupAt`
 2. If due: runs `wal_checkpoint(TRUNCATE)` to flush WAL to main database file
-3. Pauses new jobs, waits for active write transactions to finish, and closes all SQLite handles before any restore or destructive rebuild; normal scheduled backups may run without closing handles because they checkpoint first and read-only zip the quiesced data directory.
+3. Pauses new jobs, waits for active write transactions to finish, and closes all SQLite handles before any backup, restore, or destructive rebuild. After the zip is verified, the app re-opens the writer and read replicas.
 4. Creates backup zip via **`adm-zip`** v0.5.17 (actively maintained; alternative to stale `jszip` v3.10.1 from 2022)
 5. Computes SHA-256 hash via `node:crypto` and writes to companion `.sha256` file
 6. Verifies zip can be opened and contains expected files
@@ -862,7 +825,6 @@ The app runs exclusively on `localhost` (AC-12.1.1). It is:
 - [ ] Implement CSV/XLSX budget import parser
 - [ ] Implement settings persistence and UI
 - [ ] Implement custom tracker fields
-- [ ] Implement passcode lock (set, verify, change, inactivity timer, lock screen)
 - [ ] Implement peer discovery data model and crawl
 - [ ] Implement structured JSON logging
 - [ ] Implement log viewer in Settings
