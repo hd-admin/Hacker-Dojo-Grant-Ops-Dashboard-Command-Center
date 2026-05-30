@@ -245,7 +245,7 @@ describe('SettingsView', () => {
     expect(container.querySelector('[data-testid="export-diagnostics-btn"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="backup-verification-result"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="restore-verification-result"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="rerun-health-check-btn"]')).not.toBeNull();
+    // The Health Check button was removed from SettingsView in v2; the Opencode Agent card shows status
 
     Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Upload document'))?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(() => container.textContent?.includes('hacker-dojo-program-summary.pdf') === true);
@@ -255,36 +255,16 @@ describe('SettingsView', () => {
     expect(container.textContent).toContain('hacker-dojo-program-summary.pdf');
   });
 
-  it('shows the unsaved-change badge when profile inputs are edited', async () => {
+  it('renders hardcoded organization profile in read-only mode', async () => {
     root.render(React.createElement(SettingsView, { onRefreshAppState }));
-
     await waitFor(() => container.textContent?.includes('Hacker Dojo Program Summary.pdf') === true);
 
-    // Click Edit profile to enter editing mode
-    Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent === 'Edit profile')
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    // Wait for the editing form to appear
-    await waitFor(() =>
-      Array.from(container.querySelectorAll('input.form-input')).some(
-        (el) => (el as HTMLInputElement).placeholder?.includes('Hacker Dojo'),
-      ),
-    );
-
-    // Change a field to trigger dirty state — find the Legal Name input by placeholder
-    const input = Array.from(container.querySelectorAll('input.form-input')).find(
-      (el) => (el as HTMLInputElement).placeholder?.includes('Hacker Dojo'),
-    ) as HTMLInputElement | undefined;
-    if (input) {
-      const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
-      setter?.call(input, 'Changed Org Name');
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-    }
-
-    await waitFor(() => container.querySelector('[data-testid="settings-unsaved-badge"]') !== null);
-    expect(container.querySelector('[data-testid="settings-unsaved-badge"]')?.textContent).toContain('Unsaved changes');
+    // Profile is hardcoded in v2 — verify the Org Profile card renders
+    expect(container.querySelector('[data-testid="org-profile-card"]')).not.toBeNull();
+    // No Edit profile button (read-only)
+    const editBtn = Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent === 'Edit profile');
+    expect(editBtn).toBeUndefined();
   });
 
   it('renders docTypes from profile in the Search Themes card', async () => {
@@ -298,40 +278,27 @@ describe('SettingsView', () => {
     expect(container.textContent).toContain('Opencode Agent');
   });
 
-  it('renders "Edit Themes & Threshold" button in Theme Configuration card', async () => {
+  it('renders Theme Configuration card with search themes list', async () => {
     root.render(React.createElement(SettingsView, { onRefreshAppState }));
     await waitFor(() => container.textContent?.includes('Theme Configuration') === true);
 
-    const editBtn = Array.from(container.querySelectorAll('button')).find(
-      (btn) => btn.textContent?.includes('Edit Themes') && btn.textContent?.includes('Threshold'),
-    );
-    expect(editBtn).not.toBeNull();
-    expect(editBtn?.textContent).toContain('Edit Themes');
-    expect(editBtn?.textContent).toContain('Threshold');
+    expect(container.textContent).toContain('Theme Configuration');
+    // Search themes should be listed from the hardcoded profile
+    expect(container.textContent).toContain('Makerspaces');
+    expect(container.textContent).toContain('AI literacy');
   });
 
-  it('clicking "Edit Themes & Threshold" button transitions to editing mode', async () => {
+  it('renders matching threshold inputs and save button', async () => {
     root.render(React.createElement(SettingsView, { onRefreshAppState }));
-    await waitFor(() => container.textContent?.includes('Theme Configuration') === true);
+    await waitFor(() => container.textContent?.includes('Matching Thresholds') === true);
 
-    const editBtn = Array.from(container.querySelectorAll('button')).find(
-      (btn) => btn.textContent?.includes('Edit Themes') && btn.textContent?.includes('Threshold'),
+    // Match threshold controls should be directly editable (v2 inline editing)
+    expect(container.querySelector('#match-threshold')).not.toBeNull();
+    expect(container.querySelector('#autodraft-threshold')).not.toBeNull();
+    const saveBtn = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent?.includes('Save thresholds'),
     );
-    expect(editBtn).not.toBeNull();
-    editBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    // After clicking, the form should now be in editing mode with a Save changes button
-    await waitFor(() =>
-      container.textContent?.includes('Save changes') === true ||
-      container.querySelector('input[name="legalName"]') !== null ||
-      Array.from(container.querySelectorAll('button')).some((btn) => btn.textContent?.includes('Save'))
-    );
-
-    // Verify editing mode is active by checking for save-related elements
-    const hasSaveButton = Array.from(container.querySelectorAll('button')).some(
-      (btn) => btn.textContent?.includes('Save'),
-    );
-    expect(hasSaveButton).toBe(true);
+    expect(saveBtn).not.toBeNull();
   });
 
   it('renders Search Themes & Matching Policy section with threshold controls and Recalculate scores button', async () => {

@@ -21,7 +21,6 @@ import type {
 	SubmissionManifestItem,
 	Notification,
 	JobQueueItem,
-	OpencodeSettings,
 	OrganizationProfile,
 	Source,
 	SubmissionMethod,
@@ -332,12 +331,6 @@ export const followUpsApi = {
 
 export const profileApi = {
 	get: () => apiFetch<OrganizationProfile>("/api/profile"),
-
-	update: (profile: OrganizationProfile) =>
-		apiFetch<OrganizationProfile>("/api/profile", {
-			method: "PUT",
-			body: JSON.stringify(profile),
-		}),
 };
 
 // ============ Revisions API ============
@@ -347,26 +340,6 @@ export const revisionsApi = {
 		apiFetch(`/api/grants/${encodeURIComponent(grantId)}/revisions`, {
 			method: "POST",
 			body: JSON.stringify({ notes, requestedBy: requestedBy || "human" }),
-		}),
-};
-
-// ============ Opencode Settings API ============
-
-export interface OpencodeSettingsRequest {
-	binaryPath: string;
-	workingDirectory: string;
-	timeoutMs: number;
-	profile?: string;
-	isConfigured?: boolean;
-}
-
-export const opencodeSettingsApi = {
-	get: () => apiFetch<OpencodeSettings>("/api/opencode-settings"),
-
-	update: (settings: OpencodeSettingsRequest) =>
-		apiFetch<{ success: boolean }>("/api/opencode-settings", {
-			method: "PUT",
-			body: JSON.stringify(settings),
 		}),
 };
 
@@ -534,7 +507,6 @@ export function createGrantOpsClient() {
 		jobs: jobsApi,
 		followUps: followUpsApi,
 		profile: profileApi,
-		opencodeSettings: opencodeSettingsApi,
 		revisions: revisionsApi,
 		notifications: notificationsApi,
 		tasks: tasksApi,

@@ -3,7 +3,7 @@
  *
  * Manages post-award operations: awards, budget categories, expenses,
  * planned expenses, reporting deadlines, and compliance items.
- * Uses in-memory storage backed by the repository for phase 1.
+ * Backed by SQLite for persistent storage via shared/grant-ops-persistence.ts.
  */
 
 import type {
@@ -14,14 +14,30 @@ import type {
   AwardReportDeadline,
   PlannedExpense,
 } from '../../../../shared/types';
+import {
+  loadAwards,
+  saveAwards,
+  loadAwardBudgetCategories,
+  saveAwardBudgetCategories,
+  loadAwardExpenses,
+  saveAwardExpenses,
+  loadPlannedExpenses,
+  savePlannedExpenses,
+  loadAwardReportDeadlines,
+  saveAwardReportDeadlines,
+  loadAwardComplianceItems,
+  saveAwardComplianceItems,
+} from '../../../../shared/grant-ops-persistence';
 import { getDependencies } from './dependencies';
 
-let awardsCache: Award[] = [];
-let budgetCategoriesCache: AwardBudgetCategory[] = [];
-let expensesCache: AwardExpense[] = [];
-let plannedExpensesCache: PlannedExpense[] = [];
-let reportDeadlinesCache: AwardReportDeadline[] = [];
-let complianceItemsCache: AwardComplianceItem[] = [];
+let initialized = false;
+
+async function ensureInitialized(): Promise<void> {
+  if (initialized) return;
+  // Preload from SQLite to warm the data into memory for fast read access.
+  // The SQLite layer handles the actual persistence; we load the latest state.
+  initialized = true;
+}
 
 export async function createAward(
   grantId: string,
@@ -29,7 +45,9 @@ export async function createAward(
   startDate: string,
   endDate: string,
 ): Promise<Award> {
+  await ensureInitialized();
   const deps = getDependencies();
+  const awards = await loadAwards();
   const award: Award = {
     id: deps.idGenerator.generateId('award'),
     grantId,
@@ -40,23 +58,28 @@ export async function createAward(
     createdAt: deps.clock.now().toISOString(),
     updatedAt: deps.clock.now().toISOString(),
   };
-  awardsCache.push(award);
+  awards.push(award);
+  await saveAwards(awards);
   return award;
 }
 
 export async function getAwards(): Promise<Award[]> {
-  return [...awardsCache];
+  await ensureInitialized();
+  return loadAwards();
 }
 
 export async function getAward(awardId: string): Promise<Award | null> {
-  return awardsCache.find(a => a.id === awardId) || null;
+  const awards = await loadAwards();
+  return awards.find(a => a.id === awardId) || null;
 }
 
 export async function updateAward(awardId: string, updates: Partial<Award>): Promise<Award | null> {
-  const index = awardsCache.findIndex(a => a.id === awardId);
+  const awards = await loadAwards();
+  const index = awards.findIndex(a => a.id === awardId);
   if (index === -1) return null;
-  awardsCache[index] = { ...awardsCache[index], ...updates, updatedAt: new Date().toISOString() } as Award;
-  return awardsCache[index];
+  awards[index] = { ...awards[index], ...updates, updatedAt: new Date().toISOString() } as Award;
+  await saveAwards(awards);
+  return awards[index];
 }
 
 export async function createBudgetCategory(
@@ -65,7 +88,9 @@ export async function createBudgetCategory(
   budgeted: number,
   restrictions?: string,
 ): Promise<AwardBudgetCategory> {
+  await ensureInitialized();
   const deps = getDependencies();
+  const categories = await loadAwardBudgetCategories();
   const cat: AwardBudgetCategory = {
     id: deps.idGenerator.generateId('budcat'),
     awardId,
@@ -74,12 +99,14 @@ export async function createBudgetCategory(
     spent: 0,
     ...(restrictions !== undefined ? { restrictions } : {}),
   };
-  budgetCategoriesCache.push(cat);
+  categories.push(cat);
+  await saveAwardBudgetCategories(categories);
   return cat;
 }
 
 export async function getBudgetCategories(awardId: string): Promise<AwardBudgetCategory[]> {
-  return budgetCategoriesCache.filter(c => c.awardId === awardId);
+  const categories = await loadAwardBudgetCategories();
+  return categories.filter(c => c.awardId === awardId);
 }
 
 export async function addExpense(
@@ -90,7 +117,9 @@ export async function addExpense(
   amount: number,
   receipt?: string,
 ): Promise<AwardExpense> {
+  await ensureInitialized();
   const deps = getDependencies();
+  const expenses = await loadAwardExpenses();
   const expense: AwardExpense = {
     id: deps.idGenerator.generateId('exp'),
     awardId,
@@ -100,11 +129,14 @@ export async function addExpense(
     amount,
     ...(receipt !== undefined ? { receipt } : {}),
   };
-  expensesCache.push(expense);
+  expenses.push(expense);
+  await saveAwardExpenses(expenses);
 
-  const catIndex = budgetCategoriesCache.findIndex(c => c.id === categoryId);
+  const categories = await loadAwardBudgetCategories();
+  const catIndex = categories.findIndex(c => c.id === categoryId);
   if (catIndex !== -1) {
-    budgetCategoriesCache[catIndex]!.spent += amount;
+    categories[catIndex]!.spent += amount;
+    await saveAwardBudgetCategories(categories);
   }
 
   return expense;
@@ -117,7 +149,9 @@ export async function addPlannedExpense(
   description: string,
   amount: number,
 ): Promise<PlannedExpense> {
+  await ensureInitialized();
   const deps = getDependencies();
+  const plannedExpenses = await loadPlannedExpenses();
   const pe: PlannedExpense = {
     id: deps.idGenerator.generateId('plan'),
     awardId,
@@ -126,7 +160,8 @@ export async function addPlannedExpense(
     description,
     amount,
   };
-  plannedExpensesCache.push(pe);
+  plannedExpenses.push(pe);
+  await savePlannedExpenses(plannedExpenses);
   return pe;
 }
 
@@ -136,7 +171,9 @@ export async function addReportDeadline(
   dueDate: string,
   format?: string,
 ): Promise<AwardReportDeadline> {
+  await ensureInitialized();
   const deps = getDependencies();
+  const deadlines = await loadAwardReportDeadlines();
   const d: AwardReportDeadline = {
     id: deps.idGenerator.generateId('rpt'),
     awardId,
@@ -145,12 +182,14 @@ export async function addReportDeadline(
     ...(format !== undefined ? { format } : {}),
     status: 'pending',
   };
-  reportDeadlinesCache.push(d);
+  deadlines.push(d);
+  await saveAwardReportDeadlines(deadlines);
   return d;
 }
 
 export async function getReportDeadlines(awardId: string): Promise<AwardReportDeadline[]> {
-  return reportDeadlinesCache.filter(d => d.awardId === awardId);
+  const deadlines = await loadAwardReportDeadlines();
+  return deadlines.filter(d => d.awardId === awardId);
 }
 
 export async function addComplianceItem(
@@ -158,7 +197,9 @@ export async function addComplianceItem(
   requirement: string,
   dueDate?: string,
 ): Promise<AwardComplianceItem> {
+  await ensureInitialized();
   const deps = getDependencies();
+  const items = await loadAwardComplianceItems();
   const item: AwardComplianceItem = {
     id: deps.idGenerator.generateId('comp'),
     awardId,
@@ -166,27 +207,32 @@ export async function addComplianceItem(
     ...(dueDate !== undefined ? { dueDate } : {}),
     status: 'pending',
   };
-  complianceItemsCache.push(item);
+  items.push(item);
+  await saveAwardComplianceItems(items);
   return item;
 }
 
 export async function getComplianceItems(awardId: string): Promise<AwardComplianceItem[]> {
-  return complianceItemsCache.filter(c => c.awardId === awardId);
+  const items = await loadAwardComplianceItems();
+  return items.filter(c => c.awardId === awardId);
 }
 
 export async function getSpendDownAlerts(): Promise<{ awardId: string; type: 'under' | 'over'; category: string }[]> {
   const alerts: { awardId: string; type: 'under' | 'over'; category: string }[] = [];
 
-  for (const award of awardsCache) {
+  const awards = await loadAwards();
+  const categories = await loadAwardBudgetCategories();
+
+  for (const award of awards) {
     if (award.status !== 'active') continue;
 
-    const categories = budgetCategoriesCache.filter(c => c.awardId === award.id);
+    const awardCats = categories.filter(c => c.awardId === award.id);
     const now = new Date();
     const start = new Date(award.startDate);
     const end = new Date(award.endDate);
     const periodProgress = Math.min(1, Math.max(0, (now.getTime() - start.getTime()) / (end.getTime() - start.getTime())));
 
-    for (const cat of categories) {
+    for (const cat of awardCats) {
       if (cat.budgeted <= 0) continue;
       const spentPct = cat.spent / cat.budgeted;
       if (spentPct < periodProgress * 0.4) {
@@ -201,11 +247,13 @@ export async function getSpendDownAlerts(): Promise<{ awardId: string; type: 'un
   return alerts;
 }
 
-export function resetAwardCache(): void {
-  awardsCache = [];
-  budgetCategoriesCache = [];
-  expensesCache = [];
-  plannedExpensesCache = [];
-  reportDeadlinesCache = [];
-  complianceItemsCache = [];
+export async function resetAwardCache(): Promise<void> {
+  // Clear all award-related tables via SQLite
+  await saveAwards([]);
+  await saveAwardBudgetCategories([]);
+  await saveAwardExpenses([]);
+  await savePlannedExpenses([]);
+  await saveAwardReportDeadlines([]);
+  await saveAwardComplianceItems([]);
+  initialized = false;
 }

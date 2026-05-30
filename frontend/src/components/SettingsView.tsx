@@ -1,9 +1,8 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
-import type { BackupFreshnessStatus, DocumentMetadata, FailureHistoryEntry, HealthCheckResult, OpencodeSettings, OrganizationProfile, Theme, ThemesData } from '../../../shared/types';
+import React, { useEffect, useRef, useState } from 'react';
+import type { BackupFreshnessStatus, DocumentMetadata, FailureHistoryEntry, HealthCheckResult, OrganizationProfile, Theme, ThemesData } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
-import { useAutosave } from '../lib/useAutosave';
 
 // Guidance messages keyed by opencode health status
 const opencodeStatusGuidance: Record<string, { title: string; description: string; action: string }> = {
@@ -66,22 +65,18 @@ interface SettingsViewProps {
   initiallyEditing?: boolean;
 }
 
-export default function SettingsView({ onRefreshAppState, initiallyEditing = false }: SettingsViewProps) {
+export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
   const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(initiallyEditing);
-  const [editForm, setEditForm] = useState<Partial<OrganizationProfile>>({});
   const [health, setHealth] = useState<HealthCheckResult | null>(null);
   const [freshness, setFreshness] = useState<BackupFreshnessStatus | null>(null);
   const [diagnosticsText, setDiagnosticsText] = useState('');
   const [showRestoreWarning, setShowRestoreWarning] = useState(false);
   const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
-  const [opencodeForm, setOpencodeForm] = useState<Partial<OpencodeSettings>>({});
   const [lastHandshakeAt, setLastHandshakeAt] = useState<string | null>(null);
   const [testConnectionLoading, setTestConnectionLoading] = useState(false);
   const [testConnectionResult, setTestConnectionResult] = useState<'success' | 'failed' | null>(null);
-  const [opencodeSaveSuccess, setOpencodeSaveSuccess] = useState(false);
   const [themesData, setThemesData] = useState<ThemesData | null>(null);
   const [matchThreshold, setMatchThreshold] = useState(70);
   const [autoDraftThreshold, setAutoDraftThreshold] = useState(85);
@@ -90,7 +85,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const [newClusterWeight, setNewClusterWeight] = useState(80);
   const [rescoreLoading, setRescoreLoading] = useState(false);
   const [rescoreResult, setRescoreResult] = useState<string | null>(null);
-  const [showOpencodeConfig, setShowOpencodeConfig] = useState(false);
+
   const [themesSaving, setThemesSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [expandedDocVersions, setExpandedDocVersions] = useState<Record<string, boolean>>({});
@@ -117,18 +112,15 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   useEffect(() => {
     async function load() {
       try {
-        const [profileData, docsData, opencodeData, healthData, freshnessData, themesResult] = await Promise.all([
+        const [profileData, docsData, healthData, freshnessData, themesResult] = await Promise.all([
           client.profile.get().catch(() => null),
           client.documents.getAll().catch(() => []),
-          client.opencodeSettings.get().catch(() => null),
           fetch('/api/health').then((response) => response.json()).catch(() => null),
           client.backup.getFreshness().catch(() => null),
           client.themes.get().catch(() => null),
         ]);
         setProfile(profileData);
-        setEditForm(profileData ?? {});
         setDocuments(docsData);
-        setOpencodeForm(opencodeData ?? { binaryPath: '', workingDirectory: '', timeoutMs: 60000, profile: '', isConfigured: false });
         setHealth(healthData);
         if (healthData?.handshakeSuccess) {
           setLastHandshakeAt(new Date().toISOString());
@@ -149,20 +141,12 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
     void load();
   }, []);
 
-  const saveProfileToApi = useCallback(async (form: Partial<OrganizationProfile>) => {
-    await client.profile.update(form as OrganizationProfile);
-    const updated = await client.profile.get();
-    if (updated) {
-      setProfile(updated);
-      setEditForm(updated);
-    }
-    await onRefreshAppState?.();
-  }, [onRefreshAppState]);
-
-  const { isDirty, isSaving, lastSaved, saveNow, markClean } = useAutosave(
-    editForm,
-    saveProfileToApi,
-  );
+  // Profile is hardcoded — read-only, saveProfileToApi removed.
+  const isDirty = false;
+  const isSaving = false;
+  const lastSaved: string | null = null;
+  const saveNow = async () => {};
+  const markClean = () => {};
 
   // Reset dirty state when profile initially loads
   const profileLoadRef = useRef(false);
@@ -172,11 +156,6 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
       markClean();
     }
   }, [profile, markClean]);
-
-  const handleExplicitSave = useCallback(async () => {
-    await saveNow();
-    setIsEditing(false);
-  }, [saveNow]);
 
 
   const refreshHealth = async () => {
@@ -260,21 +239,6 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
     setShowRestoreWarning(false);
   };
 
-  const handleSaveOpencode = async () => {
-    const nextSettings: OpencodeSettings = {
-      binaryPath: opencodeForm.binaryPath ?? '',
-      workingDirectory: opencodeForm.workingDirectory ?? '',
-      timeoutMs: opencodeForm.timeoutMs ?? 60000,
-      ...(opencodeForm.profile ? { profile: opencodeForm.profile } : {}),
-      isConfigured: true,
-    };
-    await client.opencodeSettings.update(nextSettings);
-    const updated = await client.opencodeSettings.get();
-    setOpencodeForm(updated);
-    setOpencodeSaveSuccess(true);
-    setTimeout(() => setOpencodeSaveSuccess(false), 3000);
-    await onRefreshAppState?.();
-  };
 
   const handleSaveMatchingPolicy = async () => {
     setThemesSaving(true);
@@ -362,14 +326,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
           </h1>
           <div className="header-sub">Context the agent uses for matching &amp; drafting</div>
         </div>
-        <div className="header-actions">
-          {!isEditing && <button type="button" className="btn btn-primary" onClick={() => setIsEditing(true)}>Edit profile</button>}
-          <button type="button" data-testid="refresh-health-btn" onClick={() => { void refreshHealth(); }}>Refresh</button>
-          <button type="button" data-testid="rerun-health-check-btn" onClick={() => { void refreshHealth(); }}>Re-run Health Check</button>
-          {isDirty && <span id="settings-unsaved-badge" data-testid="settings-unsaved-badge">Unsaved changes</span>}
-          {isSaving && <span data-testid="settings-saving-indicator">Saving...</span>}
-          {lastSaved && <span data-testid="settings-saved-timestamp">Saved at {new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>}
-        </div>
+
       </div>
 
       {toast && (
@@ -396,163 +353,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
 
         <section className="setting-card" data-testid="org-profile-card">
           <div className="setting-card-header"><div className="setting-card-title">Organization Profile</div></div>
-          <div className="setting-card-body">
-            {isEditing ? (
-              <div className="settings-form">
-                {/* Identity */}
-                <fieldset className="settings-fieldset">
-                  <legend className="settings-legend">Identity</legend>
-                  <div className="settings-form-grid">
-                    <div>
-                      <label className="setting-label">Legal Name</label>
-                      <input className="form-input" value={editForm.legalName ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, legalName: e.target.value }))} placeholder="e.g., Hacker Dojo" />
-                    </div>
-                    <div>
-                      <label className="setting-label">EIN</label>
-                      <input className="form-input" value={editForm.ein ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, ein: e.target.value }))} placeholder="e.g., 26-3375350" />
-                    </div>
-                    <div>
-                      <label className="setting-label">SAM / UEI</label>
-                      <input className="form-input" value={editForm.samUEI ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, samUEI: e.target.value }))} placeholder="e.g., ABC123DEF456" />
-                    </div>
-                    <div>
-                      <label className="setting-label">Nonprofit Status</label>
-                      <input className="form-input" value={editForm.nonprofitStatus ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, nonprofitStatus: e.target.value }))} placeholder="e.g., 501(c)(3)" />
-                    </div>
-                  </div>
-                </fieldset>
 
-                {/* Contact */}
-                <fieldset className="settings-fieldset">
-                  <legend className="settings-legend">Contact</legend>
-                  <div className="settings-form-grid">
-                    <div>
-                      <label className="setting-label">Address</label>
-                      <input className="form-input" value={editForm.contactInfo?.address ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, contactInfo: { ...prev.contactInfo, address: e.target.value } }))} placeholder="Street address" />
-                    </div>
-                    <div>
-                      <label className="setting-label">Phone</label>
-                      <input className="form-input" value={editForm.contactInfo?.phone ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, contactInfo: { ...prev.contactInfo, phone: e.target.value } }))} placeholder="Phone number" />
-                    </div>
-                    <div>
-                      <label className="setting-label">Email</label>
-                      <input type="email" className="form-input" value={editForm.contactInfo?.email ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, contactInfo: { ...prev.contactInfo, email: e.target.value } }))} placeholder="contact@example.org" />
-                    </div>
-                    <div>
-                      <label className="setting-label">Website</label>
-                      <input type="url" className="form-input" value={editForm.contactInfo?.website ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, contactInfo: { ...prev.contactInfo, website: e.target.value } }))} placeholder="https://example.org" />
-                    </div>
-                  </div>
-                </fieldset>
-
-                {/* Mission & Geography */}
-                <fieldset className="settings-fieldset">
-                  <legend className="settings-legend">Mission &amp; Geography</legend>
-                  <div className="settings-form">
-                    <div>
-                      <label className="setting-label">Mission Statement</label>
-                      <textarea className="form-input" rows={3} value={editForm.mission ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, mission: e.target.value }))} placeholder="Describe your organization's mission" />
-                    </div>
-                    <div>
-                      <label className="setting-label">Geography / Service Area</label>
-                      <input className="form-input" value={editForm.geography ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, geography: e.target.value }))} placeholder="e.g., Regional, Bay Area, National" />
-                    </div>
-                  </div>
-                </fieldset>
-
-                {/* Programs */}
-                <fieldset className="settings-fieldset">
-                  <legend className="settings-legend">Programs &amp; Audiences</legend>
-                  <div className="settings-form-grid">
-                    <div>
-                      <label className="setting-label">Program Areas</label>
-                      <textarea className="form-input" rows={3} value={editForm.programAreas?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, programAreas: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="STEM, Workforce Development, Community Learning (comma-separated)" />
-                    </div>
-                    <div>
-                      <label className="setting-label">Populations Served</label>
-                      <textarea className="form-input" rows={3} value={editForm.populationsServed?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, populationsServed: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="Youth, Veterans, Low-income (comma-separated)" />
-                    </div>
-                    <div>
-                      <label className="setting-label">Partnerships</label>
-                      <textarea className="form-input" rows={2} value={editForm.partnerships?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, partnerships: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="Org A, Org B (comma-separated)" />
-                    </div>
-                    <div>
-                      <label className="setting-label">Search Themes</label>
-                      <textarea className="form-input" rows={2} value={editForm.searchThemes?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, searchThemes: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="EdTech, AI Literacy, STEM (comma-separated)" />
-                    </div>
-                  </div>
-                </fieldset>
-
-                {/* Compliance */}
-                <fieldset className="settings-fieldset">
-                  <legend className="settings-legend">Compliance &amp; History</legend>
-                  <div className="settings-form-grid">
-                    <div>
-                      <label className="setting-label">Compliance Facts</label>
-                      <textarea className="form-input" rows={2} value={editForm.complianceFacts?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, complianceFacts: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="SAM registration active, audit current (comma-separated)" />
-                    </div>
-                    <div>
-                      <label className="setting-label">Document Types</label>
-                      <textarea className="form-input" rows={2} value={editForm.docTypes?.join(', ') ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, docTypes: e.target.value.split(',').map((s) => s.trim()).filter(Boolean) }))} placeholder="PDF, DOCX, XLSX (comma-separated)" />
-                    </div>
-                  </div>
-                </fieldset>
-
-                {/* Agent Behavior */}
-                <fieldset className="settings-fieldset">
-                  <legend className="settings-legend">Agent Behavior</legend>
-                  <div className="settings-form-grid">
-                    <div>
-                      <label className="setting-label">Notification Email</label>
-                      <input type="email" className="form-input" value={editForm.agentBehavior?.notifyEmail ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, agentBehavior: { ...prev.agentBehavior, notifyEmail: e.target.value, autoDraftThreshold: prev.agentBehavior?.autoDraftThreshold ?? 75, submissionPolicy: prev.agentBehavior?.submissionPolicy ?? '', voiceAndTone: prev.agentBehavior?.voiceAndTone ?? '' } }))} placeholder="ops@hackerdojo.com" />
-                    </div>
-                    <div>
-                      <label className="setting-label">Auto-Draft Threshold (0-100)</label>
-                      <input type="number" min={0} max={100} className="form-input" value={editForm.agentBehavior?.autoDraftThreshold ?? 75} onChange={(e) => setEditForm((prev) => ({ ...prev, agentBehavior: { notifyEmail: prev.agentBehavior?.notifyEmail ?? '', autoDraftThreshold: Number(e.target.value), submissionPolicy: prev.agentBehavior?.submissionPolicy ?? '', voiceAndTone: prev.agentBehavior?.voiceAndTone ?? '' } }))} />
-                    </div>
-                    <div>
-                      <label className="setting-label">Submission Policy</label>
-                      <select className="form-input" value={editForm.agentBehavior?.submissionPolicy ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, agentBehavior: { notifyEmail: prev.agentBehavior?.notifyEmail ?? '', autoDraftThreshold: prev.agentBehavior?.autoDraftThreshold ?? 75, submissionPolicy: e.target.value, voiceAndTone: prev.agentBehavior?.voiceAndTone ?? '' } }))}>
-                        <option value="">Select policy...</option>
-                        <option value="Human approval required">Human approval required</option>
-                        <option value="Auto-submit drafts above threshold">Auto-submit drafts above threshold</option>
-                        <option value="Manual submission only">Manual submission only</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="setting-label">Voice &amp; Tone</label>
-                      <input className="form-input" value={editForm.agentBehavior?.voiceAndTone ?? ''} onChange={(e) => setEditForm((prev) => ({ ...prev, agentBehavior: { notifyEmail: prev.agentBehavior?.notifyEmail ?? '', autoDraftThreshold: prev.agentBehavior?.autoDraftThreshold ?? 75, submissionPolicy: prev.agentBehavior?.submissionPolicy ?? '', voiceAndTone: e.target.value } }))} placeholder="e.g., Plain-spoken, Professional, Community-focused" />
-                    </div>
-                  </div>
-                </fieldset>
-
-                <div className="settings-form-row">
-                  <button type="button" className="btn btn-primary" data-testid="settings-save-now-btn" onClick={() => void handleExplicitSave()} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save changes'}</button>
-                  <button type="button" className="btn" onClick={() => { setEditForm(profile); setIsEditing(false); }}>Cancel</button>
-                </div>
-              </div>
-            ) : (
-              <div className="settings-readonly-grid">
-                <div className="setting-row"><span className="setting-label">Legal Name</span><span className="setting-value">{profile.legalName || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">EIN</span><span className="setting-value mono">{profile.ein || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">SAM / UEI</span><span className="setting-value mono">{profile.samUEI || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">Nonprofit Status</span><span className="setting-value">{profile.nonprofitStatus || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">Contact</span><span className="setting-value">{profile.contactInfo?.email || profile.contactInfo?.website || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">Geography</span><span className="setting-value">{profile.geography || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">Mission</span><span className="setting-value">{profile.mission || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">Program Areas</span><span className="setting-value">{profile.programAreas?.join(', ') || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">Populations Served</span><span className="setting-value">{profile.populationsServed?.join(', ') || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">Search Themes</span><span className="setting-value">{profile.searchThemes?.join(', ') || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">Auto-Draft Threshold</span><span className="setting-value mono">{profile.agentBehavior?.autoDraftThreshold ?? 75}</span></div>
-                <div className="setting-row"><span className="setting-label">Submission Policy</span><span className="setting-value">{profile.agentBehavior?.submissionPolicy || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">Notification Email</span><span className="setting-value mono">{profile.agentBehavior?.notifyEmail || '—'}</span></div>
-                <div className="setting-row"><span className="setting-label">Voice &amp; Tone</span><span className="setting-value">{profile.agentBehavior?.voiceAndTone || '—'}</span></div>
-              </div>
-            )}
-          </div>
-        </section>
-
-        <section className="setting-card" data-testid="themes-matching-card">
           <div className="setting-card-header"><div className="setting-card-title">Search Themes &amp; Matching Policy</div></div>
           <div className="setting-card-body">
             <fieldset className="settings-fieldset">
@@ -827,9 +628,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
               <span className="settings-status-label">
                 {health?.opencode ? getStatusLabelText(health.opencode) : 'Unknown'}
               </span>
-              {opencodeForm.isConfigured && (
-                <span className="settings-configured-badge">Configured</span>
-              )}
+
             </div>
           </div>
           <div className="setting-card-body">
@@ -926,86 +725,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
               </div>
             )}
 
-            {/* Configuration section */}
-            <div className="settings-button-row" style={{ marginTop: '10px', marginBottom: '10px' }}>
-              <button type="button" className="btn btn-sm" onClick={() => setShowOpencodeConfig((v) => !v)}>
-                Configure
-              </button>
-            </div>
-            {showOpencodeConfig && (
-            <div className="settings-connection-config">
-              <div className="setting-label settings-connection-config-label">Connection Configuration</div>
-
-              <div className="settings-form-stack">
-                <div>
-                  <label htmlFor="opencode-binary-path" className="settings-field-label-mono">
-                    Binary Path
-                  </label>
-                  <input
-                    id="opencode-binary-path"
-                    className="settings-input-full"
-                    value={opencodeForm.binaryPath ?? ''}
-                    onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, binaryPath: e.target.value })); setOpencodeSaveSuccess(false); }}
-                    placeholder="/usr/local/bin/opencode"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="opencode-working-directory" className="settings-field-label-mono">
-                    Working Directory
-                  </label>
-                  <input
-                    id="opencode-working-directory"
-                    className="settings-input-full"
-                    value={opencodeForm.workingDirectory ?? ''}
-                    onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, workingDirectory: e.target.value })); setOpencodeSaveSuccess(false); }}
-                    placeholder="/home/user/projects"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="opencode-timeout" className="settings-field-label-mono">
-                    Timeout (ms)
-                  </label>
-                  <input
-                    id="opencode-timeout"
-                    type="number"
-                    className="settings-input-full"
-                    value={opencodeForm.timeoutMs ?? 60000}
-                    onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, timeoutMs: Number(e.target.value) })); setOpencodeSaveSuccess(false); }}
-                  />
-                </div>
-                <div>
-                  <label htmlFor="opencode-profile" className="settings-field-label-mono">
-                    Profile
-                  </label>
-                  <input
-                    id="opencode-profile"
-                    className="settings-input-full"
-                    value={opencodeForm.profile ?? ''}
-                    onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, profile: e.target.value })); setOpencodeSaveSuccess(false); }}
-                    placeholder="default"
-                  />
-                </div>
-              </div>
-
-              <div className="settings-button-row">
-                <button type="button" className="btn btn-primary btn-sm" onClick={() => void handleSaveOpencode()}>
-                  Save
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm"
-                  onClick={() => { void handleTestConnection(); }}
-                  disabled={testConnectionLoading}
-                  data-testid="test-connection-btn"
-                >
-                  {testConnectionLoading ? 'Testing…' : 'Test Connection'}
-                </button>
-                {opencodeSaveSuccess && (
-                  <span className="settings-save-indicator">✓ Saved</span>
-                )}
-              </div>
-
-              {/* Test connection result */}
+            {/* Test connection result */}
               {testConnectionResult && (
                 <div className={`settings-test-result ${testConnectionResult === 'success' ? 'settings-test-result-success' : 'settings-test-result-failed'}`}>
                   <div className={`settings-test-result-title ${testConnectionResult === 'success' ? 'settings-test-result-title-success' : 'settings-test-result-title-failed'}`}>
@@ -1029,8 +749,6 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                   )}
                 </div>
               )}
-            </div>
-            )}
           </div>
         </section>
 
@@ -1095,27 +813,6 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
               </div>
             )}
 
-            {/* Backoff multiplier setting */}
-            <div className="settings-backoff-row">
-              <label htmlFor="opencode-backoff-multiplier" className="settings-backoff-label">
-                Retry Backoff Multiplier (ms)
-              </label>
-              <div className="settings-backoff-input-row">
-                <input
-                  id="opencode-backoff-multiplier"
-                  type="number"
-                  min={500}
-                  max={30000}
-                  step={500}
-                  value={opencodeForm.backoffMultiplier ?? 1000}
-                  onChange={(e) => { setOpencodeForm((prev) => ({ ...prev, backoffMultiplier: Number(e.target.value) })); setOpencodeSaveSuccess(false); }}
-                  className="settings-backoff-input"
-                />
-                <span className="settings-backoff-hint">
-                  Base delay for retry backoff. Actual delay = multiplier × 2<sup>attempt</sup>
-                </span>
-              </div>
-            </div>
           </div>
         </section>
 
@@ -1146,7 +843,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 Grants with a fit score above this threshold will be automatically drafted.
               </p>
             </div>
-            <button type="button" className="btn" onClick={() => setIsEditing(true)}>Edit Themes &amp; Threshold</button>
+
           </div>
         </section>
       </div>

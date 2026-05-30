@@ -32,64 +32,23 @@ export async function openSettingsView(page: Page): Promise<void> {
 	await page.waitForSelector("#view-settings.active", { timeout: 10000 });
 }
 
+// DEPRECATED: Profile is now hardcoded (v2). PUT /api/profile removed.
+// Use this only as a no-op stub for backward compat with existing tests.
 export async function saveProfileThroughSettingsView(
-	page: Page,
-	mission: string,
+	_page: Page,
+	_mission: string,
 ): Promise<void> {
-	await openSettingsView(page);
-	await page.getByRole("button", { name: "Edit profile" }).click();
-	const organizationCard = page
-		.locator(".setting-card")
-		.filter({ hasText: "Organization" });
-	await organizationCard.locator("textarea").first().fill(mission);
-	const saveProfileResponse = page.waitForResponse(
-		(response) =>
-			response.url().endsWith("/api/profile") &&
-			response.request().method() === "PUT",
-	);
-	await page.getByRole("button", { name: "Save changes" }).click();
-	await saveProfileResponse;
-	await page.locator("button", { hasText: "Edit profile" }).waitFor({ state: "visible" });
-	await page.waitForFunction((expectedMission) => {
-		const cards = Array.from(document.querySelectorAll(".setting-card"));
-		const organization = cards.find((node) => node.textContent?.includes("Organization"));
-		return Boolean(organization?.textContent?.includes(expectedMission));
-	}, mission);
+	// Profile is hardcoded — no-op
 }
 
+// DEPRECATED: /api/opencode-settings removed in v2.
+// Use opencode-stub.sh in PATH instead (via playwright-start.sh).
 export async function configureOpencodeThroughSettingsView(
-	page: Page,
-	binaryPath: string,
-	workingDirectory: string,
+	_page: Page,
+	_binaryPath: string,
+	_workingDirectory: string,
 ): Promise<void> {
-	await openSettingsView(page);
-	await page.getByRole("button", { name: "Configure" }).click();
-	const opencodeCard = page
-		.locator(".setting-card")
-		.filter({ hasText: "Opencode Agent" });
-	await opencodeCard.locator("input").nth(0).fill(binaryPath);
-	await opencodeCard.locator("input").nth(1).fill(workingDirectory);
-	await opencodeCard.locator("input").nth(2).fill("60000");
-	await opencodeCard.locator("input").nth(3).fill("default");
-	const saveOpencodeResponse = page.waitForResponse(
-		(response) =>
-			response.url().endsWith("/api/opencode-settings") &&
-			response.request().method() === "PUT",
-	);
-	await opencodeCard.getByRole("button", { name: "Save" }).click();
-	const opencodeResponse = await saveOpencodeResponse;
-	const opencodeRequestBody = opencodeResponse.request().postData() ?? "";
-	if (!opencodeRequestBody.includes('"isConfigured":true')) {
-		throw new Error(`Expected Opencode save payload to mark configured, got: ${opencodeRequestBody}`);
-	}
-	await page.locator(".setting-card").filter({ hasText: "Opencode Agent" }).getByText("Configured").waitFor({ state: "visible" });
-	await page.waitForFunction((expectedPath) => {
-		const cards = Array.from(document.querySelectorAll(".setting-card"));
-		const opencode = cards.find((node) => node.textContent?.includes("Opencode Agent"));
-		if (!opencode) return false;
-		const input = opencode.querySelector("input");
-		return Boolean(input?.value?.includes(expectedPath));
-	}, binaryPath);
+	// OpenCode is auto-detected or uses stub — no-op
 }
 
 export async function markScheduleDue(request: APIRequestContext, sourceId: string): Promise<void> {
