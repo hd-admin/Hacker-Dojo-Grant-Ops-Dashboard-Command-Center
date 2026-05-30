@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { CrawlRun, Grant, Notification, OrganizationProfile, Task } from '../../../shared/types';
 
-const { grantsGetAll, profileGet, notificationsGetAll, tasksGetAll, sourcesGetAll, researchGetRuns } = vi.hoisted(
+const { grantsGetAll, profileGet, notificationsGetAll, tasksGetAll, sourcesGetAll, researchGetRuns, duplicatesGetAll } = vi.hoisted(
   () => ({
     grantsGetAll: vi.fn(),
     profileGet: vi.fn(),
@@ -12,6 +12,7 @@ const { grantsGetAll, profileGet, notificationsGetAll, tasksGetAll, sourcesGetAl
     tasksGetAll: vi.fn(),
     sourcesGetAll: vi.fn(),
     researchGetRuns: vi.fn(),
+    duplicatesGetAll: vi.fn().mockResolvedValue([]),
   }),
 );
 
@@ -23,6 +24,10 @@ vi.mock('../lib/grant-ops-client', () => ({
     tasks: { getAll: tasksGetAll },
     sources: { getAll: sourcesGetAll },
     research: { getRuns: researchGetRuns },
+    duplicates: { getAll: duplicatesGetAll },
+    opencodeSettings: { get: vi.fn().mockResolvedValue({ binaryPath: '', workingDirectory: '', timeoutMs: 60000, isConfigured: false }), update: vi.fn().mockResolvedValue({ success: true }) },
+    documents: { getAll: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: 'doc-1', name: 'test' }) },
+    backup: { getFreshness: vi.fn().mockResolvedValue({ lastBackupAt: null, isStale: false }), exportBackup: vi.fn().mockResolvedValue({ version: '1.0', createdAt: '' }), restore: vi.fn().mockResolvedValue({ success: true }) },
     themes: {
       get: vi.fn().mockResolvedValue({ keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] }),
       update: vi.fn().mockResolvedValue({ keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] }),
@@ -89,6 +94,7 @@ vi.mock('./TasksView', () => ({
     </button>
   ),
 }));
+vi.mock('./DuplicatesView', () => ({ default: () => <div>duplicates</div> }));
 vi.mock('./GrantDrawer', () => ({
   default: ({ grantId, onRefreshAppState }: { grantId: string | null; onRefreshAppState?: () => Promise<void> | void }) =>
     grantId ? (
@@ -102,6 +108,7 @@ vi.mock('./GrantDrawer', () => ({
 }));
 
 import AppShell from './AppShell';
+
 
 const initialGrants: Grant[] = [
   {
@@ -421,5 +428,37 @@ describe('AppShell', () => {
 
     const context = JSON.parse(window.localStorage.getItem('grantops.workingContext') ?? '{}') as { recentDraftId?: string };
     expect(context.recentDraftId).toBe('draft-99');
+  });
+
+  it('renders duplicates nav item in the sidebar', async () => {
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"]') !== null);
+
+    const duplicatesNav = container.querySelector('.nav-item[data-view="duplicates"]');
+    expect(duplicatesNav).not.toBeNull();
+    expect(duplicatesNav?.textContent).toContain('Duplicates');
+  });
+
+  it('shows pending duplicates count badge when duplicates exist', async () => {
+    duplicatesGetAll.mockResolvedValue([
+      { id: 'dup-1', grantId1: 'grant-1', grantId2: 'grant-2', confidenceScore: 0.9, status: 'pending', detectedAt: new Date().toISOString(), conflictingFields: ['title'] },
+    ]);
+
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"] .nav-count') !== null);
+
+    const badge = container.querySelector('.nav-item[data-view="duplicates"] .nav-count');
+    expect(badge?.textContent).toBe('1');
+  });
+
+  it('navigates to duplicates view on click', async () => {
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"]') !== null);
+
+    const duplicatesNav = container.querySelector('.nav-item[data-view="duplicates"]') as HTMLElement;
+    duplicatesNav?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    await waitFor(() => container.querySelector('#view-duplicates')?.classList.contains('active') === true);
+    expect(container.querySelector('#view-duplicates.active')).not.toBeNull();
   });
 });

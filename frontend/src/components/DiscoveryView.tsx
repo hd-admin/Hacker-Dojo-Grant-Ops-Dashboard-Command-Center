@@ -47,6 +47,21 @@ function formatDate(dateStr: string): string {
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}`;
 }
 
+function renderDeadlineCell(grant: Grant): React.ReactNode {
+  const confidence = grant.deadlineConfidence;
+  if (confidence === 'unknown') {
+    return <span className="deadline-confidence deadline-confidence-unknown">Deadline unknown</span>;
+  }
+  if (confidence === 'rolling') {
+    return <span className="deadline-confidence deadline-confidence-rolling">Rolling</span>;
+  }
+  const dateStr = formatDate(grant.deadline);
+  if (confidence === 'estimated') {
+    return <span className="deadline-confidence deadline-confidence-estimated">~{dateStr}</span>;
+  }
+  return <span className="deadline-confidence deadline-confidence-exact">{dateStr}</span>;
+}
+
 export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: DiscoveryViewProps) {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
@@ -100,6 +115,8 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
   }, []);
 
   const pendingReviewCount = sources.filter((source) => source.reviewStatus === 'pending-review').length;
+
+  const userAddedSources = sources.filter((s) => s.suggestedBy !== 'system');
 
   const filtered = useMemo(() => {
     const searchLower = search.toLowerCase();
@@ -251,8 +268,8 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
           </form>
         )}
         <div className="sources-panel">
-          <div className="sources-panel-header">Sources ({sources.length})</div>
-          {sources.map((source) => (
+          <div className="sources-panel-header">Sources ({userAddedSources.length})</div>
+          {userAddedSources.map((source) => (
             <div key={source.id} className="source-item">
               <div className="source-info">
                 <div className="source-name">{source.name}</div>
@@ -380,15 +397,15 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
             </div>
             <div className="grant-funder">{grant.funderShort}</div>
             <div className="award">{grant.award}</div>
-            <div className="days">{formatDate(grant.deadline)}</div>
+            <div className="days">{renderDeadlineCell(grant)}</div>
             <div className="fit-num">{grant.fit}</div>
           </button>
         ))}
       </div>
 
       <div className="sources-panel">
-        <div className="sources-panel-header">Sources ({sources.length})</div>
-        {sources.map((source) => (
+        <div className="sources-panel-header">Sources ({userAddedSources.length})</div>
+        {userAddedSources.map((source) => (
           <div key={source.id} className="source-item">
             <div className="source-info">
               <div className="source-name">{source.name}</div>

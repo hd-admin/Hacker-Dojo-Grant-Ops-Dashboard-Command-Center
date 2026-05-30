@@ -26,10 +26,16 @@ const {
   themesGet,
   themesUpdate,
   themesRescore,
+  backupGetFreshness,
+  backupExport,
+  backupRestore,
 } = vi.hoisted(() => ({
   themesGet: vi.fn(),
   themesUpdate: vi.fn(),
   themesRescore: vi.fn(),
+  backupGetFreshness: vi.fn(),
+  backupExport: vi.fn(),
+  backupRestore: vi.fn(),
 }));
 
 vi.mock('../lib/grant-ops-client', () => ({
@@ -38,6 +44,11 @@ vi.mock('../lib/grant-ops-client', () => ({
     documents: { getAll: documentsGetAll, create: documentsCreate },
     opencodeSettings: { get: opencodeGet, update: opencodeUpdate },
     themes: { get: themesGet, update: themesUpdate, rescore: themesRescore },
+    backup: {
+      getFreshness: backupGetFreshness,
+      exportBackup: backupExport,
+      restore: backupRestore,
+    },
   },
 }));
 
@@ -162,6 +173,14 @@ beforeEach(() => {
   profileGet.mockResolvedValue(profile);
   documentsGetAll.mockResolvedValue(documents);
   opencodeGet.mockResolvedValue(opencodeSettings);
+  backupGetFreshness.mockResolvedValue({
+    lastBackupAt: '2026-01-01T00:00:00.000Z',
+    isStale: false,
+    lastBackupVerification: { checkedAt: '2026-01-01T00:00:00.000Z', outcome: 'Backup verified: 2 grants, 2 documents', grantCount: 2, documentCount: 2, type: 'backup' },
+    lastRestoreVerification: { checkedAt: '2026-01-01T00:00:00.000Z', outcome: 'Restore verified: 1 grant, 1 document', grantCount: 1, documentCount: 1, type: 'restore' },
+  });
+  backupExport.mockResolvedValue({ version: '1.0', createdAt: new Date().toISOString() });
+  backupRestore.mockResolvedValue({ success: true });
   documentsCreate.mockImplementation(async (file: File) => ({
     id: 'doc-3',
     name: file.name,
@@ -276,9 +295,9 @@ describe('SettingsView', () => {
     expect(editBtn).not.toBeNull();
     editBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    // After clicking, the form should now be in editing mode with a Save Profile button
+    // After clicking, the form should now be in editing mode with a Save changes button
     await waitFor(() =>
-      container.textContent?.includes('Save Profile') === true ||
+      container.textContent?.includes('Save changes') === true ||
       container.querySelector('input[name="legalName"]') !== null ||
       Array.from(container.querySelectorAll('button')).some((btn) => btn.textContent?.includes('Save'))
     );
@@ -305,7 +324,6 @@ describe('SettingsView', () => {
   });
 
   it('requires confirmation before starting a backup restore', async () => {
-    const fetchMock = vi.mocked(global.fetch as unknown as typeof fetch);
     root.render(React.createElement(SettingsView, { onRefreshAppState }));
     await waitFor(() => container.textContent?.includes('Backup & Restore') === true);
 
@@ -318,9 +336,9 @@ describe('SettingsView', () => {
     restoreInput.dispatchEvent(new Event('change', { bubbles: true }));
 
     await waitFor(() => container.querySelector('[data-testid="restore-warning-banner"]') !== null);
-    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/api/restore'))).toBe(false);
+    expect(backupRestore).not.toHaveBeenCalled();
 
     Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Confirm restore')?.click();
-    await waitFor(() => fetchMock.mock.calls.some(([url]) => String(url).includes('/api/restore')) === true);
+    await waitFor(() => backupRestore.mock.calls.length > 0);
   });
 });

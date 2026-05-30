@@ -19,6 +19,7 @@ import {
   Columns3,
   Database,
   FileText,
+  GitFork,
   LayoutDashboard,
   ListChecks,
   Search,
@@ -36,6 +37,7 @@ import SettingsView from "./SettingsView";
 import SourcesView from "./SourcesView";
 import TasksView from "./TasksView";
 import AuditView from "./AuditView";
+import DuplicatesView from "./DuplicatesView";
 import JobsPanel from "./JobsPanel";
 
 type ViewType =
@@ -47,7 +49,8 @@ type ViewType =
   | "notifications"
   | "tasks"
   | "jobs"
-  | "audit";
+  | "audit"
+  | "duplicates";
 
 type HealthTier = "fully_online" | "partially_degraded" | "fully_offline";
 
@@ -78,6 +81,7 @@ const activityNav: NavItem[] = [
   { view: 'tasks', label: 'Tasks', icon: <ListChecks size={20} />, ariaLabel: 'View tasks' },
   { view: 'jobs', label: 'Jobs', icon: <Settings size={20} />, ariaLabel: 'View job queue' },
   { view: 'audit', label: 'Audit', icon: <FileText size={20} />, ariaLabel: 'View audit trail' },
+  { view: 'duplicates', label: 'Duplicates', icon: <GitFork size={20} />, ariaLabel: 'Review duplicate candidates' },
 ];
 
 const WORKING_CONTEXT_KEY = 'grantops.workingContext';
@@ -143,6 +147,7 @@ export default function AppShell() {
     () => sources.filter((source) => source.reviewStatus === 'pending-review').length,
     [sources],
   );
+  const [pendingDuplicatesCount, setPendingDuplicatesCount] = useState(0);
 
   // Health tier computation
   const healthTier: HealthTier = useMemo(() => {
@@ -209,13 +214,14 @@ export default function AppShell() {
   }, []);
 
   const refreshAppState = useCallback(async (): Promise<void> => {
-    const [grantsData, profileData, notificationsData, tasksData, sourcesData, runsResponse] = await Promise.all([
+    const [grantsData, profileData, notificationsData, tasksData, sourcesData, runsResponse, duplicatesData] = await Promise.all([
       client.grants.getAll(),
       client.profile.get().catch(() => null),
       client.notifications.getAll().catch(() => []),
       client.tasks.getAll().catch(() => []),
       client.sources.getAll().catch(() => []),
       client.research.getRuns().catch(() => ({ latestRun: null, allRuns: [] })),
+      client.duplicates.getAll().catch(() => []),
     ]);
 
     setGrants(grantsData);
@@ -223,6 +229,7 @@ export default function AppShell() {
     setNotifications(notificationsData);
     setTasks(tasksData);
     setSources(sourcesData);
+    setPendingDuplicatesCount((Array.isArray(duplicatesData) ? duplicatesData : []).filter((d) => d.status === 'pending').length);
 
     const latestRun = runsResponse.latestRun;
     setCrawlStatus({
@@ -584,6 +591,9 @@ export default function AppShell() {
               {item.view === 'tasks' && unreadTaskCount > 0 && (
                 <span className="nav-count">{unreadTaskCount}</span>
               )}
+              {item.view === 'duplicates' && pendingDuplicatesCount > 0 && (
+                <span className="nav-count">{pendingDuplicatesCount}</span>
+              )}
             </button>
           ))}
         </div>
@@ -716,6 +726,9 @@ export default function AppShell() {
         </div>
         <div id="view-audit" className={`view ${activeView === 'audit' ? 'active' : ''}`} role="tabpanel" aria-label="Audit Trail">
           <AuditView />
+        </div>
+        <div id="view-duplicates" className={`view ${activeView === 'duplicates' ? 'active' : ''}`} role="tabpanel" aria-label="Duplicate Candidates">
+          <DuplicatesView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} />
         </div>
       </main>
 

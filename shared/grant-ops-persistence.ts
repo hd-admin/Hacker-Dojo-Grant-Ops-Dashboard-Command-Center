@@ -46,8 +46,12 @@ import {
 } from './grant-ops-sqlite';
 import {
   defaultOpencodeSettings,
-  defaultProfile,
 } from './seed-data';
+import {
+  testFixtureGrants,
+  propublicaSourceFixture,
+  testProfile,
+} from './test-fixtures';
 import type {
   ApprovalRecord,
   AuditEvent,
@@ -276,14 +280,26 @@ export async function copyPersistedData(
 }
 
 export async function resetPersistentStateForTests(): Promise<void> {
-  // Clear in-memory caches first
   invalidateCache();
   const state = getSqliteState();
-  // Clear the entire database (drops all tables including audit_events and job_queue)
   await clearDatabase(state);
-  // Re-initialize with default seed state
-  await saveProfile({ ...defaultProfile });
+  await saveProfile({ ...testProfile });
   await saveOpencodeSettings({ ...defaultOpencodeSettings });
+  await writeGrantsToSqlite(state, testFixtureGrants);
+  await writePersistedDataToSqlite(state, {
+    sources: [propublicaSourceFixture],
+    crawlRuns: [],
+    draftArtifacts: [],
+    revisionRequests: [],
+    approvalRecords: [],
+    submissionRecords: [],
+    followUps: [],
+    notifications: [],
+    tasks: [],
+    documents: [],
+    opencodeSettings: defaultOpencodeSettings,
+    lastSync: new Date().toISOString(),
+  });
 }
 
 export async function loadAuditEvents(limit?: number): Promise<AuditEvent[]> {

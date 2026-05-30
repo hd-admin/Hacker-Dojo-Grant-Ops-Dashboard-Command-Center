@@ -14,6 +14,7 @@ export const Check = createIcon('Check');
 export const Columns3 = createIcon('Columns3');
 export const Database = createIcon('Database');
 export const FileText = createIcon('FileText');
+export const GitFork = createIcon('GitFork');
 export const LayoutDashboard = createIcon('LayoutDashboard');
 export const ListChecks = createIcon('ListChecks');
 export const Search = createIcon('Search');

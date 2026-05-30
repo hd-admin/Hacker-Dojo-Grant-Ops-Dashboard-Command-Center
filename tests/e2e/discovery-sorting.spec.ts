@@ -39,7 +39,7 @@ function expectSubsequence(actual: string[], expected: string[]): void {
 test.describe("Discovery Sorting", () => {
 	test.beforeEach(async ({ request, page }) => {
 		await resetAppState(request);
-		await page.goto("http://localhost:3000");
+		await page.goto("http://127.0.0.1:3000");
 		await page.click('[data-view="discovery"]');
 		await page.waitForSelector(".grants-table", { timeout: 30000 });
 	});

@@ -18,6 +18,7 @@ import {
   withTempDataDir,
 } from './grant-ops-persistence';
 import { clearDatabase, getSqliteState } from './grant-ops-sqlite';
+import { testProfile } from './test-fixtures';
 import { defaultOpencodeSettings, defaultProfile } from './seed-data';
 import type { PersistedData } from './grant-ops-persistence';
 
@@ -169,10 +170,10 @@ describe('Shared Persistence Integrity', () => {
       const grants = await loadGrants();
       const persisted = await loadPersistedData();
 
-      expect(profile.legalName).toBe(defaultProfile.legalName);
+      expect(profile.legalName).toBe(testProfile.legalName);
       expect(grants.some((item) => item.id === grant.id)).toBe(false);
-      expect(grants.length).toBe(0);
-      expect(persisted.sources).toEqual([]);
+      expect(grants.length).toBe(13);
+      expect(persisted.sources.length).toBeGreaterThan(0);
       expect(persisted.crawlRuns).toEqual([]);
       expect(persisted.lastSync).toBeTruthy();
     });

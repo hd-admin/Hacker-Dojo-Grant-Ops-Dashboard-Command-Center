@@ -22,7 +22,7 @@ test.describe("Grant Operations Center smoke", () => {
 	test.beforeEach(async ({ request, page }) => {
 		const stubPath = await ensureOpencodeStub();
 		await resetAppState(request);
-		await page.goto("http://localhost:3000");
+		await page.goto("http://127.0.0.1:3000");
 		await page.waitForSelector(".app", { timeout: 60000 });
 		await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
 		await page.locator('.shell-banner-row [data-testid="rerun-health-check-btn"]').click();
@@ -56,7 +56,7 @@ test.describe("Grant Operations Center smoke", () => {
 		request,
 	}) => {
 		const grantsResponse = await request.get(
-			"http://localhost:3000/api/grants",
+			"http://127.0.0.1:3000/api/grants",
 		);
 		expect(grantsResponse.ok()).toBeTruthy();
 		const grants: Array<{
@@ -121,7 +121,7 @@ test.describe("Grant Operations Center smoke", () => {
 
 	test("grant updates persist through the API", async ({ request }) => {
 		const grantsResponse = await request.get(
-			"http://localhost:3000/api/grants",
+			"http://127.0.0.1:3000/api/grants",
 		);
 		expect(grantsResponse.ok()).toBeTruthy();
 		const grants: Array<{ id: string; status: string }> =
@@ -133,7 +133,7 @@ test.describe("Grant Operations Center smoke", () => {
 		const nextStatus = originalStatus === "matched" ? "draft" : "matched";
 
 		const updateResponse = await request.patch(
-			`http://localhost:3000/api/grants/${firstGrant.id}/status`,
+			`http://127.0.0.1:3000/api/grants/${firstGrant.id}/status`,
 			{
 				headers: { "Content-Type": "application/json" },
 				data: {
@@ -145,13 +145,13 @@ test.describe("Grant Operations Center smoke", () => {
 		expect(updateResponse.ok()).toBeTruthy();
 
 		const getResponse = await request.get(
-			`http://localhost:3000/api/grants/${firstGrant.id}`,
+			`http://127.0.0.1:3000/api/grants/${firstGrant.id}`,
 		);
 		expect(getResponse.ok()).toBeTruthy();
 		const updatedGrant = await getResponse.json();
 		expect(updatedGrant.grant.status).toBe(nextStatus);
 
-		await request.patch(`http://localhost:3000/api/grants/${firstGrant.id}`, {
+		await request.patch(`http://127.0.0.1:3000/api/grants/${firstGrant.id}`, {
 			headers: { "Content-Type": "application/json" },
 			data: {
 				status: originalStatus,

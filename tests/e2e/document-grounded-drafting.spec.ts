@@ -52,7 +52,7 @@ async function openMatchedGrantWithoutDraft(
 	page: Page,
 	request: APIRequestContext,
 ) {
-	const grantsResponse = await request.get("http://localhost:3000/api/grants");
+	const grantsResponse = await request.get("http://127.0.0.1:3000/api/grants");
 	expect(grantsResponse.ok()).toBeTruthy();
 	const grants: Array<{
 		id: string;
@@ -89,7 +89,7 @@ test("document-grounded-drafting: generate, revise, approve, and submit through 
 	const stubPath = await ensureOpencodeStub();
 
 	await resetAppState(request);
-	await page.goto("http://localhost:3000");
+	await page.goto("http://127.0.0.1:3000");
 	await page.waitForSelector(".app", { timeout: 60000 });
 
 	await saveProfileThroughSettingsView(

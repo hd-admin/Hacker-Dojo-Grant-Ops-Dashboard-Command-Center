@@ -100,4 +100,81 @@ describe('PipelineView', () => {
     await waitFor(() => linkClicks.length > 0);
     expect(linkClicks.some((href) => href.includes('export'))).toBe(true);
   });
+
+  it('renders deadlineConfidence markers in board view for estimated and rolling deadlines', async () => {
+    const confidenceGrants: Grant[] = [
+      {
+        id: 'grant-estimated',
+        title: 'Estimated Deadline Grant',
+        funder: 'Test Foundation',
+        funderShort: 'TF',
+        award: '$200,000',
+        awardSort: 200000,
+        deadline: '2026-09-01',
+        deadlineConfidence: 'estimated',
+        daysOut: 90,
+        fit: 80,
+        tags: [],
+        status: 'matched',
+        statusLabel: 'Matched',
+        matchedAt: '2026-05-01',
+      },
+      {
+        id: 'grant-rolling',
+        title: 'Rolling Deadline Grant',
+        funder: 'Test Foundation',
+        funderShort: 'TF',
+        award: '$200,000',
+        awardSort: 200000,
+        deadline: 'Rolling',
+        deadlineConfidence: 'rolling',
+        daysOut: 0,
+        fit: 75,
+        tags: [],
+        status: 'draft',
+        statusLabel: 'In Draft',
+        matchedAt: '2026-05-01',
+      },
+    ];
+    grantsGetAll.mockReset();
+    grantsGetAll.mockResolvedValue(confidenceGrants);
+
+    root.render(React.createElement(PipelineView, { onGrantSelect: vi.fn() }));
+    await waitFor(() => container.textContent?.includes('Estimated Deadline Grant') === true);
+
+    expect(container.querySelector('.deadline-confidence-estimated')).not.toBeNull();
+    expect(container.querySelector('.deadline-confidence-rolling')).not.toBeNull();
+  });
+
+  it('renders deadlineConfidence markers in list view', async () => {
+    const confidenceGrants: Grant[] = [
+      {
+        id: 'grant-unknown',
+        title: 'Unknown Deadline Grant',
+        funder: 'Test Foundation',
+        funderShort: 'TF',
+        award: '$150,000',
+        awardSort: 150000,
+        deadline: '',
+        deadlineConfidence: 'unknown',
+        daysOut: 0,
+        fit: 70,
+        tags: [],
+        status: 'matched',
+        statusLabel: 'Matched',
+        matchedAt: '2026-05-01',
+      },
+    ];
+    grantsGetAll.mockReset();
+    grantsGetAll.mockResolvedValue(confidenceGrants);
+
+    root.render(React.createElement(PipelineView, { onGrantSelect: vi.fn() }));
+    await waitFor(() => container.textContent?.includes('Unknown Deadline Grant') === true);
+
+    // Switch to list view
+    (container.querySelector('[data-testid="pipeline-view-mode-toggle"]') as HTMLButtonElement)?.click();
+    await waitFor(() => container.querySelector('[data-testid="pipeline-list-view"]') !== null);
+
+    expect(container.querySelector('.deadline-confidence-unknown')?.textContent?.trim()).toBe('Deadline unknown');
+  });
 });

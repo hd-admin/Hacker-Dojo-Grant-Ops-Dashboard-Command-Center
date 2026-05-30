@@ -7,6 +7,7 @@
 
 import type {
 	ApprovalRecord,
+	BackupFreshnessStatus,
 	CrawlRun,
 	DocumentMetadata,
 	DraftArtifact,
@@ -478,6 +479,28 @@ export const duplicatesApi = {
 		),
 };
 
+// ============ Backup API ============
+
+export interface BackupSnapshot {
+  version: string;
+  createdAt: string;
+  [key: string]: unknown;
+}
+
+export const backupApi = {
+  exportBackup: () =>
+    apiFetch<BackupSnapshot>("/api/backup"),
+
+  getFreshness: () =>
+    apiFetch<BackupFreshnessStatus>("/api/backup/freshness"),
+
+  restore: (backupData: object) =>
+    apiFetch<{ success: boolean }>("/api/restore", {
+      method: "POST",
+      body: JSON.stringify(backupData),
+    }),
+};
+
 // ============ Themes API ============
 
 export const themesApi = {
@@ -517,6 +540,7 @@ export function createGrantOpsClient() {
 		tasks: tasksApi,
 		documents: documentsApi,
 		duplicates: duplicatesApi,
+		backup: backupApi,
 		themes: themesApi,
 	};
 }

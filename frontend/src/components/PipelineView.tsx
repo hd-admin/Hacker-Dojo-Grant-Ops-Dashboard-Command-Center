@@ -69,6 +69,21 @@ function formatDate(dateStr: string): string {
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}`;
 }
 
+function renderDeadlineCell(grant: Grant): React.ReactNode {
+  const confidence = grant.deadlineConfidence;
+  if (confidence === 'unknown') {
+    return <span className="deadline-confidence deadline-confidence-unknown">Deadline unknown</span>;
+  }
+  if (confidence === 'rolling') {
+    return <span className="deadline-confidence deadline-confidence-rolling">Rolling</span>;
+  }
+  const dateStr = formatDate(grant.deadline);
+  if (confidence === 'estimated') {
+    return <span className="deadline-confidence deadline-confidence-estimated">~{dateStr}</span>;
+  }
+  return <span className="deadline-confidence deadline-confidence-exact">{dateStr}</span>;
+}
+
 function getUrgency(grant: Grant): UrgencyFilter {
   if (grant.daysOut < 0) return 'overdue';
   if (grant.daysOut <= 30) return 'soon';
@@ -253,7 +268,7 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
               <div>{grant.title}</div>
               <div>{grant.funder}</div>
               <div>{statusToLabel(grant.status)}</div>
-              <div>{formatDate(grant.deadline)}</div>
+              <div>{renderDeadlineCell(grant)}</div>
               <div>{grant.award}</div>
               <div>{grant.responsibilityTag ?? '—'}</div>
             </button>
@@ -278,7 +293,7 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
                         <div className="board-card-funder">{grant.funderShort}</div>
                         <div className="board-card-title">{grant.title}</div>
                         <div className="board-card-foot">
-                          <span>{formatDate(grant.deadline)}</span>
+                          <span>{renderDeadlineCell(grant)}</span>
                           <span className="amount">{grant.award}</span>
                         </div>
                       </button>

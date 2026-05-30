@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
-# NOTE: MANUAL SMOKE TEST ONLY. Uses real opencode, consumes AI tokens. Do not run in CI.
+# Smoke test for ProPublica e2e AI backend operations.
+# NOT part of the automated test suite - consumes real AI tokens and requires internet.
+# Prerequisites:
+#   - opencode binary accessible on PATH
+#   - Valid AI API key configured for opencode
+#   - Internet access to ProPublica API
+# Run with: pnpm smoke:propublica
+# Expected output: 'Smoke test PASSED' with exit code 0
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." ; pwd)"

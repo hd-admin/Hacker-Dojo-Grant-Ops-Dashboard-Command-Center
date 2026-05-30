@@ -170,4 +170,83 @@ describe('DiscoveryView', () => {
     await waitFor(() => sourcesRemove.mock.calls.length > 0);
     expect(sourcesRemove).toHaveBeenCalledWith('src-1');
   });
+
+  it('renders deadlineConfidence markers for estimated, rolling, and unknown deadlines', async () => {
+    const confidenceGrants: Grant[] = [
+      {
+        id: 'exact-grant',
+        title: 'Exact Deadline Grant',
+        funder: 'Test Foundation',
+        funderShort: 'TF',
+        award: '$100,000',
+        awardSort: 100000,
+        deadline: '2026-08-15',
+        deadlineConfidence: 'exact',
+        daysOut: 77,
+        fit: 80,
+        tags: [],
+        status: 'matched',
+        statusLabel: 'Matched',
+        matchedAt: '2026-05-01',
+      },
+      {
+        id: 'estimated-grant',
+        title: 'Estimated Deadline Grant',
+        funder: 'Test Foundation',
+        funderShort: 'TF',
+        award: '$100,000',
+        awardSort: 100000,
+        deadline: '2026-09-01',
+        deadlineConfidence: 'estimated',
+        daysOut: 90,
+        fit: 75,
+        tags: [],
+        status: 'matched',
+        statusLabel: 'Matched',
+        matchedAt: '2026-05-01',
+      },
+      {
+        id: 'rolling-grant',
+        title: 'Rolling Deadline Grant',
+        funder: 'Test Foundation',
+        funderShort: 'TF',
+        award: '$100,000',
+        awardSort: 100000,
+        deadline: 'Rolling',
+        deadlineConfidence: 'rolling',
+        daysOut: 0,
+        fit: 70,
+        tags: [],
+        status: 'matched',
+        statusLabel: 'Matched',
+        matchedAt: '2026-05-01',
+      },
+      {
+        id: 'unknown-grant',
+        title: 'Unknown Deadline Grant',
+        funder: 'Test Foundation',
+        funderShort: 'TF',
+        award: '$100,000',
+        awardSort: 100000,
+        deadline: '',
+        deadlineConfidence: 'unknown',
+        daysOut: 0,
+        fit: 65,
+        tags: [],
+        status: 'matched',
+        statusLabel: 'Matched',
+        matchedAt: '2026-05-01',
+      },
+    ];
+    grantsGetAll.mockReset();
+    grantsGetAll.mockResolvedValueOnce(confidenceGrants).mockResolvedValue(confidenceGrants);
+
+    root.render(React.createElement(DiscoveryView, { onGrantSelect, onRefreshAppState }));
+    await waitFor(() => container.querySelectorAll('.grants-row:not(.header)').length === 4);
+
+    expect(container.querySelector('.deadline-confidence-exact')?.textContent?.trim()).toBe('Aug 15');
+    expect(container.querySelector('.deadline-confidence-estimated')?.textContent?.trim()).toBe('~Sep 1');
+    expect(container.querySelector('.deadline-confidence-rolling')?.textContent?.trim()).toBe('Rolling');
+    expect(container.querySelector('.deadline-confidence-unknown')?.textContent?.trim()).toBe('Deadline unknown');
+  });
 });

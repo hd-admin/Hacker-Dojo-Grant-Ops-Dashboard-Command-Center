@@ -50,7 +50,7 @@ async function openMatchedGrantWithoutDraft(
 	page: Page,
 	request: APIRequestContext,
 ) {
-	const grantsResponse = await request.get('http://localhost:3000/api/grants');
+	const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
 	expect(grantsResponse.ok()).toBeTruthy();
 	const grants: Array<{
 		id: string;
@@ -84,7 +84,7 @@ async function openMatchedGrantWithoutDraft(
 test.describe('Submission Notification', () => {
 	test.beforeEach(async ({ page, request }) => {
 		await resetAppState(request);
-		await page.goto('http://localhost:3000');
+		await page.goto('http://127.0.0.1:3000');
 		await page.waitForSelector('.app', { timeout: 60000 });
 	});
 
@@ -139,7 +139,7 @@ test.describe('Submission Notification', () => {
 			.click();
 
 		const grantDetailResponse = await request.get(
-			`http://localhost:3000/api/grants/${targetGrant.id}`,
+			`http://127.0.0.1:3000/api/grants/${targetGrant.id}`,
 		);
 		expect(grantDetailResponse.ok()).toBeTruthy();
 		const grantDetail = await grantDetailResponse.json();
@@ -148,17 +148,17 @@ test.describe('Submission Notification', () => {
 		expect(Array.isArray(grantDetail.followUps)).toBe(true);
 		expect(grantDetail.followUps.length).toBeGreaterThan(0);
 
-		const followUpsResponse = await request.get('http://localhost:3000/api/follow-ups');
+		const followUpsResponse = await request.get('http://127.0.0.1:3000/api/follow-ups');
 		expect(followUpsResponse.ok()).toBeTruthy();
 		const followUps = (await followUpsResponse.json()) as Array<{ grantId?: string; submissionId?: string; title: string }>;
 		expect(followUps.some((followUp) => followUp.grantId === targetGrant.id)).toBe(true);
 
-		const notificationsResponse = await request.get('http://localhost:3000/api/notifications');
+		const notificationsResponse = await request.get('http://127.0.0.1:3000/api/notifications');
 		expect(notificationsResponse.ok()).toBeTruthy();
 		const notifications = (await notificationsResponse.json()) as Array<{ text: string }>;
 		expect(notifications.some((notification) => /Email submission sent to/i.test(notification.text))).toBe(true);
 
-		const tasksResponse = await request.get('http://localhost:3000/api/tasks');
+		const tasksResponse = await request.get('http://127.0.0.1:3000/api/tasks');
 		expect(tasksResponse.ok()).toBeTruthy();
 		const tasks = (await tasksResponse.json()) as Array<{ text: string; completed: boolean }>;
 		expect(tasks.some((task) => /Follow up on email submission/i.test(task.text))).toBe(true);

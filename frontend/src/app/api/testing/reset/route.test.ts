@@ -75,9 +75,9 @@ describe('/api/testing/reset route', () => {
     expect(response.status).toBe(200);
     expect(data.success).toBe(true);
 
-    // Verify state was reset (grants are cleared on reset)
+    // Verify state was reset to fixture seed (13 test grants + ProPublica source)
     const grantsAfter = await repository.getGrants();
-    expect(grantsAfter.length).toBe(0);
+    expect(grantsAfter.length).toBe(13);
   });
 
   it('can be called multiple times', async () => {

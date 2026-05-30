@@ -102,7 +102,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
           client.documents.getAll().catch(() => []),
           client.opencodeSettings.get().catch(() => null),
           fetch('/api/health').then((response) => response.json()).catch(() => null),
-          fetch('/api/backup/freshness').then((response) => response.json()).catch(() => null),
+          client.backup.getFreshness().catch(() => null),
           client.themes.get().catch(() => null),
         ]);
         setProfile(profileData);
@@ -223,12 +223,9 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
   const handleRestoreBackup = async (file: File | null) => {
     if (!file) return;
     const payload = JSON.parse(await file.text());
-    await fetch('/api/restore', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    setFreshness(await fetch('/api/backup/freshness').then((response) => response.json()));
+    await client.backup.restore(payload);
+    const updatedFreshness = await client.backup.getFreshness();
+    setFreshness(updatedFreshness);
     await onRefreshAppState?.();
   };
 
@@ -504,7 +501,7 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
                 </fieldset>
 
                 <div className="settings-form-row">
-                  <button type="button" className="btn btn-primary" onClick={() => void handleSave()}>Save Profile</button>
+                  <button type="button" className="btn btn-primary" onClick={() => void handleSave()}>Save changes</button>
                   <button type="button" className="btn" onClick={() => { setEditForm(profile); setIsEditing(false); }}>Cancel</button>
                 </div>
               </div>
@@ -586,7 +583,20 @@ export default function SettingsView({ onRefreshAppState, initiallyEditing = fal
           <div className="setting-card-body">
             <div data-testid="backup-verification-result">Last backup verification: {lastBackupVerification}</div>
             <div data-testid="restore-verification-result">Last restore verification: {lastRestoreVerification}</div>
-            <button type="button" onClick={() => { void fetch('/api/backup'); }}>Export backup</button>
+            <button type="button" onClick={async () => {
+              try {
+                const backup = await client.backup.exportBackup();
+                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `grant-ops-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch (err) {
+                console.error('Error exporting backup:', err);
+              }
+            }}>Export backup</button>
             <label>
               Restore from backup
               <input type="file" accept="application/json,.json" onChange={(e) => { handleRequestRestore(e.target.files?.[0] ?? null); }} />

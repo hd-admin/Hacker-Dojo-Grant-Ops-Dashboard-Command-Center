@@ -181,7 +181,7 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp, onNavig
   };
 
   if (loading) {
-    return <div className="header-title">Loading...</div>;
+    return <div className="header-title" role="status" aria-busy="true" aria-label="Loading tasks">Loading...</div>;
   }
 
   if (tasks.length === 0 && followUps.length === 0) {

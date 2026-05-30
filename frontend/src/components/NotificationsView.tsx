@@ -34,7 +34,7 @@ export default function NotificationsView({ notifications: notificationsProp }: 
   }, [notificationsProp]);
 
   if (loading) {
-    return <div className="header-title">Loading...</div>;
+    return <div className="header-title" role="status" aria-busy="true" aria-label="Loading notifications">Loading...</div>;
   }
 
   if (notifications.length === 0) {
@@ -49,6 +49,7 @@ export default function NotificationsView({ notifications: notificationsProp }: 
           </div>
         </div>
         <div className="empty-state-guide" data-testid="notifications-empty-state">
+          <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F514)}</div>
           <div className="empty-state-title">No notifications yet</div>
           <div className="empty-state-description">
             Activity appears here as grants are discovered, drafted, and submitted.
