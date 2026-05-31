@@ -60,6 +60,11 @@ The app includes a built-in backup/restore system accessible from the Settings v
 - **AI Agent:** OpenCode CLI for grant research and proposal drafting
 - **Testing:** Vitest (unit/integration), Playwright (E2E)
 
+## Engineering Guides
+
+- [`AGENTS.md`](./AGENTS.md) — repo-wide engineering rules and constraints
+- [`docs/react-next-style-guide.md`](./docs/react-next-style-guide.md) — strict frontend code style guide for React + Next.js work
+
 ## Common Commands
 
 | Command | Purpose |
