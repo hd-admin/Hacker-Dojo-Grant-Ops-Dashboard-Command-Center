@@ -75,7 +75,7 @@ function writeArtifactToPath(artifactPath: string, data: unknown): void {
   fs.writeFileSync(artifactPath, JSON.stringify(data));
 }
 
-function createMockChildProcess() {
+function createMockChildProcess(options?: { autoExitAfterMs?: number; exitCode?: number }) {
   const mockProc = new EventEmitter() as EventEmitter & {
     stdin: Writable;
     stdout: Readable;
@@ -93,6 +93,12 @@ function createMockChildProcess() {
   mockProc.stderr = new Readable({ read(): void {} });
   mockProc.pid = 12345;
   mockProc.kill = vi.fn();
+
+  if (options?.autoExitAfterMs !== undefined) {
+    setTimeout(() => {
+      mockProc.emit('exit', options.exitCode ?? 0);
+    }, options.autoExitAfterMs);
+  }
 
   return mockProc;
 }
@@ -169,7 +175,7 @@ describe('executeAgentJob - mocked subprocess', () => {
   });
 
   it('1 - successful artifact generation and ingestion (AC-13.2.1)', async () => {
-    const mockProc = createMockChildProcess();
+    const mockProc = createMockChildProcess({ autoExitAfterMs: 2000 });
     mockSpawnImpl.mockReturnValue(mockProc);
 
     const job = createResearchJob();
@@ -180,16 +186,13 @@ describe('executeAgentJob - mocked subprocess', () => {
 
     const execPromise = executeAgentJob(job, deps);
 
-    await new Promise((r) => setTimeout(r, 100));
-    mockProc.emit('exit', 0);
-
     await execPromise;
 
     expect(ingestCalls.length).toBeGreaterThanOrEqual(1);
     if (ingestCalls[0]) {
       expect(ingestCalls[0].type).toBe('research');
     }
-  }, 15000);
+  });
 
   it('2 - invalid JSON on 1st attempt, succeeds on 2nd (AC-13.2.1)', async () => {
     const mockProc1 = createMockChildProcess();

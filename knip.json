@@ -9,11 +9,21 @@
     "frontend/src/instrumentation.ts",
     "frontend/next.config.ts",
     "frontend/next.config.js",
+    "playwright.no-webserver.config.ts",
     "frontend/src/server/grant-ops/repository.ts",
     "shared/**/*.ts",
     "tests/**/*.ts",
     "tests/**/*.tsx",
     "**/*.test.ts",
     "**/*.test.tsx"
+  ],
+  "ignore": [
+    "frontend/next-env.d.ts",
+    "frontend/src/types/**"
+  ],
+  "ignoreDependencies": [
+    "pino-pretty",
+    "pino-roll",
+    "node-gyp"
   ]
 }

@@ -1,1 +1,1 @@
-export {};
+// Global type declarations
