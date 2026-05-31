@@ -31,15 +31,15 @@
     "@/*": ["frontend/src/*"]
   },
   "rules": {
-    "files": "off",
-    "exports": "off",
-    "dependencies": "off",
-    "devDependencies": "off",
-    "nsExports": "off",
-    "nsTypes": "off",
-    "duplicates": "off",
-    "enumMembers": "off",
-    "classMembers": "off",
-    "types": "off"
+    "files": "warn",
+    "exports": "warn",
+    "dependencies": "warn",
+    "devDependencies": "warn",
+    "nsExports": "warn",
+    "nsTypes": "warn",
+    "duplicates": "warn",
+    "enumMembers": "warn",
+    "classMembers": "warn",
+    "types": "warn"
   }
 }

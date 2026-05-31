@@ -3,10 +3,17 @@ import path from 'node:path';
 import fs from 'node:fs';
 
 const LOG_DIR = path.join(process.cwd(), '.grant-ops-data', 'logs');
+const TMP_DIR = path.join(process.cwd(), '.grant-ops-data', 'tmp');
 
 function ensureLogDir(): void {
   if (!fs.existsSync(LOG_DIR)) {
     fs.mkdirSync(LOG_DIR, { recursive: true, mode: 0o700 });
+  }
+}
+
+function ensureTmpDir(): void {
+  if (!fs.existsSync(TMP_DIR)) {
+    fs.mkdirSync(TMP_DIR, { recursive: true, mode: 0o700 });
   }
 }
 
@@ -15,13 +22,29 @@ const transport = process.env.NODE_ENV !== 'production'
   : {
     targets: [
       {
-        target: 'pino/file',
-        options: { destination: path.join(LOG_DIR, 'app.log') },
+        target: 'pino-roll',
+        options: {
+          file: path.join(LOG_DIR, 'app'),
+          frequency: 'daily',
+          mkdir: true,
+          size: '20m',
+          limit: { count: 10 },
+          extension: '.log',
+          dateFormat: 'yyyy-MM-dd',
+        },
         level: 'info',
       },
       {
-        target: 'pino/file',
-        options: { destination: path.join(LOG_DIR, 'error.log') },
+        target: 'pino-roll',
+        options: {
+          file: path.join(LOG_DIR, 'error'),
+          frequency: 'daily',
+          mkdir: true,
+          size: '20m',
+          limit: { count: 10 },
+          extension: '.log',
+          dateFormat: 'yyyy-MM-dd',
+        },
         level: 'error',
       },
     ],
@@ -29,30 +52,34 @@ const transport = process.env.NODE_ENV !== 'production'
 
 export const logger = pino({
   level: process.env.NODE_ENV === 'production' ? 'info' : 'debug',
+  timestamp: () => `,"time":"${new Date().toISOString()}"`,
   ...(transport ? { transport } : {}),
 });
 
 export function createSessionLogger(jobId: string): pino.Logger {
-  ensureLogDir();
-  const sessionLogPath = path.join(LOG_DIR, `session-${jobId}.log`);
+  ensureTmpDir();
+  const sessionLogPath = path.join(TMP_DIR, `session-${jobId}.log`);
   return pino({
     level: 'debug',
+    timestamp: () => `,"time":"${new Date().toISOString()}"`,
     transport: {
       targets: [
         {
           target: 'pino/file',
           options: { destination: sessionLogPath },
         },
-        {
-          target: 'pino-pretty',
-          options: { colorize: process.env.NODE_ENV !== 'production' },
-        },
+        ...(process.env.NODE_ENV !== 'production'
+          ? [{
+            target: 'pino-pretty' as const,
+            options: { colorize: true },
+          }]
+          : []),
       ],
     },
   });
 }
 
-export function cleanupOldLogs(maxRetentionDays = 90): { deleted: number; errors: string[] } {
+export function cleanupOldLogs(maxRetentionDays = 365): { deleted: number; errors: string[] } {
   const result = { deleted: 0, errors: [] as string[] };
   try {
     ensureLogDir();
@@ -79,5 +106,5 @@ export function cleanupOldLogs(maxRetentionDays = 90): { deleted: number; errors
 }
 
 export function getSessionLogPath(jobId: string): string {
-  return path.join(LOG_DIR, `session-${jobId}.log`);
+  return path.join(TMP_DIR, `session-${jobId}.log`);
 }

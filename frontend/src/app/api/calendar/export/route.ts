@@ -21,13 +21,12 @@ export async function GET(request: NextRequest) {
         if (grant.deadline && grant.deadline !== 'Rolling') {
           const deadline = new Date(grant.deadline);
           if (!isNaN(deadline.getTime())) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (calendar as any).createEvent({
+            calendar.createEvent({
               start: deadline,
               end: deadline,
               summary: `${grant.title} (Deadline)`,
               description: `Grant deadline for ${grant.funder}`,
-              uid: `${grant.id}@hackerdojo.org`,
+              id: `${grant.id}@hackerdojo.org`,
               alarms: [
                 { type: ICalAlarmType.display, trigger: 86400, description: '24h before deadline' },
                 { type: ICalAlarmType.display, trigger: 3600, description: '1h before deadline' },
@@ -46,13 +45,12 @@ export async function GET(request: NextRequest) {
           if (report.dueDate) {
             const dueDate = new Date(report.dueDate);
             if (!isNaN(dueDate.getTime())) {
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              (calendar as any).createEvent({
+              calendar.createEvent({
                 start: dueDate,
                 end: dueDate,
                 summary: `${report.reportType} Report — ${award.title}`,
                 description: `Report deadline for ${award.funder}`,
-                uid: `${report.id}@hackerdojo.org`,
+                id: `${report.id}@hackerdojo.org`,
                 alarms: [
                   { type: ICalAlarmType.display, trigger: 172800, description: '48h before report due' },
                 ],

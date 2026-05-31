@@ -17,7 +17,12 @@ import {
 import * as repository from '../../../server/grant-ops/repository';
 import type { Grant } from '../../../../../shared/types';
 import { defaultOpencodeSettings, defaultProfile } from '../../../../../shared/seed-data';
+import { NextRequest } from 'next/server';
 import { GET } from './route';
+
+function createMockRequest(url = 'http://localhost:3000/api/backup'): NextRequest {
+  return { url, nextUrl: new URL(url) } as NextRequest;
+}
 
 function createGrant(id: string): Grant {
   return {
@@ -58,7 +63,7 @@ describe('/api/backup route', () => {
     await repository.updateOrgProfile(defaultProfile);
     await repository.updateOpencodeSettings(defaultOpencodeSettings);
 
-    const response = await GET();
+    const response = await GET(createMockRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -77,14 +82,14 @@ describe('/api/backup route', () => {
   it('includes content-disposition header with timestamp', async () => {
     await repository.addGrant(createGrant('grant-1'));
 
-    const response = await GET();
+    const response = await GET(createMockRequest());
     expect(response.status).toBe(200);
     const contentDisposition = response.headers.get('content-disposition');
     expect(contentDisposition).toMatch(/^attachment; filename=grant-ops-backup-/);
   });
 
   it('exports empty backup when no data exists', async () => {
-    const response = await GET();
+    const response = await GET(createMockRequest());
     const data = await response.json();
 
     expect(response.status).toBe(200);
