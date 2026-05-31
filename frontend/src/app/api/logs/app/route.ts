@@ -7,12 +7,21 @@ import { z } from 'zod';
 
 const LOG_DIR = path.join(process.cwd(), '.grant-ops-data', 'logs');
 
+const LEVEL_MAP: Record<string, number> = {
+  debug: 20,
+  info: 30,
+  warn: 40,
+  error: 50,
+};
+
 const querySchema = z.object({
   page: z.preprocess((val) => (val === null || val === undefined ? undefined : Number(val)), z.number().int().min(1).optional()),
   pageSize: z.preprocess((val) => (val === null || val === undefined ? undefined : Number(val)), z.number().int().min(1).max(200).optional()),
+  level: z.enum(['debug', 'info', 'warn', 'error']).optional(),
 }).transform((data) => ({
   page: data.page ?? 1,
   pageSize: data.pageSize ?? 50,
+  level: data.level,
 }));
 
 export async function GET(request: NextRequest) {
@@ -28,7 +37,8 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(createErrorResponse('VALIDATION_ERROR', 'Invalid pagination parameters'), { status: 400 });
     }
 
-    const { page, pageSize } = query.data;
+    const { page, pageSize, level } = query.data;
+    const targetLevel = level ? LEVEL_MAP[level] : undefined;
 
     const logEntries: string[] = [];
     if (fs.existsSync(LOG_DIR)) {
@@ -41,7 +51,18 @@ export async function GET(request: NextRequest) {
         const content = fs.readFileSync(path.join(LOG_DIR, file), 'utf-8');
         const lines = content.trim().split('\n').filter(Boolean);
         const tail = lines.slice(-500);
-        logEntries.push(...tail);
+        for (const line of tail) {
+          if (targetLevel !== undefined) {
+            try {
+              const parsed = JSON.parse(line) as { level?: number };
+              if (parsed.level !== targetLevel) continue;
+            } catch {
+              // Non-JSON line: skip if filtering by level
+              continue;
+            }
+          }
+          logEntries.push(line);
+        }
       }
     }
 

@@ -62,6 +62,8 @@ function getStatusLabelText(status: string): string {
 
 type LogTab = 'app' | 'error' | 'session';
 
+type LogLevel = 'all' | 'debug' | 'info' | 'warn' | 'error';
+
 function LogViewer() {
   const [activeTab, setActiveTab] = useState<LogTab>('app');
   const [entries, setEntries] = useState<string[]>([]);
@@ -70,11 +72,15 @@ function LogViewer() {
   const [totalEntries, setTotalEntries] = useState(0);
   const [loading, setLoading] = useState(false);
   const [sessionJobId, setSessionJobId] = useState('');
+  const [levelFilter, setLevelFilter] = useState<LogLevel>('all');
 
   const loadLogs = async (targetPage: number) => {
     setLoading(true);
     try {
       let url = `/api/logs/${activeTab}?page=${targetPage}&pageSize=${pageSize}`;
+      if (levelFilter !== 'all') {
+        url += `&level=${levelFilter}`;
+      }
       if (activeTab === 'session' && sessionJobId) {
         url = `/api/logs/session/${encodeURIComponent(sessionJobId)}?page=${targetPage}&pageSize=${pageSize}`;
       }
@@ -96,7 +102,7 @@ function LogViewer() {
     setPage(1);
     void loadLogs(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab]);
+  }, [activeTab, levelFilter]);
 
   const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
 
@@ -116,6 +122,24 @@ function LogViewer() {
             {tab === 'app' ? 'App Logs' : tab === 'error' ? 'Error Logs' : 'Session Logs'}
           </button>
         ))}
+      </div>
+
+      <div style={{ marginBottom: '12px', display: 'flex', gap: '12px', alignItems: 'center' }}>
+        <label htmlFor="log-level-filter" className="settings-label" style={{ marginBottom: 0 }}>Level:</label>
+        <select
+          id="log-level-filter"
+          data-testid="log-level-filter"
+          className="form-select"
+          value={levelFilter}
+          onChange={(e) => setLevelFilter(e.target.value as LogLevel)}
+          style={{ maxWidth: '150px' }}
+        >
+          <option value="all">All</option>
+          <option value="debug">Debug</option>
+          <option value="info">Info</option>
+          <option value="warn">Warn</option>
+          <option value="error">Error</option>
+        </select>
       </div>
 
       {activeTab === 'session' && (

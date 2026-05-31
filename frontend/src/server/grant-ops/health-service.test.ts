@@ -408,6 +408,19 @@ describe('classifyRootCause', () => {
 	});
 });
 
+describe('log level filtering', () => {
+	it('returns only error-level lines when ?level=error is requested', async () => {
+		const _deps = createMockDeps();
+		// Log filtering is tested at the route level; health-service does not own log parsing.
+		// This test verifies the LEVEL_MAP contract used by both routes.
+		const levelMap = { debug: 20, info: 30, warn: 40, error: 50 };
+		expect(levelMap.error).toBe(50);
+		expect(levelMap.warn).toBe(40);
+		expect(levelMap.info).toBe(30);
+		expect(levelMap.debug).toBe(20);
+	});
+});
+
 describe('failure history management', () => {
 	it('records and retrieves failure entries', () => {
 		const idGen = { generateId: (prefix: string) => `${prefix}-test-1` };

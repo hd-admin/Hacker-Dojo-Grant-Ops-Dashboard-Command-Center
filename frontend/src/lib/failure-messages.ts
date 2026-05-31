@@ -88,6 +88,99 @@ export const opencodeFailureMessages: Record<OpencodeFailureMode, FailureMessage
   },
 };
 
+export const apiErrorMessages: Record<string, FailureMessage> = {
+  AGENT_ARTIFACT_NOT_FOUND: {
+    title: 'Agent output missing',
+    description: 'The agent did not produce the expected artifact file. This may indicate a failure during generation.',
+    action: 'Check the job details for error messages and retry.',
+  },
+  AGENT_INVALID_JSON: {
+    title: 'Invalid agent output',
+    description: 'The agent returned data that could not be parsed as valid JSON.',
+    action: 'Retry the operation. If it persists, check the agent configuration.',
+  },
+  AGENT_MAX_RETRIES: {
+    title: 'Max retries exceeded',
+    description: 'The agent failed after the maximum number of retry attempts.',
+    action: 'Check the error logs, adjust the request scope, and retry.',
+  },
+  AGENT_QUALITY_FAILED: {
+    title: 'Quality check failed',
+    description: 'The generated content did not meet the minimum quality threshold.',
+    action: 'Review the requirements and retry with clearer instructions.',
+  },
+  AGENT_SCHEMA_MISMATCH: {
+    title: 'Schema validation failed',
+    description: 'The agent output did not match the expected schema.',
+    action: 'Retry the operation. If persistent, report the schema mismatch.',
+  },
+  AGENT_TIMEOUT: {
+    title: 'Agent timed out',
+    description: 'The agent operation exceeded its time limit and was terminated.',
+    action: 'Retry with a smaller scope or increase the timeout in settings.',
+  },
+  DB_INTEGRITY_ERROR: {
+    title: 'Database error',
+    description: 'A database integrity check failed or the database is corrupted.',
+    action: 'Run a database backup and restore from a known good state.',
+  },
+  DB_LOCKED: {
+    title: 'Database busy',
+    description: 'The database is locked by another operation.',
+    action: 'Wait a moment and retry. If persistent, restart the application.',
+  },
+  FILE_NOT_FOUND: {
+    title: 'File not found',
+    description: 'The requested file could not be found on disk.',
+    action: 'Verify the file path and try again.',
+  },
+  FILE_TOO_LARGE: {
+    title: 'File too large',
+    description: 'The uploaded file exceeds the maximum allowed size.',
+    action: 'Reduce the file size or split it into smaller parts.',
+  },
+  FILE_UNSUPPORTED_TYPE: {
+    title: 'Unsupported file type',
+    description: 'The uploaded file type is not supported.',
+    action: 'Convert the file to a supported format and retry.',
+  },
+  UPLOAD_VALIDATION_FAILED: {
+    title: 'Upload validation failed',
+    description: 'The uploaded file failed validation checks.',
+    action: 'Check the file format and content, then retry.',
+  },
+  INVALID_STATE_TRANSITION: {
+    title: 'Invalid status change',
+    description: 'The requested pipeline status transition is not allowed.',
+    action: 'Review the pipeline rules and use a valid transition.',
+  },
+  SUBMISSION_BLOCKED: {
+    title: 'Submission blocked',
+    description: 'The grant cannot be submitted because required tasks are incomplete.',
+    action: 'Complete all required tasks before submitting.',
+  },
+  STORAGE_UNAVAILABLE: {
+    title: 'Storage unavailable',
+    description: 'The application storage is not accessible.',
+    action: 'Check disk space and file permissions, then retry.',
+  },
+  OPERATOR_NAME_REQUIRED: {
+    title: 'Operator name required',
+    description: 'An operator name must be configured before proceeding.',
+    action: 'Enter your name in Settings and save.',
+  },
+  VALIDATION_ERROR: {
+    title: 'Validation error',
+    description: 'The request data failed validation.',
+    action: 'Check the input fields and correct any errors.',
+  },
+  INTERNAL_ERROR: {
+    title: 'Internal error',
+    description: 'An unexpected internal error occurred.',
+    action: 'Check the application logs and retry. If persistent, restart.',
+  },
+};
+
 export const jobFailureMessages: Record<JobFailureCategory, FailureMessage> = {
   connectivity: {
     title: 'Connection error',
