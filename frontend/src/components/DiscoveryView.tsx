@@ -8,6 +8,8 @@ import { client } from '../lib/grant-ops-client';
 interface DiscoveryViewProps {
   onGrantSelect: (grantId: string) => void;
   onRefreshAppState?: () => Promise<void> | void;
+  grants?: Grant[];
+  sources?: Source[];
 }
 
 type SortOption = 'fit' | 'deadline' | 'award' | 'recently-added';
@@ -62,9 +64,9 @@ function renderDeadlineCell(grant: Grant): React.ReactNode {
   return <span className="deadline-confidence deadline-confidence-exact" title="Exact deadline from source">{dateStr}</span>;
 }
 
-export function DiscoveryView({ onGrantSelect, onRefreshAppState }: DiscoveryViewProps) {
-  const [grants, setGrants] = useState<Grant[]>([]);
-  const [sources, setSources] = useState<Source[]>([]);
+export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initialGrants = [], sources: initialSources = [] }: DiscoveryViewProps) {
+  const [grants, setGrants] = useState<Grant[]>(initialGrants);
+  const [sources, setSources] = useState<Source[]>(initialSources);
   const [sourcesCrawled, setSourcesCrawled] = useState(0);
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');

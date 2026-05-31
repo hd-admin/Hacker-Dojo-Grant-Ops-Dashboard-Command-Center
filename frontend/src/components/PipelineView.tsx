@@ -14,6 +14,7 @@ type FunderTypeFilter = 'all' | 'Foundation' | 'Government' | 'Corporate' | 'Com
 interface PipelineViewProps {
   onGrantSelect: (grantId: string) => void;
   onNavigate?: (view: ViewType) => void;
+  grants?: Grant[];
 }
 
 interface BoardColumn {
@@ -107,8 +108,8 @@ function statusToLabel(status: GrantStatus): StatusFilter {
   }
 }
 
-export function PipelineView({ onGrantSelect, onNavigate }: PipelineViewProps) {
-  const [grants, setGrants] = useState<Grant[]>([]);
+export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants = [] }: PipelineViewProps) {
+  const [grants, setGrants] = useState<Grant[]>(initialGrants);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<PipelineViewMode>('board');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');

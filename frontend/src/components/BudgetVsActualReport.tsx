@@ -1,5 +1,10 @@
 'use client';
 
+// This component must remain a Client Component because it uses:
+// - useMemo (React hook)
+// - Browser APIs: Blob, URL.createObjectURL, document.createElement
+// - Event handler: onClick for CSV export
+
 import React, { useMemo } from 'react';
 import type { Award, AwardBudgetCategory, AwardExpense } from '../../../shared/types';
 

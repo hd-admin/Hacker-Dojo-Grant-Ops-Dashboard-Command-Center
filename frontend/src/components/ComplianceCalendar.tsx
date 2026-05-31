@@ -1,5 +1,9 @@
 'use client';
 
+// This component must remain a Client Component because it uses:
+// - useState and useEffect (React hooks)
+// - fetch() for client-side data loading
+
 import React, { useEffect, useState } from 'react';
 
 interface ComplianceItem {

@@ -12,19 +12,22 @@ import type {
 
 interface PostAwardViewProps {
   onRefreshAppState?: () => Promise<void> | void;
+  initialAwards?: Award[];
+  initialAlerts?: { awardId: string; type: 'under' | 'over'; category: string }[];
+  initialCalendarEvents?: Array<{ awardId: string; awardTitle: string; type: string; title: string; dueDate: string; status: string; color: string }>;
 }
 
-export function PostAwardView({ onRefreshAppState: _onRefreshAppState }: PostAwardViewProps) {
-  const [awards, setAwards] = useState<Award[]>([]);
+export function PostAwardView({ onRefreshAppState: _onRefreshAppState, initialAwards = [], initialAlerts = [], initialCalendarEvents = [] }: PostAwardViewProps) {
+  const [awards, setAwards] = useState<Award[]>(initialAwards);
   const [_budgetCategories, _setBudgetCategories] = useState<Record<string, AwardBudgetCategory[]>>({});
   const [_expenses, _setExpenses] = useState<Record<string, AwardExpense[]>>({});
   const [_reportDeadlines, _setReportDeadlines] = useState<Record<string, AwardReportDeadline[]>>({});
   const [_complianceItems, _setComplianceItems] = useState<Record<string, AwardComplianceItem[]>>({});
   const [_plannedExpenses, _setPlannedExpenses] = useState<Record<string, PlannedExpense[]>>({});
-  const [alerts, setAlerts] = useState<{ awardId: string; type: 'under' | 'over'; category: string }[]>([]);
-  const [calendarEvents, setCalendarEvents] = useState<Array<{ awardId: string; awardTitle: string; type: string; title: string; dueDate: string; status: string; color: string }>>([]);
+  const [alerts, setAlerts] = useState<{ awardId: string; type: 'under' | 'over'; category: string }[]>(initialAlerts);
+  const [calendarEvents, setCalendarEvents] = useState<Array<{ awardId: string; awardTitle: string; type: string; title: string; dueDate: string; status: string; color: string }>>(initialCalendarEvents);
   const [budgetVsActual, setBudgetVsActual] = useState<Record<string, Array<{ category: string; budgeted: number; spent: number; planned: number; status: string }>>>({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(initialAwards.length === 0 && initialAlerts.length === 0 && initialCalendarEvents.length === 0);
   const [expandedAward, setExpandedAward] = useState<string | null>(null);
   const [showAddExpense, setShowAddExpense] = useState<string | null>(null);
   const [expenseForm, setExpenseForm] = useState({ date: '', description: '', amount: '', category: '' });

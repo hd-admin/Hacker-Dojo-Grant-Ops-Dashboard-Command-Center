@@ -685,10 +685,10 @@ export function AppShell() {
           />
         </div>
         <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`} role="tabpanel" aria-label="Discovery">
-          <DiscoveryView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} />
+          <DiscoveryView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} grants={grants} sources={sources} />
         </div>
         <div id="view-pipeline" className={`view ${activeView === 'pipeline' ? 'active' : ''}`} role="tabpanel" aria-label="Pipeline">
-          <PipelineView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} />
+          <PipelineView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} grants={grants} />
         </div>
         <div id="view-sources" className={`view ${activeView === 'sources' ? 'active' : ''}`} role="tabpanel" aria-label="Sources">
           <SourcesView onRefreshAppState={refreshAppState} />
