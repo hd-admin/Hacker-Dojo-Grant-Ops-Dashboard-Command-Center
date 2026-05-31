@@ -23,6 +23,17 @@ describe("/api/notifications route", () => {
 	});
 
 	describe("route handler behavior", () => {
+		let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+
+		beforeEach(async () => {
+			tempDataDir = await withTempDataDir();
+			setDependencies(createDependencies());
+		});
+
+		afterEach(async () => {
+			resetDependencies();
+			await tempDataDir.cleanup();
+		});
 		it("POST persists a notification and GET returns it", async () => {
 			const request = new Request("http://localhost/api/notifications", {
 				method: "POST",

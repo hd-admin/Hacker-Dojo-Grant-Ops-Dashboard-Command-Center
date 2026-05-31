@@ -17,7 +17,7 @@ const LEVEL_MAP: Record<string, number> = {
 const querySchema = z.object({
   page: z.preprocess((val) => (val === null || val === undefined ? undefined : Number(val)), z.number().int().min(1).optional()),
   pageSize: z.preprocess((val) => (val === null || val === undefined ? undefined : Number(val)), z.number().int().min(1).max(200).optional()),
-  level: z.enum(['debug', 'info', 'warn', 'error']).optional(),
+  level: z.preprocess((val) => (val === null || val === undefined ? undefined : val), z.enum(['debug', 'info', 'warn', 'error']).optional()),
 }).transform((data) => ({
   page: data.page ?? 1,
   pageSize: data.pageSize ?? 50,
@@ -31,6 +31,7 @@ export async function GET(request: NextRequest) {
     const query = querySchema.safeParse({
       page: searchParams.get('page'),
       pageSize: searchParams.get('pageSize'),
+      level: searchParams.get('level'),
     });
 
     if (!query.success) {

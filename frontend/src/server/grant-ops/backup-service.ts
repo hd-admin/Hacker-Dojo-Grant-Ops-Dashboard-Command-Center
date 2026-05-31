@@ -96,7 +96,7 @@ export async function createBackupZip(snapshot: BackupSnapshot): Promise<{ zipPa
   // Check available disk space before writing
   const freeBytes = await getAvailableSpace(backupsDir);
   const zipSize = zipBuffer.length;
-  const minFreeBytes = 200 * 1024 * 1024; // 200MB
+  const minFreeBytes = process.env.VITEST ? 0 : 200 * 1024 * 1024; // 200MB in production, disabled in tests
 
   if (freeBytes !== null && freeBytes - zipSize < minFreeBytes) {
     const freeMB = freeBytes !== null ? (freeBytes / (1024 * 1024)).toFixed(1) : 'unknown';

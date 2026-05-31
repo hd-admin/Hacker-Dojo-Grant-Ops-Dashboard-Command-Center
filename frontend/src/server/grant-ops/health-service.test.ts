@@ -410,14 +410,41 @@ describe('classifyRootCause', () => {
 
 describe('log level filtering', () => {
 	it('returns only error-level lines when ?level=error is requested', async () => {
-		const _deps = createMockDeps();
-		// Log filtering is tested at the route level; health-service does not own log parsing.
-		// This test verifies the LEVEL_MAP contract used by both routes.
-		const levelMap = { debug: 20, info: 30, warn: 40, error: 50 };
-		expect(levelMap.error).toBe(50);
-		expect(levelMap.warn).toBe(40);
-		expect(levelMap.info).toBe(30);
-		expect(levelMap.debug).toBe(20);
+		const { GET: getAppLogs } = await import('../../app/api/logs/app/route');
+		const fs = await import('node:fs');
+		const path = await import('node:path');
+
+		const logDir = path.join(process.cwd(), '.grant-ops-data', 'logs');
+		if (!fs.existsSync(logDir)) {
+			fs.mkdirSync(logDir, { recursive: true });
+		}
+
+		const logFile = path.join(logDir, 'app-test-level.log');
+		const mixedLines = [
+			JSON.stringify({ level: 30, msg: 'info message', time: Date.now() }),
+			JSON.stringify({ level: 50, msg: 'error message', time: Date.now() }),
+			JSON.stringify({ level: 30, msg: 'another info', time: Date.now() }),
+			JSON.stringify({ level: 50, msg: 'another error', time: Date.now() }),
+		];
+		fs.writeFileSync(logFile, mixedLines.join('\n'));
+
+		try {
+			const request = new Request('http://localhost/api/logs/app?level=error') as unknown as import('next/server').NextRequest;
+			const response = await getAppLogs(request);
+			const data = await response.json() as { entries: string[]; count: number; totalEntries: number };
+
+			expect(response.status).toBe(200);
+			expect(data.totalEntries).toBe(2);
+			expect(data.count).toBe(2);
+			for (const entry of data.entries) {
+				const parsed = JSON.parse(entry) as { level: number };
+				expect(parsed.level).toBe(50);
+			}
+		} finally {
+			if (fs.existsSync(logFile)) {
+				fs.unlinkSync(logFile);
+			}
+		}
 	});
 });
 
