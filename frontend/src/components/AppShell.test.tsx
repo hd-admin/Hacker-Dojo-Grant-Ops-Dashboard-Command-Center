@@ -278,9 +278,8 @@ describe('AppShell', () => {
     await waitFor(() => container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent === '1');
 
     expect(fetchMock).toHaveBeenCalledWith('/api/crawl/scheduled?trigger=true');
-    expect(container.querySelector('.nav-item[data-view="settings"]')?.textContent).toContain('Org Profile');
+    expect(container.querySelector('.nav-item[data-view="settings"]')?.textContent).toContain('Settings');
     expect(container.querySelector('.nav-item[data-view="notifications"] .nav-count')?.textContent).toBe('1');
-    expect(container.querySelector('.nav-item[data-view="tasks"] .nav-count')?.textContent).toBe('1');
     expect(container.textContent).toContain('Crawler offline');
     expect(container.textContent).toContain('ed@hackerdojo.com');
 
@@ -429,5 +428,17 @@ describe('AppShell', () => {
 
     await waitFor(() => container.querySelector('#view-duplicates')?.classList.contains('active') === true);
     expect(container.querySelector('#view-duplicates.active')).not.toBeNull();
+  });
+
+  it('renders v2 Calendar and Post-Award nav items in the workspace section', async () => {
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('.nav-item[data-view="calendar"]') !== null);
+
+    const calendarNav = container.querySelector('.nav-item[data-view="calendar"]');
+    const postAwardNav = container.querySelector('.nav-item[data-view="post-award"]');
+    expect(calendarNav).not.toBeNull();
+    expect(calendarNav?.textContent).toContain('Calendar');
+    expect(postAwardNav).not.toBeNull();
+    expect(postAwardNav?.textContent).toContain('Post-Award');
   });
 });

@@ -396,7 +396,10 @@ export async function executeAgentJob(
     }
   }
 
+  // Exhausted all retries without success (via continue for invalid JSON, missing artifact, etc.)
   activeJobs--;
+  updateProgress('failed', 0, 'failed', MAX_RETRIES,
+    `Failed after ${MAX_RETRIES} attempts: ${failureReasons.join(' | ')}. Check session log at ${sessionLogPath}`);
 }
 
 // ============ ORPHAN DETECTION ============

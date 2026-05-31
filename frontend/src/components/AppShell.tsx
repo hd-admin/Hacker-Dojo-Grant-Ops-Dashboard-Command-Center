@@ -14,7 +14,9 @@ import React from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertTriangle,
+  Award,
   Bell,
+  Calendar,
   Check,
   Columns3,
   Database,
@@ -24,7 +26,6 @@ import {
   ListChecks,
   Search,
   Settings,
-  UserCircle,
   X,
 } from "lucide-react";
 import { client } from "../lib/grant-ops-client";
@@ -47,9 +48,11 @@ type ViewType =
   | "discovery"
   | "pipeline"
   | "sources"
+  | "calendar"
+  | "post-award"
+  | "tasks"
   | "settings"
   | "notifications"
-  | "tasks"
   | "jobs"
   | "audit"
   | "duplicates";
@@ -64,19 +67,21 @@ interface NavItem {
 }
 
 const workspaceNav: NavItem[] = [
-  { view: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} />, ariaLabel: 'View dashboard' },
-  { view: 'discovery', label: 'Discovery', icon: <Search size={20} />, ariaLabel: 'Discover grants' },
-  { view: 'pipeline', label: 'Pipeline', icon: <Columns3 size={20} />, ariaLabel: 'View grant pipeline' },
-  { view: 'sources', label: 'Sources', icon: <Database size={20} />, ariaLabel: 'Manage sources' },
-  { view: 'settings', label: 'Org Profile', icon: <UserCircle size={20} />, ariaLabel: 'Organization profile settings' },
+  { view: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, ariaLabel: 'View dashboard' },
+  { view: 'discovery', label: 'Discovery', icon: <Search size={18} />, ariaLabel: 'Discover grants' },
+  { view: 'pipeline', label: 'Pipeline', icon: <Columns3 size={18} />, ariaLabel: 'View grant pipeline' },
+  { view: 'sources', label: 'Sources', icon: <Database size={18} />, ariaLabel: 'Manage sources' },
+  { view: 'calendar', label: 'Calendar', icon: <Calendar size={18} />, ariaLabel: 'View calendar' },
+  { view: 'post-award', label: 'Post-Award', icon: <Award size={18} />, ariaLabel: 'View post-award management' },
+  { view: 'tasks', label: 'Tasks', icon: <ListChecks size={18} />, ariaLabel: 'View tasks' },
+  { view: 'settings', label: 'Settings', icon: <Settings size={18} />, ariaLabel: 'Application settings' },
 ];
 
 const activityNav: NavItem[] = [
-  { view: 'notifications', label: 'Notifications', icon: <Bell size={20} />, ariaLabel: 'View notifications' },
-  { view: 'tasks', label: 'Tasks', icon: <ListChecks size={20} />, ariaLabel: 'View tasks' },
-  { view: 'jobs', label: 'Jobs', icon: <Settings size={20} />, ariaLabel: 'View job queue' },
-  { view: 'audit', label: 'Audit', icon: <FileText size={20} />, ariaLabel: 'View audit trail' },
-  { view: 'duplicates', label: 'Duplicates', icon: <GitFork size={20} />, ariaLabel: 'Review duplicate candidates' },
+  { view: 'notifications', label: 'Notifications', icon: <Bell size={18} />, ariaLabel: 'View notifications' },
+  { view: 'jobs', label: 'Jobs', icon: <Settings size={18} />, ariaLabel: 'View job queue' },
+  { view: 'audit', label: 'Audit', icon: <FileText size={18} />, ariaLabel: 'View audit trail' },
+  { view: 'duplicates', label: 'Duplicates', icon: <GitFork size={18} />, ariaLabel: 'Review duplicate candidates' },
 ];
 
 const WORKING_CONTEXT_KEY = 'grantops.workingContext';
@@ -112,7 +117,6 @@ export default function AppShell() {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
   const [selectedGrantRefreshKey, setSelectedGrantRefreshKey] = useState(0);
-  const [appVersion] = useState('0.1.0');
   const [grants, setGrants] = useState<Grant[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
@@ -184,7 +188,7 @@ export default function AppShell() {
     };
   }, [lockConfigIdleMs, isLocked]);
 
-  const unreadTaskCount = useMemo(() => tasks.filter((task) => !task.completed).length, [tasks]);
+  const _unreadTaskCount = useMemo(() => tasks.filter((task) => !task.completed).length, [tasks]);
   const pendingSourcesCount = useMemo(
     () => sources.filter((source) => source.reviewStatus === 'pending-review').length,
     [sources],
@@ -542,7 +546,7 @@ export default function AppShell() {
           <div className="brand-mark">
             Hacker Dojo <em>Grant Ops</em>
           </div>
-          <div className="brand-sub">v{appVersion}</div>
+          <div className="brand-sub">v0.2</div>
         </div>
 
         <div className="nav-section">
@@ -596,9 +600,6 @@ export default function AppShell() {
               {item.view === 'notifications' && notifications.length > 0 && (
                 <span className="nav-count">{notifications.length}</span>
               )}
-              {item.view === 'tasks' && unreadTaskCount > 0 && (
-                <span className="nav-count">{unreadTaskCount}</span>
-              )}
               {item.view === 'duplicates' && pendingDuplicatesCount > 0 && (
                 <span className="nav-count">{pendingDuplicatesCount}</span>
               )}
@@ -620,7 +621,7 @@ export default function AppShell() {
           {operatorName ? `Logged in as ${operatorName}` : 'Not logged in'}
           <br />
           <strong style={{ color: 'var(--text-dim)' }}>
-            {profile?.agentBehavior.notifyEmail || 'ed@hackerdojo.com'}
+            {profile?.agentBehavior?.notifyEmail || 'ed@hackerdojo.com'}
           </strong>
         </div>
       </aside>
@@ -716,14 +717,20 @@ export default function AppShell() {
         <div id="view-sources" className={`view ${activeView === 'sources' ? 'active' : ''}`} role="tabpanel" aria-label="Sources">
           <SourcesView onRefreshAppState={refreshAppState} />
         </div>
-        <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`} role="tabpanel" aria-label="Organization Profile Settings">
+        <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`} role="tabpanel" aria-label="Tasks">
+          <TasksView onRefreshAppState={refreshAppState} tasks={tasks} onNavigate={handleNavigate} />
+        </div>
+        <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`} role="tabpanel" aria-label="Settings">
           <SettingsView onRefreshAppState={refreshAppState} />
+        </div>
+        <div id="view-calendar" className={`view ${activeView === 'calendar' ? 'active' : ''}`} role="tabpanel" aria-label="Calendar">
+          <div className="empty-state" data-testid="calendar-placeholder">Calendar — coming soon</div>
+        </div>
+        <div id="view-post-award" className={`view ${activeView === 'post-award' ? 'active' : ''}`} role="tabpanel" aria-label="Post-Award Management">
+          <div className="empty-state" data-testid="post-award-placeholder">Post-Award — coming soon</div>
         </div>
         <div id="view-notifications" className={`view ${activeView === 'notifications' ? 'active' : ''}`} role="tabpanel" aria-label="Notifications">
           <NotificationsView notifications={notifications} />
-        </div>
-        <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`} role="tabpanel" aria-label="Tasks">
-          <TasksView onRefreshAppState={refreshAppState} tasks={tasks} onNavigate={handleNavigate} />
         </div>
         <div id="view-jobs" className={`view ${activeView === 'jobs' ? 'active' : ''}`} role="tabpanel" aria-label="Job Queue">
           <JobsPanel onRefreshAppState={refreshAppState} />

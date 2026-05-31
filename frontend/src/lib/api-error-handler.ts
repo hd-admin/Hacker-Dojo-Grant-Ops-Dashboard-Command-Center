@@ -15,7 +15,8 @@ export type ApiErrorCode =
   | 'SUBMISSION_BLOCKED'
   | 'STORAGE_UNAVAILABLE'
   | 'OPERATOR_NAME_REQUIRED'
-  | 'VALIDATION_ERROR';
+  | 'VALIDATION_ERROR'
+  | 'INTERNAL_ERROR';
 
 export interface ApiErrorResponse {
   error: string;

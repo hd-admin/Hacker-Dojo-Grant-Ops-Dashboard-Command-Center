@@ -61,7 +61,7 @@ function determineErrorCode(err: unknown): ApiErrorCode {
     if (msg.includes('schema') || msg.includes('mismatch')) return 'AGENT_SCHEMA_MISMATCH';
     if (msg.includes('retries') || msg.includes('retry')) return 'AGENT_MAX_RETRIES';
   }
-  return 'AGENT_QUALITY_FAILED';
+  return 'INTERNAL_ERROR';
 }
 
 function errorCodeToHttpStatus(code: ApiErrorCode): number {
@@ -89,6 +89,7 @@ function errorCodeToHttpStatus(code: ApiErrorCode): number {
     case 'AGENT_SCHEMA_MISMATCH':
     case 'AGENT_MAX_RETRIES':
     case 'AGENT_QUALITY_FAILED':
+    case 'INTERNAL_ERROR':
       return 500;
   }
 }

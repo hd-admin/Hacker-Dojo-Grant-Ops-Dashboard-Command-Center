@@ -1,5 +1,5 @@
 import 'server-only';
-import { copyFileSync, existsSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -279,6 +279,11 @@ export function checkIntegrity(state: SqliteBootstrapState): { ok: boolean; erro
 
 function ensureSchema(db: SqliteDatabase): void {
 	db.exec(`
+    -- === DEPRECATED JSON-BLOB TABLES (retained for backward compatibility) ===
+    -- These are being phased out in favor of v2 typed tables (below).
+    -- Once all code has been migrated to use v2 typed tables (grants_v2,
+    -- sources_v2, etc.), these can be removed via a migration script in
+    -- shared/migrations/. See 0001-initial-v2-schema.sql for the v2 schema.
     CREATE TABLE IF NOT EXISTS grants (
       id TEXT PRIMARY KEY,
       json TEXT NOT NULL
@@ -446,7 +451,10 @@ function ensureSchema(db: SqliteDatabase): void {
       json TEXT NOT NULL
     );
 
-    -- === V2 TYPED SCHEMA (added alongside JSON tables for incremental migration) ===
+    -- === CANONICAL V2 TYPED SCHEMA ===
+    -- These are the canonical v2 typed tables. All new code should use
+    -- these tables (or their API routes) rather than the deprecated
+    -- JSON-blob tables above. See shared/migrations/ for migration scripts.
 
     -- 2.1 Grants (typed columns)
     CREATE TABLE IF NOT EXISTS grants_v2 (
@@ -1248,10 +1256,13 @@ export const CURRENT_SCHEMA_VERSION = 2;
 
 export function getCurrentSchemaVersion(state: SqliteBootstrapState): number {
 	const db = openDatabase(state);
-	const row = db.prepare("SELECT version FROM schema_version WHERE id = 1 LIMIT 1").get() as
+	const row = db.prepare('SELECT MAX(version) as version FROM schema_migrations').get() as
+		| { version: number | null }
+		| undefined;
+	const legacyRow = db.prepare('SELECT version FROM schema_version WHERE id = 1 LIMIT 1').get() as
 		| { version: number }
 		| undefined;
-	return row?.version ?? 0;
+	return Math.max(row?.version ?? 0, legacyRow?.version ?? 0);
 }
 
 export function setSchemaVersion(state: SqliteBootstrapState, version: number): void {
@@ -1259,7 +1270,19 @@ export function setSchemaVersion(state: SqliteBootstrapState, version: number): 
 	db.prepare(
 		"INSERT OR REPLACE INTO schema_version (id, version, migrated_at) VALUES (1, ?, ?)",
 	).run(version, new Date().toISOString());
+	db.prepare(
+		"DELETE FROM schema_migrations WHERE version > ?",
+	).run(version);
 	incrementWriteCounterForDb(db);
+}
+
+function getMigrationsDir(): string {
+	return path.resolve(
+		path.dirname(fileURLToPath(import.meta.url)),
+		'..',
+		'shared',
+		'migrations',
+	);
 }
 
 export function runMigrations(
@@ -1272,7 +1295,65 @@ export function runMigrations(
 } {
 	try {
 		const currentVersion = getCurrentSchemaVersion(state);
-		if (currentVersion < CURRENT_SCHEMA_VERSION) {
+		const db = openDatabase(state);
+
+		db.exec(`
+			CREATE TABLE IF NOT EXISTS schema_migrations (
+				version INTEGER PRIMARY KEY,
+				name TEXT NOT NULL,
+				appliedAt TEXT NOT NULL DEFAULT (datetime('now'))
+			);
+			CREATE TABLE IF NOT EXISTS schema_version (
+				id INTEGER PRIMARY KEY DEFAULT 1,
+				version INTEGER NOT NULL DEFAULT 1,
+				migrated_at TEXT NOT NULL
+			);
+		`);
+
+		const migrationsDir = getMigrationsDir();
+		let migrationFiles: string[] = [];
+		try {
+			const entries = readdirSync(migrationsDir);
+			migrationFiles = entries
+				.filter((f: string) => f.endsWith('.sql') && /^\d{4}-/.test(f))
+				.sort();
+		} catch {
+			// migrations directory might not exist yet, that's OK
+		}
+
+		if (options?.applyMigration) {
+			if (currentVersion < CURRENT_SCHEMA_VERSION) {
+				const backupPath = `${state.dbPath}.backup-${Date.now()}-v${currentVersion}`;
+				try {
+					copyFileSync(state.dbPath, backupPath);
+				} catch {
+					// best effort backup before migration
+				}
+				options.applyMigration(currentVersion);
+			}
+			return { success: true, version: CURRENT_SCHEMA_VERSION };
+		}
+
+		if (migrationFiles.length === 0) {
+			if (currentVersion < CURRENT_SCHEMA_VERSION) {
+				const backupPath = `${state.dbPath}.backup-${Date.now()}-v${currentVersion}`;
+				try {
+					copyFileSync(state.dbPath, backupPath);
+				} catch {
+					// best effort backup before migration
+				}
+				setSchemaVersion(state, CURRENT_SCHEMA_VERSION);
+			}
+			return { success: true, version: CURRENT_SCHEMA_VERSION };
+		}
+
+		for (const file of migrationFiles) {
+			const versionMatch = file.match(/^(\d{4})-/);
+			if (!versionMatch || !versionMatch[1]) continue;
+			const fileVersion = parseInt(versionMatch[1], 10);
+			if (fileVersion <= currentVersion) continue;
+
+			const filePath = path.join(migrationsDir, file);
 			const backupPath = `${state.dbPath}.backup-${Date.now()}-v${currentVersion}`;
 			try {
 				copyFileSync(state.dbPath, backupPath);
@@ -1280,23 +1361,19 @@ export function runMigrations(
 				// best effort backup before migration
 			}
 
-			const db = openDatabase(state);
-			db.prepare('SAVEPOINT pre_migration').run();
-			try {
-				if (options?.applyMigration) {
-					options.applyMigration(currentVersion);
-				} else {
-					setSchemaVersion(state, CURRENT_SCHEMA_VERSION);
-				}
-				db.prepare('RELEASE SAVEPOINT pre_migration').run();
-			} catch (migrationError) {
-				db.prepare('ROLLBACK TO SAVEPOINT pre_migration').run();
-				throw migrationError;
-			}
+			const sql = readFileSync(filePath, 'utf-8');
+			const tx = db.transaction(() => {
+				db.exec(sql);
+				db.prepare(
+					'INSERT INTO schema_migrations (version, name, appliedAt) VALUES (?, ?, ?)',
+				).run(fileVersion, file, new Date().toISOString());
+			});
+			tx();
 		}
+
 		return { success: true, version: CURRENT_SCHEMA_VERSION };
 	} catch (error) {
-		const message = error instanceof Error ? error.message : "Migration failed";
+		const message = error instanceof Error ? error.message : 'Migration failed';
 		return { success: false, version: getCurrentSchemaVersion(state), message };
 	}
 }
