@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export async function GET(_request: NextRequest) {
@@ -18,7 +20,7 @@ export async function GET(_request: NextRequest) {
       }));
     return NextResponse.json({ deadlines });
   } catch (error) {
-    console.error('Error getting deadlines:', error);
-    return NextResponse.json({ error: 'Failed to get deadlines' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting deadlines');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get deadlines'), { status: 500 });
   }
 }

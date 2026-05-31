@@ -259,3 +259,128 @@ export function exportPipelineToCsv(grants: Grant[]): CsvExport {
 
   return { headers, rows, filename };
 }
+
+export interface PipelineReportRow {
+  title: string;
+  funder: string;
+  status: string;
+  deadline: string;
+  awardAmount: number;
+  daysOut: number;
+  responsibilityTag: string;
+}
+
+export function generatePipelineReport(grants: Grant[]): PipelineReportRow[] {
+  return grants
+    .filter((g) => g.status !== "awarded" && g.status !== "archived" && g.status !== "declined")
+    .map((grant) => ({
+      title: grant.title,
+      funder: grant.funder,
+      status: grant.statusLabel,
+      deadline: grant.deadline,
+      awardAmount: grant.awardSort ?? 0,
+      daysOut: grant.daysOut,
+      responsibilityTag: grant.responsibilityTag ?? "",
+    }));
+}
+
+export interface FundraisingForecast {
+  projectedSubmissions90d: number;
+  projectedAwardValue: number;
+  atRiskGrants: Grant[];
+}
+
+export function generateFundraisingForecast(grants: Grant[]): FundraisingForecast {
+  const now = new Date();
+  const ninetyDaysFromNow = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+  const projectedSubmissions90d = grants.filter((g) => {
+    if (g.deadline === "Rolling") return false;
+    const deadline = new Date(g.deadline);
+    return (
+      (g.status === "approved" || g.status === "submission-ready") &&
+      deadline >= now &&
+      deadline <= ninetyDaysFromNow
+    );
+  }).length;
+
+  // Calculate historical success rate over trailing 24 months
+  const twentyFourMonthsAgo = new Date(now.getTime() - 24 * 30 * 24 * 60 * 60 * 1000);
+  const submittedCount = grants.filter(
+    (g) => g.status === "submitted" && g.matchedAt && new Date(g.matchedAt) >= twentyFourMonthsAgo,
+  ).length;
+  const awardedCount = grants.filter(
+    (g) => g.status === "awarded" && g.matchedAt && new Date(g.matchedAt) >= twentyFourMonthsAgo,
+  ).length;
+
+  const historicalSuccessRate = submittedCount >= 5 ? awardedCount / submittedCount : 0;
+
+  const projectedAwardValue = grants
+    .filter((g) => g.status === "approved" || g.status === "submission-ready")
+    .reduce((sum, g) => sum + (g.awardSort ?? 0) * historicalSuccessRate, 0);
+
+  const fourteenDaysFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
+  const atRiskGrants = grants.filter((g) => {
+    if (g.deadline === "Rolling") return false;
+    const deadline = new Date(g.deadline);
+    return (
+      deadline < fourteenDaysFromNow &&
+      !["submitted", "awarded", "declined", "archived"].includes(g.status)
+    );
+  });
+
+  return {
+    projectedSubmissions90d,
+    projectedAwardValue,
+    atRiskGrants,
+  };
+}
+
+export interface AnnualSummaryLesson {
+  grantTitle: string;
+  funder: string;
+  note: string;
+}
+
+export interface AnnualSummary {
+  totalGrantsSubmitted: number;
+  totalAwarded: number;
+  successRate: number;
+  topFunders: { funder: string; totalAwarded: number }[];
+  lessonsLearned: AnnualSummaryLesson[];
+}
+
+export function generateAnnualSummary(grants: Grant[]): AnnualSummary {
+  const totalGrantsSubmitted = grants.filter((g) => g.status === "submitted" || g.status === "awarded").length;
+  const totalAwarded = grants.filter((g) => g.status === "awarded").length;
+  const successRate = totalGrantsSubmitted > 0 ? totalAwarded / totalGrantsSubmitted : 0;
+
+  const funderTotals = new Map<string, number>();
+  grants
+    .filter((g) => g.status === "awarded")
+    .forEach((g) => {
+      const current = funderTotals.get(g.funder) ?? 0;
+      funderTotals.set(g.funder, current + (g.awardSort ?? 0));
+    });
+
+  const topFunders = Array.from(funderTotals.entries())
+    .map(([funder, totalAwarded]) => ({ funder, totalAwarded }))
+    .sort((a, b) => b.totalAwarded - a.totalAwarded)
+    .slice(0, 5);
+
+  const lessonsLearned = grants
+    .filter((g) => g.status === "declined" && g.lessonsLearned && g.lessonsLearned.trim().length > 0)
+    .map((g) => ({
+      grantTitle: g.title,
+      funder: g.funder,
+      note: g.lessonsLearned!,
+    }));
+
+  return {
+    totalGrantsSubmitted,
+    totalAwarded,
+    successRate,
+    topFunders,
+    lessonsLearned,
+  };
+}

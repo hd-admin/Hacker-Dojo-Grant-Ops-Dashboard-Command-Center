@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import * as draftingService from '@/server/grant-ops/drafting-service';
 import * as researchService from '@/server/grant-ops/research-service';
@@ -13,10 +15,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     const deps = getDependencies();
     const existing = await deps.repository.getJobQueueItem(jobId);
     if (!existing) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Job not found'), { status: 404 });
     }
     if (existing.status !== 'failed') {
-      return NextResponse.json({ error: 'Only failed jobs can be retried' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Only failed jobs can be retried'), { status: 400 });
     }
 
     const newJobId = deps.idGenerator.generateId('job');
@@ -71,12 +73,12 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       );
       return `Draft v${draft.version} generated for ${grant.title}`;
     }).catch((error) => {
-      console.error('Retry execution failed:', error);
+      logger.error({ err: error }, 'Retry execution failed');
     });
 
     return NextResponse.json({ success: true, newJobId }, { status: 202 });
   } catch (error) {
-    console.error('Error retrying job:', error);
-    return NextResponse.json({ error: 'Failed to retry job' }, { status: 500 });
+    logger.error({ err: error }, 'Error retrying job');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to retry job'), { status: 500 });
   }
 }

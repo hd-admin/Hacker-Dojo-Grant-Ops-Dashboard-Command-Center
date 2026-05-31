@@ -105,6 +105,7 @@ export const GrantSchema = z.object({
   grantType: z.string().optional(),
   humanOverrides: z.array(HumanOverrideSchema).optional(),
   attachments: z.array(GrantAttachmentSchema).optional(),
+  lessonsLearned: z.string().optional(),
 });
 
 export const ContactInfoSchema = z.object({

@@ -1,4 +1,5 @@
 import { NextResponse, connection } from "next/server";
+import { logger } from '@/lib/logger';
 import { loadGrants, saveGrants } from '../../../../../../shared/grant-ops-persistence';
 import { scoreGrantByThemes } from '@/server/grant-ops/theme-service';
 
@@ -22,8 +23,8 @@ export async function POST() {
     );
     if (changed > 0) await saveGrants(updated);
     return NextResponse.json({ success: true, rescored: changed });
-  } catch (error) {
-    console.error('[themes/rescore] failed:', error);
+  } catch (_error) {
+    logger.error({ err: error }, '[themes/rescore] failed');
     return NextResponse.json(
       { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 },

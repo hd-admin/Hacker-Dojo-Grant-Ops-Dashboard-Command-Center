@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
@@ -23,8 +25,8 @@ export async function GET(request: NextRequest) {
     const filtered = grantId ? records.filter((r) => r.grantId === grantId) : records;
     return NextResponse.json({ outreach: filtered });
   } catch (error) {
-    console.error('Error getting outreach:', error);
-    return NextResponse.json({ error: 'Failed to get outreach records' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting outreach');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get outreach records'), { status: 500 });
   }
 }
 
@@ -45,7 +47,7 @@ export async function POST(request: NextRequest) {
     await deps.repository.createOutreachRecord?.(record);
     return NextResponse.json({ outreach: record }, { status: 201 });
   } catch (error) {
-    console.error('Error creating outreach:', error);
-    return NextResponse.json({ error: 'Failed to create outreach record' }, { status: 500 });
+    logger.error({ err: error }, 'Error creating outreach');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create outreach record'), { status: 500 });
   }
 }

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Source } from '../../../../../../shared/types';
@@ -30,7 +32,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const deps = getDependencies();
     const source = (await deps.repository.getSources()).find((item) => item.id === sourceId);
     if (!source) {
-      return NextResponse.json({ error: 'Source not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Source not found'), { status: 404 });
     }
 
     const updates: Partial<Source> = {};
@@ -58,7 +60,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
     return NextResponse.json(updated);
   } catch (error) {
-    console.error('Error updating source:', error);
-    return NextResponse.json({ error: 'Failed to update source' }, { status: 500 });
+    logger.error({ err: error }, 'Error updating source');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update source'), { status: 500 });
   }
 }

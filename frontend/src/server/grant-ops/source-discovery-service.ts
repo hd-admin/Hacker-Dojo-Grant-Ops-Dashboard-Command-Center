@@ -1,5 +1,6 @@
 import 'server-only';
 import { execFileSync } from 'node:child_process';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { SourceDiscoverySuggestionSchema } from '../../../../shared/schemas';
 import type { SourceDiscoverySuggestion } from '../../../../shared/types';
@@ -139,7 +140,7 @@ export async function discoverSourcesFromPrompt(
     const parsedPayload = parseJsonPayload(String(output));
     const validated = sourceDiscoveryPayloadSchema.safeParse(parsedPayload);
     if (!validated.success) {
-      console.error('Error parsing source discovery output:', validated.error.flatten());
+      logger.error({ err: validated.error.flatten() }, 'Error parsing source discovery output');
       return { suggestions: [] };
     }
 
@@ -160,7 +161,7 @@ export async function discoverSourcesFromPrompt(
     if (/not configured|binary not found|enoent|no such file/i.test(message)) {
       return { suggestions: [], unavailable: true };
     }
-    console.error('Error discovering sources:', message);
+    logger.error({ err: message }, 'Error discovering sources');
     return { suggestions: [] };
   }
 }

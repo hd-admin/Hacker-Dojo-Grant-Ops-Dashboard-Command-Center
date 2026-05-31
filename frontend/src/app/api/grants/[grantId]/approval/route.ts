@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import * as submissionService from '@/server/grant-ops/submission-service';
 import type { ApprovalInput } from '@/server/grant-ops/submission-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -15,8 +17,8 @@ export async function GET(
     const approval = await submissionService.getApprovalRecord(grantId);
     return NextResponse.json(approval);
   } catch (error) {
-    console.error('Error getting approval:', error);
-    return NextResponse.json({ error: 'Failed to get approval' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting approval');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get approval'), { status: 500 });
   }
 }
 
@@ -31,12 +33,12 @@ export async function POST(
     const deps = getDependencies();
 
     if (!body || (body.approvedBy !== undefined && typeof body.approvedBy !== 'string')) {
-      return NextResponse.json({ error: 'ApprovedBy must be a string when provided' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'ApprovedBy must be a string when provided'), { status: 400 });
     }
 
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
     }
 
     const approvalInput: ApprovalInput = {
@@ -52,7 +54,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, approvalRecord: result.approvalRecord }, { status: 201 });
   } catch (error) {
-    console.error('Error approving grant:', error);
-    return NextResponse.json({ error: 'Failed to approve grant' }, { status: 500 });
+    logger.error({ err: error }, 'Error approving grant');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to approve grant'), { status: 500 });
   }
 }

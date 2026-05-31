@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { SubmissionManifest, SubmissionManifestItem } from '../../../../../../../shared/types';
@@ -36,12 +38,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const deps = getDependencies();
   const grant = await deps.repository.getGrant(grantId);
   if (!grant) {
-    return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
+    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
   }
   const manifests = await deps.repository.getSubmissionManifests(grantId);
   const manifest = manifests[0] ?? null;
   if (!manifest) {
-    return NextResponse.json({ error: 'Manifest not found' }, { status: 404 });
+    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Manifest not found'), { status: 404 });
   }
   return NextResponse.json(manifest);
 }
@@ -58,7 +60,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const deps = getDependencies();
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
     }
     const existing = await deps.repository.getSubmissionManifests(grantId);
     const materialRefs: SubmissionManifestItem[] = parsed.data.materialRefs.map((item) => ({
@@ -86,8 +88,8 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await deps.repository.addSubmissionManifest(manifest);
     return NextResponse.json(manifest);
   } catch (error) {
-    console.error('Error saving manifest:', error);
-    return NextResponse.json({ error: 'Failed to save manifest' }, { status: 500 });
+    logger.error({ err: error }, 'Error saving manifest');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to save manifest'), { status: 500 });
   }
 }
 
@@ -103,12 +105,12 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const deps = getDependencies();
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
     }
     const manifests = await deps.repository.getSubmissionManifests(grantId);
     const existing = manifests[0];
     if (!existing) {
-      return NextResponse.json({ error: 'Manifest not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Manifest not found'), { status: 404 });
     }
 
     const updated: SubmissionManifest = {
@@ -122,7 +124,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     await deps.repository.addSubmissionManifest(updated);
     return NextResponse.json(updated);
   } catch (error) {
-    console.error('Error updating manifest:', error);
-    return NextResponse.json({ error: 'Failed to update manifest' }, { status: 500 });
+    logger.error({ err: error }, 'Error updating manifest');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update manifest'), { status: 500 });
   }
 }

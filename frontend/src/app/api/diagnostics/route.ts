@@ -1,4 +1,6 @@
 import { NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import { getHealth } from "@/server/grant-ops/health-service";
 
@@ -31,7 +33,7 @@ export async function GET() {
       generatedAt: new Date().toISOString(),
     });
   } catch (error) {
-    console.error("Error getting diagnostics:", error);
-    return NextResponse.json({ error: "Failed to get diagnostics" }, { status: 500 });
+    logger.error({ err: error }, 'Error getting diagnostics');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get diagnostics'), { status: 500 });
   }
 }

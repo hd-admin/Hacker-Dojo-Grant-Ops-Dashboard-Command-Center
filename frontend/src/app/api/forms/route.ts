@@ -1,4 +1,5 @@
 import { connection } from 'next/server';
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -22,8 +23,8 @@ export async function GET(_req: NextRequest) {
     const deps = getDependencies();
     const forms = await deps.repository.getFormTemplates?.() ?? [];
     return NextResponse.json({ forms });
-  } catch (error) {
-    console.error('Error getting forms:', error);
+  } catch (_error) {
+    logger.error({ err: error }, 'Error getting forms');
     return NextResponse.json({ error: { code: 'DB_ERROR', message: 'Failed to get forms' } }, { status: 500 });
   }
 }
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
     };
     await deps.repository.createFormTemplate?.(form);
     return NextResponse.json({ form });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: error instanceof Error ? error.message : 'Invalid input' } }, { status: 400 });
   }
 }
@@ -66,7 +67,7 @@ export async function PUT(req: NextRequest) {
     };
     await deps.repository.createFormTemplate?.(form);
     return NextResponse.json({ form: { ...form, updatedAt: new Date().toISOString() } });
-  } catch (error) {
+  } catch (_error) {
     return NextResponse.json({ error: { code: 'VALIDATION_ERROR', message: error instanceof Error ? error.message : 'Invalid input' } }, { status: 400 });
   }
 }
@@ -82,8 +83,8 @@ export async function DELETE(req: NextRequest) {
     const { deleteFormTemplate, getSqliteState } = await import('../../../../../shared/grant-ops-sqlite');
     deleteFormTemplate(getSqliteState(), id);
     return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('Error deleting form:', error);
+  } catch (_error) {
+    logger.error({ err: error }, 'Error deleting form');
     return NextResponse.json({ error: { code: 'DB_ERROR', message: 'Failed to delete form' } }, { status: 500 });
   }
 }

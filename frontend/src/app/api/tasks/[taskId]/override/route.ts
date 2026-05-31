@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Task } from '../../../../../../../shared/types';
@@ -37,12 +39,12 @@ export async function POST(
     const taskIndex = tasks.findIndex((t) => t.id === taskId);
 
     if (taskIndex === -1) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), { status: 404 });
     }
 
     const existingTask = tasks[taskIndex];
     if (!existingTask) {
-      return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), { status: 404 });
     }
 
     const previousValue = existingTask.taskStatus ?? (existingTask.completed ? 'completed' : 'blocked');
@@ -78,7 +80,7 @@ export async function POST(
 
     return NextResponse.json(updatedTask);
   } catch (error) {
-    console.error('Error overriding task:', error);
-    return NextResponse.json({ error: 'Failed to override task' }, { status: 500 });
+    logger.error({ err: error }, 'Error overriding task');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to override task'), { status: 500 });
   }
 }

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
@@ -10,12 +12,12 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
     const deps = getDependencies();
     const job = await deps.repository.getJobQueueItem(jobId);
     if (!job) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Job not found'), { status: 404 });
     }
     return NextResponse.json(job);
   } catch (error) {
-    console.error('Error loading job:', error);
-    return NextResponse.json({ error: 'Failed to load job' }, { status: 500 });
+    logger.error({ err: error }, 'Error loading job');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to load job'), { status: 500 });
   }
 }
 
@@ -26,7 +28,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const deps = getDependencies();
     const job = await deps.repository.getJobQueueItem(jobId);
     if (!job) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Job not found'), { status: 404 });
     }
     if (job.status !== 'queued' && job.status !== 'running') {
       return NextResponse.json({ success: false, reason: 'Job not cancellable in current state' }, { status: 400 });
@@ -40,7 +42,7 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     });
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error cancelling job:', error);
-    return NextResponse.json({ error: 'Failed to cancel job' }, { status: 500 });
+    logger.error({ err: error }, 'Error cancelling job');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to cancel job'), { status: 500 });
   }
 }

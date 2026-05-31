@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export async function GET(_request: NextRequest) {
@@ -17,7 +19,7 @@ export async function GET(_request: NextRequest) {
     }
     return NextResponse.json({ reports });
   } catch (error) {
-    console.error('Error getting reports:', error);
-    return NextResponse.json({ error: 'Failed to get reports' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting reports');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get reports'), { status: 500 });
   }
 }

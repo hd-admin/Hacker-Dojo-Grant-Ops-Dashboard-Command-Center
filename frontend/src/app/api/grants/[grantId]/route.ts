@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from "zod";
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import { loadGrantDetail } from "@/server/grant-ops/grant-detail";
@@ -42,13 +44,13 @@ export async function GET(
 		const detail = await loadGrantDetail(grantId);
 
 		if (!detail) {
-			return NextResponse.json({ error: "Grant not found" }, { status: 404 });
+			return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
 		}
 
 		return NextResponse.json(detail);
 	} catch (error) {
-		console.error("Error getting grant detail:", error);
-		return NextResponse.json({ error: "Failed to get grant" }, { status: 500 });
+		logger.error({ err: error }, 'Error getting grant detail');
+		return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get grant'), { status: 500 });
 	}
 }
 
@@ -82,7 +84,7 @@ export async function PATCH(
 		const deps = getDependencies();
 		const existingGrant = await deps.repository.getGrant(grantId);
 		if (!existingGrant) {
-			return NextResponse.json({ error: "Grant not found" }, { status: 404 });
+			return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
 		}
 
 		const updates = Object.fromEntries(
@@ -93,12 +95,12 @@ export async function PATCH(
 
 		const updatedDetail = await loadGrantDetail(grantId);
 		if (!updatedDetail) {
-			return NextResponse.json({ error: "Grant not found" }, { status: 404 });
+			return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
 		}
 
 		return NextResponse.json(updatedDetail);
 	} catch (error) {
-		console.error("Error updating grant detail:", error);
+		logger.error({ err: error }, 'Error updating grant detail');
 		return NextResponse.json(
 			{ error: "Failed to update grant" },
 			{ status: 500 },

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import * as submissionService from '@/server/grant-ops/submission-service';
 import type { SubmissionInput } from '@/server/grant-ops/submission-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -15,7 +17,7 @@ export async function GET(
     const submission = await submissionService.getSubmissionRecord(grantId);
     return NextResponse.json(submission);
   } catch (error) {
-    console.error('Error getting submission:', error);
+    logger.error({ err: error }, 'Error getting submission');
     return NextResponse.json({ error: 'Failed to get submission', failureCategory: 'unknown' }, { status: 500 });
   }
 }
@@ -31,12 +33,12 @@ export async function POST(
     const deps = getDependencies();
 
     if (!body || typeof body.method !== 'object' || !body.method || typeof body.method.type !== 'string') {
-      return NextResponse.json({ error: 'Submission method is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Submission method is required'), { status: 400 });
     }
 
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
     }
 
     const method: SubmissionInput['method'] = {
@@ -59,7 +61,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, submissionRecord: result.submissionRecord, followUps: result.followUps }, { status: 201 });
   } catch (error) {
-    console.error('Error recording submission:', error);
+    logger.error({ err: error }, 'Error recording submission');
     return NextResponse.json({ error: 'Failed to record submission', failureCategory: 'unknown' }, { status: 500 });
   }
 }

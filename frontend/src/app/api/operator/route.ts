@@ -1,4 +1,6 @@
 import { NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { resolveDataDir } from '../../../../../shared/grant-ops-sqlite';
@@ -30,14 +32,14 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null);
     const name = (body?.name || '').trim();
     if (!name) {
-      return NextResponse.json({ error: 'Operator name is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Operator name is required'), { status: 400 });
     }
     const opPath = getOperatorPath();
     await fs.mkdir(path.dirname(opPath), { recursive: true });
     await fs.writeFile(opPath, JSON.stringify({ name, updatedAt: new Date().toISOString() }), 'utf8');
     return NextResponse.json({ name });
   } catch (error) {
-    console.error('Error saving operator name:', error);
-    return NextResponse.json({ error: 'Failed to save operator name' }, { status: 500 });
+    logger.error({ err: error }, 'Error saving operator name');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to save operator name'), { status: 500 });
   }
 }

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { sanitizeNotificationText } from '@/lib/sanitize-html';
 import type { Notification } from '../../../../../shared/types';
@@ -13,8 +15,8 @@ export async function GET() {
     const notifications = await deps.repository.getNotifications();
     return NextResponse.json(notifications);
   } catch (error) {
-    console.error('Error getting notifications:', error);
-    return NextResponse.json({ error: 'Failed to get notifications' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting notifications');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get notifications'), { status: 500 });
   }
 }
 
@@ -41,8 +43,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newNotification, { status: 201 });
   } catch (error) {
-    console.error('Error creating notification:', error);
-    return NextResponse.json({ error: 'Failed to create notification' }, { status: 500 });
+    logger.error({ err: error }, 'Error creating notification');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create notification'), { status: 500 });
   }
 }
 
@@ -54,7 +56,7 @@ export async function PATCH(request: NextRequest) {
     const deps = getDependencies();
 
     if (!Array.isArray(body.notifications)) {
-      return NextResponse.json({ error: 'Notifications array is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Notifications array is required'), { status: 400 });
     }
 
       const sanitized = (body.notifications as Notification[]).map((n) => ({
@@ -64,7 +66,7 @@ export async function PATCH(request: NextRequest) {
       await deps.repository.updateNotifications(sanitized);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating notifications:', error);
-    return NextResponse.json({ error: 'Failed to update notifications' }, { status: 500 });
+    logger.error({ err: error }, 'Error updating notifications');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update notifications'), { status: 500 });
   }
 }

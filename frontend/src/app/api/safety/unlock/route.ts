@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { attemptUnlock } from "@/server/grant-ops/safety-service";
 
 export const dynamic = "force-dynamic";
@@ -22,7 +24,7 @@ export async function POST(request: NextRequest) {
       error: result.reason || "Incorrect passcode",
     }, { status: 401 });
   } catch (error) {
-    console.error("Error unlocking:", error);
-    return NextResponse.json({ error: "Failed to process unlock request" }, { status: 500 });
+    logger.error({ err: error }, 'Error unlocking');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to process unlock request'), { status: 500 });
   }
 }

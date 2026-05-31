@@ -65,6 +65,7 @@ describe("/api/notifications route", () => {
 			expect(response.status).toBe(400);
 			expect(await response.json()).toEqual({
 				error: "Notifications array is required",
+				code: "AGENT_INVALID_JSON",
 			});
 		});
 

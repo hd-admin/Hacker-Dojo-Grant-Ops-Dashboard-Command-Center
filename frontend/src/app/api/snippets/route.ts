@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
@@ -18,8 +20,8 @@ export async function GET(request: NextRequest) {
     const snippets = readSnippets(getSqliteState(), grantId ?? undefined);
     return NextResponse.json({ snippets });
   } catch (error) {
-    console.error('Error getting snippets:', error);
-    return NextResponse.json({ error: 'Failed to get snippets' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting snippets');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get snippets'), { status: 500 });
   }
 }
 
@@ -44,8 +46,8 @@ export async function POST(request: NextRequest) {
     writeSnippet(getSqliteState(), snippet);
     return NextResponse.json({ snippet }, { status: 201 });
   } catch (error) {
-    console.error('Error creating snippet:', error);
-    return NextResponse.json({ error: 'Failed to create snippet' }, { status: 500 });
+    logger.error({ err: error }, 'Error creating snippet');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create snippet'), { status: 500 });
   }
 }
 
@@ -71,8 +73,8 @@ export async function PUT(request: NextRequest) {
     writeSnippet(getSqliteState(), snippet);
     return NextResponse.json({ snippet });
   } catch (error) {
-    console.error('Error updating snippet:', error);
-    return NextResponse.json({ error: 'Failed to update snippet' }, { status: 500 });
+    logger.error({ err: error }, 'Error updating snippet');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update snippet'), { status: 500 });
   }
 }
 
@@ -82,13 +84,13 @@ export async function DELETE(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     if (!id) {
-      return NextResponse.json({ error: 'Snippet ID is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Snippet ID is required'), { status: 400 });
     }
     const { deleteSnippet, getSqliteState } = await import('../../../../../shared/grant-ops-sqlite');
     deleteSnippet(getSqliteState(), id);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting snippet:', error);
-    return NextResponse.json({ error: 'Failed to delete snippet' }, { status: 500 });
+    logger.error({ err: error }, 'Error deleting snippet');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to delete snippet'), { status: 500 });
   }
 }

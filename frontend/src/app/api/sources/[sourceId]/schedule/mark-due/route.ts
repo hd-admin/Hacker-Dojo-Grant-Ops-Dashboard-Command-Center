@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
 import { loadCrawlSchedules, saveCrawlSchedule } from '../../../../../../../../shared/grant-ops-persistence';
 
 export const dynamic = 'force-dynamic';
@@ -9,7 +10,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
   const schedules = await loadCrawlSchedules();
   const schedule = schedules.find((s) => s.sourceId === sourceId);
   if (!schedule) {
-    return NextResponse.json({ error: 'Schedule not found' }, { status: 404 });
+    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Schedule not found'), { status: 404 });
   }
   schedule.nextScheduledAt = new Date(Date.now() - 1000).toISOString();
   await saveCrawlSchedule(schedule);

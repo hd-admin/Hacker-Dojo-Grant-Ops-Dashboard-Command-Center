@@ -1,4 +1,5 @@
 import 'server-only';
+import { logger } from '@/lib/logger';
 import type { JobFailureCategory, JobQueueItem } from '../../../../shared/types';
 import { getDependencies } from './dependencies';
 
@@ -146,7 +147,7 @@ export async function enqueueJob(job: Pick<JobQueueItem, 'jobType' | 'entityId' 
   const queuedJob = await createQueuedJob(job);
   setTimeout(() => {
     void executeQueuedJob(queuedJob.id, stage, runner).catch((error) => {
-      console.error('Queued job execution failed:', error);
+      logger.error({ err: error }, 'Queued job execution failed');
     });
   }, 0);
   return queuedJob;

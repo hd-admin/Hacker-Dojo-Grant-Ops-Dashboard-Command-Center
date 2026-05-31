@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { cancelQueuedJob } from '@/server/grant-ops/job-queue-service';
 
@@ -12,7 +14,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
 
     const job = await deps.repository.getJobQueueItem(jobId);
     if (!job) {
-      return NextResponse.json({ error: 'Job not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Job not found'), { status: 404 });
     }
 
     if (job.status !== 'queued' && job.status !== 'running') {
@@ -27,7 +29,7 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     const updated = await deps.repository.getJobQueueItem(jobId);
     return NextResponse.json(updated);
   } catch (error) {
-    console.error('Error cancelling job:', error);
-    return NextResponse.json({ error: 'Failed to cancel job' }, { status: 500 });
+    logger.error({ err: error }, 'Error cancelling job');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to cancel job'), { status: 500 });
   }
 }

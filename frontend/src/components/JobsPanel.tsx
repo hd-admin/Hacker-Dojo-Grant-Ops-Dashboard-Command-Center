@@ -94,7 +94,7 @@ export default function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
       setJobs(Array.isArray(data) ? data : []);
       setError(null);
     } catch (err) {
-      console.error('Error loading jobs:', err);
+      setError('Error loading jobs');
       setError(err instanceof Error ? err.message : 'Failed to load jobs');
       setJobs([]);
     } finally {

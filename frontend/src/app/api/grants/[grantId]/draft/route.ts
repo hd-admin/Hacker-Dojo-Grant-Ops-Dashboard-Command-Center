@@ -1,4 +1,6 @@
 import type { NextRequest } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { NextResponse, connection } from "next/server";
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -18,7 +20,7 @@ export async function GET(
     const drafts = await draftingService.getDraftArtifacts(grantId);
     return NextResponse.json(drafts);
   } catch (error) {
-    console.error('Error getting drafts:', error);
+    logger.error({ err: error }, 'Error getting drafts');
     return NextResponse.json({ error: 'Failed to get drafts', failureCategory: 'unknown' }, { status: 500 });
   }
 }
@@ -36,7 +38,7 @@ export async function POST(
 
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
     }
 
     const profile = await deps.repository.getOrgProfile();
@@ -76,7 +78,7 @@ export async function POST(
 
     return NextResponse.json({ queued: true, job }, { status: 202 });
   } catch (error) {
-    console.error('Error generating draft:', error);
+    logger.error({ err: error }, 'Error generating draft');
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate draft';
     const failureMode = classifyOpencodeError(errorMessage);
     const guidance = opencodeFailureMessages[failureMode];

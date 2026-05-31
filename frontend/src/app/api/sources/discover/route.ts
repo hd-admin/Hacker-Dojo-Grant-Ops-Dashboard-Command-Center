@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { logger } from '@/lib/logger';
 import { NextResponse, connection } from "next/server";
 import { z } from 'zod';
 import { opencodeFailureMessages } from '@/lib/failure-messages';
@@ -21,8 +22,8 @@ export async function POST(request: NextRequest) {
 
     const result = await discoverSourcesFromPrompt(parsed.data.prompt);
     return NextResponse.json(result);
-  } catch (error) {
-    console.error('Error discovering sources:', error);
+  } catch (_error) {
+    logger.error({ err: error }, 'Error discovering sources');
     const errorMessage = error instanceof Error ? error.message : 'Failed to discover sources';
     const failureMode = classifyOpencodeError(errorMessage);
     const guidance = opencodeFailureMessages[failureMode];

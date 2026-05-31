@@ -189,6 +189,7 @@ export default function AppShell() {
     [sources],
   );
   const [pendingDuplicatesCount, setPendingDuplicatesCount] = useState(0);
+  const [_error, setError] = useState<string | null>(null);
 
   // Health tier computation
   const healthTier: HealthTier = useMemo(() => {
@@ -235,8 +236,8 @@ export default function AppShell() {
       const response = await fetch('/api/health');
       const data = (await response.json()) as HealthCheckResult;
       setHealthResult(data);
-    } catch (error) {
-      console.error('Error loading health:', error);
+    } catch (_error) {
+      setError('Error loading health');
       setHealthResult({ storage: 'error', opencode: 'error', crawlerStatus: 'never-run', documentIndexer: 'error', storageError: 'Unable to load health' });
     }
   }, []);
@@ -315,8 +316,8 @@ export default function AppShell() {
         .catch(() => setShowOperatorPrompt(true));
     }
 
-    void Promise.all([refreshAppState(), refreshHealth(), loadActiveJobs()]).catch((error) => {
-      console.error('Error loading app state:', error);
+    void Promise.all([refreshAppState(), refreshHealth(), loadActiveJobs()]).catch((_error) => {
+      setError('Error loading app state');
     });
   }, [refreshAppState, refreshHealth, loadActiveJobs]);
 
@@ -324,8 +325,8 @@ export default function AppShell() {
     const triggerScheduledCrawls = async (): Promise<void> => {
       try {
         await fetch('/api/crawl/scheduled?trigger=true');
-      } catch (error) {
-        console.error('Error checking scheduled crawls:', error);
+      } catch (_error) {
+        setError('Error checking scheduled crawls');
       }
     };
 

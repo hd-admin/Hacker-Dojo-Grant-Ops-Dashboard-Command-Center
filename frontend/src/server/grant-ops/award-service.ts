@@ -249,6 +249,127 @@ export async function getSpendDownAlerts(): Promise<{ awardId: string; type: 'un
   return alerts;
 }
 
+export interface BudgetVsActualRow {
+  category: string;
+  budgeted: number;
+  spent: number;
+  planned: number;
+  timelineAdjustedTarget: number;
+  variance: number;
+  variancePct: number;
+  status: 'green' | 'yellow' | 'red';
+}
+
+export async function computeBudgetVsActual(awardId: string): Promise<BudgetVsActualRow[]> {
+  const categories = await getBudgetCategories(awardId);
+  const expenses = (await loadAwardExpenses()).filter(e => e.awardId === awardId);
+  const planned = (await loadPlannedExpenses()).filter(p => p.awardId === awardId);
+  const award = await getAward(awardId);
+  if (!award) return [];
+
+  const now = new Date();
+  const start = new Date(award.startDate);
+  const end = new Date(award.endDate);
+  const periodProgress = Math.min(1, Math.max(0, (now.getTime() - start.getTime()) / (end.getTime() - start.getTime())));
+
+  return categories.map((cat) => {
+    const catExpenses = expenses.filter((e) => e.categoryId === cat.id).reduce((sum, e) => sum + e.amount, 0);
+    const catPlanned = planned.filter((p) => p.categoryId === cat.id).reduce((sum, p) => sum + p.amount, 0);
+    const timelineAdjustedTarget = cat.budgeted * periodProgress;
+    const variance = catExpenses - timelineAdjustedTarget;
+    const variancePct = timelineAdjustedTarget > 0 ? Math.abs(variance) / timelineAdjustedTarget : 0;
+
+    let status: 'green' | 'yellow' | 'red';
+    if (variancePct <= 0.1) {
+      status = 'green';
+    } else if (variancePct <= 0.25) {
+      status = 'yellow';
+    } else {
+      status = 'red';
+    }
+
+    return {
+      category: cat.category,
+      budgeted: cat.budgeted,
+      spent: catExpenses,
+      planned: catPlanned,
+      timelineAdjustedTarget,
+      variance,
+      variancePct,
+      status,
+    };
+  });
+}
+
+export interface ComplianceCalendarEvent {
+  awardId: string;
+  awardTitle: string;
+  type: 'report' | 'compliance';
+  title: string;
+  dueDate: string;
+  status: string;
+  color: 'green' | 'yellow' | 'red';
+}
+
+export async function getComplianceCalendar(): Promise<ComplianceCalendarEvent[]> {
+  const awards = await loadAwards();
+  const deadlines = await loadAwardReportDeadlines();
+  const items = await loadAwardComplianceItems();
+  const now = new Date();
+  const fourteenDays = 14 * 24 * 60 * 60 * 1000;
+
+  const events: ComplianceCalendarEvent[] = [];
+
+  for (const d of deadlines) {
+    const due = new Date(d.dueDate).getTime();
+    const diff = due - now.getTime();
+    let color: 'green' | 'yellow' | 'red';
+    if (d.status === 'overdue' || diff < 0) {
+      color = 'red';
+    } else if (diff < fourteenDays) {
+      color = 'yellow';
+    } else {
+      color = 'green';
+    }
+    const award = awards.find((a) => a.id === d.awardId);
+    events.push({
+      awardId: d.awardId,
+      awardTitle: award?.title || d.awardId,
+      type: 'report',
+      title: d.reportType,
+      dueDate: d.dueDate,
+      status: d.status,
+      color,
+    });
+  }
+
+  for (const item of items) {
+    if (!item.dueDate) continue;
+    const due = new Date(item.dueDate).getTime();
+    const diff = due - now.getTime();
+    let color: 'green' | 'yellow' | 'red';
+    if (item.status === 'overdue' || diff < 0) {
+      color = 'red';
+    } else if (diff < fourteenDays) {
+      color = 'yellow';
+    } else {
+      color = 'green';
+    }
+    const award = awards.find((a) => a.id === item.awardId);
+    events.push({
+      awardId: item.awardId,
+      awardTitle: award?.title || item.awardId,
+      type: 'compliance',
+      title: item.requirement,
+      dueDate: item.dueDate,
+      status: item.status,
+      color,
+    });
+  }
+
+  return events.sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+}
+
 export async function resetAwardCache(): Promise<void> {
   // Clear all award-related tables via SQLite
   await saveAwards([]);

@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from "zod";
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import type { GrantStatus } from "../../../../../../../shared/types";
@@ -54,7 +56,7 @@ export async function PATCH(
 		const deps = getDependencies();
 		const existingGrant = await deps.repository.getGrant(grantId);
 		if (!existingGrant) {
-			return NextResponse.json({ error: "Grant not found" }, { status: 404 });
+			return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
 		}
 
 		const targetStatus = parsed.data.status as GrantStatus;
@@ -126,7 +128,7 @@ export async function PATCH(
 
 		return NextResponse.json({ success: true });
 	} catch (error) {
-		console.error("Error updating grant status:", error);
+		logger.error({ err: error }, 'Error updating grant status');
 		return NextResponse.json(
 			{ error: "Failed to update grant status", code: "DB_INTEGRITY_ERROR" },
 			{ status: 500 },

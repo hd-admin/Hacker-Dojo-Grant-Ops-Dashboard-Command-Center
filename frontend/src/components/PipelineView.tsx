@@ -115,6 +115,11 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
   const [responsibilityFilter, setResponsibilityFilter] = useState<ResponsibilityTag | 'all'>('all');
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');
   const [funderTypeFilter, setFunderTypeFilter] = useState<FunderTypeFilter>('all');
+  const [_error, setError] = useState<string | null>(null);
+  const [moveMenuOpen, setMoveMenuOpen] = useState<string | null>(null);
+  const [declineModalOpen, setDeclineModalOpen] = useState(false);
+  const [declineGrantId, setDeclineGrantId] = useState<string | null>(null);
+  const [lessonsLearned, setLessonsLearned] = useState('');
 
   useEffect(() => {
     const context = readWorkingContext();
@@ -152,6 +157,57 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
     link.click();
   };
 
+  const handleMoveGrant = async (grantId: string, newStatus: GrantStatus) => {
+    if (newStatus === 'declined') {
+      setDeclineGrantId(grantId);
+      setDeclineModalOpen(true);
+      setMoveMenuOpen(null);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/grants/${grantId}/status`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!response.ok) throw new Error('Failed to update status');
+      const data = await client.grants.getAll();
+      setGrants(data);
+      setMoveMenuOpen(null);
+    } catch (_error) {
+      setError('Error moving grant');
+    }
+  };
+
+  const handleDeclineSubmit = async () => {
+    if (!declineGrantId) return;
+    try {
+      const response = await fetch(`/api/grants/${declineGrantId}/status`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'declined' }),
+      });
+      if (!response.ok) throw new Error('Failed to update status');
+
+      if (lessonsLearned.trim()) {
+        await fetch(`/api/grants/${declineGrantId}`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ lessonsLearned: lessonsLearned.trim() }),
+        });
+      }
+
+      const data = await client.grants.getAll();
+      setGrants(data);
+      setDeclineModalOpen(false);
+      setDeclineGrantId(null);
+      setLessonsLearned('');
+    } catch (_error) {
+      setError('Error declining grant');
+    }
+  };
+
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 's') {
@@ -168,8 +224,8 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
       try {
         const data = await client.grants.getAll();
         setGrants(data);
-      } catch (error) {
-        console.error('Error loading grants:', error);
+      } catch (_error) {
+        setError('Error loading grants');
         setGrants([]);
       } finally {
         setLoading(false);
@@ -306,20 +362,67 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
                     <div className="empty">none</div>
                   ) : (
                     colGrants.map((grant) => (
-                      <button key={grant.id} type="button" className="board-card" onClick={() => onGrantSelect(grant.id)}>
+                      <div key={grant.id} className="board-card">
                         <div className="board-card-funder">{grant.funderShort}</div>
-                        <div className="board-card-title">{grant.title}</div>
+                        <div className="board-card-title" onClick={() => onGrantSelect(grant.id)} style={{ cursor: 'pointer' }}>{grant.title}</div>
                         <div className="board-card-foot">
                           <span>{renderDeadlineCell(grant)}</span>
                           <span className="amount">{grant.award}</span>
                         </div>
-                      </button>
+                        <div className="mt-2">
+                          <button
+                            type="button"
+                            className="btn btn-xs btn-ghost"
+                            onClick={() => setMoveMenuOpen(moveMenuOpen === grant.id ? null : grant.id)}
+                            aria-haspopup="true"
+                            aria-expanded={moveMenuOpen === grant.id}
+                          >
+                            Move to...
+                          </button>
+                          {moveMenuOpen === grant.id && (
+                            <div className="absolute z-10 mt-1 bg-white border rounded shadow-lg p-1" style={{ minWidth: '160px' }}>
+                              {columns.filter((c) => c.key !== grant.status).map((col) => (
+                                <button
+                                  key={col.key}
+                                  type="button"
+                                  className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                                  onClick={() => handleMoveGrant(grant.id, col.key)}
+                                >
+                                  {col.title}
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     ))
                   )}
                 </div>
               </section>
             );
           })}
+        </div>
+      )}
+
+      {declineModalOpen && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="decline-modal-title"
+          onClick={(e) => { if (e.target === e.currentTarget) { setDeclineModalOpen(false); setDeclineGrantId(null); } }}
+        >
+          <div className="modal-content" style={{ maxWidth: '500px' }}>
+            <h2 id="decline-modal-title" className="text-xl font-bold mb-4">Mark as Declined</h2>
+            <p className="mb-4 text-sm text-gray-600">Optionally add a lessons learned note for future reference.</p>
+            <textarea
+              className="w-full p-3 border rounded mb-4"
+              rows={4}
+              placeholder="What did we learn from this?"
+              value={lessonsLearned}
+              onChange={(e) => setLessonsLearned(e.target.value)}
+            />
+            <div className="flex gap-2 justify-end">
+              <button type="button" className="btn btn-ghost" onClick={() => { setDeclineModalOpen(false); setDeclineGrantId(null); }}>Cancel</button>
+              <button type="button" className="btn btn-primary" onClick={handleDeclineSubmit}>Confirm Declined</button>
+            </div>
+          </div>
         </div>
       )}
     </>

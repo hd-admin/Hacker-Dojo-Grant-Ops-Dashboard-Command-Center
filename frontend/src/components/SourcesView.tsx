@@ -128,6 +128,7 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
   const [propublicaLoading, setPropublicaLoading] = useState(false);
   const [propublicaUnavailable, setPropublicaUnavailable] = useState(false);
   const [propublicaSearched, setPropublicaSearched] = useState(false);
+  const [_error, setError] = useState<string | null>(null);
 
   const pendingCount = pendingSources.length;
 
@@ -146,8 +147,8 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
   }, []);
 
   useEffect(() => {
-    void loadSources().catch((error) => {
-      console.error('Error loading sources:', error);
+    void loadSources().catch((_error) => {
+      setError('Error loading sources');
       setInitialLoading(false);
     });
   }, [loadSources]);
@@ -167,8 +168,8 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         Array.isArray(data.suggestions) ? data.suggestions : [],
       );
       setDiscoverUnavailable(Boolean(data.unavailable));
-    } catch (error) {
-      console.error('Error discovering sources:', error);
+    } catch (_error) {
+      setError('Error discovering sources');
       setDiscoverSuggestions([]);
       setDiscoverUnavailable(true);
     } finally {
@@ -197,8 +198,8 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         setPropublicaResults([]);
       }
       setPropublicaSearched(true);
-    } catch (error) {
-      console.error('Error searching ProPublica:', error);
+    } catch (_error) {
+      setError('Error searching ProPublica');
       setPropublicaUnavailable(true);
       setPropublicaResults([]);
       setPropublicaSearched(true);
@@ -305,8 +306,8 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
           ...prev,
           [sourceId]: Array.isArray(history) ? history : [],
         }));
-      } catch (error) {
-        console.error('Error loading crawl history:', error);
+      } catch (_error) {
+        setError('Error loading crawl history');
       }
     }
   };
@@ -322,8 +323,8 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
       setTimeout(() => {
         void loadSources();
       }, 1000);
-    } catch (error) {
-      console.error('Error retrying crawl:', error);
+    } catch (_error) {
+      setError('Error retrying crawl');
     } finally {
       setRetryingSourceIds((prev) => {
         const next = new Set(prev);
@@ -343,8 +344,8 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
       setTimeout(() => {
         void loadSources();
       }, 1000);
-    } catch (error) {
-      console.error('Error triggering crawl:', error);
+    } catch (_error) {
+      setError('Error triggering crawl');
     } finally {
       setCrawlNowIds((prev) => {
         const next = new Set(prev);
@@ -405,8 +406,8 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         ...prev,
         [sourceId]: { isEnabled: enable, loading: false },
       }));
-    } catch (error) {
-      console.error('Error toggling schedule:', error);
+    } catch (_error) {
+      setError('Error toggling schedule');
       setScheduleStatuses((prev) => ({
         ...prev,
         [sourceId]: {

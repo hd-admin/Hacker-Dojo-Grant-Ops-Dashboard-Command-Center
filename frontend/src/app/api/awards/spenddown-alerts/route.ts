@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export async function GET(_request: NextRequest) {
@@ -24,7 +26,7 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json({ alerts });
   } catch (error) {
-    console.error('Error getting spenddown alerts:', error);
-    return NextResponse.json({ error: 'Failed to get alerts' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting spenddown alerts');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get alerts'), { status: 500 });
   }
 }

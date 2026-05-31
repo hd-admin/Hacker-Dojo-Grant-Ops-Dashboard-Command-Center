@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import ical, { ICalAlarmType } from 'ical-generator';
 import fs from 'node:fs';
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Error exporting calendar:', error);
-    return NextResponse.json({ error: 'Failed to export calendar' }, { status: 500 });
+    logger.error({ err: error }, 'Error exporting calendar');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to export calendar'), { status: 500 });
   }
 }

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Task, TaskStatus, ResponsibilityTag } from '../../../../../shared/types';
 export const dynamic = 'force-dynamic';
@@ -11,8 +13,8 @@ export async function GET() {
     const tasks = await deps.repository.getTasks();
     return NextResponse.json(tasks);
   } catch (error) {
-    console.error('Error getting tasks:', error);
-    return NextResponse.json({ error: 'Failed to get tasks' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting tasks');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get tasks'), { status: 500 });
   }
 }
 
@@ -25,7 +27,7 @@ export async function POST(request: NextRequest) {
     const idGenerator = deps.idGenerator;
 
     if (typeof body.text !== 'string' || !body.text.trim()) {
-      return NextResponse.json({ error: 'Text is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Text is required'), { status: 400 });
     }
 
     const tasks = await deps.repository.getTasks();
@@ -69,8 +71,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(newTask, { status: 201 });
   } catch (error) {
-    console.error('Error creating task:', error);
-    return NextResponse.json({ error: 'Failed to create task' }, { status: 500 });
+    logger.error({ err: error }, 'Error creating task');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create task'), { status: 500 });
   }
 }
 
@@ -82,13 +84,13 @@ export async function PATCH(request: NextRequest) {
     const deps = getDependencies();
 
     if (!Array.isArray(body.tasks)) {
-      return NextResponse.json({ error: 'Tasks array is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Tasks array is required'), { status: 400 });
     }
 
     await deps.repository.updateTasks(body.tasks as Task[]);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating tasks:', error);
-    return NextResponse.json({ error: 'Failed to update tasks' }, { status: 500 });
+    logger.error({ err: error }, 'Error updating tasks');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update tasks'), { status: 500 });
   }
 }

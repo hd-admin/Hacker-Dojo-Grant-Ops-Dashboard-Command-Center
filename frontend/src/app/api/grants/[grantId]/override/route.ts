@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Grant, GrantStatus, HumanOverride, TaskStatus } from '../../../../../../../shared/types';
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const deps = getDependencies();
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json({ error: 'Grant not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
     }
 
     const isTaskOverride = TASK_OVERRIDE_FIELD_REGEX.test(parsed.data.field);
@@ -94,7 +96,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       // Handle task.{taskId}.status override
       const match = parsed.data.field.match(TASK_OVERRIDE_FIELD_REGEX);
       if (!match) {
-        return NextResponse.json({ error: 'Invalid task override field format' }, { status: 400 });
+        return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid task override field format'), { status: 400 });
       }
       const taskId = match[1];
 
@@ -107,14 +109,14 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const tasks = await deps.repository.getTasks();
       const taskIndex = tasks.findIndex((t) => t.id === taskId);
       if (taskIndex === -1) {
-        return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+        return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), { status: 404 });
       }
 
       const existingTask = tasks[taskIndex]!;
 
       // Security: verify the task belongs to this grant before modifying it
       if (existingTask.grantId !== grantId) {
-        return NextResponse.json({ error: 'Task not found' }, { status: 404 });
+        return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), { status: 404 });
       }
 
       const previousTaskStatus = existingTask.taskStatus ?? (existingTask.completed ? 'completed' : 'blocked');
@@ -190,7 +192,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json(await deps.repository.getGrant(grantId));
   } catch (error) {
-    console.error('Error overriding grant:', error);
-    return NextResponse.json({ error: 'Failed to override grant' }, { status: 500 });
+    logger.error({ err: error }, 'Error overriding grant');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to override grant'), { status: 500 });
   }
 }

@@ -74,6 +74,9 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [crawlLatestRun, setCrawlLatestRun] = useState<CrawlRun | null>(null);
   const [crawlFetching, setCrawlFetching] = useState(true);
+  const [_error, setError] = useState<string | null>(null);
+  const [forecast, setForecast] = useState<{ projectedSubmissions90d: number; projectedAwardValue: number; atRiskGrantCount: number } | null>(null);
+  const [forecastLoading, setForecastLoading] = useState(false);
   const activity: ActivityEvent[] = (notifications && notifications.length > 0)
     ? notifications.slice(0, 6).map((n) => ({ dot: n.dot, text: n.text, time: n.time }))
     : [];
@@ -83,12 +86,44 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
       const response = await fetch('/api/research', { method: 'POST' });
       if (!response.ok) throw new Error(`Failed to trigger research: ${response.status}`);
       await onRefreshAppState?.();
-    } catch (error) {
-      console.error('Error triggering research:', error);
+    } catch (_error) {
+      setError('Error triggering research');
     }
   };
 
   const handleNewSearch = () => { onNavigate?.('discovery'); };
+
+  const handleExportPipeline = async () => {
+    try {
+      const response = await fetch('/api/reports/pipeline/csv');
+      if (!response.ok) throw new Error('Failed to export pipeline');
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `pipeline-report-${new Date().toISOString().slice(0, 10)}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (_error) {
+      setError('Error exporting pipeline');
+    }
+  };
+
+  const handleLoadForecast = async () => {
+    setForecastLoading(true);
+    try {
+      const response = await fetch('/api/reports/forecast');
+      if (!response.ok) throw new Error('Failed to load forecast');
+      const data = await response.json();
+      setForecast(data);
+    } catch (_error) {
+      setError('Error loading forecast');
+    } finally {
+      setForecastLoading(false);
+    }
+  };
 
   const handleRetryCrawl = async () => {
     try {
@@ -96,8 +131,8 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
       const data = await client.research.getRuns();
       setCrawlLatestRun(data.latestRun ?? null);
       await onRefreshAppState?.();
-    } catch (error) {
-      console.error('Error triggering crawl:', error);
+    } catch (_error) {
+      setError('Error triggering crawl');
     }
   };
 
@@ -124,8 +159,8 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
         const response = await fetch('/api/jobs');
         const data = (await response.json()) as JobQueueItem[];
         if (!cancelled) setJobs(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error('Error loading jobs:', error);
+      } catch (_error) {
+        setError('Error loading jobs');
         if (!cancelled) setJobs([]);
       }
     };
@@ -142,8 +177,8 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
       try {
         const data = await client.followUps.getAll();
         if (!cancelled) setFollowUps(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error('Error loading follow-ups:', error);
+      } catch (_error) {
+        setError('Error loading follow-ups');
         if (!cancelled) setFollowUps([]);
       }
     };
@@ -345,6 +380,9 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
           <button type="button" className="btn btn-ghost btn-sm" onClick={handleRefreshCrawl}>
             {'\u21BB'} Refresh crawl
           </button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={handleExportPipeline}>
+            Export Pipeline CSV
+          </button>
           <button type="button" className="btn btn-primary" onClick={handleNewSearch}>
             + New search
           </button>
@@ -437,6 +475,36 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
                 );
               })}
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Fundraising Forecast Panel */}
+      <div className="panel" data-testid="fundraising-forecast-panel">
+        <div className="panel-header">
+          <div className="panel-title">Fundraising Forecast</div>
+          <button type="button" className="panel-action" onClick={handleLoadForecast} disabled={forecastLoading}>
+            {forecastLoading ? 'Loading...' : forecast ? 'Refresh' : 'Load Forecast'}
+          </button>
+        </div>
+        {forecast ? (
+          <div className="kpi-grid">
+            <div className="kpi-card">
+              <div className="kpi-label">Projected Submissions (90d)</div>
+              <div className="kpi-value">{forecast.projectedSubmissions90d}</div>
+            </div>
+            <div className="kpi-card success">
+              <div className="kpi-label">Projected Award Value</div>
+              <div className="kpi-value">{formatCurrency(forecast.projectedAwardValue)}</div>
+            </div>
+            <div className="kpi-card warning">
+              <div className="kpi-label">At-Risk Grants</div>
+              <div className="kpi-value">{forecast.atRiskGrantCount}</div>
+            </div>
+          </div>
+        ) : (
+          <div className="empty-state-guide">
+            <div className="empty-state-description">Load forecast to see projected submissions, award value, and at-risk grants.</div>
           </div>
         )}
       </div>

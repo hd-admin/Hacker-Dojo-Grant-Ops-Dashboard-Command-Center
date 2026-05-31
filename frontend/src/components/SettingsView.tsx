@@ -89,6 +89,7 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
   const [themesSaving, setThemesSaving] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const [expandedDocVersions, setExpandedDocVersions] = useState<Record<string, boolean>>({});
+  const [_error, setError] = useState<string | null>(null);
 
   function showToast(message: string) {
     setToast(message);
@@ -250,8 +251,8 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
         : { ...current, themes: [{ id: 'theme-default', name: 'Default Theme', keywordClusters: [], regions: [], populations: [], strategicPriorities: [], matchingPolicy: { matchThreshold, autoDraftThreshold, includeRules: [], excludeRules: [] }, isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }] };
       const saved = await client.themes.update(updatedData);
       setThemesData(saved);
-    } catch (err) {
-      console.error('Error saving matching policy:', err);
+    } catch (_err) {
+      setError('Error saving matching policy');
     } finally {
       setThemesSaving(false);
     }
@@ -479,8 +480,8 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                         }),
                       );
                       showToast(newClass ? `Marked as ${newClass}` : 'Classification cleared');
-                    } catch (err) {
-                      console.error('Error updating classification:', err);
+                    } catch (_err) {
+                      setError('Error updating classification');
                     }
                   }}
                   style={{
@@ -588,8 +589,8 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                 a.click();
                 URL.revokeObjectURL(url);
                 showToast('Backup downloaded successfully');
-              } catch (err) {
-                console.error('Error exporting backup:', err);
+              } catch (_err) {
+                setError('Error exporting backup');
               }
             }}>Export backup</button>
             <label>

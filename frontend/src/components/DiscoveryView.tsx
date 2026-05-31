@@ -84,6 +84,7 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [isAddingSource, setIsAddingSource] = useState(false);
   const [exactDeadlinesOnly, setExactDeadlinesOnly] = useState(false);
+  const [_error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const context = readWorkingContext();
@@ -107,8 +108,8 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
         setGrants(grantsData);
         setSources(sourcesData);
         setSourcesCrawled(runsData.latestRun?.sourcesCrawled ?? 0);
-      } catch (error) {
-        console.error('Error loading discovery data:', error);
+      } catch (_error) {
+        setError('Error loading discovery data');
       } finally {
         setLoading(false);
       }
@@ -177,8 +178,8 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
       setNewSourceUrl('');
       setShowAddSourceForm(false);
       await Promise.all([client.grants.getAll().then(setGrants), client.sources.getAll().then(setSources), onRefreshAppState?.()]);
-    } catch (error) {
-      console.error('Error adding source:', error);
+    } catch (_error) {
+      setError('Error adding source');
     } finally {
       setIsAddingSource(false);
     }

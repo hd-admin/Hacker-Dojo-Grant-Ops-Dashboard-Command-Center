@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
@@ -18,8 +20,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const items = await deps.repository.getComplianceItemsByAwardId?.(awardId) ?? [];
     return NextResponse.json({ compliance: items });
   } catch (error) {
-    console.error('Error getting compliance:', error);
-    return NextResponse.json({ error: 'Failed to get compliance items' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting compliance');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get compliance items'), { status: 500 });
   }
 }
 
@@ -42,7 +44,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     await deps.repository.createComplianceItem?.(item);
     return NextResponse.json({ compliance: item });
   } catch (error) {
-    console.error('Error updating compliance:', error);
-    return NextResponse.json({ error: 'Failed to update compliance item' }, { status: 500 });
+    logger.error({ err: error }, 'Error updating compliance');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update compliance item'), { status: 500 });
   }
 }

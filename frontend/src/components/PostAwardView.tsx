@@ -22,11 +22,17 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
   const [_complianceItems, _setComplianceItems] = useState<Record<string, AwardComplianceItem[]>>({});
   const [_plannedExpenses, _setPlannedExpenses] = useState<Record<string, PlannedExpense[]>>({});
   const [alerts, setAlerts] = useState<{ awardId: string; type: 'under' | 'over'; category: string }[]>([]);
+  const [calendarEvents, setCalendarEvents] = useState<Array<{ awardId: string; awardTitle: string; type: string; title: string; dueDate: string; status: string; color: string }>>([]);
+  const [budgetVsActual, setBudgetVsActual] = useState<Record<string, Array<{ category: string; budgeted: number; spent: number; planned: number; status: string }>>>({});
   const [loading, setLoading] = useState(true);
   const [expandedAward, setExpandedAward] = useState<string | null>(null);
   const [showAddExpense, setShowAddExpense] = useState<string | null>(null);
   const [expenseForm, setExpenseForm] = useState({ date: '', description: '', amount: '', category: '' });
+  const [plannedForm, setPlannedForm] = useState({ date: '', description: '', amount: '', category: '' });
+  const [showAddPlanned, setShowAddPlanned] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'awards' | 'calendar' | 'budget'>('awards');
 
   function showToast(msg: string) {
     setToast(msg);
@@ -35,14 +41,16 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
 
   const loadData = useCallback(async () => {
     try {
-      const [awardsRes, alertsRes] = await Promise.all([
+      const [awardsRes, alertsRes, calendarRes] = await Promise.all([
         fetch('/api/awards').then((r) => r.json()).catch(() => ({ awards: [] })),
         fetch('/api/awards/spenddown-alerts').then((r) => r.json()).catch(() => ({ alerts: [] })),
+        fetch('/api/awards/calendar').then((r) => r.json()).catch(() => ({ events: [] })),
       ]);
       setAwards(awardsRes.awards ?? []);
       setAlerts(alertsRes.alerts ?? []);
-    } catch (err) {
-      console.error('Failed to load post-award data:', err);
+      setCalendarEvents(calendarRes.events ?? []);
+    } catch (_err) {
+      setError('Failed to load post-award data');
     } finally {
       setLoading(false);
     }
@@ -64,8 +72,35 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
       setShowAddExpense(null);
       showToast('Expense added');
       void loadData();
-    } catch (err) {
-      console.error('Failed to add expense:', err);
+    } catch (_err) {
+      setError('Failed to add expense');
+    }
+  };
+
+  const handleAddPlanned = async (awardId: string) => {
+    if (!plannedForm.date || !plannedForm.amount) return;
+    try {
+      await fetch('/api/awards/expenses', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ awardId, ...plannedForm, amount: Number(plannedForm.amount), isPlanned: true }),
+      });
+      setPlannedForm({ date: '', description: '', amount: '', category: '' });
+      setShowAddPlanned(null);
+      showToast('Planned expense added');
+      void loadData();
+    } catch (_err) {
+      setError('Failed to add planned expense');
+    }
+  };
+
+  const loadBudgetVsActual = async (awardId: string) => {
+    try {
+      const res = await fetch(`/api/awards/${awardId}/budget-vs-actual`);
+      const data = await res.json();
+      setBudgetVsActual((prev) => ({ ...prev, [awardId]: data.rows ?? [] }));
+    } catch (_err) {
+      setError('Failed to load budget vs actual');
     }
   };
 
@@ -108,7 +143,50 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
         </div>
       )}
 
-      {awards.length === 0 ? (
+      <div className="tabs mb-4">
+        <button type="button" className={`tab ${activeTab === 'awards' ? 'tab-active' : ''}`} onClick={() => setActiveTab('awards')}>Awards</button>
+        <button type="button" className={`tab ${activeTab === 'calendar' ? 'tab-active' : ''}`} onClick={() => setActiveTab('calendar')}>Compliance Calendar</button>
+        <button type="button" className={`tab ${activeTab === 'budget' ? 'tab-active' : ''}`} onClick={() => setActiveTab('budget')}>Budget vs Actual</button>
+      </div>
+
+      {activeTab === 'calendar' && (
+        <div className="panel" data-testid="compliance-calendar">
+          <div className="panel-header"><div className="panel-title">Compliance Calendar</div></div>
+          {calendarEvents.length === 0 && <div className="text-muted">No upcoming deadlines</div>}
+          <div className="deadline-list">
+            {calendarEvents.map((evt) => (
+              <div key={`${evt.awardId}-${evt.title}`} className={`deadline-item deadline-item-${evt.color}`}>
+                <div className="deadline-date"><div className="deadline-day">{new Date(evt.dueDate).getDate()}</div><div className="deadline-month">{new Date(evt.dueDate).toLocaleString('default', { month: 'short' })}</div></div>
+                <div>
+                  <div className="deadline-info-title">{evt.title}</div>
+                  <div className="deadline-info-meta">{evt.awardTitle} · {evt.type} · {evt.status}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'budget' && (
+        <div className="panel" data-testid="budget-vs-actual">
+          <div className="panel-header"><div className="panel-title">Budget vs Actual</div></div>
+          {awards.length === 0 && <div className="text-muted">No awards</div>}
+          {awards.map((award) => (
+            <div key={award.id} className="post-award-section">
+              <div className="font-bold mb-2">{award.title || `Award ${award.grantId}`}</div>
+              <button type="button" className="btn btn-sm mb-2" onClick={() => loadBudgetVsActual(award.id)}>Load Report</button>
+              {(budgetVsActual[award.id] || []).map((row) => (
+                <div key={row.category} className={`post-award-item post-award-item-${row.status}`}>
+                  <div>{row.category}</div>
+                  <div className="text-sm">Budgeted: ${row.budgeted.toLocaleString()} · Spent: ${row.spent.toLocaleString()} · Planned: ${row.planned.toLocaleString()}</div>
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'awards' && awards.length === 0 ? (
         <div className="empty-state" data-testid="post-award-empty">
           <div className="empty-state-icon">📋</div>
           <div className="empty-state-title">No active awards</div>
@@ -164,6 +242,7 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
                     <div className="post-award-section">
                       <strong>Budget Categories</strong>
                       <button type="button" className="btn btn-sm" onClick={() => setShowAddExpense(award.id)}>+ Add Expense</button>
+                      <button type="button" className="btn btn-sm ml-2" onClick={() => setShowAddPlanned(award.id)}>+ Add Planned Expense</button>
                       {showAddExpense === award.id && (
                         <div className="post-award-expense-form">
                           <input className="form-input" type="date" value={expenseForm.date} onChange={(e) => setExpenseForm((prev) => ({ ...prev, date: e.target.value }))} />
@@ -172,6 +251,16 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
                           <input className="form-input" type="text" placeholder="Category" value={expenseForm.category} onChange={(e) => setExpenseForm((prev) => ({ ...prev, category: e.target.value }))} />
                           <button type="button" className="btn btn-primary btn-sm" onClick={() => handleAddExpense(award.id)}>Save</button>
                           <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddExpense(null)}>Cancel</button>
+                        </div>
+                      )}
+                      {showAddPlanned === award.id && (
+                        <div className="post-award-expense-form">
+                          <input className="form-input" type="date" value={plannedForm.date} onChange={(e) => setPlannedForm((prev) => ({ ...prev, date: e.target.value }))} />
+                          <input className="form-input" type="text" placeholder="Description" value={plannedForm.description} onChange={(e) => setPlannedForm((prev) => ({ ...prev, description: e.target.value }))} />
+                          <input className="form-input" type="number" placeholder="Amount" value={plannedForm.amount} onChange={(e) => setPlannedForm((prev) => ({ ...prev, amount: e.target.value }))} />
+                          <input className="form-input" type="text" placeholder="Category" value={plannedForm.category} onChange={(e) => setPlannedForm((prev) => ({ ...prev, category: e.target.value }))} />
+                          <button type="button" className="btn btn-primary btn-sm" onClick={() => handleAddPlanned(award.id)}>Save Planned</button>
+                          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setShowAddPlanned(null)}>Cancel</button>
                         </div>
                       )}
                     </div>

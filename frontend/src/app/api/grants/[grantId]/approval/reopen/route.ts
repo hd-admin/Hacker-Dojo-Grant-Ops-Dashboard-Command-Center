@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
@@ -20,7 +22,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const deps = getDependencies();
     const approval = await deps.repository.getApprovalRecord(grantId);
     if (!approval) {
-      return NextResponse.json({ error: 'Approval not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Approval not found'), { status: 404 });
     }
 
     await deps.repository.removeApprovalRecord(grantId);
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error reopening approval:', error);
-    return NextResponse.json({ error: 'Failed to reopen approval' }, { status: 500 });
+    logger.error({ err: error }, 'Error reopening approval');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to reopen approval'), { status: 500 });
   }
 }

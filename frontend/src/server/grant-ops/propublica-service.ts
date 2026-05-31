@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 /**
  * ProPublica Research Service
  *
@@ -183,7 +185,7 @@ export async function fetchProPublicaGrants(
       if (/not configured|binary not found|enoent|no such file/i.test(message)) {
         return { grants: [], unavailable: true };
       }
-      console.error('Error fetching ProPublica grants:', message);
+      logger.error({ err: message }, 'Error fetching ProPublica grants');
       return { grants: [], error: message };
     }
   }
@@ -202,7 +204,7 @@ export async function fetchProPublicaGrants(
     if (/not configured|binary not found|enoent|no such file/i.test(message)) {
       return { grants: [], unavailable: true };
     }
-    console.error('Error fetching ProPublica grants:', message);
+    logger.error({ err: message }, 'Error fetching ProPublica grants');
     return { grants: [], error: message };
   }
 }

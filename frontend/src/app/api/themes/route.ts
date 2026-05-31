@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { loadThemesData, saveThemesData } from '../../../../../shared/grant-ops-persistence';
 import type { ThemesData } from '../../../../../shared/types';
 
@@ -28,23 +30,23 @@ export async function PUT(request: NextRequest) {
   try {
     const body = await request.json().catch(() => null) as ThemesData | null;
     if (!body || typeof body !== 'object') {
-      return NextResponse.json({ error: 'Invalid themes data' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid themes data'), { status: 400 });
     }
     // Validate matching policy thresholds
     for (const theme of body.themes ?? []) {
       const { matchThreshold, autoDraftThreshold } = theme.matchingPolicy;
       if (matchThreshold < 0 || matchThreshold > 100) {
-        return NextResponse.json({ error: 'matchThreshold must be 0-100' }, { status: 400 });
+        return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'matchThreshold must be 0-100'), { status: 400 });
       }
       if (autoDraftThreshold < 0 || autoDraftThreshold > 100) {
-        return NextResponse.json({ error: 'autoDraftThreshold must be 0-100' }, { status: 400 });
+        return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'autoDraftThreshold must be 0-100'), { status: 400 });
       }
     }
     await saveThemesData(body);
     const saved = await loadThemesData();
     return NextResponse.json(saved);
   } catch (error) {
-    console.error('[themes] PUT failed:', error);
-    return NextResponse.json({ error: 'Failed to save themes' }, { status: 500 });
+    logger.error({ err: error }, '[themes] PUT failed');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to save themes'), { status: 500 });
   }
 }

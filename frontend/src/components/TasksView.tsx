@@ -27,6 +27,7 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp, onNavig
   const [overrideTaskId, setOverrideTaskId] = useState<string | null>(null);
   const [overrideTaskStatus, setOverrideTaskStatus] = useState<TaskStatus>('blocked');
   const [overrideTaskRationale, setOverrideTaskRationale] = useState('');
+  const [_error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (tasksProp) {
@@ -43,8 +44,8 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp, onNavig
         ]);
         setTasks(tasksData);
         setFollowUps(followUpsData);
-      } catch (error) {
-        console.error('Error loading tasks:', error);
+      } catch (_error) {
+        setError('Error loading tasks');
         setTasks([]);
         setFollowUps([]);
       } finally {
@@ -81,8 +82,8 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp, onNavig
     try {
       await followUpsApi.update(updated);
       await onRefreshAppState?.();
-    } catch (error) {
-      console.error('Error updating follow-up:', error);
+    } catch (_error) {
+      setError('Error updating follow-up');
       setFollowUps((prev) => prev.map((fu) => (fu.id === id ? followUp : fu)));
     }
   };
@@ -115,8 +116,8 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp, onNavig
       setNewTaskBlockSubmission(false);
       setShowAddTaskForm(false);
       await onRefreshAppState?.();
-    } catch (error) {
-      console.error('Error adding task:', error);
+    } catch (_error) {
+      setError('Error adding task');
     } finally {
       setIsAddingTask(false);
     }

@@ -1,3 +1,4 @@
+import { logger } from '@/lib/logger';
 import type { CrawlSchedule } from '../../../../shared/types';
 import { deleteCrawlSchedule, loadCrawlSchedules, saveCrawlSchedule } from '../../../../shared/grant-ops-persistence';
 import { getDependencies } from './dependencies';
@@ -78,7 +79,7 @@ export async function checkAndRunDue(): Promise<number> {
 export function startCrawlScheduler(intervalMs = 60_000): void {
   if (schedulerHandle) return;
   schedulerHandle = setInterval(() => {
-    void checkAndRunDue().catch((error) => console.error('Crawl scheduler failed:', error));
+    void checkAndRunDue().catch((error) => logger.error({ err: error }, 'Crawl scheduler failed'));
   }, intervalMs);
 }
 

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import * as sourceService from '@/server/grant-ops/source-service';
 
 export async function GET(request: NextRequest) {
@@ -26,8 +28,8 @@ export async function GET(request: NextRequest) {
       : enriched;
     return NextResponse.json(filtered);
   } catch (error) {
-    console.error('Error getting sources:', error);
-    return NextResponse.json({ error: 'Failed to get sources' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting sources');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get sources'), { status: 500 });
   }
 }
 
@@ -36,7 +38,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => null);
     if (!body || typeof body.name !== 'string' || typeof body.url !== 'string') {
-      return NextResponse.json({ error: 'Name and URL are required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Name and URL are required'), { status: 400 });
     }
 
     const sourceInput: Parameters<typeof sourceService.addSource>[0] = {
@@ -54,8 +56,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, source }, { status: 201 });
   } catch (error) {
-    console.error('Error adding source:', error);
-    return NextResponse.json({ error: 'Failed to add source' }, { status: 500 });
+    logger.error({ err: error }, 'Error adding source');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to add source'), { status: 500 });
   }
 }
 
@@ -66,13 +68,13 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json({ error: 'Source ID is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Source ID is required'), { status: 400 });
     }
 
     await sourceService.removeSource(id);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error removing source:', error);
-    return NextResponse.json({ error: 'Failed to remove source' }, { status: 500 });
+    logger.error({ err: error }, 'Error removing source');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to remove source'), { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import { connection } from 'next/server';
+import { logger } from '@/lib/logger';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
@@ -15,8 +16,8 @@ export async function GET(
       grantId,
       history,
     });
-  } catch (error) {
-    console.error('Error getting grant history:', error);
+  } catch (_error) {
+    logger.error({ err: error }, 'Error getting grant history');
     return NextResponse.json(
       { error: 'Failed to get transition history', code: 'DB_ERROR' },
       { status: 500 },

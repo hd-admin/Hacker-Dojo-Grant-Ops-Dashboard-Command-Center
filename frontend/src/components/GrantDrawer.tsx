@@ -191,6 +191,7 @@ export default function GrantDrawer({
 	const [runbookConfirmationNumber, setRunbookConfirmationNumber] = useState('');
 	const [runbookCompleted, setRunbookCompleted] = useState(false);
 	const [runbookSaving, setRunbookSaving] = useState(false);
+  const [_error, setError] = useState<string | null>(null);
 
 	// Focus trap for dialog accessibility
 	const drawerRef = useRef<HTMLDivElement>(null);
@@ -259,8 +260,8 @@ export default function GrantDrawer({
 		try {
 			const data = await client.grants.getById(grantId);
 			setDetail(data);
-		} catch (error) {
-			console.error("Error loading grant detail:", error);
+		} catch (_error) {
+			setError('Error loading grant detail');
 			setDetail(null);
 		} finally {
 			setLoading(false);
@@ -289,8 +290,8 @@ export default function GrantDrawer({
 		try {
 			const data = await client.manifest.get(grantId);
 			setManifest(data);
-		} catch (error) {
-			console.error("Error loading submission manifest:", error);
+		} catch (_error) {
+			setError('Error loading submission manifest');
 			setManifest(null);
 		} finally {
 			setManifestLoading(false);
@@ -319,8 +320,8 @@ export default function GrantDrawer({
 				const response = await fetch(`/api/audit?entityId=${encodeURIComponent(grantId)}`);
 				const data = (await response.json()) as AuditEvent[];
 				setAuditEvents(Array.isArray(data) ? data : []);
-			} catch (error) {
-				console.error('Error loading audit trail:', error);
+			} catch (_error) {
+				setError('Error loading audit trail');
 				setAuditEvents([]);
 			}
 		}
@@ -355,8 +356,8 @@ export default function GrantDrawer({
 			try {
 				const data = await client.followUps.getFiltered({ grantId });
 				setFollowUps(Array.isArray(data) ? data : []);
-			} catch (error) {
-				console.error('Error loading follow-ups:', error);
+			} catch (_error) {
+				setError('Error loading follow-ups');
 				setFollowUps([]);
 			} finally {
 				setFollowUpsLoading(false);
@@ -399,8 +400,8 @@ export default function GrantDrawer({
 				await waitForJobCompletion(response.job.id);
 			}
 			await refreshAfterMutation();
-		} catch (error) {
-			console.error("Error generating draft:", error);
+		} catch (_error) {
+			setError('Error generating draft');
 		}
 	};
 
@@ -432,8 +433,8 @@ export default function GrantDrawer({
 			setShowGroundingWarning(false);
 			setGroundingOverrideConfirmed(false);
 			await refreshAfterMutation();
-		} catch (error) {
-			console.error("Error approving grant:", error);
+		} catch (_error) {
+			setError('Error approving grant');
 		}
 	};
 
@@ -454,8 +455,8 @@ export default function GrantDrawer({
 			setShowSubmitForm(false);
 			await refreshAfterMutation();
 			onClose();
-		} catch (error) {
-			console.error("Error submitting grant:", error);
+		} catch (_error) {
+			setError('Error submitting grant');
 		}
 	};
 
@@ -532,8 +533,8 @@ export default function GrantDrawer({
 			await refreshAfterMutation();
 			setShowRevision(false);
 			setRevisionNote("");
-		} catch (error) {
-			console.error("Error creating revision request:", error);
+		} catch (_error) {
+			setError('Error creating revision request');
 		}
 	};
 
@@ -542,8 +543,8 @@ export default function GrantDrawer({
 		try {
 			await client.manifest.create(detail.grant.id, {});
 			await refreshAfterMutation();
-		} catch (error) {
-			console.error("Error creating submission manifest:", error);
+		} catch (_error) {
+			setError('Error creating submission manifest');
 		}
 	};
 
@@ -560,8 +561,8 @@ export default function GrantDrawer({
 				}),
 			});
 			await loadManifest();
-		} catch (error) {
-			console.error('Error saving runbook:', error);
+		} catch (_error) {
+			setError('Error saving runbook');
 		} finally {
 			setRunbookSaving(false);
 		}
@@ -607,8 +608,8 @@ export default function GrantDrawer({
 			setOverrideValue('');
 			setOverrideRationale('');
 			await refreshAfterMutation();
-		} catch (error) {
-			console.error('Error applying override:', error);
+		} catch (_error) {
+			setError('Error applying override');
 		}
 	};
 
@@ -655,8 +656,8 @@ export default function GrantDrawer({
 			// Reload follow-ups
 			const data = await client.followUps.getFiltered({ grantId: detail.grant.id });
 			setFollowUps(Array.isArray(data) ? data : []);
-		} catch (error) {
-			console.error('Error creating follow-up:', error);
+		} catch (_error) {
+			setError('Error creating follow-up');
 		}
 	};
 
@@ -671,8 +672,8 @@ export default function GrantDrawer({
 			// Reload
 			const data = await client.followUps.getFiltered({ grantId: detail!.grant.id });
 			setFollowUps(Array.isArray(data) ? data : []);
-		} catch (error) {
-			console.error('Error marking follow-up complete:', error);
+		} catch (_error) {
+			setError('Error marking follow-up complete');
 		}
 	};
 
@@ -682,8 +683,8 @@ export default function GrantDrawer({
 			// Reload
 			const data = await client.followUps.getFiltered({ grantId: detail!.grant.id });
 			setFollowUps(Array.isArray(data) ? data : []);
-		} catch (error) {
-			console.error('Error deleting follow-up:', error);
+		} catch (_error) {
+			setError('Error deleting follow-up');
 		}
 	};
 
@@ -705,8 +706,8 @@ export default function GrantDrawer({
 			setOutcomeNotes('');
 			const data = await client.followUps.getFiltered({ grantId: detail.grant.id });
 			setFollowUps(Array.isArray(data) ? data : []);
-		} catch (error) {
-			console.error('Error saving outcome:', error);
+		} catch (_error) {
+			setError('Error saving outcome');
 		}
 	};
 

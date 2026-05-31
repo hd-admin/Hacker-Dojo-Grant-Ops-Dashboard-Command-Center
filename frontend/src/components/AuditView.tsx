@@ -11,6 +11,7 @@ interface AuditViewProps {
 export default function AuditView({ entityId, entityType }: AuditViewProps) {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [_error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -21,8 +22,8 @@ export default function AuditView({ entityId, entityType }: AuditViewProps) {
         const response = await fetch(url.toString());
         const data = (await response.json()) as AuditEvent[];
         setEvents(Array.isArray(data) ? data : []);
-      } catch (error) {
-        console.error('Error loading audit events:', error);
+      } catch (_error) {
+        setError('Error loading audit events');
         setEvents([]);
       } finally {
         setLoading(false);

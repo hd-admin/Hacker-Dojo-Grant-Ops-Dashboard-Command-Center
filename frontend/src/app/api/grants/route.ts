@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from "zod";
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import type { Grant } from "../../../../../shared/types";
@@ -117,7 +119,7 @@ export async function GET(request: NextRequest) {
 
 		return NextResponse.json({ grants: sortedGrants });
 	} catch (error) {
-		console.error("Error getting grants:", error);
+		logger.error({ err: error }, 'Error getting grants');
 		return NextResponse.json(
 			{ error: "Failed to get grants", code: "DB_ERROR" },
 			{ status: 500 },
@@ -131,7 +133,7 @@ export async function POST(request: NextRequest) {
 		const body = await request.json().catch(() => null);
 		const parsed = manualGrantSchema.safeParse(body);
 		if (!parsed.success) {
-			return NextResponse.json({ error: 'Invalid grant payload' }, { status: 400 });
+			return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid grant payload'), { status: 400 });
 		}
 
 		const deps = getDependencies();
@@ -179,8 +181,8 @@ export async function POST(request: NextRequest) {
 
 		return NextResponse.json(grant, { status: 201 });
 	} catch (error) {
-		console.error('Error creating grant:', error);
-		return NextResponse.json({ error: 'Failed to create grant' }, { status: 500 });
+		logger.error({ err: error }, 'Error creating grant');
+		return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create grant'), { status: 500 });
 	}
 }
 

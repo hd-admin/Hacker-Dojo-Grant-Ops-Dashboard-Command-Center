@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
       locked: true,
       config: { ...config, enabled: true },
     });
-  } catch (error) {
+  } catch (_error) {
     const message = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: message }, { status: 500 });
   }

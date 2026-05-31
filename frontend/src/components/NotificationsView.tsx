@@ -23,6 +23,7 @@ export default function NotificationsView({ notifications: notificationsProp }: 
   const [notifications, setNotifications] = useState<Notification[]>(notificationsProp ?? []);
   const [loading, setLoading] = useState(false);
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');
+  const [_error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (notificationsProp) {
@@ -34,8 +35,8 @@ export default function NotificationsView({ notifications: notificationsProp }: 
       try {
         const data = await notificationsApi.getAll();
         setNotifications(data);
-      } catch (error) {
-        console.error('Error loading notifications:', error);
+      } catch (_error) {
+        setError('Error loading notifications');
         setNotifications([]);
       } finally {
         setLoading(false);

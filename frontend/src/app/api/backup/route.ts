@@ -1,4 +1,6 @@
 import { NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
@@ -13,7 +15,7 @@ export async function GET() {
       headers: { 'content-disposition': `attachment; filename=grant-ops-backup-${snapshot.manifest.createdAt}.json` },
     });
   } catch (error) {
-    console.error('Error exporting backup:', error);
-    return NextResponse.json({ error: 'Failed to export backup' }, { status: 500 });
+    logger.error({ err: error }, 'Error exporting backup');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to export backup'), { status: 500 });
   }
 }

@@ -12,7 +12,7 @@ export async function GET() {
       isPasscodeSet: passcodeSet,
       lockConfig: config,
     });
-  } catch (error) {
+  } catch (_error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     return Response.json({ error: message }, { status: 500 });
   }

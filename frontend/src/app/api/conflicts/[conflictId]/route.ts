@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
@@ -20,7 +22,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const deps = getDependencies();
     const conflict = (await deps.repository.getConflictRecords()).find((item) => item.id === conflictId);
     if (!conflict) {
-      return NextResponse.json({ error: 'Conflict not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Conflict not found'), { status: 404 });
     }
 
     const resolvedAt = new Date().toISOString();
@@ -40,7 +42,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     });
     return NextResponse.json((await deps.repository.getConflictRecords()).find((item) => item.id === conflictId));
   } catch (error) {
-    console.error('Error updating conflict record:', error);
-    return NextResponse.json({ error: 'Failed to update conflict record' }, { status: 500 });
+    logger.error({ err: error }, 'Error updating conflict record');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update conflict record'), { status: 500 });
   }
 }

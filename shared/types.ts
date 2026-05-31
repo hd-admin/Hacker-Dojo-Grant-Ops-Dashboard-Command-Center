@@ -385,6 +385,7 @@ export interface Grant {
 	grantType?: string;
 	humanOverrides?: HumanOverride[];
 	attachments?: GrantAttachment[];
+	lessonsLearned?: string;
 }
 
 export interface ContactInfo {

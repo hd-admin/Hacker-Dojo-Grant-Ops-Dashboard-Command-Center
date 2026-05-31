@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
@@ -21,8 +23,8 @@ export async function GET(_request: NextRequest) {
     const awards = await deps.repository.getAwards?.() ?? [];
     return NextResponse.json({ awards });
   } catch (error) {
-    console.error('Error getting awards:', error);
-    return NextResponse.json({ error: 'Failed to get awards' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting awards');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get awards'), { status: 500 });
   }
 }
 
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest) {
     await deps.repository.createAward?.(award);
     return NextResponse.json({ award }, { status: 201 });
   } catch (error) {
-    console.error('Error creating award:', error);
-    return NextResponse.json({ error: 'Failed to create award' }, { status: 500 });
+    logger.error({ err: error }, 'Error creating award');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create award'), { status: 500 });
   }
 }

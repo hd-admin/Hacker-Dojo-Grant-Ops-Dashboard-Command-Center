@@ -1,4 +1,6 @@
 import { NextResponse, type NextRequest, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { disableScheduleForSource, getScheduleForSource, upsertScheduleForSource } from '@/server/grant-ops/crawl-scheduler-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -16,11 +18,11 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   const deps = getDependencies();
   const source = (await deps.repository.getSources()).find((item) => item.id === sourceId);
   if (!source) {
-    return NextResponse.json({ error: 'Source not found' }, { status: 404 });
+    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Source not found'), { status: 404 });
   }
   const schedule = await getScheduleForSource(sourceId);
   if (!schedule) {
-    return NextResponse.json({ error: 'Schedule not found' }, { status: 404 });
+    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Schedule not found'), { status: 404 });
   }
   return NextResponse.json(schedule);
 }
@@ -36,13 +38,13 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const deps = getDependencies();
     const source = (await deps.repository.getSources()).find((item) => item.id === sourceId);
     if (!source) {
-      return NextResponse.json({ error: 'Source not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Source not found'), { status: 404 });
     }
     const schedule = await upsertScheduleForSource(sourceId, parsed.data.intervalHours, parsed.data.isEnabled ?? true);
     return NextResponse.json(schedule);
   } catch (error) {
-    console.error('Error saving schedule:', error);
-    return NextResponse.json({ error: 'Failed to save schedule' }, { status: 500 });
+    logger.error({ err: error }, 'Error saving schedule');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to save schedule'), { status: 500 });
   }
 }
 
@@ -53,12 +55,12 @@ export async function DELETE(_request: NextRequest, { params }: { params: Promis
     const deps = getDependencies();
     const source = (await deps.repository.getSources()).find((item) => item.id === sourceId);
     if (!source) {
-      return NextResponse.json({ error: 'Source not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Source not found'), { status: 404 });
     }
     await disableScheduleForSource(sourceId);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting schedule:', error);
-    return NextResponse.json({ error: 'Failed to delete schedule' }, { status: 500 });
+    logger.error({ err: error }, 'Error deleting schedule');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to delete schedule'), { status: 500 });
   }
 }

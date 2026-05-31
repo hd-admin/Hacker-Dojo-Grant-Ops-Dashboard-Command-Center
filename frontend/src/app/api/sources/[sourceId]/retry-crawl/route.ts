@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
@@ -16,7 +18,7 @@ export async function POST(
       (item) => item.id === sourceId,
     );
     if (!source) {
-      return NextResponse.json({ error: 'Source not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Source not found'), { status: 404 });
     }
 
     // Update source to queued state
@@ -49,7 +51,7 @@ export async function POST(
           body: JSON.stringify({ sourceIds: [sourceId] }),
         });
       } catch (error) {
-        console.error('Error triggering crawl for source', sourceId, error);
+        logger.error({ err: error }, `Error triggering crawl for source ${sourceId}`);
       }
     })();
 
@@ -65,7 +67,7 @@ export async function POST(
 
     return NextResponse.json({ success: true, crawlRun });
   } catch (error) {
-    console.error('Error retrying crawl for source:', error);
+    logger.error({ err: error }, 'Error retrying crawl for source');
     return NextResponse.json(
       { error: 'Failed to retry crawl' },
       { status: 500 },

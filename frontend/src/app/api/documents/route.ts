@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { getDataDir } from '../../../../../shared/grant-ops-persistence';
@@ -35,8 +37,8 @@ export async function GET(request: NextRequest) {
     const documents = await documentService.listDocuments();
     return NextResponse.json(documents);
   } catch (error) {
-    console.error('Error getting documents:', error);
-    return NextResponse.json({ error: 'Failed to get documents' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting documents');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get documents'), { status: 500 });
   }
 }
 
@@ -49,7 +51,7 @@ export async function POST(request: NextRequest) {
     const fileEntry = formData.get('file');
 
     if (!(fileEntry instanceof File)) {
-      return NextResponse.json({ error: 'File is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'File is required'), { status: 400 });
     }
 
     const id = deps.idGenerator.generateId('doc');
@@ -132,8 +134,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(doc, { status: 201 });
   } catch (error) {
-    console.error('Error adding document:', error);
-    return NextResponse.json({ error: 'Failed to add document' }, { status: 500 });
+    logger.error({ err: error }, 'Error adding document');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to add document'), { status: 500 });
   }
 }
 
@@ -145,7 +147,7 @@ export async function PATCH(request: NextRequest) {
     const deps = getDependencies();
 
     if (!body || !body.id) {
-      return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Document ID is required'), { status: 400 });
     }
 
     const updates: Partial<DocumentMetadata> = {};
@@ -157,14 +159,14 @@ export async function PATCH(request: NextRequest) {
     if (body.classification !== undefined) updates.classification = body.classification;
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json({ error: 'At least one document field is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'At least one document field is required'), { status: 400 });
     }
 
     await deps.repository.updateDocument(body.id, updates);
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error updating document:', error);
-    return NextResponse.json({ error: 'Failed to update document' }, { status: 500 });
+    logger.error({ err: error }, 'Error updating document');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update document'), { status: 500 });
   }
 }
 
@@ -175,17 +177,17 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json().catch(() => null);
 
     if (!body || !body.id) {
-      return NextResponse.json({ error: 'Document ID is required' }, { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Document ID is required'), { status: 400 });
     }
 
     const success = await documentService.deleteDocument(body.id);
     if (!success) {
-      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Document not found'), { status: 404 });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting document:', error);
-    return NextResponse.json({ error: 'Failed to delete document' }, { status: 500 });
+    logger.error({ err: error }, 'Error deleting document');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to delete document'), { status: 500 });
   }
 }

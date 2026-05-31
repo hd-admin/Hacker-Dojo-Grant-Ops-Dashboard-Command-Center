@@ -8,6 +8,7 @@
  * Production behavior: requires configured Opencode settings.
  */
 
+import { logger } from '@/lib/logger';
 import { ResearchResponseSchema } from "../../../../shared/schemas";
 import type {
 	CrawlRun,
@@ -371,7 +372,7 @@ async function performResearch(
 				}
 			}
 		} catch (error) {
-			console.error(`Error crawling source ${source.name}:`, error);
+			logger.error({ err: error }, `Error crawling source ${source.name}`);
 			// No fallback grant creation: failed crawls should not invent matches.
 		}
 	}

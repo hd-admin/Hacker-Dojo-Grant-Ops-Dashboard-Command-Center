@@ -1,4 +1,6 @@
 import type { NextRequest } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { NextResponse, connection } from "next/server";
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -52,7 +54,7 @@ export async function POST(_request: NextRequest) {
       job,
     }, { status: 202 });
   } catch (error) {
-    console.error('Error running research:', error);
+    logger.error({ err: error }, 'Error running research');
 
     if (error instanceof NoSourcesConfiguredError) {
       return NextResponse.json(
@@ -89,7 +91,7 @@ export async function GET(_request: NextRequest) {
       allRuns,
     });
   } catch (error) {
-    console.error('Error getting crawl runs:', error);
-    return NextResponse.json({ error: 'Failed to get crawl runs' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting crawl runs');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get crawl runs'), { status: 500 });
   }
 }

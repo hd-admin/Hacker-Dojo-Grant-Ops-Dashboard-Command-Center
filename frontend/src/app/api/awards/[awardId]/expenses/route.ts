@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
@@ -19,8 +21,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const expenses = await deps.repository.getExpensesByAwardId?.(awardId) ?? [];
     return NextResponse.json({ expenses });
   } catch (error) {
-    console.error('Error getting expenses:', error);
-    return NextResponse.json({ error: 'Failed to get expenses' }, { status: 500 });
+    logger.error({ err: error }, 'Error getting expenses');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get expenses'), { status: 500 });
   }
 }
 
@@ -43,7 +45,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     await deps.repository.createExpense?.(expense);
     return NextResponse.json({ expense }, { status: 201 });
   } catch (error) {
-    console.error('Error creating expense:', error);
-    return NextResponse.json({ error: 'Failed to create expense' }, { status: 500 });
+    logger.error({ err: error }, 'Error creating expense');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create expense'), { status: 500 });
   }
 }
