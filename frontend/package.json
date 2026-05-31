@@ -12,5 +12,8 @@
   },
   "devDependencies": {
     "next": "^15.2.0"
+  },
+  "dependencies": {
+    "ical-generator": "^10.2.0"
   }
 }

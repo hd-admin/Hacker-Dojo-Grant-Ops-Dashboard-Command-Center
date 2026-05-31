@@ -102,6 +102,18 @@ export async function PATCH(
 			status: targetStatus,
 			statusLabel: parsed.data.statusLabel,
 		});
+
+		// Insert pipeline transition audit log
+		await deps.repository.createPipelineTransition({
+			id: `${grantId}-transition-${Date.now()}`,
+			grantId,
+			fromState: previousStatus,
+			toState: targetStatus,
+			actor: 'system',
+			timestamp: new Date().toISOString(),
+			reason: `Transitioned via API from ${previousStatus} to ${targetStatus}`,
+		});
+
 		await deps.repository.addAuditEvent({
 			id: `${grantId}-status-${Date.now()}`,
 			eventType: 'grant_status_changed',

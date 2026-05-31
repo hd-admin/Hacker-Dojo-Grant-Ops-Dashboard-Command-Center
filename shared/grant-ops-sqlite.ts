@@ -118,7 +118,7 @@ export function getSqliteState(
 	};
 }
 
-function openDatabase(state: SqliteBootstrapState): SqliteDatabase {
+export function openDatabase(state: SqliteBootstrapState): SqliteDatabase {
 	const existing = dbCache.get(state.dataDir);
 	if (existing) {
 		try {
@@ -1731,4 +1731,171 @@ export function readPeerDiscoveryResults(state: SqliteBootstrapState): PeerDisco
 export function writePeerDiscoveryResults(state: SqliteBootstrapState, results: PeerDiscoveryResult[]): void {
 	const db = openDatabase(state);
 	replaceTable<PeerDiscoveryResult>(db, 'peer_discovery_results', results);
+}
+
+// ============ PIPELINE TRANSITIONS (typed V2) ============
+
+import type { PipelineTransition } from './types';
+
+export function readPipelineTransitions(state: SqliteBootstrapState, grantId?: string): PipelineTransition[] {
+	const db = openDatabase(state);
+	const sql = grantId
+		? "SELECT * FROM pipeline_transitions WHERE grantId = ? ORDER BY createdAt DESC"
+		: "SELECT * FROM pipeline_transitions ORDER BY createdAt DESC";
+	const rows = grantId
+		? (db.prepare(sql).all(grantId) as Array<Record<string, unknown>>)
+		: (db.prepare(sql).all() as Array<Record<string, unknown>>);
+	return rows.map((row) => ({
+		id: String(row.id),
+		grantId: String(row.grantId),
+		fromState: String(row.fromState),
+		toState: String(row.toState),
+		actor: String(row.actor),
+		reason: row.reason ? String(row.reason) : '',
+		timestamp: String(row.createdAt),
+	}));
+}
+
+export function writePipelineTransition(state: SqliteBootstrapState, transition: PipelineTransition): void {
+	const db = openDatabase(state);
+	db.prepare(
+		`INSERT INTO pipeline_transitions (id, grantId, fromState, toState, actor, reason, createdAt)
+		 VALUES (@id, @grantId, @fromState, @toState, @actor, @reason, @timestamp)`
+	).run({
+		id: transition.id,
+		grantId: transition.grantId,
+		fromState: transition.fromState,
+		toState: transition.toState,
+		actor: transition.actor,
+		reason: transition.reason ?? '',
+		timestamp: transition.timestamp,
+	});
+	incrementWriteCounterForDb(db);
+}
+
+// ============ SNIPPETS (typed V2 table) ============
+
+export function readSnippets(state: SqliteBootstrapState, grantId?: string): Array<{ id: string; grantId: string | null; title: string; content: string; category: string; createdAt: string }> {
+	const db = openDatabase(state);
+	const sql = grantId
+		? "SELECT * FROM snippets WHERE grantId = ? ORDER BY createdAt DESC"
+		: "SELECT * FROM snippets ORDER BY createdAt DESC";
+	const rows = grantId
+		? (db.prepare(sql).all(grantId) as Array<Record<string, unknown>>)
+		: (db.prepare(sql).all() as Array<Record<string, unknown>>);
+	return rows.map((row) => ({
+		id: String(row.id),
+		grantId: row.grantId ? String(row.grantId) : null,
+		title: String(row.title),
+		content: String(row.content),
+		category: String(row.category),
+		createdAt: String(row.createdAt),
+	}));
+}
+
+export function writeSnippet(state: SqliteBootstrapState, snippet: { id: string; grantId?: string | null; title: string; content: string; category?: string; createdAt: string }): void {
+	const db = openDatabase(state);
+	db.prepare(
+		`INSERT OR REPLACE INTO snippets (id, grantId, title, content, category, createdAt)
+		 VALUES (@id, @grantId, @title, @content, @category, @createdAt)`
+	).run({
+		id: snippet.id,
+		grantId: snippet.grantId ?? null,
+		title: snippet.title,
+		content: snippet.content,
+		category: snippet.category ?? '',
+		createdAt: snippet.createdAt,
+	});
+	incrementWriteCounterForDb(db);
+}
+
+export function deleteSnippet(state: SqliteBootstrapState, id: string): void {
+	const db = openDatabase(state);
+	db.prepare("DELETE FROM snippets WHERE id = ?").run(id);
+	incrementWriteCounterForDb(db);
+}
+
+// ============ APPLICATION FORM TEMPLATES (typed V2) ============
+
+export function readFormTemplates(state: SqliteBootstrapState): Array<{ id: string; name: string; funderId: string | null; fields: unknown[]; createdAt: string }> {
+	const db = openDatabase(state);
+	const rows = db.prepare("SELECT * FROM application_form_templates ORDER BY createdAt DESC").all() as Array<Record<string, unknown>>;
+	return rows.map((row) => ({
+		id: String(row.id),
+		name: String(row.name),
+		funderId: row.funderId ? String(row.funderId) : null,
+		fields: JSON.parse(String(row.fields)) as unknown[],
+		createdAt: String(row.createdAt),
+	}));
+}
+
+export function writeFormTemplate(state: SqliteBootstrapState, template: { id: string; name: string; funderId?: string | null; fields?: unknown[]; createdAt: string }): void {
+	const db = openDatabase(state);
+	db.prepare(
+		`INSERT OR REPLACE INTO application_form_templates (id, name, funderId, fields, createdAt)
+		 VALUES (@id, @name, @funderId, @fields, @createdAt)`
+	).run({
+		id: template.id,
+		name: template.name,
+		funderId: template.funderId ?? null,
+		fields: JSON.stringify(template.fields ?? []),
+		createdAt: template.createdAt,
+	});
+	incrementWriteCounterForDb(db);
+}
+
+export function deleteFormTemplate(state: SqliteBootstrapState, id: string): void {
+	const db = openDatabase(state);
+	db.prepare("DELETE FROM application_form_templates WHERE id = ?").run(id);
+	incrementWriteCounterForDb(db);
+}
+
+// ============ OUTREACH RECORDS (typed V2) ============
+
+export function readOutreachRecords(state: SqliteBootstrapState, grantId?: string): Array<{ id: string; grantId: string; funderId: string | null; contactName: string; contactEmail: string; method: string; notes: string; outcome: string; followUpDate: string; createdAt: string }> {
+	const db = openDatabase(state);
+	const sql = grantId
+		? "SELECT * FROM outreach_records WHERE grantId = ? ORDER BY createdAt DESC"
+		: "SELECT * FROM outreach_records ORDER BY createdAt DESC";
+	const rows = grantId
+		? (db.prepare(sql).all(grantId) as Array<Record<string, unknown>>)
+		: (db.prepare(sql).all() as Array<Record<string, unknown>>);
+	return rows.map((row) => ({
+		id: String(row.id),
+		grantId: String(row.grantId),
+		funderId: row.funderId ? String(row.funderId) : null,
+		contactName: String(row.contactName),
+		contactEmail: String(row.contactEmail),
+		method: String(row.method),
+		notes: String(row.notes),
+		outcome: String(row.outcome),
+		followUpDate: String(row.followUpDate),
+		createdAt: String(row.createdAt),
+	}));
+}
+
+export function writeOutreachRecord(state: SqliteBootstrapState, record: { id: string; grantId: string; funderId?: string | null; contactName?: string; contactEmail?: string; method?: string; notes?: string; outcome?: string; followUpDate?: string; createdAt: string }): void {
+	const db = openDatabase(state);
+	db.prepare(
+		`INSERT OR REPLACE INTO outreach_records (id, grantId, funderId, contactName, contactEmail, method, notes, outcome, followUpDate, createdAt)
+		 VALUES (@id, @grantId, @funderId, @contactName, @contactEmail, @method, @notes, @outcome, @followUpDate, @createdAt)`
+	).run({
+		id: record.id,
+		grantId: record.grantId,
+		funderId: record.funderId ?? null,
+		contactName: record.contactName ?? '',
+		contactEmail: record.contactEmail ?? '',
+		method: record.method ?? 'email',
+		notes: record.notes ?? '',
+		outcome: record.outcome ?? '',
+		followUpDate: record.followUpDate ?? '',
+		createdAt: record.createdAt,
+	});
+	incrementWriteCounterForDb(db);
+}
+
+export function deleteOutreachRecord(state: SqliteBootstrapState, id: string): void {
+	const db = openDatabase(state);
+	db.prepare("DELETE FROM outreach_records WHERE id = ?").run(id);
+	incrementWriteCounterForDb(db);
 }

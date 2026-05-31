@@ -8,30 +8,49 @@ export interface GroundingReviewProps {
 	onReviewComplete?: (complete: boolean) => void;
 }
 
+export type ConfidenceLevel = 'strong' | 'weak' | 'unsupported';
+
 export interface GroundingSectionState {
 	sectionTitle: string;
 	evidence: string[];
 	isGrounded: boolean;
+	confidence: ConfidenceLevel;
 	reviewed: boolean;
 }
 
-function groundingQualityLabel(isGrounded: boolean): {
+function determineConfidence(section: { evidence: string[]; isGrounded: boolean }): ConfidenceLevel {
+	if (!section.isGrounded) return 'unsupported';
+	const evidenceCount = section.evidence?.length ?? 0;
+	if (evidenceCount >= 3) return 'strong';
+	if (evidenceCount >= 1) return 'weak';
+	return 'unsupported';
+}
+
+function groundingQualityLabel(confidence: ConfidenceLevel): {
 	label: string;
 	className: string;
 	indicator: string;
 } {
-	if (isGrounded) {
-		return {
-			label: "Well-grounded",
-			className: "grounding-well",
-			indicator: "●",
-		};
+	switch (confidence) {
+		case 'strong':
+			return {
+				label: "Well-grounded",
+				className: "grounding-well",
+				indicator: "●",
+			};
+		case 'weak':
+			return {
+				label: "Weak grounding",
+				className: "grounding-weak",
+				indicator: "◐",
+			};
+		case 'unsupported':
+			return {
+				label: "Unsupported",
+				className: "grounding-unsupported",
+				indicator: "▲",
+			};
 	}
-	return {
-		label: "Unsupported",
-		className: "grounding-unsupported",
-		indicator: "▲",
-	};
 }
 
 function parseEvidenceForDisplay(evidence: string[]): {
@@ -57,6 +76,7 @@ export default function GroundingReview({
 		sectionTitle: section.sectionTitle,
 		evidence: section.evidence,
 		isGrounded: section.isGrounded,
+		confidence: determineConfidence(section),
 		reviewed: false,
 	}));
 
@@ -110,9 +130,13 @@ export default function GroundingReview({
 
 	const reviewedCount = sectionStates.filter((s) => s.reviewed).length;
 	const allReviewed = reviewedCount === sectionStates.length;
-	const unsupportedCount = sectionStates.filter((s) => !s.isGrounded).length;
+	const unsupportedCount = sectionStates.filter((s) => s.confidence === 'unsupported').length;
+	const weakCount = sectionStates.filter((s) => s.confidence === 'weak').length;
 	const unsupportedUnreviewed = sectionStates.filter(
-		(s) => !s.isGrounded && !s.reviewed,
+		(s) => s.confidence === 'unsupported' && !s.reviewed,
+	).length;
+	const weakUnreviewed = sectionStates.filter(
+		(s) => s.confidence === 'weak' && !s.reviewed,
 	).length;
 
 	return (
@@ -130,9 +154,15 @@ export default function GroundingReview({
 					</span>
 				)}
 				{!allReviewed && unsupportedUnreviewed > 0 && (
-					<span className="grounding-overall-badge grounding-warning">
+					<span className="grounding-overall-badge grounding-danger">
 						⚠ {unsupportedUnreviewed} unsupported section
 						{unsupportedUnreviewed !== 1 ? "s" : ""} unreviewed
+					</span>
+				)}
+				{!allReviewed && weakUnreviewed > 0 && unsupportedUnreviewed === 0 && (
+					<span className="grounding-overall-badge grounding-warning">
+						◐ {weakUnreviewed} weak section
+						{weakUnreviewed !== 1 ? "s" : ""} unreviewed
 					</span>
 				)}
 			</div>
@@ -140,7 +170,7 @@ export default function GroundingReview({
 			{/* Section list */}
 			<div className="grounding-section-list" role="list">
 				{sectionStates.map((section) => {
-					const quality = groundingQualityLabel(section.isGrounded);
+					const quality = groundingQualityLabel(section.confidence);
 					const isExpanded = expandedSections.has(section.sectionTitle);
 					const evidenceItems = parseEvidenceForDisplay(section.evidence);
 
@@ -176,9 +206,14 @@ export default function GroundingReview({
 									</span>
 								</div>
 
-								{!section.isGrounded && (
+								{section.confidence === 'unsupported' && (
 									<span className="grounding-unsupported-warning" role="alert">
 										⚠ Unsupported claim &mdash; no evidence found
+									</span>
+								)}
+								{section.confidence === 'weak' && (
+									<span className="grounding-weak-warning" role="alert">
+										◐ Weak grounding &mdash; limited evidence
 									</span>
 								)}
 							</div>
@@ -238,12 +273,19 @@ export default function GroundingReview({
 				})}
 			</div>
 
-			{/* Stale claims check */}
+			{/* Approval blocking for unsupported sections */}
 			{unsupportedCount > 0 && (
-				<div className="grounding-stale-warning" role="alert">
-					{unsupportedCount} section
+				<div className="grounding-stale-warning grounding-blocking" role="alert">
+					<strong>Approval blocked:</strong> {unsupportedCount} section
 					{unsupportedCount !== 1 ? "s contain" : " contains"} unsupported
-					claims that should be reviewed before approval.
+					claims. All unsupported sections must be reviewed or removed before approval.
+				</div>
+			)}
+			{weakCount > 0 && unsupportedCount === 0 && (
+				<div className="grounding-stale-warning grounding-acknowledge" role="alert">
+					<strong>Acknowledge gaps:</strong> {weakCount} section
+					{weakCount !== 1 ? "s have" : " has"} weak grounding.
+					Review and acknowledge these gaps before approval.
 				</div>
 			)}
 		</div>

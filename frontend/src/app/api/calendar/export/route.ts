@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import ical, { ICalAlarmType } from 'ical-generator';
+import fs from 'node:fs';
+import path from 'node:path';
 
 export async function GET(request: NextRequest) {
   await connection();
@@ -8,14 +11,7 @@ export async function GET(request: NextRequest) {
     const scope = searchParams.get('scope') || 'all';
     const deps = getDependencies();
 
-    // Build simple ICS content
-    const lines: string[] = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Hacker Dojo//Grant Ops//EN',
-      'CALSCALE:GREGORIAN',
-      'METHOD:PUBLISH',
-    ];
+    const calendar = ical({ name: 'Hacker Dojo Grant Ops', prodId: { company: 'Hacker Dojo', product: 'Grant Ops' } });
 
     if (scope === 'all' || scope === 'grants') {
       const grants = await deps.repository.getGrants();
@@ -23,29 +19,54 @@ export async function GET(request: NextRequest) {
         if (grant.deadline && grant.deadline !== 'Rolling') {
           const deadline = new Date(grant.deadline);
           if (!isNaN(deadline.getTime())) {
-            const uid = `${grant.id}@hackerdojo.org`;
-            const dtstart = deadline.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-            lines.push(
-              'BEGIN:VEVENT',
-              `UID:${uid}`,
-              `SUMMARY:${grant.title} (Deadline)`,
-              `DTSTART:${dtstart}`,
-              `DTEND:${dtstart}`,
-              `DESCRIPTION:Grant deadline for ${grant.funder}`,
-              'BEGIN:VALARM',
-              'ACTION:DISPLAY',
-              'DESCRIPTION:Reminder',
-              'TRIGGER:-P1D',
-              'END:VALARM',
-              'END:VEVENT'
-            );
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (calendar as any).createEvent({
+              start: deadline,
+              end: deadline,
+              summary: `${grant.title} (Deadline)`,
+              description: `Grant deadline for ${grant.funder}`,
+              uid: `${grant.id}@hackerdojo.org`,
+              alarms: [
+                { type: ICalAlarmType.display, trigger: 86400, description: '24h before deadline' },
+                { type: ICalAlarmType.display, trigger: 3600, description: '1h before deadline' },
+              ],
+            });
           }
         }
       }
     }
 
-    lines.push('END:VCALENDAR');
-    const icsContent = lines.join('\r\n');
+    if (scope === 'all' || scope === 'reports') {
+      const awards = await deps.repository.getAwards?.() ?? [];
+      for (const award of awards) {
+        const reports = await deps.repository.getReportDeadlinesByAwardId?.(award.id) ?? [];
+        for (const report of reports) {
+          if (report.dueDate) {
+            const dueDate = new Date(report.dueDate);
+            if (!isNaN(dueDate.getTime())) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              (calendar as any).createEvent({
+                start: dueDate,
+                end: dueDate,
+                summary: `${report.reportType} Report — ${award.title}`,
+                description: `Report deadline for ${award.funder}`,
+                uid: `${report.id}@hackerdojo.org`,
+                alarms: [
+                  { type: ICalAlarmType.display, trigger: 172800, description: '48h before report due' },
+                ],
+              });
+            }
+          }
+        }
+      }
+    }
+
+    const icsContent = calendar.toString();
+
+    // Save to exports directory
+    const exportsDir = path.join(process.cwd(), '.grant-ops-data', 'exports');
+    fs.mkdirSync(exportsDir, { recursive: true });
+    fs.writeFileSync(path.join(exportsDir, 'calendar.ics'), icsContent, 'utf8');
 
     return new NextResponse(icsContent, {
       headers: {

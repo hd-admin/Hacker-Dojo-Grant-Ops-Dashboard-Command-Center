@@ -115,6 +115,7 @@ export interface JobQueueItem {
 	partialOutput?: string;
 	progress?: number;
 	maxRetries?: number;
+	processPid?: number;
 }
 
 export interface HumanOverride {

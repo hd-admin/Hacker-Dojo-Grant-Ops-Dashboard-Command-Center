@@ -156,6 +156,21 @@ export async function executeAgentJob(
   job: AgentJob,
   deps: AgentLoopDeps,
 ): Promise<void> {
+  // Concurrent job gate
+  if (activeJobs >= MAX_CONCURRENT_JOBS) {
+    const update: JobProgressUpdate = {
+      status: 'queued',
+      progress: 0,
+      stage: 'queued',
+      retryCount: job.retryCount,
+      maxRetries: MAX_RETRIES,
+      errorMessage: `Max concurrent jobs (${MAX_CONCURRENT_JOBS}) reached. Job queued.`,
+    };
+    await deps.updateJobProgress(job.id, update);
+    return;
+  }
+
+  activeJobs++;
   const dataDir = deps.getDataDir();
   const tmpDir = path.join(dataDir, 'tmp');
   fs.mkdirSync(tmpDir, { recursive: true });
@@ -175,9 +190,19 @@ export async function executeAgentJob(
 
   let retryFeedback: string | undefined;
   let _qualityWarning = false;
+  const failureReasons: string[] = [];
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     updateProgress('running', 0, PROGRESS_STAGES[job.jobType][1]?.stage || 'starting', attempt - 1);
+
+    // Cleanup pre-existing tmp artifact before retry
+    if (attempt > 1 && fs.existsSync(artifactPath)) {
+      try {
+        fs.unlinkSync(artifactPath);
+      } catch {
+        // ignore cleanup errors
+      }
+    }
 
     try {
       const prompt = deps.buildPrompt(job.jobType, job.params, artifactPath, retryFeedback);
@@ -201,9 +226,23 @@ export async function executeAgentJob(
           stdio: ['pipe', 'pipe', 'pipe'],
         });
       } catch (err) {
+        activeJobs--;
+        const msg = `Cannot spawn OpenCode: ${err instanceof Error ? err.message : String(err)}`;
+        failureReasons.push(msg);
         updateProgress('failed', 0, 'error', attempt - 1,
-          `Cannot spawn OpenCode: ${err instanceof Error ? err.message : String(err)}`);
+          `Failed after ${MAX_RETRIES} attempts: ${failureReasons.join(' | ')}`);
         return;
+      }
+
+      // Record PID for orphan detection
+      const processPid = proc.pid;
+      if (processPid) {
+        try {
+          const { updateJobQueueItemPersistence } = await import('../../../../shared/grant-ops-persistence');
+          await updateJobQueueItemPersistence(job.id, { processPid });
+        } catch {
+          // ignore PID recording errors
+        }
       }
 
       try {
@@ -284,7 +323,18 @@ export async function executeAgentJob(
 
       if (!fs.existsSync(artifactPath)) {
         retryFeedback = `Agent did not produce an artifact file at ${artifactPath}. You MUST write valid JSON to this exact path.`;
+        failureReasons.push(retryFeedback);
         updateProgress('retrying', 30, 'artifact-missing', attempt - 1, retryFeedback);
+        continue;
+      }
+
+      // Check mtime against attempt start to detect stale artifacts
+      const attemptStart = Date.now();
+      const stats = fs.statSync(artifactPath);
+      if (stats.mtimeMs < attemptStart - timeoutMs) {
+        retryFeedback = `Artifact file at ${artifactPath} is stale (mtime ${new Date(stats.mtimeMs).toISOString()}). The agent may have crashed.`;
+        failureReasons.push(retryFeedback);
+        updateProgress('retrying', 35, 'stale-artifact', attempt - 1, retryFeedback);
         continue;
       }
 
@@ -294,6 +344,7 @@ export async function executeAgentJob(
         artifact = JSON.parse(raw);
       } catch (parseErr) {
         retryFeedback = `The file at ${artifactPath} contained invalid JSON. Error: ${parseErr instanceof Error ? parseErr.message : String(parseErr)}. Ensure valid JSON output.`;
+        failureReasons.push(retryFeedback);
         updateProgress('retrying', 40, 'invalid-json', attempt - 1, retryFeedback);
         continue;
       }
@@ -312,12 +363,14 @@ export async function executeAgentJob(
 
       if (!qualityResult.passed && attempt < MAX_RETRIES) {
         retryFeedback = qualityResult.feedback;
+        failureReasons.push(retryFeedback);
         updateProgress('retrying', 60, 'quality-failed', attempt - 1, retryFeedback);
         continue;
       }
 
       if (!qualityResult.passed) {
         _qualityWarning = true;
+        failureReasons.push(qualityResult.feedback);
       }
 
       const artifactsDir = path.join(dataDir, 'artifacts', `${job.jobType}s`);
@@ -325,20 +378,57 @@ export async function executeAgentJob(
       fs.writeFileSync(path.join(artifactsDir, `${job.id}.json`), JSON.stringify(validated, null, 2));
 
       await deps.ingestArtifact(job.jobType, validated, job);
+      activeJobs--;
       updateProgress('completed', 100, 'completed', attempt - 1);
       return;
 
     } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error);
+      failureReasons.push(errMsg);
       if (attempt >= MAX_RETRIES) {
-        const allErrors = [retryFeedback, error instanceof Error ? error.message : String(error)]
-          .filter(Boolean).join(' | ');
+        activeJobs--;
         updateProgress('failed', 0, 'failed', attempt - 1,
-          `Failed after ${MAX_RETRIES} attempts: ${allErrors}. Check session log at ${sessionLogPath}`);
+          `Failed after ${MAX_RETRIES} attempts: ${failureReasons.join(' | ')}. Check session log at ${sessionLogPath}`);
         return;
       }
-      retryFeedback = `Unexpected error: ${error instanceof Error ? error.message : String(error)}`;
+      retryFeedback = `Unexpected error: ${errMsg}`;
       updateProgress('retrying', 0, 'error', attempt - 1, retryFeedback);
     }
+  }
+
+  activeJobs--;
+}
+
+// ============ ORPHAN DETECTION ============
+
+import { loadJobQueue } from '../../../../shared/grant-ops-persistence';
+
+export async function scanOrphanedJobs(): Promise<void> {
+  try {
+    const { updateJobQueueItemPersistence } = await import('../../../../shared/grant-ops-persistence');
+    const jobs = await loadJobQueue();
+    const orphaned = jobs.filter((j) => j.status === 'running' || j.status === 'verifying');
+
+    for (const job of orphaned) {
+      const pid = job.processPid as number | undefined;
+      let isAlive = false;
+      if (pid) {
+        try {
+          process.kill(pid, 0);
+          isAlive = true;
+        } catch {
+          isAlive = false;
+        }
+      }
+      if (!isAlive) {
+        await updateJobQueueItemPersistence(job.id, {
+          status: 'failed',
+          errorMessage: `Orphaned job detected: process ${pid ?? 'unknown'} is no longer running`,
+        });
+      }
+    }
+  } catch {
+    // ignore orphan scan errors
   }
 }
 

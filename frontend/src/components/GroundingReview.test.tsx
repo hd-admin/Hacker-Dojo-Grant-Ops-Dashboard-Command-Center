@@ -34,7 +34,23 @@ describe('GroundingReview', () => {
     expect(container.textContent).toBeTruthy();
   });
 
-  it('renders grounded section with Well-grounded label', async () => {
+  it('renders strongly grounded section with Well-grounded label', async () => {
+    const draft: DraftArtifact = {
+      id: 'd1',
+      grantId: 'g1',
+      version: 1,
+      content: 'test content',
+      createdAt: new Date().toISOString(),
+      createdBy: 'agent',
+      groundingSections: [{ sectionTitle: 'Mission', evidence: ['Document: Impact Report', 'Source: NSF', 'Federal grants database'], isGrounded: true }],
+    };
+    await act(async () => {
+      createRoot(container).render(<GroundingReview draftArtifact={draft} />);
+    });
+    expect(container.textContent).toContain('Well-grounded');
+  });
+
+  it('renders weakly grounded section with Weak grounding label', async () => {
     const draft: DraftArtifact = {
       id: 'd1',
       grantId: 'g1',
@@ -47,7 +63,7 @@ describe('GroundingReview', () => {
     await act(async () => {
       createRoot(container).render(<GroundingReview draftArtifact={draft} />);
     });
-    expect(container.textContent).toContain('Well-grounded');
+    expect(container.textContent).toContain('Weak grounding');
   });
 
   it('renders ungrounded section with Unsupported label', async () => {
@@ -64,6 +80,25 @@ describe('GroundingReview', () => {
       createRoot(container).render(<GroundingReview draftArtifact={draft} />);
     });
     expect(container.textContent).toContain('Unsupported');
+  });
+
+  it('blocks approval when any section is unsupported', async () => {
+    const draft: DraftArtifact = {
+      id: 'd1',
+      grantId: 'g1',
+      version: 1,
+      content: 'test content',
+      createdAt: new Date().toISOString(),
+      createdBy: 'agent',
+      groundingSections: [
+        { sectionTitle: 'Mission', evidence: ['Doc 1', 'Doc 2', 'Doc 3'], isGrounded: true },
+        { sectionTitle: 'Budget', evidence: [], isGrounded: false },
+      ],
+    };
+    await act(async () => {
+      createRoot(container).render(<GroundingReview draftArtifact={draft} />);
+    });
+    expect(container.textContent).toContain('Approval blocked');
   });
 
   it('displays all evidence items for a section', async () => {

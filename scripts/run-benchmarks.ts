@@ -19,6 +19,8 @@ const THRESHOLDS = {
   apiResponse: 500,     // ms (AC-11.1.4)
 };
 
+/* eslint-disable no-console */
+
 interface BenchmarkResult {
   name: string;
   threshold: number;
@@ -47,7 +49,7 @@ async function runBenchmarks(): Promise<void> {
   // Benchmark 2: Filter/search performance
   const filterStart = performance.now();
   const searchQuery = 'STEM';
-  const filtered = grants.filter((g) =>
+  void grants.filter((g) =>
     (g.title ? String(g.title).toLowerCase().includes(searchQuery.toLowerCase()) : false) ||
     (g.funder ? String(g.funder).toLowerCase().includes(searchQuery.toLowerCase()) : false)
   );
@@ -62,7 +64,7 @@ async function runBenchmarks(): Promise<void> {
 
   // Benchmark 3: Sort performance
   const sortStart = performance.now();
-  const sorted = [...grants].sort((a, b) => {
+  void [...grants].sort((a, b) => {
     const aFit = typeof a.fit === 'number' ? a.fit : 0;
     const bFit = typeof b.fit === 'number' ? b.fit : 0;
     return bFit - aFit;
@@ -78,11 +80,12 @@ async function runBenchmarks(): Promise<void> {
 
   // Benchmark 4: Status grouping (simulates pipeline board render)
   const groupStart = performance.now();
-  const grouped: Record<string, number> = {};
+  const _grouped: Record<string, number> = {};
   for (const g of grants) {
     const status = String(g.status || 'unknown');
-    grouped[status] = (grouped[status] || 0) + 1;
+    _grouped[status] = (_grouped[status] || 0) + 1;
   }
+  void _grouped;
   const groupEnd = performance.now();
   const groupTime = Math.round(groupEnd - groupStart);
   results.push({
@@ -95,6 +98,7 @@ async function runBenchmarks(): Promise<void> {
   // Benchmark 5: KPI calculation (simulates dashboard)
   const kpiStart = performance.now();
   const totalGrants = grants.length;
+  void totalGrants;
   const activeGrants = grants.filter((g) => g.status !== 'closed' && g.status !== 'declined' && g.status !== 'archived').length;
   const totalPipelineValue = grants
     .filter((g) => g.awardSort && typeof g.awardSort === 'number')
@@ -102,6 +106,7 @@ async function runBenchmarks(): Promise<void> {
   const averageFit = grants.length > 0
     ? Math.round(grants.reduce((sum, g) => sum + (typeof g.fit === 'number' ? g.fit : 0), 0) / grants.length)
     : 0;
+  void averageFit;
   const kpiEnd = performance.now();
   const kpiTime = Math.round(kpiEnd - kpiStart);
   results.push({
@@ -117,17 +122,17 @@ async function runBenchmarks(): Promise<void> {
   console.log(`Pipeline value: $${totalPipelineValue.toLocaleString()}`);
   console.log(`Average fit score: ${averageFit}%\n`);
 
-  let allPassed = true;
+  let _allPassed = true;
   for (const r of results) {
     const icon = r.passed ? '✓' : '✗';
     console.log(`${icon} ${r.name}: ${r.actual}ms (threshold: ${r.threshold}ms)`);
     if (!r.passed) {
-      allPassed = false;
+      _allPassed = false;
       console.log(`  GAP: ${r.actual - r.threshold}ms over threshold`);
     }
   }
 
-  console.log(`\n${allPassed ? 'All benchmarks passed!' : 'Some benchmarks failed — gaps documented above.'}`);
+  console.log(`\n${_allPassed ? 'All benchmarks passed!' : 'Some benchmarks failed — gaps documented above.'}`);
 
   // Write results file
   const resultsDir = path.join(dataDir, 'benchmark-results');
@@ -135,7 +140,7 @@ async function runBenchmarks(): Promise<void> {
   const output = {
     timestamp: new Date().toISOString(),
     grantCount: grants.length,
-    allPassed,
+    allPassed: _allPassed,
     results,
   };
   fs.writeFileSync(
@@ -143,10 +148,10 @@ async function runBenchmarks(): Promise<void> {
     JSON.stringify(output, null, 2),
   );
 
-  process.exit(allPassed ? 0 : 1);
+  process.exit(_allPassed ? 0 : 1);
 }
 
-runBenchmarks().catch((err) => {
+runBenchmarks().catch((err: unknown) => {
   console.error('Benchmark error:', err);
   process.exit(1);
 });

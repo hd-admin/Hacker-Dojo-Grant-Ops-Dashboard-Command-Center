@@ -1,6 +1,7 @@
 import { connection } from 'next/server';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { getDependencies } from '@/server/grant-ops/dependencies';
 
 const patternSchema = z.object({
   funderName: z.string().min(1),
@@ -14,14 +15,26 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const parsed = patternSchema.parse(body);
-    // Store as activity event or return directly
-    return NextResponse.json({
-      pattern: {
-        id: crypto.randomUUID(),
-        ...parsed,
-        createdAt: new Date().toISOString(),
-      },
+    const deps = getDependencies();
+
+    const pattern = {
+      id: deps.idGenerator.generateId('pattern'),
+      ...parsed,
+      createdAt: new Date().toISOString(),
+    };
+
+    // Store as activity event
+    await deps.repository.addAuditEvent({
+      id: deps.idGenerator.generateId('audit'),
+      eventType: 'pattern_detected',
+      entityId: pattern.id,
+      entityType: 'pattern',
+      actorLabel: 'agent',
+      timestamp: pattern.createdAt,
+      metadata: pattern,
     });
+
+    return NextResponse.json({ pattern });
   } catch (error) {
     return NextResponse.json(
       { error: { code: 'VALIDATION_ERROR', message: error instanceof Error ? error.message : 'Invalid input' } },
@@ -32,5 +45,22 @@ export async function POST(req: NextRequest) {
 
 export async function GET(_req: NextRequest) {
   await connection();
-  return NextResponse.json({ patterns: [] });
+  try {
+    const deps = getDependencies();
+    const events = await deps.repository.getAuditEvents?.(100) ?? [];
+    const patterns = events
+      .filter((e) => e.eventType === 'pattern_detected')
+      .map((e) => ({
+        id: String(e.metadata?.id ?? e.id),
+        funderName: String(e.metadata?.funderName ?? ''),
+        patternType: String(e.metadata?.patternType ?? ''),
+        confidence: Number(e.metadata?.confidence ?? 0),
+        evidence: String(e.metadata?.evidence ?? ''),
+        createdAt: e.timestamp,
+      }));
+    return NextResponse.json({ patterns });
+  } catch (error) {
+    console.error('Error getting patterns:', error);
+    return NextResponse.json({ error: { code: 'DB_ERROR', message: 'Failed to get patterns' } }, { status: 500 });
+  }
 }

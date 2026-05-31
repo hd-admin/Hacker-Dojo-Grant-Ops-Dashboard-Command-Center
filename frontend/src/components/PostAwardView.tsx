@@ -36,11 +36,11 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
   const loadData = useCallback(async () => {
     try {
       const [awardsRes, alertsRes] = await Promise.all([
-        fetch('/api/grants/awards').then((r) => r.json()).catch(() => []),
-        fetch('/api/grants/awards/spenddown-alerts').then((r) => r.json()).catch(() => []),
+        fetch('/api/awards').then((r) => r.json()).catch(() => ({ awards: [] })),
+        fetch('/api/awards/spenddown-alerts').then((r) => r.json()).catch(() => ({ alerts: [] })),
       ]);
-      setAwards(awardsRes);
-      setAlerts(alertsRes);
+      setAwards(awardsRes.awards ?? []);
+      setAlerts(alertsRes.alerts ?? []);
     } catch (err) {
       console.error('Failed to load post-award data:', err);
     } finally {
@@ -55,7 +55,7 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
   const handleAddExpense = async (awardId: string) => {
     if (!expenseForm.date || !expenseForm.amount) return;
     try {
-      await fetch('/api/grants/awards/expenses', {
+      await fetch('/api/awards/expenses', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ awardId, ...expenseForm, amount: Number(expenseForm.amount) }),
@@ -181,7 +181,7 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
                       {(_reportDeadlines[award.id] || []).length === 0 && <div className="text-muted">No reports scheduled</div>}
                       {(_reportDeadlines[award.id] || []).map((rpt: AwardReportDeadline) => (
                         <div key={rpt.id} className="post-award-item">
-                          {(rpt as any).reportType || (rpt as any).type} — Due: {rpt.dueDate} — <span className={`status-${rpt.status}`}>{rpt.status}</span>
+                          {rpt.reportType} — Due: {rpt.dueDate} — <span className={`status-${rpt.status}`}>{rpt.status}</span>
                         </div>
                       ))}
                     </div>

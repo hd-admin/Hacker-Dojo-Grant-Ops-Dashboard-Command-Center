@@ -17,6 +17,8 @@ function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+/* eslint-disable no-console */
+
 async function seed() {
   const dataDir = getDataDir();
   fs.mkdirSync(dataDir, { recursive: true });
@@ -113,4 +115,4 @@ async function seed() {
   console.log('Benchmark seed complete.');
 }
 
-seed().catch(console.error);
+seed().catch((err: unknown) => console.error(err));

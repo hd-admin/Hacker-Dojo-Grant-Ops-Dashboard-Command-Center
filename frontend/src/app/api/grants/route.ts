@@ -19,12 +19,88 @@ export async function GET(request: NextRequest) {
 	await connection();
 	try {
 		const deps = getDependencies();
-		const grants = await deps.repository.getGrants();
-
 		const { searchParams } = new URL(request.url);
+
+		const search = searchParams.get("search");
+		const status = searchParams.get("status");
+		const funderType = searchParams.get("funderType");
+		const minFit = searchParams.get("minFit");
+		const maxDeadline = searchParams.get("maxDeadline");
 		const sortBy = searchParams.get("sortBy") || "fit";
 
-		const sortedGrants = [...grants].sort((a, b) => {
+		let grants: Grant[];
+
+		if (search) {
+			// FTS5 search with bm25 ranking
+			const { getSqliteState, openDatabase } = await import('../../../../../shared/grant-ops-sqlite');
+			const state = getSqliteState();
+			const db = openDatabase(state);
+
+			// Parse query into OR-separated quoted terms with trailing wildcard
+			const terms = search.trim().split(/\s+/).filter(Boolean);
+			const ftsQuery = terms.map((t) => `"${t}"*`).join(' OR ');
+
+			const sql = `
+				SELECT g.* FROM grants_fts fts
+				JOIN grants_v2 g ON fts.grantId = g.id
+				WHERE grants_fts MATCH ? AND g.deletedAt IS NULL
+				ORDER BY bm25(grants_fts)
+				LIMIT 500
+			`;
+			const rows = db.prepare(sql).all(ftsQuery) as Array<Record<string, unknown>>;
+
+			grants = rows.map((row) => ({
+				id: String(row.id),
+				title: String(row.title),
+				funder: String(row.funder),
+				funderShort: String(row.funderShort || ''),
+				award: String(row.award || ''),
+				awardSort: Number(row.awardSort || 0),
+				deadline: String(row.deadline || ''),
+				deadlineConfidence: (row.deadlineConfidence as Grant['deadlineConfidence']) || 'unknown',
+				daysOut: 0,
+				fit: Number(row.fitScore || 0),
+				tags: JSON.parse(String(row.tags || '[]')) as string[],
+				status: String(row.status) as Grant['status'],
+				statusLabel: String(row.status),
+				eligibility: String(row.eligibility || ''),
+				externalUrl: String(row.externalUrl || ''),
+				summary: String(row.summary || ''),
+				category: String(row.category || ''),
+				matchedAt: String(row.matchedAt || ''),
+				createdAt: String(row.createdAt || ''),
+				updatedAt: String(row.updatedAt || ''),
+				deletedAt: row.deletedAt ? String(row.deletedAt) : undefined,
+				grantType: 'crawled',
+				checklist: [],
+			}));
+		} else {
+			grants = await deps.repository.getGrants();
+		}
+
+		// Apply column filters (intersection with search results)
+		let filtered = grants.filter((g) => !('deletedAt' in g) || g.deletedAt === undefined);
+
+		if (status) {
+			filtered = filtered.filter((g) => g.status === status);
+		}
+		if (funderType) {
+			filtered = filtered.filter((g) => g.category === funderType || g.funder?.toLowerCase().includes(funderType.toLowerCase()));
+		}
+		if (minFit) {
+			const min = Number(minFit);
+			filtered = filtered.filter((g) => (g.fit || 0) >= min);
+		}
+		if (maxDeadline) {
+			const max = new Date(maxDeadline);
+			filtered = filtered.filter((g) => {
+				if (!g.deadline || g.deadline === 'Rolling') return true;
+				const dl = new Date(g.deadline);
+				return !isNaN(dl.getTime()) && dl <= max;
+			});
+		}
+
+		const sortedGrants = [...filtered].sort((a, b) => {
 			switch (sortBy) {
 				case "fit":
 					return (b.fit || 0) - (a.fit || 0);
@@ -39,11 +115,11 @@ export async function GET(request: NextRequest) {
 			}
 		});
 
-		return NextResponse.json(sortedGrants);
+		return NextResponse.json({ grants: sortedGrants });
 	} catch (error) {
 		console.error("Error getting grants:", error);
 		return NextResponse.json(
-			{ error: "Failed to get grants" },
+			{ error: "Failed to get grants", code: "DB_ERROR" },
 			{ status: 500 },
 		);
 	}

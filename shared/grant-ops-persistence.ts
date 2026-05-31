@@ -506,3 +506,64 @@ export async function loadPeerDiscoveryResults(): Promise<PeerDiscoveryResult[]>
 export async function savePeerDiscoveryResults(results: PeerDiscoveryResult[]): Promise<void> {
   writePeerDiscoveryResultsToSqlite(getSqliteState(), results);
 }
+
+// ============ V2 TYPED TABLE EXPORTS ============
+
+import {
+  readPipelineTransitions as readPipelineTransitionsFromSqlite,
+  writePipelineTransition as writePipelineTransitionToSqlite,
+  readSnippets as readSnippetsFromSqlite,
+  writeSnippet as writeSnippetToSqlite,
+  deleteSnippet as deleteSnippetFromSqlite,
+  readFormTemplates as readFormTemplatesFromSqlite,
+  writeFormTemplate as writeFormTemplateToSqlite,
+  deleteFormTemplate as deleteFormTemplateFromSqlite,
+  readOutreachRecords as readOutreachRecordsFromSqlite,
+  writeOutreachRecord as writeOutreachRecordToSqlite,
+  deleteOutreachRecord as deleteOutreachRecordFromSqlite,
+} from './grant-ops-sqlite';
+import type { PipelineTransition } from './types';
+
+export async function loadPipelineTransitions(grantId?: string): Promise<PipelineTransition[]> {
+  return readPipelineTransitionsFromSqlite(getSqliteState(), grantId);
+}
+
+export async function savePipelineTransition(transition: PipelineTransition): Promise<void> {
+  writePipelineTransitionToSqlite(getSqliteState(), transition);
+}
+
+export async function loadSnippets(grantId?: string): Promise<Array<{ id: string; grantId: string | null; title: string; content: string; category: string; createdAt: string }>> {
+  return readSnippetsFromSqlite(getSqliteState(), grantId);
+}
+
+export async function saveSnippet(snippet: { id: string; grantId?: string | null; title: string; content: string; category?: string; createdAt: string }): Promise<void> {
+  writeSnippetToSqlite(getSqliteState(), snippet);
+}
+
+export async function removeSnippet(id: string): Promise<void> {
+  deleteSnippetFromSqlite(getSqliteState(), id);
+}
+
+export async function loadFormTemplates(): Promise<Array<{ id: string; name: string; funderId: string | null; fields: unknown[]; createdAt: string }>> {
+  return readFormTemplatesFromSqlite(getSqliteState());
+}
+
+export async function saveFormTemplate(template: { id: string; name: string; funderId?: string | null; fields?: unknown[]; createdAt: string }): Promise<void> {
+  writeFormTemplateToSqlite(getSqliteState(), template);
+}
+
+export async function removeFormTemplate(id: string): Promise<void> {
+  deleteFormTemplateFromSqlite(getSqliteState(), id);
+}
+
+export async function loadOutreachRecords(grantId?: string): Promise<Array<{ id: string; grantId: string; funderId: string | null; contactName: string; contactEmail: string; method: string; notes: string; outcome: string; followUpDate: string; createdAt: string }>> {
+  return readOutreachRecordsFromSqlite(getSqliteState(), grantId);
+}
+
+export async function saveOutreachRecord(record: { id: string; grantId: string; funderId?: string | null; contactName?: string; contactEmail?: string; method?: string; notes?: string; outcome?: string; followUpDate?: string; createdAt: string }): Promise<void> {
+  writeOutreachRecordToSqlite(getSqliteState(), record);
+}
+
+export async function removeOutreachRecord(id: string): Promise<void> {
+  deleteOutreachRecordFromSqlite(getSqliteState(), id);
+}
