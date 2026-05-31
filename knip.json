@@ -1,0 +1,45 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "entry": [
+    "frontend/src/app/layout.tsx",
+    "frontend/src/app/page.tsx",
+    "frontend/src/app/api/**/route.ts",
+    "frontend/next.config.ts",
+    "playwright.no-webserver.config.ts",
+    "scripts/**/*.{ts,js,mjs}"
+  ],
+  "project": [
+    "frontend/src/**/*.{ts,tsx}",
+    "shared/**/*.ts",
+    "tests/**/*.{ts,tsx}",
+    "scripts/**/*.{ts,js}"
+  ],
+  "ignore": [
+    "**/*.d.ts",
+    "frontend/next-env.d.ts",
+    "next-env.d.ts"
+  ],
+  "ignoreDependencies": [
+    "@testing-library/react",
+    "eslint-config-next",
+    "node-gyp",
+    "prettier",
+    "tailwindcss",
+    "@tailwindcss/postcss"
+  ],
+  "paths": {
+    "@/*": ["frontend/src/*"]
+  },
+  "rules": {
+    "files": "off",
+    "exports": "off",
+    "dependencies": "off",
+    "devDependencies": "off",
+    "nsExports": "off",
+    "nsTypes": "off",
+    "duplicates": "off",
+    "enumMembers": "off",
+    "classMembers": "off",
+    "types": "off"
+  }
+}

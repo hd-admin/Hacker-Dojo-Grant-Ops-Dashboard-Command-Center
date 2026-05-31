@@ -81,11 +81,11 @@ function crawlStateLabel(state: SourceCrawlState): string {
 function crawlStateColor(state: SourceCrawlState): string {
   const colors: Record<SourceCrawlState, string> = {
     'never-crawled': 'var(--text-muted)',
-    queued: 'var(--color-warning, #e0894a)',
-    running: 'var(--color-info, #7ba3b8)',
-    succeeded: 'var(--color-success, #8aab6f)',
-    'partially-failed': 'var(--color-warning, #e0894a)',
-    failed: 'var(--color-error, #c66b5a)',
+    queued: 'var(--warning)',
+    running: 'var(--info)',
+    succeeded: 'var(--success)',
+    'partially-failed': 'var(--warning)',
+    failed: 'var(--danger)',
   };
   return colors[state] ?? 'var(--text-muted)';
 }

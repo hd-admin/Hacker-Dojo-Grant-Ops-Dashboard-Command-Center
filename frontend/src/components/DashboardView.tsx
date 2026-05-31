@@ -680,7 +680,7 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
                 </div>
                 <div>
                   <div className="deadline-info-title">{grant.title}</div>
-                  <div className="deadline-info-meta">{grant.funder} \u00b7 {grant.award} \u00b7 Fit {grant.fit}</div>
+                  <div className="deadline-info-meta">{grant.funder} · {grant.award} · Fit {grant.fit}</div>
                 </div>
                 <span className="btn btn-sm btn-primary">Review draft</span>
               </button>

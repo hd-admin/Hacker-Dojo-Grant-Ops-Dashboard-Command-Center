@@ -404,12 +404,12 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
             {documents.some((d) => d.classification === 'restricted') && (
               <div
                 style={{
-                  background: 'rgba(198,107,90,0.1)',
-                  border: '1px solid rgba(198,107,90,0.3)',
+                  background: 'var(--surface-2)',
+                  border: '1px solid var(--danger)',
                   borderRadius: 'var(--radius)',
                   padding: '10px 14px',
                   marginBottom: '16px',
-                  color: 'var(--color-error, #c66b5a)',
+                  color: 'var(--danger)',
                   fontSize: '13px',
                 }}
                 data-testid="restricted-docs-warning"

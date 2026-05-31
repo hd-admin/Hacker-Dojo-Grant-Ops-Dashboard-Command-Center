@@ -38,10 +38,12 @@ import SettingsView from "./SettingsView";
 import SourcesView from "./SourcesView";
 import TasksView from "./TasksView";
 import AuditView from "./AuditView";
+import CalendarView from "./CalendarView";
 import DuplicatesView from "./DuplicatesView";
 import JobsPanel from "./JobsPanel";
 import LockScreen from "./LockScreen";
 import OperatorNamePrompt from "./OperatorNamePrompt";
+import PostAwardView from "./PostAwardView";
 
 type ViewType =
   | "dashboard"
@@ -188,7 +190,6 @@ export default function AppShell() {
     };
   }, [lockConfigIdleMs, isLocked]);
 
-  const _unreadTaskCount = useMemo(() => tasks.filter((task) => !task.completed).length, [tasks]);
   const pendingSourcesCount = useMemo(
     () => sources.filter((source) => source.reviewStatus === 'pending-review').length,
     [sources],
@@ -724,10 +725,10 @@ export default function AppShell() {
           <SettingsView onRefreshAppState={refreshAppState} />
         </div>
         <div id="view-calendar" className={`view ${activeView === 'calendar' ? 'active' : ''}`} role="tabpanel" aria-label="Calendar">
-          <div className="empty-state" data-testid="calendar-placeholder">Calendar — coming soon</div>
+          <CalendarView grants={grants} />
         </div>
         <div id="view-post-award" className={`view ${activeView === 'post-award' ? 'active' : ''}`} role="tabpanel" aria-label="Post-Award Management">
-          <div className="empty-state" data-testid="post-award-placeholder">Post-Award — coming soon</div>
+          <PostAwardView onRefreshAppState={refreshAppState} />
         </div>
         <div id="view-notifications" className={`view ${activeView === 'notifications' ? 'active' : ''}`} role="tabpanel" aria-label="Notifications">
           <NotificationsView notifications={notifications} />

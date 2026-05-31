@@ -154,10 +154,10 @@ export default function DuplicatesView({ onGrantSelect, onRefreshAppState }: Dup
               const confidencePct = Math.round(candidate.confidenceScore * 100);
               const confidenceColor =
                 confidencePct >= 80
-                  ? 'var(--color-error, #c66b5a)'
+                  ? 'var(--danger)'
                   : confidencePct >= 60
-                    ? 'var(--color-warning, #e0894a)'
-                    : 'var(--color-info, #7ba3b8)';
+                    ? 'var(--warning)'
+                    : 'var(--info)';
 
               return (
                 <div

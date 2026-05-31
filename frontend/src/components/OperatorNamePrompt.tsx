@@ -16,7 +16,7 @@ const overlayStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  background: 'var(--bg, #1c1a17)',
+  background: 'var(--bg)',
   zIndex: 1000,
 };
 
@@ -30,7 +30,7 @@ const headingStyle: React.CSSProperties = {
   fontFamily: 'var(--serif), Georgia, serif',
   fontSize: 38,
   fontWeight: 600,
-  color: 'var(--text, #ebe6dc)',
+  color: 'var(--text)',
   lineHeight: 1.2,
   marginBottom: 8,
 };
@@ -38,7 +38,7 @@ const headingStyle: React.CSSProperties = {
 const subtitleStyle: React.CSSProperties = {
   fontFamily: 'var(--sans), sans-serif',
   fontSize: 17,
-  color: 'var(--text-dim, #b3ac9e)',
+  color: 'var(--text-dim)',
   marginBottom: 32,
 };
 
@@ -52,10 +52,10 @@ const inputGroupStyle: React.CSSProperties = {
 const inputStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px 16px',
-  background: 'var(--surface, #25221d)',
-  border: '1px solid var(--border, #36322c)',
-  borderRadius: 'var(--radius, 6px)',
-  color: 'var(--text, #ebe6dc)',
+  background: 'var(--surface)',
+  border: '1px solid var(--border)',
+  borderRadius: 'var(--radius)',
+  color: 'var(--text)',
   fontFamily: 'var(--sans), sans-serif',
   fontSize: 16,
   outline: 'none',
@@ -65,10 +65,10 @@ const inputStyle: React.CSSProperties = {
 const buttonStyle: React.CSSProperties = {
   width: '100%',
   padding: '12px 24px',
-  background: 'var(--accent, #d4a943)',
-  color: 'var(--bg, #1c1a17)',
+  background: 'var(--accent)',
+  color: 'var(--bg)',
   border: 'none',
-  borderRadius: 'var(--radius, 6px)',
+  borderRadius: 'var(--radius)',
   fontFamily: 'var(--sans), sans-serif',
   fontSize: 16,
   fontWeight: 600,
@@ -76,7 +76,7 @@ const buttonStyle: React.CSSProperties = {
 };
 
 const errorStyle: React.CSSProperties = {
-  color: 'var(--danger, #c66b5a)',
+  color: 'var(--danger)',
   fontFamily: 'var(--sans), sans-serif',
   fontSize: 13,
 };

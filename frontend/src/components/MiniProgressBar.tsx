@@ -29,11 +29,11 @@ const barStyle: React.CSSProperties = {
   alignItems: 'center',
   gap: 8,
   padding: '8px 16px',
-  background: 'var(--surface, #25221d)',
-  borderTop: '1px solid var(--border, #36322c)',
+  background: 'var(--surface)',
+  borderTop: '1px solid var(--border)',
   fontFamily: 'var(--sans), sans-serif',
   fontSize: 12,
-  color: 'var(--text-dim, #b3ac9e)',
+  color: 'var(--text-dim)',
   position: 'fixed',
   bottom: 0,
   left: 0,
@@ -44,17 +44,17 @@ const barStyle: React.CSSProperties = {
 const trackStyle: React.CSSProperties = {
   flex: 1,
   height: 4,
-  background: 'var(--border, #36322c)',
+  background: 'var(--border)',
   borderRadius: 2,
   overflow: 'hidden',
 };
 
 const btnStyle: React.CSSProperties = {
   background: 'none',
-  border: '1px solid var(--border, #36322c)',
-  color: 'var(--text-dim, #b3ac9e)',
+  border: '1px solid var(--border)',
+  color: 'var(--text-dim)',
   padding: '2px 8px',
-  borderRadius: 'var(--radius, 6px)',
+  borderRadius: 'var(--radius)',
   cursor: 'pointer',
   fontSize: 11,
   fontFamily: 'var(--sans), sans-serif',
@@ -75,10 +75,10 @@ export function MiniProgressBar({
   const isComplete = status === 'completed';
 
   const fillColor = isFailed
-    ? 'var(--danger, #c66b5a)'
+    ? 'var(--danger)'
     : isComplete
-      ? 'var(--success, #8aab6f)'
-      : 'var(--accent, #d4a943)';
+      ? 'var(--success)'
+      : 'var(--accent)';
 
   const fillStyle: React.CSSProperties = {
     height: '100%',
