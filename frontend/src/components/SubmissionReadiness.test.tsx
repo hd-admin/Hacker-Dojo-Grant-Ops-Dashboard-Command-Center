@@ -11,7 +11,7 @@ import type {
 	SubmissionManifest,
 	SubmissionManifestItem,
 } from "../../../shared/types";
-import SubmissionReadiness from "./SubmissionReadiness";
+import { SubmissionReadiness } from "./SubmissionReadiness";
 
 const mockGrant: Grant = {
 	id: "g-1",

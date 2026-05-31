@@ -12,7 +12,7 @@ const {
 
 vi.mock('../lib/grant-ops-client', () => ({}));
 
-import SourcesView from './SourcesView';
+import { SourcesView } from './SourcesView';
 
 const mockSources: Source[] = [
   {

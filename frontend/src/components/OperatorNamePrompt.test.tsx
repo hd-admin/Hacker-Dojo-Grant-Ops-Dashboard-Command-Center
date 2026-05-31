@@ -20,7 +20,7 @@ describe('OperatorNamePrompt', () => {
 
   async function render(props: Record<string, unknown> = {}) {
     const module = await import('./OperatorNamePrompt');
-    const OperatorNamePrompt = module.default;
+    const { OperatorNamePrompt } = module;
     root.render(
       React.createElement(OperatorNamePrompt, {
         onSubmit: vi.fn(),

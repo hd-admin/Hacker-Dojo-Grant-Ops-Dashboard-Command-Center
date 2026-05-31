@@ -143,7 +143,7 @@ vi.mock('../lib/grant-ops-client', () => ({
   },
 }));
 
-import DuplicatesView from './DuplicatesView';
+import { DuplicatesView } from './DuplicatesView';
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;

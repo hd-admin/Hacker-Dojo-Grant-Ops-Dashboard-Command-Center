@@ -22,7 +22,7 @@ interface PipelineBoardProps {
   onStatusChange: (grantId: string, newStatus: GrantStatus) => Promise<void>;
 }
 
-export default function PipelineBoard({ grants, onSelectGrant, onStatusChange: _onStatusChange }: PipelineBoardProps) {
+export function PipelineBoard({ grants, onSelectGrant, onStatusChange: _onStatusChange }: PipelineBoardProps) {
   const [activeColumn, setActiveColumn] = useState(0);
   const [activeCard, setActiveCard] = useState<number[]>(Array.from({ length: PIPELINE_COLUMNS.length }, () => 0));
   const columnRefs = useRef<(HTMLDivElement | null)[]>([]);
@@ -160,4 +160,5 @@ export default function PipelineBoard({ grants, onSelectGrant, onStatusChange: _
   );
 }
 
-export { PIPELINE_COLUMNS };
+// PIPELINE_COLUMNS is used only within this module
+

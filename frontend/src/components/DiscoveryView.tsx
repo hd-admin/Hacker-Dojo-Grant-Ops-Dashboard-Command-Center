@@ -62,7 +62,7 @@ function renderDeadlineCell(grant: Grant): React.ReactNode {
   return <span className="deadline-confidence deadline-confidence-exact" title="Exact deadline from source">{dateStr}</span>;
 }
 
-export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: DiscoveryViewProps) {
+export function DiscoveryView({ onGrantSelect, onRefreshAppState }: DiscoveryViewProps) {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [sources, setSources] = useState<Source[]>([]);
   const [sourcesCrawled, setSourcesCrawled] = useState(0);
@@ -478,3 +478,4 @@ export default function DiscoveryView({ onGrantSelect, onRefreshAppState }: Disc
     </>
   );
 }
+

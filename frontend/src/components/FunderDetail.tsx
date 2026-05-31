@@ -9,7 +9,7 @@ interface FunderDetailProps {
   onDetectPatterns?: (funderId: string) => Promise<void>;
 }
 
-export default function FunderDetail({ funder, onClose, onDetectPatterns }: FunderDetailProps) {
+export function FunderDetail({ funder, onClose, onDetectPatterns }: FunderDetailProps) {
   const [analyzing, setAnalyzing] = useState(false);
 
   const handleDetectPatterns = async () => {
@@ -116,3 +116,4 @@ export default function FunderDetail({ funder, onClose, onDetectPatterns }: Fund
     </div>
   );
 }
+

@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import FunderDetail from './FunderDetail';
+import { FunderDetail } from './FunderDetail';
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;

@@ -41,7 +41,7 @@ function getUrgencyColor(urgency: string): string {
   }
 }
 
-export default function CalendarView({ grants, reportDeadlines = [], taskDueDates = [] }: CalendarViewProps) {
+export function CalendarView({ grants, reportDeadlines = [], taskDueDates = [] }: CalendarViewProps) {
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -185,3 +185,4 @@ export default function CalendarView({ grants, reportDeadlines = [], taskDueDate
     </div>
   );
 }
+

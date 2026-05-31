@@ -39,7 +39,7 @@ vi.mock('../lib/grant-ops-client', () => ({
 let capturedDashboardNotifications: Notification[] | undefined;
 
 vi.mock('./DashboardView', () => ({
-  default: ({
+  DashboardView: ({
     onGrantSelect,
     onRefreshAppState,
     notifications,
@@ -63,7 +63,7 @@ vi.mock('./DashboardView', () => ({
 }));
 
 vi.mock('./DiscoveryView', () => ({
-  default: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
+  DiscoveryView: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
     <button type="button" onClick={() => onRefreshAppState?.()}>
       refresh discovery
     </button>
@@ -71,37 +71,37 @@ vi.mock('./DiscoveryView', () => ({
 }));
 
 vi.mock('./SourcesView', () => ({
-  default: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
+  SourcesView: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
     <button type="button" onClick={() => onRefreshAppState?.()}>
       refresh sources
     </button>
   ),
 }));
 
-vi.mock('./PipelineView', () => ({ default: () => <div>pipeline</div> }));
+vi.mock("./PipelineView", () => ({ PipelineView: () => <div>pipeline</div> }));
 vi.mock('./SettingsView', () => ({
-  default: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
+  SettingsView: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
     <button type="button" onClick={() => onRefreshAppState?.()}>
       refresh settings
     </button>
   ),
 }));
-vi.mock('./NotificationsView', () => ({ default: () => <div>notifications</div> }));
+vi.mock('./NotificationsView', () => ({ NotificationsView: () => <div>notifications</div> }));
 vi.mock('./TasksView', () => ({
-  default: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
+  TasksView: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
     <button type="button" onClick={() => onRefreshAppState?.()}>
       refresh tasks
     </button>
   ),
 }));
-vi.mock('./DuplicatesView', () => ({ default: () => <div>duplicates</div> }));
-vi.mock('./AuditView', () => ({ default: () => <div>audit</div> }));
-vi.mock('./CalendarView', () => ({ default: () => <div>calendar</div> }));
-vi.mock('./JobsPanel', () => ({ default: () => <div>jobs</div> }));
-vi.mock('./OperatorNamePrompt', () => ({ default: () => <div>operator prompt</div> }));
-vi.mock('./PostAwardView', () => ({ default: () => <div>post-award</div> }));
+vi.mock('./DuplicatesView', () => ({ DuplicatesView: () => <div>duplicates</div> }));
+vi.mock('./AuditView', () => ({ AuditView: () => <div>audit</div> }));
+vi.mock('./CalendarView', () => ({ CalendarView: () => <div>calendar</div> }));
+vi.mock('./JobsPanel', () => ({ JobsPanel: () => <div>jobs</div> }));
+vi.mock('./OperatorNamePrompt', () => ({ OperatorNamePrompt: () => <div>operator prompt</div> }));
+vi.mock('./PostAwardView', () => ({ PostAwardView: () => <div>post-award</div> }));
 vi.mock('./GrantDrawer', () => ({
-  default: ({ grantId, onRefreshAppState }: { grantId: string | null; onRefreshAppState?: () => Promise<void> | void }) =>
+  GrantDrawer: ({ grantId, onRefreshAppState }: { grantId: string | null; onRefreshAppState?: () => Promise<void> | void }) =>
     grantId ? (
       <div>
         <button type="button" onClick={() => onRefreshAppState?.()}>
@@ -112,7 +112,7 @@ vi.mock('./GrantDrawer', () => ({
     ) : null,
 }));
 
-import AppShell from './AppShell';
+import { AppShell } from './AppShell';
 
 
 const initialGrants: Grant[] = [

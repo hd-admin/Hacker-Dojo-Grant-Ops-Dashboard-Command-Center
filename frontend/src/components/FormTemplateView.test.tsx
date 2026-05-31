@@ -2,7 +2,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import FormTemplateView from './FormTemplateView';
+import { FormTemplateView } from './FormTemplateView';
 
 describe('FormTemplateView', () => {
   it('renders form template', async () => {

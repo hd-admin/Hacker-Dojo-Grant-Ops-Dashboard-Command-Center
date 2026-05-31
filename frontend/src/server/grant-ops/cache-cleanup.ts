@@ -26,7 +26,7 @@ interface CleanupStats {
   errors: string[];
 }
 
-export function ensureTmpDirectories(dataDir: string): void {
+function ensureTmpDirectories(dataDir: string): void {
   const dirs = [
     path.join(dataDir, 'tmp'),
     path.join(dataDir, 'tmp', '.cache'),
@@ -191,7 +191,7 @@ export function cleanupTmpDir(dataDir: string): CleanupStats {
 
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-export function startPeriodicCleanup(dataDir: string): void {
+function startPeriodicCleanup(dataDir: string): void {
   if (cleanupTimer) return;
   cleanupTimer = setInterval(() => {
     cleanupTmpDir(dataDir);
@@ -199,7 +199,7 @@ export function startPeriodicCleanup(dataDir: string): void {
   cleanupTimer.unref();
 }
 
-export function stopPeriodicCleanup(): void {
+function stopPeriodicCleanup(): void {
   if (cleanupTimer) {
     clearInterval(cleanupTimer);
     cleanupTimer = null;

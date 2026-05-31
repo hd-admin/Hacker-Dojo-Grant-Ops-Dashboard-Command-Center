@@ -26,7 +26,7 @@ export function useToast(): ToastContextValue {
   return context;
 }
 
-export default function ToastProvider({ children }: { children: React.ReactNode }) {
+export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const removeToast = useCallback((id: string) => {
@@ -88,3 +88,4 @@ export default function ToastProvider({ children }: { children: React.ReactNode 
     </ToastContext.Provider>
   );
 }
+

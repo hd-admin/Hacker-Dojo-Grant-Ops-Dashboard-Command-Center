@@ -40,7 +40,7 @@ vi.mock("../lib/grant-ops-client", () => ({
 	},
 }));
 
-import GrantDrawer from "./GrantDrawer";
+import { GrantDrawer } from "./GrantDrawer";
 
 const grantId = "nsf-techaccess";
 

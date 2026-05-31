@@ -2,7 +2,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import DiffViewer from './DiffViewer';
+import { DiffViewer } from './DiffViewer';
 
 describe('DiffViewer', () => {
   it('renders diff with additions and deletions', async () => {

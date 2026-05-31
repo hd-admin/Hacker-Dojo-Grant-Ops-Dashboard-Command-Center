@@ -22,7 +22,7 @@ vi.mock('../lib/grant-ops-client', () => ({
   },
 }));
 
-import TasksView from './TasksView';
+import { TasksView } from './TasksView';
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;

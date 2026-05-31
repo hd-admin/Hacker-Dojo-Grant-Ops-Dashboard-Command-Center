@@ -65,7 +65,7 @@ interface SettingsViewProps {
   initiallyEditing?: boolean;
 }
 
-export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
+export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
   const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(true);
@@ -841,3 +841,4 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
     </>
   );
 }
+

@@ -107,7 +107,7 @@ function statusToLabel(status: GrantStatus): StatusFilter {
   }
 }
 
-export default function PipelineView({ onGrantSelect, onNavigate }: PipelineViewProps) {
+export function PipelineView({ onGrantSelect, onNavigate }: PipelineViewProps) {
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<PipelineViewMode>('board');
@@ -428,3 +428,4 @@ export default function PipelineView({ onGrantSelect, onNavigate }: PipelineView
     </>
   );
 }
+

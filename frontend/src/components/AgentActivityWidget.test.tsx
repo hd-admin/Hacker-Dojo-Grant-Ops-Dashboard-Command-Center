@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import AgentActivityWidget from './AgentActivityWidget';
+import { AgentActivityWidget } from './AgentActivityWidget';
 
 vi.mock('lucide-react', () => ({
   Activity: () => <svg data-testid="activity-icon" />,

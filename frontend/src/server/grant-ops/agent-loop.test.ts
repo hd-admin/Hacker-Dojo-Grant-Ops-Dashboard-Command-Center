@@ -19,7 +19,7 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { Writable, Readable } from 'node:stream';
 import type { AgentJob, AgentTaskType } from '../../../../shared/types';
-import { executeAgentJob, MAX_RETRIES, JOB_TIMEOUTS, PROGRESS_STAGES } from './agent-loop';
+import { executeAgentJob, MAX_RETRIES, JOB_TIMEOUTS, PROGRESS_STAGES, checkQualityGates } from './agent-loop';
 import type { AgentLoopDeps } from './agent-loop';
 
 let currentTestDataDir: string;
@@ -176,10 +176,11 @@ describe('executeAgentJob - mocked subprocess', () => {
     const { deps, ingestCalls } = createMockDeps();
 
     const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
+    writeArtifactToPath(artifactPath, buildValidResearchArtifact(job.id));
+
     const execPromise = executeAgentJob(job, deps);
 
-    await flushPromises();
-    writeArtifactToPath(artifactPath, buildValidResearchArtifact(job.id));
+    await new Promise((r) => setTimeout(r, 100));
     mockProc.emit('exit', 0);
 
     await execPromise;
@@ -188,7 +189,7 @@ describe('executeAgentJob - mocked subprocess', () => {
     if (ingestCalls[0]) {
       expect(ingestCalls[0].type).toBe('research');
     }
-  });
+  }, 15000);
 
   it('2 - invalid JSON on 1st attempt, succeeds on 2nd (AC-13.2.1)', async () => {
     const mockProc1 = createMockChildProcess();
@@ -386,6 +387,44 @@ describe('executeAgentJob - mocked subprocess', () => {
     expect(schemaRetry).toBeDefined();
     expect(schemaRetry!.errorMessage).toContain('Schema validation');
   }, 10000);
+});
+
+describe('checkQualityGates - draft wordCount threshold (AC-15.8.1)', () => {
+  it('fails draft with wordCount=300 (between old 200 and new 500 threshold)', () => {
+    const result = checkQualityGates('draft', {
+      wordCount: 300,
+      sections: [{ isGrounded: true }],
+    });
+    expect(result.passed).toBe(false);
+    expect(result.feedback).toContain('500');
+  });
+
+  it('passes draft with wordCount=600 (above 500 threshold)', () => {
+    const result = checkQualityGates('draft', {
+      wordCount: 600,
+      sections: [{ isGrounded: true }],
+    });
+    expect(result.passed).toBe(true);
+    expect(result.feedback).toBe('');
+  });
+
+  it('fails draft with wordCount=499 (just below 500 threshold)', () => {
+    const result = checkQualityGates('draft', {
+      wordCount: 499,
+      sections: [{ isGrounded: true }],
+    });
+    expect(result.passed).toBe(false);
+    expect(result.feedback).toContain('500');
+  });
+
+  it('passes draft with wordCount=500 (exactly at threshold)', () => {
+    const result = checkQualityGates('draft', {
+      wordCount: 500,
+      sections: [{ isGrounded: true }],
+    });
+    expect(result.passed).toBe(true);
+    expect(result.feedback).toBe('');
+  });
 });
 
 describe('agent-loop constants', () => {

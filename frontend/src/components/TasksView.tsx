@@ -13,7 +13,7 @@ interface TasksViewProps {
   onNavigate?: (view: ViewType) => void;
 }
 
-export default function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: TasksViewProps) {
+export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: TasksViewProps) {
   const [tasks, setTasks] = useState<Task[]>(tasksProp ?? []);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(false);
@@ -364,3 +364,4 @@ export default function TasksView({ onRefreshAppState, tasks: tasksProp, onNavig
     </>
   );
 }
+

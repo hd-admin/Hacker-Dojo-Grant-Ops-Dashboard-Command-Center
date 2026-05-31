@@ -66,7 +66,7 @@ function parseEvidenceForDisplay(evidence: string[]): {
 	});
 }
 
-export default function GroundingReview({
+export function GroundingReview({
 	draftArtifact,
 	onReviewComplete,
 }: GroundingReviewProps) {
@@ -291,3 +291,4 @@ export default function GroundingReview({
 		</div>
 	);
 }
+

@@ -76,7 +76,7 @@ function computeDiff(oldLines: string[], newLines: string[]): DiffLine[] {
   return result;
 }
 
-export default function DiffViewer({ oldText, newText }: DiffViewerProps) {
+export function DiffViewer({ oldText, newText }: DiffViewerProps) {
   const oldLines = oldText.split('\n');
   const newLines = newText.split('\n');
   const diff = computeDiff(oldLines, newLines);
@@ -114,3 +114,4 @@ export default function DiffViewer({ oldText, newText }: DiffViewerProps) {
     </div>
   );
 }
+

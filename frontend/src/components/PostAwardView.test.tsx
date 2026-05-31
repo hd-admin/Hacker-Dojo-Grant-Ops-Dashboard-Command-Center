@@ -2,7 +2,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import PostAwardView from './PostAwardView';
+import { PostAwardView } from './PostAwardView';
 
 describe('PostAwardView', () => {
   beforeEach(() => {

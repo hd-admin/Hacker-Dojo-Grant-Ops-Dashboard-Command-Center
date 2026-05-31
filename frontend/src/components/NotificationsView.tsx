@@ -19,7 +19,7 @@ function getUrgencyDotClass(urgency?: 'info' | 'warning' | 'urgent', dot?: strin
   return `notification-dot ${dot || 'info'}`;
 }
 
-export default function NotificationsView({ notifications: notificationsProp }: NotificationsViewProps) {
+export function NotificationsView({ notifications: notificationsProp }: NotificationsViewProps) {
   const [notifications, setNotifications] = useState<Notification[]>(notificationsProp ?? []);
   const [loading, setLoading] = useState(false);
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');
@@ -116,3 +116,4 @@ export default function NotificationsView({ notifications: notificationsProp }: 
     </>
   );
 }
+

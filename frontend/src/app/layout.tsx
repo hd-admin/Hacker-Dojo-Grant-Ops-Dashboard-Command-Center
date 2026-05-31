@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
-import ToastProvider from '@/components/ToastProvider';
+import { ToastProvider } from '@/components/ToastProvider';
 
 export const metadata: Metadata = {
   title: 'Hacker Dojo · Grant Operations Center',

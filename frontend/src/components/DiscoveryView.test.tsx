@@ -2,7 +2,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import DiscoveryView from './DiscoveryView';
+import { DiscoveryView } from './DiscoveryView';
 
 describe('DiscoveryView', () => {
   it('renders empty state', async () => {

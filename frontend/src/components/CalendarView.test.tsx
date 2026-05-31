@@ -2,7 +2,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import CalendarView from './CalendarView';
+import { CalendarView } from './CalendarView';
 
 describe('CalendarView', () => {
   it('renders month grid with days of week', async () => {

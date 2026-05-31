@@ -97,7 +97,7 @@ const _mockProfile: OrganizationProfile = {
   },
 };
 
-import DashboardView from './DashboardView';
+import { DashboardView } from './DashboardView';
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;

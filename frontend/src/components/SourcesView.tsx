@@ -103,7 +103,7 @@ function crawlAccessLabel(cat: SourceCrawlAccessCategory): string {
   return labels[cat] ?? cat;
 }
 
-export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
+export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
   const [sources, setSources] = useState<Source[]>([]);
   const [pendingSources, setPendingSources] = useState<Source[]>([]);
   const [showDiscoverForm, setShowDiscoverForm] = useState(false);
@@ -1576,3 +1576,4 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     </>
   );
 }
+

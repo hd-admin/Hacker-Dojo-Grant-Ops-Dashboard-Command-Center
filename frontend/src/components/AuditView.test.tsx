@@ -8,7 +8,7 @@ const { onRefreshAppState } = vi.hoisted(() => ({
   onRefreshAppState: vi.fn(),
 }));
 
-import AuditView from './AuditView';
+import { AuditView } from './AuditView';
 
 const auditEvents: AuditEvent[] = [
   {

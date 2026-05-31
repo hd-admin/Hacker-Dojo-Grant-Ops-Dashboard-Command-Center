@@ -20,7 +20,7 @@ interface FormTemplateViewProps {
   onSave?: (answers: Record<string, string>) => void;
 }
 
-export default function FormTemplateView({ template, onSave }: FormTemplateViewProps) {
+export function FormTemplateView({ template, onSave }: FormTemplateViewProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
 
   const handleChange = (fieldId: string, value: string) => {
@@ -54,3 +54,4 @@ export default function FormTemplateView({ template, onSave }: FormTemplateViewP
     </div>
   );
 }
+

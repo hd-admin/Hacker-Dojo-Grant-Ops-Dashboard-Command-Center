@@ -29,20 +29,20 @@ import {
   X,
 } from "lucide-react";
 import { client } from "../lib/grant-ops-client";
-import DashboardView from "./DashboardView";
-import DiscoveryView from "./DiscoveryView";
-import GrantDrawer from "./GrantDrawer";
-import NotificationsView from "./NotificationsView";
-import PipelineView from "./PipelineView";
-import SettingsView from "./SettingsView";
-import SourcesView from "./SourcesView";
-import TasksView from "./TasksView";
-import AuditView from "./AuditView";
-import CalendarView from "./CalendarView";
-import DuplicatesView from "./DuplicatesView";
-import JobsPanel from "./JobsPanel";
-import OperatorNamePrompt from "./OperatorNamePrompt";
-import PostAwardView from "./PostAwardView";
+import { DashboardView } from "./DashboardView";
+import { DiscoveryView } from "./DiscoveryView";
+import { GrantDrawer } from "./GrantDrawer";
+import { NotificationsView } from "./NotificationsView";
+import { PipelineView } from "./PipelineView";
+import { SettingsView } from "./SettingsView";
+import { SourcesView } from "./SourcesView";
+import { TasksView } from "./TasksView";
+import { AuditView } from "./AuditView";
+import { CalendarView } from "./CalendarView";
+import { DuplicatesView } from "./DuplicatesView";
+import { JobsPanel } from "./JobsPanel";
+import { OperatorNamePrompt } from "./OperatorNamePrompt";
+import { PostAwardView } from "./PostAwardView";
 
 type ViewType =
   | "dashboard"
@@ -114,7 +114,7 @@ function readWorkingContext(): {
   }
 }
 
-export default function AppShell() {
+export function AppShell() {
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
   const [selectedGrantRefreshKey, setSelectedGrantRefreshKey] = useState(0);
@@ -792,3 +792,4 @@ function getRelativeTime(isoString: string): string {
   if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString();
 }
+

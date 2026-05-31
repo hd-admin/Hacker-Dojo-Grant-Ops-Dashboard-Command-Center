@@ -402,45 +402,12 @@ export async function executeAgentJob(
     `Failed after ${MAX_RETRIES} attempts: ${failureReasons.join(' | ')}. Check session log at ${sessionLogPath}`);
 }
 
-// ============ ORPHAN DETECTION ============
-
-import { loadJobQueue } from '../../../../shared/grant-ops-persistence';
-
-export async function scanOrphanedJobs(): Promise<void> {
-  try {
-    const { updateJobQueueItemPersistence } = await import('../../../../shared/grant-ops-persistence');
-    const jobs = await loadJobQueue();
-    const orphaned = jobs.filter((j) => j.status === 'running' || j.status === 'verifying');
-
-    for (const job of orphaned) {
-      const pid = job.processPid as number | undefined;
-      let isAlive = false;
-      if (pid) {
-        try {
-          process.kill(pid, 0);
-          isAlive = true;
-        } catch {
-          isAlive = false;
-        }
-      }
-      if (!isAlive) {
-        await updateJobQueueItemPersistence(job.id, {
-          status: 'failed',
-          errorMessage: `Orphaned job detected: process ${pid ?? 'unknown'} is no longer running`,
-        });
-      }
-    }
-  } catch {
-    // ignore orphan scan errors
-  }
-}
-
 interface QualityGateResult {
   passed: boolean;
   feedback: string;
 }
 
-function checkQualityGates(type: AgentTaskType, artifact: Record<string, unknown>): QualityGateResult {
+export function checkQualityGates(type: AgentTaskType, artifact: Record<string, unknown>): QualityGateResult {
   switch (type) {
     case 'research': {
       const grants = artifact.grants as unknown[];
@@ -453,7 +420,7 @@ function checkQualityGates(type: AgentTaskType, artifact: Record<string, unknown
     case 'draft': {
       const wordCount = artifact.wordCount as number;
       const sections = artifact.sections as Array<{ isGrounded: boolean }> | undefined;
-      if (wordCount < 200) {
+      if (wordCount < 500) {
         return { passed: false, feedback: `Draft too short (${wordCount} words). Generate at least 500 words across all sections.` };
       }
       if (sections && !sections.some(s => s.isGrounded)) {
@@ -506,18 +473,6 @@ function checkQualityGates(type: AgentTaskType, artifact: Record<string, unknown
     default:
       return { passed: true, feedback: '' };
   }
-}
-
-export function getMaxConcurrentJobs(): number {
-  return MAX_CONCURRENT_JOBS;
-}
-
-export function getActiveJobCount(): number {
-  return activeJobs;
-}
-
-export function getJobTimeout(type: AgentTaskType): number {
-  return JOB_TIMEOUTS[type] || 120_000;
 }
 
 export { MAX_RETRIES, JOB_TIMEOUTS, PROGRESS_STAGES };

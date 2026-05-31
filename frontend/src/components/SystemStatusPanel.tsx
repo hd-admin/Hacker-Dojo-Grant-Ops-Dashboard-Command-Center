@@ -8,7 +8,7 @@ interface HealthStatus {
   crawlerStatus: string;
 }
 
-export default function SystemStatusPanel() {
+export function SystemStatusPanel() {
   const [status, setStatus] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -63,3 +63,4 @@ export default function SystemStatusPanel() {
     </div>
   );
 }
+

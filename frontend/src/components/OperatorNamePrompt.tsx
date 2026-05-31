@@ -81,7 +81,7 @@ const errorStyle: React.CSSProperties = {
   fontSize: 13,
 };
 
-export default function OperatorNamePrompt({
+export function OperatorNamePrompt({
   onSubmit,
   onSave,
   isSubmitting = false,
@@ -153,3 +153,4 @@ export default function OperatorNamePrompt({
     </div>
   );
 }
+

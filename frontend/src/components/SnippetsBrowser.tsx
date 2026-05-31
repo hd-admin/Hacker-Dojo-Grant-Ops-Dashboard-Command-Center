@@ -17,7 +17,7 @@ interface SnippetsBrowserProps {
   onInsert?: (content: string) => void;
 }
 
-export default function SnippetsBrowser({ snippets, onInsert }: SnippetsBrowserProps) {
+export function SnippetsBrowser({ snippets, onInsert }: SnippetsBrowserProps) {
   const [search, setSearch] = useState('');
 
   const filtered = snippets.filter((s) =>
@@ -64,3 +64,4 @@ export default function SnippetsBrowser({ snippets, onInsert }: SnippetsBrowserP
     </div>
   );
 }
+

@@ -2,7 +2,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import ToastProvider, { useToast } from './ToastProvider';
+import { ToastProvider, useToast } from './ToastProvider';
 
 function TestComponent() {
   const { addToast } = useToast();

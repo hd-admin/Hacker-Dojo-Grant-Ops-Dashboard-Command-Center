@@ -52,7 +52,7 @@ vi.mock('../lib/grant-ops-client', () => ({
   },
 }));
 
-import SettingsView from './SettingsView';
+import { SettingsView } from './SettingsView';
 
 const profile: OrganizationProfile = {
   legalName: 'Hacker Dojo, a California nonprofit corporation',

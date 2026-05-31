@@ -8,7 +8,7 @@ interface AuditViewProps {
   entityType?: string;
 }
 
-export default function AuditView({ entityId, entityType }: AuditViewProps) {
+export function AuditView({ entityId, entityType }: AuditViewProps) {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [_error, setError] = useState<string | null>(null);
@@ -64,3 +64,4 @@ export default function AuditView({ entityId, entityType }: AuditViewProps) {
     </div>
   );
 }
+

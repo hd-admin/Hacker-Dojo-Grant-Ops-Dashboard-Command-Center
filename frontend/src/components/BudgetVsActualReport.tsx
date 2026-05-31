@@ -28,7 +28,7 @@ function getPeriodProgress(startDate: string, endDate: string): number {
   return Math.min(100, Math.max(0, Math.round((elapsed / total) * 100)));
 }
 
-export default function BudgetVsActualReport({
+export function BudgetVsActualReport({
   award,
   budgetCategories,
   expenses,
@@ -146,3 +146,4 @@ export default function BudgetVsActualReport({
     </div>
   );
 }
+

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import { act } from 'react';
 import type { DraftArtifact } from '../../../shared/types';
-import GroundingReview from './GroundingReview';
+import { GroundingReview } from './GroundingReview';
 
 let container: HTMLDivElement;
 

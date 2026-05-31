@@ -9,7 +9,7 @@ interface DuplicatesViewProps {
   onRefreshAppState?: () => Promise<void> | void;
 }
 
-export default function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesViewProps) {
+export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesViewProps) {
   const [candidates, setCandidates] = useState<DuplicateCandidate[]>([]);
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(true);
@@ -314,3 +314,4 @@ export default function DuplicatesView({ onGrantSelect, onRefreshAppState }: Dup
     </>
   );
 }
+

@@ -33,7 +33,7 @@ vi.mock('../lib/grant-ops-client', () => ({
   notificationsApi: { getAll: notificationsGetAll },
 }));
 
-import NotificationsView from './NotificationsView';
+import { NotificationsView } from './NotificationsView';
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;

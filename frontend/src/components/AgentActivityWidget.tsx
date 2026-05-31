@@ -11,7 +11,7 @@ interface ActivityEvent {
   metadata?: string;
 }
 
-export default function AgentActivityWidget() {
+export function AgentActivityWidget() {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -66,3 +66,4 @@ export default function AgentActivityWidget() {
     </div>
   );
 }
+

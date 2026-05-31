@@ -193,7 +193,7 @@ function statusDot(status: ReadinessStatus): string {
 	}
 }
 
-export default function SubmissionReadiness({
+export function SubmissionReadiness({
 	grant,
 	latestDraft,
 	approvalRecord,
@@ -363,3 +363,4 @@ export default function SubmissionReadiness({
 		</div>
 	);
 }
+

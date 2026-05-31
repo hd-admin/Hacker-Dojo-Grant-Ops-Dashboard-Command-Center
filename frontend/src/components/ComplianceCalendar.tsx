@@ -14,7 +14,7 @@ interface ComplianceCalendarProps {
   awardId?: string;
 }
 
-export default function ComplianceCalendar({ awardId }: ComplianceCalendarProps) {
+export function ComplianceCalendar({ awardId }: ComplianceCalendarProps) {
   const [items, setItems] = useState<ComplianceItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -58,3 +58,4 @@ export default function ComplianceCalendar({ awardId }: ComplianceCalendarProps)
     </div>
   );
 }
+

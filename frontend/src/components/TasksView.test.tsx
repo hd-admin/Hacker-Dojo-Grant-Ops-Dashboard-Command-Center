@@ -21,7 +21,7 @@ vi.mock('../lib/grant-ops-client', () => ({
   },
 }));
 
-import TasksView from './TasksView';
+import { TasksView } from './TasksView';
 
 const mockTasks: Task[] = [
   { id: 'task-1', text: 'Review NSF TechAccess LOI', completed: false },

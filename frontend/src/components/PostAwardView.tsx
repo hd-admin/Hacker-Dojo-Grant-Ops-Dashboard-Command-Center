@@ -14,7 +14,7 @@ interface PostAwardViewProps {
   onRefreshAppState?: () => Promise<void> | void;
 }
 
-export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }: PostAwardViewProps) {
+export function PostAwardView({ onRefreshAppState: _onRefreshAppState }: PostAwardViewProps) {
   const [awards, setAwards] = useState<Award[]>([]);
   const [_budgetCategories, _setBudgetCategories] = useState<Record<string, AwardBudgetCategory[]>>({});
   const [_expenses, _setExpenses] = useState<Record<string, AwardExpense[]>>({});
@@ -294,3 +294,4 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
     </div>
   );
 }
+

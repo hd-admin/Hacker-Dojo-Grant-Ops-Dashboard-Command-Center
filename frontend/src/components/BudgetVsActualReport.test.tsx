@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import BudgetVsActualReport from './BudgetVsActualReport';
+import { BudgetVsActualReport } from './BudgetVsActualReport';
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;

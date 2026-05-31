@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import JobProgress from './JobProgress';
+import { JobProgress } from './JobProgress';
 
 describe('JobProgress', () => {
   it('exports JobProgress component', () => {

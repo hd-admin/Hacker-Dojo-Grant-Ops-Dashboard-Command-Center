@@ -65,7 +65,7 @@ const mockJobs: JobQueueItem[] = [
   },
 ];
 
-import JobsPanel from './JobsPanel';
+import { JobsPanel } from './JobsPanel';
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;

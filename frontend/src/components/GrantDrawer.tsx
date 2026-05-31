@@ -13,8 +13,8 @@ import type {
 import { client } from "../lib/grant-ops-client";
 import { useAutosave } from "../lib/useAutosave";
 import { AlertTriangle } from "lucide-react";
-import GroundingReview from "./GroundingReview";
-import SubmissionReadiness from "./SubmissionReadiness";
+import { GroundingReview } from "./GroundingReview";
+import { SubmissionReadiness } from "./SubmissionReadiness";
 
 interface GrantDrawerProps {
 	grantId: string | null;
@@ -33,7 +33,7 @@ export interface GrantDrawerViewModel {
 	submitDisabledReason: string | null;
 }
 
-export function buildGrantDrawerViewModel(
+function buildGrantDrawerViewModel(
 	detail: GrantDetailResponse | null,
 ): GrantDrawerViewModel {
 	if (!detail) {
@@ -140,7 +140,7 @@ async function waitForJobCompletion(jobId: string): Promise<void> {
 	throw new Error('Timed out waiting for draft job');
 }
 
-export default function GrantDrawer({
+export function GrantDrawer({
 	grantId,
 	onClose,
 	onRefreshAppState,
@@ -1701,3 +1701,4 @@ export default function GrantDrawer({
 		</div>
 	);
 }
+

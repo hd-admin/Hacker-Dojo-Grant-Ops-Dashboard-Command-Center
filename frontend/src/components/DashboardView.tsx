@@ -69,7 +69,7 @@ function stageDescription(stage: string | undefined): string {
   return stage;
 }
 
-export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications, recentGrantIds, sources = [], operatorName }: DashboardViewProps) {
+export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications, recentGrantIds, sources = [], operatorName }: DashboardViewProps) {
   const [jobs, setJobs] = useState<JobQueueItem[]>([]);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [crawlLatestRun, setCrawlLatestRun] = useState<CrawlRun | null>(null);
@@ -691,3 +691,4 @@ export default function DashboardView({ onGrantSelect, onNavigate, onRefreshAppS
     </>
   );
 }
+

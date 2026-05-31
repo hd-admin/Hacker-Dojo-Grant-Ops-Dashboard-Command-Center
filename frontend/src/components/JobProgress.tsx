@@ -25,7 +25,7 @@ function getStatusColor(status: JobStatus): string {
   }
 }
 
-export default function JobProgress({
+export function JobProgress({
   jobId,
   jobType,
   onComplete,
@@ -183,3 +183,4 @@ export default function JobProgress({
     </div>
   );
 }
+
