@@ -35,16 +35,6 @@ const EXTENSION_MIME_MAP: Record<string, string[]> = {
   '.jpeg': ['image/jpeg'],
 };
 
-const MAGIC_BYTES: Record<string, number[]> = {
-  'application/pdf': [0x25, 0x50, 0x44, 0x46],
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': [0x50, 0x4B],
-  'application/msword': [0xD0, 0xCF, 0x11, 0xE0],
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': [0x50, 0x4B],
-  'application/vnd.ms-excel': [0xD0, 0xCF, 0x11, 0xE0],
-  'image/png': [0x89, 0x50, 0x4E, 0x47],
-  'image/jpeg': [0xFF, 0xD8, 0xFF],
-};
-
 export interface ValidationResult {
   valid: boolean;
   error?: ApiErrorResponse | undefined;
@@ -89,20 +79,19 @@ export function validateFileExtension(filePath: string): ApiErrorResponse | null
   return null;
 }
 
-export function detectMimeTypeByMagic(filePath: string): string | null {
+export async function detectMimeTypeByMagic(filePath: string): Promise<string | null> {
   try {
-    const buffer = Buffer.alloc(8);
-    const fd = fs.openSync(filePath, 'r');
-    const bytesRead = fs.readSync(fd, buffer, 0, 8, 0);
-    fs.closeSync(fd);
-
-    if (bytesRead < 4) return null;
-
-    for (const [mime, signature] of Object.entries(MAGIC_BYTES)) {
-      if (signature.every((byte, i) => i < bytesRead && buffer[i] === byte)) {
-        return mime;
-      }
+    const fileTypeModule = await import('file-type');
+    const result = await (fileTypeModule as unknown as { fileTypeFromFile: (path: string) => Promise<{ mime: string } | undefined> }).fileTypeFromFile(filePath);
+    if (result) {
+      return result.mime;
     }
+
+    // Fallback: check if it's plain text
+    const buffer = Buffer.alloc(256);
+    const fd = fs.openSync(filePath, 'r');
+    const bytesRead = fs.readSync(fd, buffer, 0, 256, 0);
+    fs.closeSync(fd);
 
     const firstBytes = Array.from(buffer.slice(0, bytesRead));
     if (firstBytes.every(b => b >= 0x20 && b <= 0x7E || b === 0x0A || b === 0x0D || b === 0x09)) {
@@ -115,12 +104,12 @@ export function detectMimeTypeByMagic(filePath: string): string | null {
   }
 }
 
-export function validateMimeType(filePath: string, originalFilename?: string): ApiErrorResponse | null {
+export async function validateMimeType(filePath: string, originalFilename?: string): Promise<ApiErrorResponse | null> {
   const ext = path.extname(originalFilename ?? filePath).toLowerCase();
   const expectedMimes = EXTENSION_MIME_MAP[ext];
   if (!expectedMimes) return null;
 
-  const detectedMime = detectMimeTypeByMagic(filePath);
+  const detectedMime = await detectMimeTypeByMagic(filePath);
   if (!detectedMime) {
     return { error: 'Cannot detect file type. File may be corrupted.', code: 'FILE_UNSUPPORTED_TYPE' };
   }
@@ -142,22 +131,22 @@ export function validateMimeType(filePath: string, originalFilename?: string): A
   return null;
 }
 
-export function validateUpload(filePath: string): ValidationResult {
+export async function validateUpload(filePath: string): Promise<ValidationResult> {
   const checks = [
     () => validateFileExists(filePath),
     () => validateFileSize(filePath),
     () => validateFileExtension(filePath),
-    () => validateMimeType(filePath),
+    async () => await validateMimeType(filePath),
   ];
 
   for (const check of checks) {
-    const error = check();
+    const error = await check();
     if (error) {
       return { valid: false, error };
     }
   }
 
-  const detectedMimeType = detectMimeTypeByMagic(filePath);
+  const detectedMimeType = await detectMimeTypeByMagic(filePath);
   return { valid: true, detectedMimeType: detectedMimeType ?? undefined };
 }
 

@@ -9,7 +9,9 @@ function createIcon(name: string) {
 }
 
 export const AlertTriangle = createIcon('AlertTriangle');
+export const Award = createIcon('Award');
 export const Bell = createIcon('Bell');
+export const Calendar = createIcon('Calendar');
 export const Check = createIcon('Check');
 export const Columns3 = createIcon('Columns3');
 export const Database = createIcon('Database');

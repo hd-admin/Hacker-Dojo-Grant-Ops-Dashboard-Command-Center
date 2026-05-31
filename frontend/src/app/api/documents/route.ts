@@ -3,6 +3,7 @@ import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import path from 'node:path';
 import fs from 'node:fs/promises';
+import crypto from 'node:crypto';
 import { getDataDir } from '../../../../../shared/grant-ops-persistence';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { analyzeStoredDocument } from '@/server/grant-ops/document-text-extractor';
@@ -68,6 +69,7 @@ export async function POST(request: NextRequest) {
     const sanitized = sanitizeFileName(fileEntry.name);
     const storagePath = path.join(storageDir, `${id}-${sanitized}`);
     const bytes = Buffer.from(await fileEntry.arrayBuffer());
+    const sha256 = crypto.createHash('sha256').update(bytes).digest('hex');
     const tmpPath = storagePath + '.tmp.upload';
     await fs.writeFile(tmpPath, bytes);
 
@@ -83,7 +85,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(extErr, { status: 400 });
     }
 
-    const mimeErr = validateMimeType(tmpPath, fileEntry.name);
+    const mimeErr = await validateMimeType(tmpPath, fileEntry.name);
     if (mimeErr) {
       await fs.unlink(tmpPath).catch(() => {});
       return NextResponse.json(mimeErr, { status: 400 });
@@ -105,6 +107,7 @@ export async function POST(request: NextRequest) {
       audited: parseBoolean(formData.get('audited')) ?? false,
       uploadedAt: nowIso,
       storagePath,
+      sha256,
     };
 
     const version = typeof formData.get('version') === 'string' ? String(formData.get('version')) : null;

@@ -218,6 +218,7 @@ export const DocumentMetadataSchema = z.object({
   mimeType: z.string().optional(),
   classification: z.enum(['canonical', 'draft-only', 'archived', 'restricted']).optional(),
   versions: z.array(DocumentVersionSchema).optional(),
+  sha256: z.string().optional(),
 });
 
 export const OpencodeSettingsSchema = z.object({

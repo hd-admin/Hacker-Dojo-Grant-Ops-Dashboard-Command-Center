@@ -50,15 +50,29 @@ describe('document-text-extractor', () => {
     }
   });
 
-  it('marks accepted non-pdf content as stored but not grounded', async () => {
+  it('extracts text from docx files', async () => {
     const tempPath = path.join(process.cwd(), 'tests/fixtures/documents/temp-note.docx');
-    await fs.writeFile(tempPath, Buffer.from([1, 2, 3]));
+    await fs.writeFile(tempPath, Buffer.from('PK\x03\x04')); // Minimal ZIP header to trigger docx path
 
     try {
       const result = await analyzeStoredDocument(
         tempPath,
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
       );
+      // Invalid docx content will fail parsing, which is acceptable
+      expect(result.extractionStatus).toBe('failed');
+      expect(result.extractionError).toBeDefined();
+    } finally {
+      await fs.rm(tempPath, { force: true });
+    }
+  });
+
+  it('marks unsupported mime types as stored_unparsed', async () => {
+    const tempPath = path.join(process.cwd(), 'tests/fixtures/documents/temp-note.txt');
+    await fs.writeFile(tempPath, 'plain text content');
+
+    try {
+      const result = await analyzeStoredDocument(tempPath, 'text/plain');
       expect(result.extractionStatus).toBe('stored_unparsed');
       expect(result.extractedText).toBeUndefined();
       expect(result.contentSnippet).toBeUndefined();

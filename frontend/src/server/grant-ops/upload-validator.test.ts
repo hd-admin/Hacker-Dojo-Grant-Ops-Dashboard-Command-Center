@@ -132,39 +132,46 @@ describe('detectMimeTypeByMagic', () => {
     }
   });
 
-  it('detects PDF by magic bytes', () => {
+  it('detects PDF by magic bytes', async () => {
     const filePath = createTestFile('test.pdf', Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34]));
-    const result = detectMimeTypeByMagic(filePath);
+    const result = await detectMimeTypeByMagic(filePath);
     expect(result).toBe('application/pdf');
   });
 
-  it('detects PNG by magic bytes', () => {
-    const filePath = createTestFile('test.png', Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]));
-    const result = detectMimeTypeByMagic(filePath);
+  it('detects PNG by magic bytes', async () => {
+    // Minimal PNG: signature + IHDR chunk header
+    const png = Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+      Buffer.from([0x00, 0x00, 0x00, 0x0D]), // IHDR length
+      Buffer.from('IHDR'),
+      Buffer.alloc(17, 0), // IHDR data + CRC placeholder
+    ]);
+    const filePath = createTestFile('test.png', png);
+    const result = await detectMimeTypeByMagic(filePath);
     expect(result).toBe('image/png');
   });
 
-  it('detects JPEG by magic bytes', () => {
+  it('detects JPEG by magic bytes', async () => {
     const filePath = createTestFile('test.jpg', Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46]));
-    const result = detectMimeTypeByMagic(filePath);
+    const result = await detectMimeTypeByMagic(filePath);
     expect(result).toBe('image/jpeg');
   });
 
-  it('detects text/plain for ASCII content', () => {
+  it('detects text/plain for ASCII content', async () => {
     const filePath = createTestFile('test.txt', Buffer.from('Hello world'));
-    const result = detectMimeTypeByMagic(filePath);
+    const result = await detectMimeTypeByMagic(filePath);
     expect(result).toBe('text/plain');
   });
 
-  it('returns null for binary content with no match', () => {
+  it('returns null for binary content with no match', async () => {
     const filePath = createTestFile('test.bin', Buffer.from([0x01, 0x02, 0x03, 0x04]));
-    const result = detectMimeTypeByMagic(filePath);
+    const result = await detectMimeTypeByMagic(filePath);
     expect(result).toBeNull();
   });
 
-  it('returns null for files shorter than 4 bytes', () => {
-    const filePath = createTestFile('tiny.bin', Buffer.from([0x25]));
-    const result = detectMimeTypeByMagic(filePath);
+  it('returns null for non-text binary content', async () => {
+    const filePath = createTestFile('tiny.bin', Buffer.from([0x01, 0x02]));
+    const result = await detectMimeTypeByMagic(filePath);
     expect(result).toBeNull();
   });
 });
@@ -180,34 +187,40 @@ describe('validateMimeType', () => {
     }
   });
 
-  it('returns null when MIME matches extension (PDF)', () => {
+  it('returns null when MIME matches extension (PDF)', async () => {
     const filePath = createTestFile('test.pdf', Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31]));
-    const result = validateMimeType(filePath);
+    const result = await validateMimeType(filePath);
     expect(result).toBeNull();
   });
 
-  it('returns null when MIME matches extension (PNG)', () => {
-    const filePath = createTestFile('test.png', Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]));
-    const result = validateMimeType(filePath);
+  it('returns null when MIME matches extension (PNG)', async () => {
+    const png = Buffer.concat([
+      Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
+      Buffer.from([0x00, 0x00, 0x00, 0x0D]),
+      Buffer.from('IHDR'),
+      Buffer.alloc(17, 0),
+    ]);
+    const filePath = createTestFile('test.png', png);
+    const result = await validateMimeType(filePath);
     expect(result).toBeNull();
   });
 
-  it('returns error when MIME does not match extension', () => {
+  it('returns error when MIME does not match extension', async () => {
     const filePath = createTestFile('test.pdf', Buffer.from('Hello world'));
-    const result = validateMimeType(filePath);
+    const result = await validateMimeType(filePath);
     expect(result).not.toBeNull();
     expect(result?.code).toBe('UPLOAD_VALIDATION_FAILED');
   });
 
-  it('accepts originalFilename parameter for extension lookup', () => {
+  it('accepts originalFilename parameter for extension lookup', async () => {
     const filePath = createTestFile('upload.tmp.upload', Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31]));
-    const result = validateMimeType(filePath, 'original.pdf');
+    const result = await validateMimeType(filePath, 'original.pdf');
     expect(result).toBeNull();
   });
 
-  it('returns null for extensions without MIME mapping', () => {
+  it('returns null for extensions without MIME mapping', async () => {
     const filePath = createTestFile('test.xxx', Buffer.from([0x01, 0x02]));
-    const result = validateMimeType(filePath);
+    const result = await validateMimeType(filePath);
     expect(result).toBeNull();
   });
 });

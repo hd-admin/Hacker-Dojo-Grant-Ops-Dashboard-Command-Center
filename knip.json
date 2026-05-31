@@ -16,8 +16,8 @@
   ],
   "ignore": [
     "**/*.d.ts",
-    "frontend/next-env.d.ts",
-    "next-env.d.ts"
+    "scripts/run-benchmarks.ts",
+    "scripts/seed-benchmark-data.ts"
   ],
   "ignoreDependencies": [
     "@testing-library/react",
@@ -25,7 +25,10 @@
     "node-gyp",
     "prettier",
     "tailwindcss",
-    "@tailwindcss/postcss"
+    "pino-pretty",
+    "pino-roll",
+    "excel-zod",
+    "@napi-rs/canvas"
   ],
   "paths": {
     "@/*": ["frontend/src/*"]

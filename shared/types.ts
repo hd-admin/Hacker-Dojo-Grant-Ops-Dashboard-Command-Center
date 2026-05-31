@@ -486,6 +486,7 @@ export interface DocumentMetadata {
 	mimeType?: string;
 	classification?: 'canonical' | 'draft-only' | 'archived' | 'restricted';
 	versions?: DocumentVersion[];
+	sha256?: string;
 }
 
 export type DocumentExtractionStatus =

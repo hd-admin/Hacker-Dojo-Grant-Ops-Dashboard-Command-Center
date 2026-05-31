@@ -95,6 +95,11 @@ vi.mock('./TasksView', () => ({
   ),
 }));
 vi.mock('./DuplicatesView', () => ({ default: () => <div>duplicates</div> }));
+vi.mock('./AuditView', () => ({ default: () => <div>audit</div> }));
+vi.mock('./CalendarView', () => ({ default: () => <div>calendar</div> }));
+vi.mock('./JobsPanel', () => ({ default: () => <div>jobs</div> }));
+vi.mock('./OperatorNamePrompt', () => ({ default: () => <div>operator prompt</div> }));
+vi.mock('./PostAwardView', () => ({ default: () => <div>post-award</div> }));
 vi.mock('./GrantDrawer', () => ({
   default: ({ grantId, onRefreshAppState }: { grantId: string | null; onRefreshAppState?: () => Promise<void> | void }) =>
     grantId ? (

@@ -608,16 +608,6 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
         </section>
 
 
-        <section className="setting-card">
-          <div className="setting-card-header"><div className="setting-card-title">Safety &amp; Lock</div></div>
-          <div className="setting-card-body">
-            <p className="settings-card-description">
-              Configure application lock to protect sensitive grant data with a passcode.
-            </p>
-            <button type="button" className="btn btn-primary btn-sm" onClick={() => { void fetch('/api/safety/lock', { method: 'POST' }); }}>Lock app now</button>
-          </div>
-        </section>
-
         <section className="setting-card" data-testid="opencode-status-card">
           <div className="setting-card-header">
             <div className="setting-card-title">Opencode Agent</div>

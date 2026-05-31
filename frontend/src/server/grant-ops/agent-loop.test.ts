@@ -22,7 +22,11 @@ import type { AgentJob, AgentTaskType } from '../../../../shared/types';
 import { executeAgentJob, MAX_RETRIES, JOB_TIMEOUTS, PROGRESS_STAGES } from './agent-loop';
 import type { AgentLoopDeps } from './agent-loop';
 
-const TEST_DATA_DIR = path.join(process.cwd(), '.grant-ops-data-test-agent-loop-v2');
+let currentTestDataDir: string;
+
+function getTestDataDir() {
+  return currentTestDataDir;
+}
 
 // Shared spawn mock setup
 const mockSpawnImpl = vi.fn();
@@ -103,7 +107,7 @@ function createMockDeps(overrides?: Partial<AgentLoopDeps>): {
 
   const deps: AgentLoopDeps = {
     getDataDir() {
-      return TEST_DATA_DIR;
+      return getTestDataDir();
     },
     buildPrompt() {
       return 'Build artifact.';
@@ -146,17 +150,15 @@ function flushPromises(): Promise<void> {
 
 describe('executeAgentJob - mocked subprocess', () => {
   beforeEach(() => {
-    if (fs.existsSync(TEST_DATA_DIR)) {
-      fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true });
-    }
-    fs.mkdirSync(TEST_DATA_DIR, { recursive: true });
-    fs.mkdirSync(path.join(TEST_DATA_DIR, 'tmp'), { recursive: true });
+    currentTestDataDir = path.join(process.cwd(), `.grant-ops-data-test-agent-loop-v2-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(currentTestDataDir, { recursive: true });
+    fs.mkdirSync(path.join(currentTestDataDir, 'tmp'), { recursive: true });
     mockSpawnImpl.mockReset();
   });
 
   afterEach(() => {
-    if (fs.existsSync(TEST_DATA_DIR)) {
-      fs.rmSync(TEST_DATA_DIR, { recursive: true, force: true });
+    if (fs.existsSync(currentTestDataDir)) {
+      fs.rmSync(currentTestDataDir, { recursive: true, force: true });
     }
   });
 
@@ -167,7 +169,7 @@ describe('executeAgentJob - mocked subprocess', () => {
     const job = createResearchJob();
     const { deps, ingestCalls } = createMockDeps();
 
-    const artifactPath = path.join(TEST_DATA_DIR, 'tmp', `research-${job.id}.json`);
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
     const execPromise = executeAgentJob(job, deps);
 
     await flushPromises();
@@ -190,7 +192,7 @@ describe('executeAgentJob - mocked subprocess', () => {
     const job = createResearchJob();
     const { deps, ingestCalls } = createMockDeps();
 
-    const artifactPath = path.join(TEST_DATA_DIR, 'tmp', `research-${job.id}.json`);
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
     const execPromise = executeAgentJob(job, deps);
 
     await flushPromises();
@@ -220,7 +222,7 @@ describe('executeAgentJob - mocked subprocess', () => {
     const job = createResearchJob();
     const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
 
-    const artifactPath = path.join(TEST_DATA_DIR, 'tmp', `research-${job.id}.json`);
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
     const execPromise = executeAgentJob(job, deps);
 
     for (const proc of [mockProc1, mockProc2, mockProc3]) {
@@ -256,7 +258,7 @@ describe('executeAgentJob - mocked subprocess', () => {
       const job = createResearchJob();
       const { deps, ingestCalls } = createMockDeps();
 
-      const artifactPath = path.join(TEST_DATA_DIR, 'tmp', `research-${job.id}.json`);
+      const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
 
       const execPromise = executeAgentJob(job, deps);
 
@@ -317,7 +319,7 @@ describe('executeAgentJob - mocked subprocess', () => {
     const job = createResearchJob();
     const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
 
-    const artifactPath = path.join(TEST_DATA_DIR, 'tmp', `research-${job.id}.json`);
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
     const execPromise = executeAgentJob(job, deps);
 
     // First attempt: exit without writing artifact file
@@ -347,7 +349,7 @@ describe('executeAgentJob - mocked subprocess', () => {
     const job = createResearchJob();
     const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
 
-    const artifactPath = path.join(TEST_DATA_DIR, 'tmp', `research-${job.id}.json`);
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
     const execPromise = executeAgentJob(job, deps);
 
     // First attempt: write JSON that fails schema validation
