@@ -142,7 +142,7 @@ export default function PipelineBoard({ grants, onSelectGrant, onStatusChange: _
                       <div className="pipeline-card-fit" title={`Fit: ${grant.fit}%`}>
                         <div
                           className="pipeline-card-fit-bar"
-                          style={{ width: `${grant.fit}%` }}
+                          style={{ transform: `scaleX(${grant.fit / 100})`, transformOrigin: 'left' }}
                         />
                       </div>
                     )}

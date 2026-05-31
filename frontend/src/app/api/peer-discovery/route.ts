@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
 import { createErrorResponse } from "@/lib/api-error-handler";
+import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
@@ -12,6 +13,7 @@ export async function POST(_request: NextRequest) {
     return NextResponse.json({ jobId, message: 'Peer discovery job queued' }, { status: 202 });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to start peer discovery';
+    logger.error({ err: error }, 'Error starting peer discovery');
     return NextResponse.json(
       createErrorResponse('AGENT_TIMEOUT', message),
       { status: 500 }

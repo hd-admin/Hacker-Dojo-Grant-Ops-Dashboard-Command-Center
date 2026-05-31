@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse, connection } from "next/server";
 import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 import { loadSavedSearches, saveSavedSearches } from '../../../../../shared/grant-ops-persistence';
 import type { SavedSearch } from '../../../../../shared/types';
 
@@ -10,7 +11,8 @@ export async function GET() {
   try {
     const searches = await loadSavedSearches();
     return NextResponse.json(searches);
-  } catch {
+  } catch (error) {
+    logger.error({ err: error }, 'Error loading saved searches');
     return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to load saved searches'), { status: 500 });
   }
 }
@@ -32,7 +34,8 @@ export async function POST(request: NextRequest) {
     existing.push(search);
     await saveSavedSearches(existing);
     return NextResponse.json(search, { status: 201 });
-  } catch {
+  } catch (error) {
+    logger.error({ err: error }, 'Error creating saved search');
     return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create saved search'), { status: 500 });
   }
 }

@@ -108,7 +108,7 @@ export default function JobProgress({
         <div className="job-progress-mini-bar">
           <div
             className="job-progress-mini-fill"
-            style={{ width: `${progress}%`, backgroundColor: getStatusColor(status) }}
+            style={{ transform: `scaleX(${progress / 100})`, backgroundColor: getStatusColor(status) }}
           />
         </div>
         {isActive && onCancel && (
@@ -144,7 +144,7 @@ export default function JobProgress({
       >
         <div
           className={`job-progress-fill ${progress === 0 ? 'indeterminate' : ''}`}
-          style={progress > 0 ? { width: `${progress}%`, backgroundColor: getStatusColor(status) } : undefined}
+          style={progress > 0 ? { transform: `scaleX(${progress / 100})`, backgroundColor: getStatusColor(status) } : undefined}
         />
       </div>
 

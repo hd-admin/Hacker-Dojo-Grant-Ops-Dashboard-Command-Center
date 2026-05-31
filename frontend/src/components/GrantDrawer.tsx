@@ -833,7 +833,7 @@ export default function GrantDrawer({
 											<div className="fit-row" key={label}>
 												<div className="fit-row-label">{label}</div>
 												<div className="fit-row-bar">
-													<div style={{ width: `${score}%` }} />
+													<div style={{ transform: `scaleX(${score / 100})`, transformOrigin: 'left' }} />
 												</div>
 												<div className="fit-row-val">{score}</div>
 											</div>

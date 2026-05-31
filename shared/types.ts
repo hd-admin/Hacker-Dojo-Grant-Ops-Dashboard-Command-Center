@@ -82,6 +82,7 @@ export interface AgentJob {
 	id: string;
 	jobType: AgentTaskType;
 	grantId?: string;
+	sourceId?: string;
 	params: Record<string, unknown>;
 	status: JobStatus;
 	progress: number;
@@ -238,6 +239,7 @@ export interface Task {
 	notes?: string;
 	evidence?: string;
 	blockSubmission?: boolean;
+	updatedAt?: string;
 }
 
 export interface Source {
@@ -484,7 +486,10 @@ export interface DocumentMetadata {
 	contentSnippet?: string;
 	extractionError?: string;
 	mimeType?: string;
+	originalName?: string;
 	classification?: 'canonical' | 'draft-only' | 'archived' | 'restricted';
+	tags?: string[];
+	deletedAt?: string;
 	versions?: DocumentVersion[];
 	sha256?: string;
 }
@@ -528,6 +533,10 @@ export interface CrawlRun {
 	errorMessage?: string;
 	sourceId?: string;
 	failureCategory?: JobFailureCategory;
+	jobId?: string;
+	pagesCrawled?: number;
+	pagesFailed?: number;
+	artifactPath?: string;
 }
 
 export interface ResearchEvidence {
@@ -563,6 +572,15 @@ export interface DraftArtifact {
 	revisionNotes?: string;
 	groundingSections?: Array<{ sectionTitle: string; evidence: string[]; isGrounded: boolean }>;
 	status?: "generated" | "partial-failure";
+	jobId?: string;
+	sections?: string[];
+	wordCount?: number;
+	groundingDocumentIds?: string[];
+	groundingSourceUrls?: string[];
+	notes?: string;
+	qualityWarning?: number;
+	approvedAt?: string;
+	approvedBy?: string;
 }
 
 export interface RevisionRequest {

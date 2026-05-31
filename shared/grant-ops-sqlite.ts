@@ -982,6 +982,25 @@ function seedDefaultState(db: SqliteDatabase): void {
 		"opencode_settings",
 		defaultOpencodeSettings,
 	);
+	// Seed backup_schedule singleton if not present
+	const existingBackupSchedule = db.prepare("SELECT 1 FROM backup_schedule WHERE id = 1 LIMIT 1").get();
+	if (!existingBackupSchedule) {
+		db.prepare(
+			"INSERT INTO backup_schedule (id, enabled, intervalHours, maxBackups, lastBackupAt, lastBackupPath, lastBackupChecksum, lastBackupVerified, nextBackupAt) VALUES (1, 0, 168, 10, '', '', '', 0, '')"
+		).run();
+	}
+	// Seed default system settings if not present
+	const defaultSettings = [
+		{ key: 'operatorName', value: '' },
+		{ key: 'agentEnabled', value: 'true' },
+		{ key: 'crawlInterval', value: '168' },
+	];
+	for (const setting of defaultSettings) {
+		const existing = db.prepare("SELECT 1 FROM settings WHERE key = ? LIMIT 1").get(setting.key);
+		if (!existing) {
+			db.prepare("INSERT INTO settings (key, value) VALUES (?, ?)").run(setting.key, setting.value);
+		}
+	}
 	saveMeta(db, "lastSync", new Date().toISOString());
 }
 
@@ -1252,7 +1271,7 @@ export async function clearDatabase(
 	await fs.rm(state.documentsDir, { recursive: true, force: true });
 }
 
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export function getCurrentSchemaVersion(state: SqliteBootstrapState): number {
 	const db = openDatabase(state);
@@ -1362,13 +1381,32 @@ export function runMigrations(
 			}
 
 			const sql = readFileSync(filePath, 'utf-8');
-			const tx = db.transaction(() => {
-				db.exec(sql);
-				db.prepare(
-					'INSERT INTO schema_migrations (version, name, appliedAt) VALUES (?, ?, ?)',
-				).run(fileVersion, file, new Date().toISOString());
-			});
-			tx();
+			try {
+				const tx = db.transaction(() => {
+					db.exec(sql);
+					db.prepare(
+						'INSERT INTO schema_migrations (version, name, appliedAt) VALUES (?, ?, ?)',
+					).run(fileVersion, file, new Date().toISOString());
+				});
+				tx();
+			} catch (err) {
+				const message = err instanceof Error ? err.message : String(err);
+				// SQLite ALTER TABLE ADD COLUMN fails with "duplicate column name" if the
+				// column already exists. This can happen if a database was previously
+				// migrated and then its schema_version was manually downgraded (e.g., in
+				// tests). We skip duplicate column errors to make migrations idempotent.
+				if (message.includes('duplicate column name')) {
+					// SQLite ALTER TABLE ADD COLUMN fails with "duplicate column name" if the
+					// column already exists. This can happen if a database was previously
+					// migrated and then its schema_version was manually downgraded (e.g., in
+					// tests). We skip duplicate column errors to make migrations idempotent.
+					db.prepare(
+						'INSERT OR IGNORE INTO schema_migrations (version, name, appliedAt) VALUES (?, ?, ?)',
+					).run(fileVersion, file, new Date().toISOString());
+				} else {
+					return { success: false, version: getCurrentSchemaVersion(state), message: `Migration ${file} failed: ${message}` };
+				}
+			}
 		}
 
 		return { success: true, version: CURRENT_SCHEMA_VERSION };

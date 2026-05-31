@@ -239,7 +239,7 @@ export default function DuplicatesView({ onGrantSelect, onRefreshAppState }: Dup
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-label={`Duplicate confidence: ${confidencePct}%`}
-                        style={{ width: `${confidencePct}%`, background: confidenceColor }}
+                        style={{ transform: `scaleX(${confidencePct / 100})`, transformOrigin: 'left', background: confidenceColor }}
                       />
                     </div>
                   </div>

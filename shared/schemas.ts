@@ -184,6 +184,7 @@ export const TaskSchema = z.object({
   notes: z.string().optional(),
   evidence: z.string().optional(),
   blockSubmission: z.boolean().optional(),
+  updatedAt: z.string().optional(),
 });
 
 export const DocumentExtractionStatusSchema: z.ZodType<DocumentExtractionStatus> = z.enum([
@@ -216,7 +217,10 @@ export const DocumentMetadataSchema = z.object({
   contentSnippet: z.string().optional(),
   extractionError: z.string().optional(),
   mimeType: z.string().optional(),
+  originalName: z.string().optional(),
   classification: z.enum(['canonical', 'draft-only', 'archived', 'restricted']).optional(),
+  tags: z.array(z.string()).optional(),
+  deletedAt: z.string().optional(),
   versions: z.array(DocumentVersionSchema).optional(),
   sha256: z.string().optional(),
 });
@@ -348,6 +352,10 @@ export const CrawlRunSchema = z.object({
   grantsFound: z.number(),
   grantsMatched: z.number(),
   errorMessage: z.string().optional(),
+  jobId: z.string().optional(),
+  pagesCrawled: z.number().optional(),
+  pagesFailed: z.number().optional(),
+  artifactPath: z.string().optional(),
 });
 
 export const ResearchEvidenceSchema = z.object({
@@ -401,6 +409,15 @@ export const DraftArtifactSchema = z.object({
     isGrounded: z.boolean(),
   })).optional(),
   status: z.enum(['generated', 'partial-failure']).optional(),
+  jobId: z.string().optional(),
+  sections: z.array(z.string()).optional(),
+  wordCount: z.number().optional(),
+  groundingDocumentIds: z.array(z.string()).optional(),
+  groundingSourceUrls: z.array(z.string()).optional(),
+  notes: z.string().optional(),
+  qualityWarning: z.number().optional(),
+  approvedAt: z.string().optional(),
+  approvedBy: z.string().optional(),
 });
 
 export const RevisionRequestSchema: z.ZodType<RevisionRequest> = z.object({

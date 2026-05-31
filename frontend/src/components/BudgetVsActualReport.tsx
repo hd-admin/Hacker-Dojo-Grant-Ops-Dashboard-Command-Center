@@ -123,7 +123,7 @@ export default function BudgetVsActualReport({
                 <div className="budget-vs-actual-bar-container">
                   <div
                     className="budget-vs-actual-bar"
-                    style={{ width: `${row.spentPercent}%`, background: row.color }}
+                    style={{ transform: `scaleX(${row.spentPercent / 100})`, transformOrigin: 'left', background: row.color }}
                   />
                   <span>{row.spentPercent}%</span>
                 </div>

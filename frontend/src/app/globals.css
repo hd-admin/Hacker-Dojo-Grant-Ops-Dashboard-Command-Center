@@ -2128,12 +2128,13 @@ input[type='radio'] {
   }
 }
 
-/* Determinate progress fill - width-based with smooth transition */
+/* Determinate progress fill - transform-based for performance */
 .progress-bar-determinate {
   height: 100%;
   background: var(--accent);
   border-radius: 999px;
-  transition: width 0.4s ease;
+  transform-origin: left;
+  transition: transform 0.4s ease;
 }
 
 /* === EMPTY STATE PANEL (generic/reusable) ===
@@ -3274,13 +3275,14 @@ button.pipeline-list-row:hover {
   }
   .sidebar {
     position: fixed;
-    left: -240px;
-    transition: left 0.25s ease;
+    left: 0;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
     width: 240px;
     z-index: 200;
   }
   .sidebar.open {
-    left: 0;
+    transform: translateX(0);
   }
   .main {
     padding: 16px;
@@ -3500,7 +3502,8 @@ button.pipeline-list-row:hover {
 .job-progress-fill {
   height: 100%;
   border-radius: 2px;
-  transition: width 0.3s ease;
+  transform-origin: left;
+  transition: transform 0.3s ease;
 }
 
 .job-progress-fill.indeterminate {
@@ -3591,5 +3594,6 @@ button.pipeline-list-row:hover {
 .job-progress-mini-fill {
   height: 100%;
   border-radius: 2px;
-  transition: width 0.3s ease;
+  transform-origin: left;
+  transition: transform 0.3s ease;
 }
