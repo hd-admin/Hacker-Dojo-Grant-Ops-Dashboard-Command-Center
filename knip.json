@@ -1,48 +1,19 @@
 {
-  "$schema": "https://unpkg.com/knip@5/schema.json",
   "entry": [
-    "frontend/src/app/layout.tsx",
-    "frontend/src/app/page.tsx",
-    "frontend/src/app/api/**/route.ts",
+    "frontend/src/app/**/page.tsx",
+    "frontend/src/app/**/layout.tsx",
+    "frontend/src/app/**/route.ts",
+    "frontend/src/app/**/route.tsx",
+    "frontend/src/middleware.ts",
+    "frontend/src/middleware.tsx",
+    "frontend/src/instrumentation.ts",
     "frontend/next.config.ts",
-    "playwright.no-webserver.config.ts",
-    "scripts/**/*.{ts,js,mjs}"
-  ],
-  "project": [
-    "frontend/src/**/*.{ts,tsx}",
+    "frontend/next.config.js",
+    "frontend/src/server/grant-ops/repository.ts",
     "shared/**/*.ts",
-    "tests/**/*.{ts,tsx}",
-    "scripts/**/*.{ts,js}"
-  ],
-  "ignore": [
-    "**/*.d.ts",
-    "scripts/run-benchmarks.ts",
-    "scripts/seed-benchmark-data.ts"
-  ],
-  "ignoreDependencies": [
-    "@testing-library/react",
-    "eslint-config-next",
-    "node-gyp",
-    "prettier",
-    "tailwindcss",
-    "pino-pretty",
-    "pino-roll",
-    "excel-zod",
-    "@napi-rs/canvas"
-  ],
-  "paths": {
-    "@/*": ["frontend/src/*"]
-  },
-  "rules": {
-    "files": "warn",
-    "exports": "warn",
-    "dependencies": "warn",
-    "devDependencies": "warn",
-    "nsExports": "warn",
-    "nsTypes": "warn",
-    "duplicates": "warn",
-    "enumMembers": "warn",
-    "classMembers": "warn",
-    "types": "warn"
-  }
+    "tests/**/*.ts",
+    "tests/**/*.tsx",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
 }

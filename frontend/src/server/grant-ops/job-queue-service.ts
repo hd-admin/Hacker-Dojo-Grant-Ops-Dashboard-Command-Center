@@ -39,7 +39,7 @@ export function classifyJobFailureCategory(error: unknown): JobFailureCategory {
   return /logic|validation|parse|invalid/i.test(message) ? 'logic' : 'unknown';
 }
 
-export async function createQueuedJob(
+async function createQueuedJob(
   job: Pick<JobQueueItem, 'jobType' | 'entityId' | 'retryCount'>,
 ): Promise<JobQueueItem> {
   const deps = getDependencies();
@@ -215,7 +215,7 @@ export async function cancelQueuedJob(jobId: string): Promise<boolean> {
  * with retry count reset to 0. Returns the new job or null if the original job
  * was not found.
  */
-export async function restartQueuedJob(
+async function _restartQueuedJob(
 	jobId: string,
 ): Promise<JobQueueItem | null> {
 	const deps = getDependencies();

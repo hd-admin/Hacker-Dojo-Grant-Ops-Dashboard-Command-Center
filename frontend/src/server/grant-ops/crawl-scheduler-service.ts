@@ -76,14 +76,14 @@ export async function checkAndRunDue(): Promise<number> {
   return dueSchedules.length;
 }
 
-export function startCrawlScheduler(intervalMs = 60_000): void {
+function _startCrawlScheduler(intervalMs = 60_000): void {
   if (schedulerHandle) return;
   schedulerHandle = setInterval(() => {
     void checkAndRunDue().catch((error) => logger.error({ err: error }, 'Crawl scheduler failed'));
   }, intervalMs);
 }
 
-export function stopCrawlScheduler(): void {
+function _stopCrawlScheduler(): void {
   if (!schedulerHandle) return;
   clearInterval(schedulerHandle);
   schedulerHandle = null;

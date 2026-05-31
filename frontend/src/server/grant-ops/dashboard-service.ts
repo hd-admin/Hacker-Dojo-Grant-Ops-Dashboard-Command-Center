@@ -15,7 +15,7 @@
 import type { CrawlRun, Grant } from "../../../../shared/types";
 import { getCrawlRuns, getGrants } from "./repository";
 
-export interface DashboardKpis {
+interface DashboardKpis {
   totalPipelineValue: number;
   activeGrantCount: number;
   draftReadyCount: number;
@@ -27,20 +27,20 @@ export interface DashboardKpis {
   periodStats: PeriodStats;
 }
 
-export interface UpcomingDeadline {
+interface UpcomingDeadline {
   grant: Grant;
   daysOut: number;
   confidence: Grant["deadlineConfidence"];
 }
 
-export interface CrawlHealthSummary {
+interface CrawlHealthSummary {
   lastSuccessfulRun: CrawlRun | null;
   consecutiveFailures: number;
   isStale: boolean;
   staleDays: number | null;
 }
 
-export interface HistoricalCounts {
+interface HistoricalCounts {
   active: number;
   submitted: number;
   awarded: number;
@@ -48,7 +48,7 @@ export interface HistoricalCounts {
   archived: number;
 }
 
-export interface PeriodStats {
+interface PeriodStats {
   matchedThisMonth: number;
   submittedThisMonth: number;
   awardedThisMonth: number;
@@ -63,7 +63,7 @@ export interface CsvExport {
 /**
  * Get all dashboard KPIs computed from live pipeline data.
  */
-export async function getDashboardKpis(): Promise<DashboardKpis> {
+async function _getDashboardKpis(): Promise<DashboardKpis> {
   const [allGrants, crawlRuns] = await Promise.all([getGrants(), getCrawlRuns()]);
 
   const activeGrants = allGrants.filter((grant) => grant.status !== "awarded" && grant.status !== "archived");
@@ -160,7 +160,7 @@ export async function getDashboardKpis(): Promise<DashboardKpis> {
 /**
  * Format deadline for display with confidence indicator.
  */
-export function formatDeadlineWithConfidence(
+function _formatDeadlineWithConfidence(
   deadline: string,
   confidence: Grant["deadlineConfidence"],
 ): string {
@@ -182,7 +182,7 @@ export function formatDeadlineWithConfidence(
 /**
  * Get deadline urgency based on confidence and days out.
  */
-export function getDeadlineUrgency(
+function _getDeadlineUrgency(
   daysOut: number,
   confidence: Grant["deadlineConfidence"],
 ): "critical" | "warning" | "normal" | "info" {
@@ -336,7 +336,7 @@ export function generateFundraisingForecast(grants: Grant[]): FundraisingForecas
   };
 }
 
-export interface AnnualSummaryLesson {
+interface AnnualSummaryLesson {
   grantTitle: string;
   funder: string;
   note: string;

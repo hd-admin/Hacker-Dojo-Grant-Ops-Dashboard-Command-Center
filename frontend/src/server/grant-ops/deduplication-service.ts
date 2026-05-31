@@ -182,7 +182,7 @@ export function detectDuplicates(
  * Persist duplicate candidates to the repository.
  * Only adds candidates that don't already exist as pending.
  */
-export async function addDuplicateCandidates(
+async function addDuplicateCandidates(
 	matches: DuplicateMatch[],
 ): Promise<DuplicateCandidate[]> {
 	const deps = getDependencies();
@@ -210,7 +210,7 @@ export async function addDuplicateCandidates(
  * Compares the new grant against all existing grants and adds duplicate
  * candidates for matches above the confidence threshold.
  */
-export async function checkForDuplicatesAfterCrawl(
+async function _checkForDuplicatesAfterCrawl(
 	newGrant: Grant,
 ): Promise<DuplicateMatch[]> {
 	const deps = getDependencies();
@@ -233,7 +233,7 @@ export async function checkForDuplicatesAfterCrawl(
 /**
  * Resolve a duplicate candidate: mark as merged or kept-separate.
  */
-export async function resolveDuplicateCandidate(
+async function _resolveDuplicateCandidate(
 	candidateId: string,
 	resolution: 'merged' | 'kept-separate',
 	resolvedBy?: string,

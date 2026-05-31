@@ -67,17 +67,17 @@ export async function createAward(
   return award;
 }
 
-export async function getAwards(): Promise<Award[]> {
+async function _getAwards(): Promise<Award[]> {
   await ensureInitialized();
   return loadAwards();
 }
 
-export async function getAward(awardId: string): Promise<Award | null> {
+async function getAward(awardId: string): Promise<Award | null> {
   const awards = await loadAwards();
   return awards.find(a => a.id === awardId) || null;
 }
 
-export async function updateAward(awardId: string, updates: Partial<Award>): Promise<Award | null> {
+async function _updateAward(awardId: string, updates: Partial<Award>): Promise<Award | null> {
   const awards = await loadAwards();
   const index = awards.findIndex(a => a.id === awardId);
   if (index === -1) return null;
@@ -108,7 +108,7 @@ export async function createBudgetCategory(
   return cat;
 }
 
-export async function getBudgetCategories(awardId: string): Promise<AwardBudgetCategory[]> {
+async function getBudgetCategories(awardId: string): Promise<AwardBudgetCategory[]> {
   const categories = await loadAwardBudgetCategories();
   return categories.filter(c => c.awardId === awardId);
 }
@@ -146,7 +146,7 @@ export async function addExpense(
   return expense;
 }
 
-export async function addPlannedExpense(
+async function _addPlannedExpense(
   awardId: string,
   categoryId: string,
   date: string,
@@ -189,7 +189,7 @@ export async function addReportDeadline(
   return d;
 }
 
-export async function getReportDeadlines(awardId: string): Promise<AwardReportDeadline[]> {
+async function _getReportDeadlines(awardId: string): Promise<AwardReportDeadline[]> {
   const deadlines = await loadAwardReportDeadlines();
   return deadlines.filter(d => d.awardId === awardId);
 }
@@ -214,12 +214,12 @@ export async function addComplianceItem(
   return item;
 }
 
-export async function getComplianceItems(awardId: string): Promise<AwardComplianceItem[]> {
+async function _getComplianceItems(awardId: string): Promise<AwardComplianceItem[]> {
   const items = await loadAwardComplianceItems();
   return items.filter(c => c.awardId === awardId);
 }
 
-export async function getSpendDownAlerts(): Promise<{ awardId: string; type: 'under' | 'over'; category: string }[]> {
+async function _getSpendDownAlerts(): Promise<{ awardId: string; type: 'under' | 'over'; category: string }[]> {
   const alerts: { awardId: string; type: 'under' | 'over'; category: string }[] = [];
 
   const awards = await loadAwards();
@@ -249,7 +249,7 @@ export async function getSpendDownAlerts(): Promise<{ awardId: string; type: 'un
   return alerts;
 }
 
-export interface BudgetVsActualRow {
+interface BudgetVsActualRow {
   category: string;
   budgeted: number;
   spent: number;
@@ -301,7 +301,7 @@ export async function computeBudgetVsActual(awardId: string): Promise<BudgetVsAc
   });
 }
 
-export interface ComplianceCalendarEvent {
+interface ComplianceCalendarEvent {
   awardId: string;
   awardTitle: string;
   type: 'report' | 'compliance';

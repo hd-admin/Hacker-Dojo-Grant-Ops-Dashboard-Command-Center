@@ -78,21 +78,21 @@ export async function listDocuments(excludeRestricted = false): Promise<Document
 /**
  * Get documents available for AI drafting context (excludes restricted).
  */
-export async function getDocumentsForDrafting(): Promise<DocumentMetadata[]> {
+async function _getDocumentsForDrafting(): Promise<DocumentMetadata[]> {
   return listDocuments(true);
 }
 
 /**
  * Get documents available for export (excludes restricted).
  */
-export async function getDocumentsForExport(): Promise<DocumentMetadata[]> {
+async function _getDocumentsForExport(): Promise<DocumentMetadata[]> {
   return listDocuments(true);
 }
 
 /**
  * Get documents available for submission packages (excludes restricted unless explicitly included).
  */
-export async function getDocumentsForSubmission(includeRestrictedIds?: string[]): Promise<DocumentMetadata[]> {
+async function _getDocumentsForSubmission(includeRestrictedIds?: string[]): Promise<DocumentMetadata[]> {
   const deps = getDependencies();
   const docs = await deps.repository.getDocuments();
   if (!includeRestrictedIds || includeRestrictedIds.length === 0) {
@@ -266,7 +266,7 @@ export function clearSearchIndex(): void {
  * Rebuild the entire search index from all stored documents.
  * Useful after service restart or data migration.
  */
-export async function rebuildIndex(): Promise<{
+async function _rebuildIndex(): Promise<{
   totalDocuments: number;
   indexedCount: number;
 }> {

@@ -80,20 +80,20 @@ function getCachedOpencodePath(): string | null {
 	return cachedResolvedPath ?? null;
 }
 
-export interface OpencodeRequest {
+interface _OpencodeRequest {
 	prompt: string;
 	systemPrompt?: string;
 	temperature?: number;
 	maxTokens?: number;
 }
 
-export interface GroundingSection {
+interface GroundingSection {
 	sectionTitle: string;
 	evidence: string[];
 	isGrounded: boolean;
 }
 
-export interface OpencodeResponse {
+interface OpencodeResponse {
 	success: boolean;
 	content?: string;
 	error?: string;
@@ -106,14 +106,14 @@ export interface OpencodeResponse {
 	groundingSections?: GroundingSection[];
 }
 
-export interface GrantResearchRequest {
+interface GrantResearchRequest {
 	organizationProfile: string;
 	searchThemes: string[];
 	sourceName?: string;
 	sourceUrl?: string;
 }
 
-export interface DraftGenerationRequest {
+interface DraftGenerationRequest {
 	grantTitle: string;
 	grantFunder: string;
 	grantAmount?: string;
@@ -621,7 +621,7 @@ export function createOpencodeAdapter(
 let globalAdapter: OpencodeAdapter | null = null;
 let globalProviderType: OpencodeProvider = "cli";
 
-export function getOpencodeAdapter(
+function _getOpencodeAdapter(
 	settings?: OpencodeSettings,
 	providerType?: OpencodeProvider,
 ): OpencodeAdapter {
@@ -643,6 +643,6 @@ export function getOpencodeAdapter(
 	return globalAdapter;
 }
 
-export function setOpencodeAdapter(adapter: OpencodeAdapter): void {
+function _setOpencodeAdapter(adapter: OpencodeAdapter): void {
 	globalAdapter = adapter;
 }

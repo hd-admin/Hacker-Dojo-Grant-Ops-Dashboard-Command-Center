@@ -54,7 +54,7 @@ export const ChecklistItemSchema = z.object({
   required: z.boolean().optional(),
 });
 
-export const GrantAttachmentSchema = z.object({
+const GrantAttachmentSchema = z.object({
   id: z.string(),
   name: z.string(),
   type: z.enum(['file', 'note']),
@@ -108,21 +108,21 @@ export const GrantSchema = z.object({
   lessonsLearned: z.string().optional(),
 });
 
-export const ContactInfoSchema = z.object({
+const ContactInfoSchema = z.object({
   address: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().optional(),
   website: z.string().optional(),
 });
 
-export const FundingHistoryEntrySchema = z.object({
+const FundingHistoryEntrySchema = z.object({
   year: z.number().int().min(1900).max(2100),
   amount: z.number().min(0),
   source: z.string(),
   purpose: z.string(),
 });
 
-export const BoardMemberSchema = z.object({
+const BoardMemberSchema = z.object({
   name: z.string(),
   role: z.string(),
 });
@@ -151,27 +151,23 @@ export const OrganizationProfileSchema = z.object({
     voiceAndTone: z.string(),
   }),
 });
-
-export const ActivityEventSchema: z.ZodType<ActivityEvent> = z.object({
+const _ActivityEventSchema: z.ZodType<ActivityEvent> = z.object({
   dot: z.string(),
   text: z.string(),
   time: z.string(),
 });
-
-export const CrawlStatusSchema: z.ZodType<CrawlStatus> = z.object({
+const _CrawlStatusSchema: z.ZodType<CrawlStatus> = z.object({
   online: z.boolean(),
   lastSync: z.string(),
 });
-
-export const NotificationSchema = z.object({
+const _NotificationSchema = z.object({
   id: z.string(),
   text: z.string(),
   time: z.string(),
   dot: z.string(),
   urgency: z.enum(['info', 'warning', 'urgent']).optional(),
 });
-
-export const TaskSchema = z.object({
+const _TaskSchema = z.object({
   id: z.string(),
   text: z.string(),
   completed: z.boolean(),
@@ -187,14 +183,14 @@ export const TaskSchema = z.object({
   updatedAt: z.string().optional(),
 });
 
-export const DocumentExtractionStatusSchema: z.ZodType<DocumentExtractionStatus> = z.enum([
+const DocumentExtractionStatusSchema: z.ZodType<DocumentExtractionStatus> = z.enum([
   'pending',
   'extracted',
   'stored_unparsed',
   'failed',
 ]);
 
-export const DocumentVersionSchema = z.object({
+const DocumentVersionSchema = z.object({
   id: z.string(),
   documentId: z.string(),
   versionNumber: z.number().int().min(1),
@@ -202,8 +198,7 @@ export const DocumentVersionSchema = z.object({
   storagePath: z.string(),
   notes: z.string().optional(),
 });
-
-export const DocumentMetadataSchema = z.object({
+const _DocumentMetadataSchema = z.object({
   id: z.string(),
   name: z.string(),
   type: z.string(),
@@ -224,8 +219,7 @@ export const DocumentMetadataSchema = z.object({
   versions: z.array(DocumentVersionSchema).optional(),
   sha256: z.string().optional(),
 });
-
-export const OpencodeSettingsSchema = z.object({
+const _OpencodeSettingsSchema = z.object({
   binaryPath: z.string(),
   workingDirectory: z.string(),
   timeoutMs: z.number(),
@@ -234,8 +228,7 @@ export const OpencodeSettingsSchema = z.object({
 });
 
 // ============ NEW WORKFLOW SCHEMAS ============
-
-export const WorkflowStateSchema: z.ZodType<WorkflowState> = z.enum([
+const _WorkflowStateSchema: z.ZodType<WorkflowState> = z.enum([
   'source_added',
   'researching',
   'matched',
@@ -254,7 +247,7 @@ export const SourceReviewStatusSchema: z.ZodType<SourceReviewStatus> = z.enum([
   'rejected',
 ]);
 
-export const SourceCategorySchema: z.ZodType<SourceCategory> = z.enum([
+const SourceCategorySchema: z.ZodType<SourceCategory> = z.enum([
   'foundation',
   'government',
   'corporate',
@@ -262,7 +255,7 @@ export const SourceCategorySchema: z.ZodType<SourceCategory> = z.enum([
   'other',
 ]);
 
-export const JobFailureCategorySchema: z.ZodType<JobFailureCategory> = z.enum([
+const JobFailureCategorySchema: z.ZodType<JobFailureCategory> = z.enum([
   'connectivity',
   'timeout',
   'rate-limit',
@@ -272,7 +265,7 @@ export const JobFailureCategorySchema: z.ZodType<JobFailureCategory> = z.enum([
   'unknown',
 ]);
 
-export const SourceCrawlStateSchema: z.ZodType<SourceCrawlState> = z.enum([
+const SourceCrawlStateSchema: z.ZodType<SourceCrawlState> = z.enum([
   'never-crawled',
   'queued',
   'running',
@@ -281,14 +274,13 @@ export const SourceCrawlStateSchema: z.ZodType<SourceCrawlState> = z.enum([
   'failed',
 ]);
 
-export const SourceCrawlAccessCategorySchema: z.ZodType<SourceCrawlAccessCategory> = z.enum([
+const SourceCrawlAccessCategorySchema: z.ZodType<SourceCrawlAccessCategory> = z.enum([
   'crawlable',
   'crawlable-with-auth',
   'manual-only',
   'unsupported',
 ]);
-
-export const SourceSchema = z.object({
+const _SourceSchema = z.object({
   id: z.string(),
   name: z.string(),
   url: z.string(),
@@ -342,8 +334,7 @@ export const CrawlScheduleSchema = z.object({
   isEnabled: z.boolean(),
   createdAt: z.string(),
 });
-
-export const CrawlRunSchema = z.object({
+const _CrawlRunSchema = z.object({
   id: z.string(),
   startedAt: z.string(),
   completedAt: z.string().optional(),
@@ -358,7 +349,7 @@ export const CrawlRunSchema = z.object({
   artifactPath: z.string().optional(),
 });
 
-export const ResearchEvidenceSchema = z.object({
+const ResearchEvidenceSchema = z.object({
   id: z.string(),
   grantId: z.string(),
   sourceId: z.string(),
@@ -369,7 +360,7 @@ export const ResearchEvidenceSchema = z.object({
   capturedAt: z.string(),
 });
 
-export const ResearchGrantSchema = z.object({
+const ResearchGrantSchema = z.object({
   id: z.string().optional(),
   title: z.string(),
   funder: z.string(),
@@ -387,15 +378,13 @@ export const ResearchResponseSchema = z.object({
   evidence: z.array(ResearchEvidenceSchema).optional(),
   rationale: z.string().optional(),
 });
-
-export const RankingRationaleSchema = z.object({
+const _RankingRationaleSchema = z.object({
   criteria: z.string(),
   score: z.number(),
   maxScore: z.number(),
   justification: z.string(),
 });
-
-export const DraftArtifactSchema = z.object({
+const _DraftArtifactSchema = z.object({
   id: z.string(),
   grantId: z.string(),
   version: z.number(),
@@ -419,8 +408,7 @@ export const DraftArtifactSchema = z.object({
   approvedAt: z.string().optional(),
   approvedBy: z.string().optional(),
 });
-
-export const RevisionRequestSchema: z.ZodType<RevisionRequest> = z.object({
+const _RevisionRequestSchema: z.ZodType<RevisionRequest> = z.object({
   id: z.string(),
   grantId: z.string(),
   draftVersion: z.number(),
@@ -429,8 +417,7 @@ export const RevisionRequestSchema: z.ZodType<RevisionRequest> = z.object({
   requestedBy: z.string(),
   status: z.enum(['pending', 'addressed', 'superseded']),
 });
-
-export const ApprovalRecordSchema = z.object({
+const _ApprovalRecordSchema = z.object({
   id: z.string(),
   grantId: z.string(),
   draftVersion: z.number(),
@@ -439,21 +426,20 @@ export const ApprovalRecordSchema = z.object({
   lockedUntil: z.string().optional(),
 });
 
-export const SubmissionMethodSchema = z.object({
+const SubmissionMethodSchema = z.object({
   type: z.enum(['portal', 'email', 'mail', 'other']),
   portalUrl: z.string().optional(),
   confirmationId: z.string().optional(),
   submittedBy: z.string(),
 });
 
-export const SubmissionManifestItemSchema = z.object({
+const SubmissionManifestItemSchema = z.object({
   documentId: z.string(),
   documentName: z.string(),
   version: z.string().optional(),
   role: z.string(),
 });
-
-export const SubmissionManifestSchema = z.object({
+const _SubmissionManifestSchema = z.object({
   id: z.string(),
   grantId: z.string(),
   version: z.number(),
@@ -469,8 +455,7 @@ export const SubmissionManifestSchema = z.object({
   confirmationNumber: z.string().optional(),
   runbookCompleted: z.boolean().optional(),
 });
-
-export const SubmissionRecordSchema = z.object({
+const _SubmissionRecordSchema = z.object({
   id: z.string(),
   grantId: z.string(),
   submittedAt: z.string(),
@@ -480,8 +465,7 @@ export const SubmissionRecordSchema = z.object({
   manifestId: z.string().optional(),
   confirmationNumber: z.string().optional(),
 });
-
-export const FollowUpSchema = z.object({
+const _FollowUpSchema = z.object({
   id: z.string(),
   grantId: z.string().optional(),
   submissionId: z.string().optional(),
@@ -511,8 +495,7 @@ export const JobQueueItemSchema = z.object({
   failureCategory: JobFailureCategorySchema.optional(),
   progress: z.number().optional(),
 });
-
-export const DuplicateCandidateSchema = z.object({
+const _DuplicateCandidateSchema = z.object({
   id: z.string(),
   grantId1: z.string(),
   grantId2: z.string(),
@@ -523,8 +506,7 @@ export const DuplicateCandidateSchema = z.object({
   resolvedAt: z.string().optional(),
   resolvedBy: z.string().optional(),
 });
-
-export const ConflictRecordSchema = z.object({
+const _ConflictRecordSchema = z.object({
   id: z.string(),
   grantId: z.string(),
   fieldName: z.string(),
@@ -598,7 +580,7 @@ export const WorkingContextSchema = z.object({
 
 // ============ THEME SCHEMAS ============
 
-export const InclusionExclusionRuleSchema = z.object({
+const InclusionExclusionRuleSchema = z.object({
   id: z.string(),
   field: z.enum(['tags', 'funder', 'title', 'category']),
   operator: z.enum(['contains', 'equals', 'startsWith', 'regex']),
@@ -606,14 +588,14 @@ export const InclusionExclusionRuleSchema = z.object({
   priority: z.number(),
 });
 
-export const MatchingPolicySchema = z.object({
+const MatchingPolicySchema = z.object({
   matchThreshold: z.number().min(0).max(100),
   autoDraftThreshold: z.number().min(0).max(100),
   includeRules: z.array(InclusionExclusionRuleSchema),
   excludeRules: z.array(InclusionExclusionRuleSchema),
 });
 
-export const KeywordClusterSchema = z.object({
+const KeywordClusterSchema = z.object({
   id: z.string(),
   name: z.string(),
   keywords: z.array(z.string()),
@@ -622,7 +604,7 @@ export const KeywordClusterSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const RegionSchema = z.object({
+const RegionSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
@@ -630,7 +612,7 @@ export const RegionSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const PopulationSchema = z.object({
+const PopulationSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
@@ -638,7 +620,7 @@ export const PopulationSchema = z.object({
   updatedAt: z.string(),
 });
 
-export const StrategicPrioritySchema = z.object({
+const StrategicPrioritySchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
@@ -647,7 +629,7 @@ export const StrategicPrioritySchema = z.object({
   updatedAt: z.string(),
 });
 
-export const ThemeSchema = z.object({
+const ThemeSchema = z.object({
   id: z.string(),
   name: z.string(),
   description: z.string().optional(),
@@ -660,8 +642,7 @@ export const ThemeSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
-
-export const ThemesDataSchema = z.object({
+const _ThemesDataSchema = z.object({
   keywordClusters: z.array(KeywordClusterSchema),
   themes: z.array(ThemeSchema),
   regions: z.array(RegionSchema),

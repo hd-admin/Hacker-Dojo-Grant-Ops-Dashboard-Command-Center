@@ -35,7 +35,7 @@ const EXTENSION_MIME_MAP: Record<string, string[]> = {
   '.jpeg': ['image/jpeg'],
 };
 
-export interface ValidationResult {
+interface ValidationResult {
   valid: boolean;
   error?: ApiErrorResponse | undefined;
   detectedMimeType?: string | undefined;
@@ -139,7 +139,7 @@ export function computeSha256(filePath: string): string {
   return crypto.createHash('sha256').update(buffer).digest('hex');
 }
 
-export async function validateUpload(filePath: string): Promise<ValidationResult> {
+async function _validateUpload(filePath: string): Promise<ValidationResult> {
   const checks = [
     () => validateFileExists(filePath),
     () => validateFileSize(filePath),
@@ -183,4 +183,4 @@ export async function atomicWrite(
   }
 }
 
-export { MAX_FILE_SIZE, ALLOWED_EXTENSIONS };
+

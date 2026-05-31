@@ -89,14 +89,14 @@ async function apiFetchOptional<T>(
 
 // ============ Sources API ============
 
-export interface AddSourceRequest {
+interface AddSourceRequest {
 	name: string;
 	url: string;
 	type?: "website" | "database" | "api";
 	reviewStatus?: "pending-review" | "approved" | "rejected";
 }
 
-export const sourcesApi = {
+const sourcesApi = {
 	getAll: () => apiFetch<Source[]>("/api/sources"),
 
 	add: (source: AddSourceRequest) =>
@@ -116,19 +116,19 @@ export const sourcesApi = {
 
 // ============ Research API ============
 
-export interface ResearchResponse {
+interface ResearchResponse {
 	latestRun: CrawlRun;
 	grantsFound: number;
 	grantsMatched: number;
 	sourcesCrawled: number;
 }
 
-export interface CrawlRunsResponse {
+interface CrawlRunsResponse {
 	latestRun: CrawlRun | null;
 	allRuns: CrawlRun[];
 }
 
-export const researchApi = {
+const researchApi = {
 	/**
 	 * Trigger a new research/crawl run
 	 */
@@ -143,7 +143,7 @@ export const researchApi = {
 
 // ============ Grants API ============
 
-export interface GrantOverrideRequest {
+interface GrantOverrideRequest {
   field: 'status' | 'statusLabel' | 'fit' | 'award' | 'deadline' | 'title' | 'funder' | 'funderShort' | 'category' | `task.${string}.status`;
   newValue: unknown;
   rationale: string;
@@ -186,16 +186,16 @@ export const grantsApi = {
 
 // ============ Draft API ============
 
-export interface DraftCreateRequest {
+interface DraftCreateRequest {
 	revisionNotes?: string;
 }
 
-export interface QueuedJobResponse {
+interface QueuedJobResponse {
 	queued: true;
 	job: JobQueueItem;
 }
 
-export const draftApi = {
+const draftApi = {
 	get: (grantId: string) =>
 		apiFetch<DraftArtifact[]>(
 			`/api/grants/${encodeURIComponent(grantId)}/draft`,
@@ -213,12 +213,12 @@ export const draftApi = {
 
 // ============ Approval API ============
 
-export interface ApprovalCreateRequest {
+interface ApprovalCreateRequest {
 	approvedBy?: string;
 	lockedUntil?: string;
 }
 
-export const approvalApi = {
+const approvalApi = {
 	get: (grantId: string) =>
 		apiFetch<ApprovalRecord | null>(
 			`/api/grants/${encodeURIComponent(grantId)}/approval`,
@@ -236,12 +236,12 @@ export const approvalApi = {
 
 // ============ Submit API ============
 
-export interface SubmitCreateRequest {
+interface SubmitCreateRequest {
 	method: SubmissionMethod;
 	notes?: string;
 }
 
-export const submitApi = {
+const submitApi = {
 	get: (grantId: string) =>
 		apiFetch<SubmissionRecord | null>(
 			`/api/grants/${encodeURIComponent(grantId)}/submit`,
@@ -259,7 +259,7 @@ export const submitApi = {
 
 // ============ Submission Manifest API ============
 
-export interface SubmissionManifestCreateRequest {
+interface SubmissionManifestCreateRequest {
 	instructions?: string;
 	portalUrl?: string;
 	fileConstraints?: string;
@@ -268,7 +268,7 @@ export interface SubmissionManifestCreateRequest {
 	notes?: string;
 }
 
-export const manifestApi = {
+const manifestApi = {
 	get: (grantId: string) =>
 		apiFetchOptional<SubmissionManifest>(
 			`/api/grants/${encodeURIComponent(grantId)}/manifest`,
@@ -286,7 +286,7 @@ export const manifestApi = {
 
 // ============ Jobs API ============
 
-export const jobsApi = {
+const jobsApi = {
 	get: (jobId: string) => apiFetch<JobQueueItem>(`/api/jobs/${encodeURIComponent(jobId)}`),
 
 	retry: (jobId: string) =>
@@ -329,13 +329,13 @@ export const followUpsApi = {
 
 // ============ Profile API ============
 
-export const profileApi = {
+const profileApi = {
 	get: () => apiFetch<OrganizationProfile>("/api/profile"),
 };
 
 // ============ Revisions API ============
 
-export const revisionsApi = {
+const revisionsApi = {
 	create: (grantId: string, notes: string, requestedBy?: string) =>
 		apiFetch(`/api/grants/${encodeURIComponent(grantId)}/revisions`, {
 			method: "POST",
@@ -363,7 +363,7 @@ export const notificationsApi = {
 
 // ============ Tasks API ============
 
-export interface TaskOverrideRequest {
+interface TaskOverrideRequest {
 	newValue: TaskStatus;
 	rationale: string;
 	overrideType: 'task';
@@ -393,7 +393,7 @@ export const tasksApi = {
 
 // ============ Documents API ============
 
-export const documentsApi = {
+const documentsApi = {
 	getAll: () => apiFetch<DocumentMetadata[]>("/api/documents"),
 
 	create: (
@@ -434,7 +434,7 @@ export const documentsApi = {
 
 // ============ Duplicates API ============
 
-export const duplicatesApi = {
+const duplicatesApi = {
 	getAll: () => apiFetch<DuplicateCandidate[]>(`/api/duplicates`),
 
 	getById: (id: string) =>
@@ -454,13 +454,13 @@ export const duplicatesApi = {
 
 // ============ Backup API ============
 
-export interface BackupSnapshot {
+interface BackupSnapshot {
   version: string;
   createdAt: string;
   [key: string]: unknown;
 }
 
-export const backupApi = {
+const backupApi = {
   exportBackup: () =>
     apiFetch<BackupSnapshot>("/api/backup"),
 
@@ -476,7 +476,7 @@ export const backupApi = {
 
 // ============ Themes API ============
 
-export const themesApi = {
+const themesApi = {
 	get: () => apiFetch<ThemesData>('/api/themes'),
 	update: (data: Partial<ThemesData>) =>
 		apiFetch<ThemesData>('/api/themes', {
@@ -495,7 +495,7 @@ export const themesApi = {
  * Creates the Grant Ops HTTP client.
  * This is the sole transport for the web-only application.
  */
-export function createGrantOpsClient() {
+function createGrantOpsClient() {
 	return {
 		sources: sourcesApi,
 		research: researchApi,
@@ -517,7 +517,7 @@ export function createGrantOpsClient() {
 	};
 }
 
-export type GrantOpsClient = ReturnType<typeof createGrantOpsClient>;
+type _GrantOpsClient = ReturnType<typeof createGrantOpsClient>;
 
 // Re-export for convenience
 export const client = createGrantOpsClient();

@@ -27,15 +27,15 @@ export interface PersistenceRoot {
   getBaseDir(): string;
 }
 
-export const systemClock: Clock = {
+const systemClock: Clock = {
   now: () => new Date(),
 };
 
-export const cryptoIdGenerator: IdGenerator = {
+const cryptoIdGenerator: IdGenerator = {
   generateId: (prefix: string) => `${prefix}-${Date.now()}-${crypto.randomUUID().substring(0, 8)}`,
 };
 
-export const cwdPersistenceRoot: PersistenceRoot = {
+const cwdPersistenceRoot: PersistenceRoot = {
   getBaseDir: () => getDataDir(),
 };
 

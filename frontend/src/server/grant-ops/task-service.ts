@@ -347,7 +347,7 @@ export async function getTasks(): Promise<Task[]> {
 /**
  * Get tasks for a specific grant.
  */
-export async function getTasksForGrant(grantId: string): Promise<Task[]> {
+async function _getTasksForGrant(grantId: string): Promise<Task[]> {
   const deps = getDependencies();
   const tasks = await deps.repository.getTasks();
   return tasks.filter((t) => t.grantId === grantId);

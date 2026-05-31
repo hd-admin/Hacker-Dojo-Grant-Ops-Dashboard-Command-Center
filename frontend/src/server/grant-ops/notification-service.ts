@@ -24,7 +24,7 @@ import type { Dependencies } from './dependencies';
 
 // ============ Notification Types ============
 
-export type NotificationEventType =
+type NotificationEventType =
 	| 'crawl_complete'
 	| 'crawl_failed'
 	| 'draft_ready'
@@ -39,7 +39,7 @@ export type NotificationEventType =
 	| 'task_blocked'
 	| 'task_completed';
 
-export type NotificationUrgency = 'informational' | 'warning' | 'urgent';
+type NotificationUrgency = 'informational' | 'warning' | 'urgent';
 
 export interface NotificationRule {
 	eventType: NotificationEventType;
@@ -49,7 +49,7 @@ export interface NotificationRule {
 	desktopNotify: boolean;
 }
 
-export interface NotificationEvent {
+interface NotificationEvent {
 	type: NotificationEventType;
 	grantId?: string;
 	grantTitle?: string;
