@@ -11,7 +11,7 @@
  *   - funderType: optional funder type filter
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, connection } from "next/server";
 
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import { exportGrantsToCsv, exportPipelineToCsv } from "@/server/grant-ops/dashboard-service";
@@ -20,6 +20,7 @@ import type { Grant } from "../../../../../../shared/types";
 export const runtime = "nodejs";
 
 export async function GET(request: NextRequest) {
+  await connection();
   const { searchParams } = new URL(request.url);
   const view = searchParams.get("view") ?? "discovery";
   const status = searchParams.get("status") ?? undefined;

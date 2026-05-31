@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from "next/server";
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
 import {
@@ -10,6 +10,7 @@ import {
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  await connection();
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('query');

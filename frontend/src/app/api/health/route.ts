@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { getHealth } from '@/server/grant-ops/health-service';
 import { ensureProPublicaSourceRegistered } from '@/server/grant-ops/propublica-service';
@@ -6,6 +6,7 @@ import { ensureProPublicaSourceRegistered } from '@/server/grant-ops/propublica-
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+	await connection();
 	const deps = getDependencies();
 	const result = await getHealth(deps);
 	try {

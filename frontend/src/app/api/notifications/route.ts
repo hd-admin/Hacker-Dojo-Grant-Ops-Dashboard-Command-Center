@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { sanitizeNotificationText } from '@/lib/sanitize-html';
 import type { Notification } from '../../../../../shared/types';
@@ -7,6 +7,7 @@ export const dynamic = 'force-dynamic';
 
 // GET: Get all notifications
 export async function GET() {
+  await connection();
   try {
     const deps = getDependencies();
     const notifications = await deps.repository.getNotifications();
@@ -19,6 +20,7 @@ export async function GET() {
 
 // POST: Add a new notification
 export async function POST(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json();
     const deps = getDependencies();
@@ -46,6 +48,7 @@ export async function POST(request: NextRequest) {
 
 // PATCH: Batch update notifications (replace all notifications)
 export async function PATCH(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json();
     const deps = getDependencies();

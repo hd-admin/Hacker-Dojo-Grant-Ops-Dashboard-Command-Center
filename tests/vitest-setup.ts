@@ -33,3 +33,17 @@ try {
   // jsdom environment - Node.js builtins are externalized stubs
   // Component tests don't need native modules
 }
+
+// Mock next/server connection() for route handler tests
+vi.mock('next/server', async () => {
+  const actual = await vi.importActual('next/server');
+  return {
+    ...(actual as object),
+    connection: async () => {},
+  };
+});
+
+// Mock server-only to prevent "Client Component module" errors in tests
+vi.mock('server-only', () => {
+  return {};
+});

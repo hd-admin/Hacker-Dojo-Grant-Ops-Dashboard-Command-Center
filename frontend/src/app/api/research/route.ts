@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from "next/server";
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { enqueueJob } from '@/server/grant-ops/job-queue-service';
@@ -9,6 +9,7 @@ import { NoSourcesConfiguredError } from '@/server/grant-ops/research-service';
 export const dynamic = 'force-dynamic';
 
 export async function POST(_request: NextRequest) {
+  await connection();
   try {
     const deps = getDependencies();
     const profile = await deps.repository.getOrgProfile();
@@ -78,6 +79,7 @@ export async function POST(_request: NextRequest) {
 }
 
 export async function GET(_request: NextRequest) {
+  await connection();
   try {
     const latestRun = await researchService.getLatestCrawlRun();
     const allRuns = await researchService.getCrawlRuns();

@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { loadCrawlSchedules, saveCrawlSchedule } from '../../../../../../../../shared/grant-ops-persistence';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ sourceId: string }> }) {
+  await connection();
   const { sourceId } = await params;
   const schedules = await loadCrawlSchedules();
   const schedule = schedules.find((s) => s.sourceId === sourceId);

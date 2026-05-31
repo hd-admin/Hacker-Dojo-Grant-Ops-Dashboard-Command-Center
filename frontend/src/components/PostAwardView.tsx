@@ -69,7 +69,7 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
     }
   };
 
-  const totalAwarded = awards.reduce((sum, a) => sum + parseFloat(a.amount || '0'), 0);
+  const totalAwarded = awards.reduce((sum, a) => sum + (typeof a.amount === 'number' ? a.amount : parseFloat(a.amount || '0')), 0);
   const totalSpent = Object.values(_budgetCategories)
     .flat()
     .reduce((sum, c) => sum + (c.spent || 0), 0);
@@ -154,7 +154,7 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
                   <div className="setting-card-title">
                     {expandedAward === award.id ? '▼' : '▶'} Award — Grant {award.grantId}
                   </div>
-                  <span className="pipeline-column-count">${parseFloat(award.amount || '0').toLocaleString()}</span>
+                  <span className="pipeline-column-count">${(typeof award.amount === 'number' ? award.amount : parseFloat(award.amount || '0')).toLocaleString()}</span>
                 </div>
                 {expandedAward === award.id && (
                   <div className="setting-card-body">
@@ -181,7 +181,7 @@ export default function PostAwardView({ onRefreshAppState: _onRefreshAppState }:
                       {(_reportDeadlines[award.id] || []).length === 0 && <div className="text-muted">No reports scheduled</div>}
                       {(_reportDeadlines[award.id] || []).map((rpt: AwardReportDeadline) => (
                         <div key={rpt.id} className="post-award-item">
-                          {rpt.type} — Due: {rpt.dueDate} — <span className={`status-${rpt.status}`}>{rpt.status}</span>
+                          {(rpt as any).reportType || (rpt as any).type} — Due: {rpt.dueDate} — <span className={`status-${rpt.status}`}>{rpt.status}</span>
                         </div>
                       ))}
                     </div>

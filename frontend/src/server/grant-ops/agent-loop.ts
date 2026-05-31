@@ -1,3 +1,4 @@
+import 'server-only';
 /**
  * Agent Loop Controller
  *

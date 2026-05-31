@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import { getDataDir } from '../../../../../shared/grant-ops-persistence';
@@ -23,6 +23,7 @@ function parseBoolean(value: FormDataEntryValue | null): boolean | undefined {
 
 // GET: List all documents, with optional search
 export async function GET(request: NextRequest) {
+  await connection();
   try {
     const searchQuery = new URL(request.url).searchParams.get('q');
 
@@ -41,6 +42,7 @@ export async function GET(request: NextRequest) {
 
 // POST: Upload a real document payload via multipart/form-data
 export async function POST(request: NextRequest) {
+  await connection();
   try {
     const formData = await request.formData();
     const deps = getDependencies();
@@ -137,6 +139,7 @@ export async function POST(request: NextRequest) {
 
 // PATCH: Update document metadata
 export async function PATCH(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json().catch(() => null);
     const deps = getDependencies();
@@ -167,6 +170,7 @@ export async function PATCH(request: NextRequest) {
 
 // DELETE: Remove a document
 export async function DELETE(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json().catch(() => null);
 

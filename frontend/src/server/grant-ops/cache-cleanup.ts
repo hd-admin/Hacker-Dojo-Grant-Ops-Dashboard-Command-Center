@@ -1,3 +1,4 @@
+import 'server-only';
 /**
  * Cache Cleanup Service
  *

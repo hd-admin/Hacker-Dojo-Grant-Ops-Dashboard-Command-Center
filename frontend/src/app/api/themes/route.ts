@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse, connection } from "next/server";
 import { loadThemesData, saveThemesData } from '../../../../../shared/grant-ops-persistence';
 import type { ThemesData } from '../../../../../shared/types';
 
@@ -14,6 +14,7 @@ const DEFAULT_THEMES: ThemesData = {
 };
 
 export async function GET() {
+  await connection();
   try {
     const data = await loadThemesData().catch(() => DEFAULT_THEMES);
     return NextResponse.json(data);
@@ -23,6 +24,7 @@ export async function GET() {
 }
 
 export async function PUT(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json().catch(() => null) as ThemesData | null;
     if (!body || typeof body !== 'object') {

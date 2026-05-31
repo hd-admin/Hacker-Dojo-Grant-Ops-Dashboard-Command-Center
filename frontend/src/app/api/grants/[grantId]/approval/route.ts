@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import * as submissionService from '@/server/grant-ops/submission-service';
 import type { ApprovalInput } from '@/server/grant-ops/submission-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -9,6 +9,7 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
 ) {
+  await connection();
   try {
     const { grantId } = await params;
     const approval = await submissionService.getApprovalRecord(grantId);
@@ -23,6 +24,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
 ) {
+  await connection();
   try {
     const { grantId } = await params;
     const body = await request.json().catch(() => null);

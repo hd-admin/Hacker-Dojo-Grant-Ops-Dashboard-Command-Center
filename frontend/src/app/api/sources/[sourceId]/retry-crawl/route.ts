@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
@@ -7,6 +7,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ sourceId: string }> },
 ) {
+  await connection();
   try {
     const { sourceId } = await params;
     const deps = getDependencies();

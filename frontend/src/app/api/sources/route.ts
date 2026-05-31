@@ -1,7 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from 'next/server';
 import * as sourceService from '@/server/grant-ops/source-service';
 
 export async function GET(request: NextRequest) {
+  await connection();
   try {
     const { searchParams } = new URL(request.url);
     const filter = searchParams.get('filter');
@@ -31,6 +32,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json().catch(() => null);
     if (!body || typeof body.name !== 'string' || typeof body.url !== 'string') {
@@ -58,6 +60,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  await connection();
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

@@ -1,9 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse, connection } from "next/server";
 import { attemptUnlock } from "@/server/grant-ops/safety-service";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json().catch(() => null);
     if (!body || typeof body.passcode !== "string" || body.passcode.length === 0) {

@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import * as submissionService from '@/server/grant-ops/submission-service';
 export const dynamic = 'force-dynamic';
 
 
 export async function GET(request: NextRequest) {
+  await connection();
   try {
     const { searchParams } = new URL(request.url);
     const grantId = searchParams.get('grantId');
@@ -29,6 +30,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json();
 
@@ -60,6 +62,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json();
 
@@ -88,6 +91,7 @@ export async function PATCH(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  await connection();
   try {
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');

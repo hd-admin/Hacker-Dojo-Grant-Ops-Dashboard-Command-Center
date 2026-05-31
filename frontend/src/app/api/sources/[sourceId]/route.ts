@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Source } from '../../../../../../shared/types';
@@ -19,6 +19,7 @@ const updateSchema = z.object({
 });
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ sourceId: string }> }) {
+  await connection();
   try {
     const { sourceId } = await params;
     const parsed = updateSchema.safeParse(await request.json().catch(() => null));

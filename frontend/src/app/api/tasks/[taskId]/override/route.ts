@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Task } from '../../../../../../../shared/types';
@@ -17,6 +17,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ taskId: string }> },
 ) {
+  await connection();
   try {
     const { taskId } = await params;
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));

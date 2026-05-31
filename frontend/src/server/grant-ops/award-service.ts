@@ -41,7 +41,7 @@ async function ensureInitialized(): Promise<void> {
 
 export async function createAward(
   grantId: string,
-  amount: string,
+  amount: number,
   startDate: string,
   endDate: string,
 ): Promise<Award> {
@@ -51,10 +51,14 @@ export async function createAward(
   const award: Award = {
     id: deps.idGenerator.generateId('award'),
     grantId,
+    funder: '',
+    title: '',
     amount,
     startDate,
     endDate,
     status: 'active',
+    awardLetterPath: '',
+    notes: '',
     createdAt: deps.clock.now().toISOString(),
     updatedAt: deps.clock.now().toISOString(),
   };
@@ -167,9 +171,8 @@ export async function addPlannedExpense(
 
 export async function addReportDeadline(
   awardId: string,
-  type: string,
+  reportType: string,
   dueDate: string,
-  format?: string,
 ): Promise<AwardReportDeadline> {
   await ensureInitialized();
   const deps = getDependencies();
@@ -177,9 +180,8 @@ export async function addReportDeadline(
   const d: AwardReportDeadline = {
     id: deps.idGenerator.generateId('rpt'),
     awardId,
-    type,
+    reportType,
     dueDate,
-    ...(format !== undefined ? { format } : {}),
     status: 'pending',
   };
   deadlines.push(d);
@@ -204,7 +206,7 @@ export async function addComplianceItem(
     id: deps.idGenerator.generateId('comp'),
     awardId,
     requirement,
-    ...(dueDate !== undefined ? { dueDate } : {}),
+    dueDate: dueDate || '',
     status: 'pending',
   };
   items.push(item);

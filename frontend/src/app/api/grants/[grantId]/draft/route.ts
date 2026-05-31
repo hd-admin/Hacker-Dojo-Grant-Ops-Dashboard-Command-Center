@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from "next/server";
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import * as draftingService from '@/server/grant-ops/drafting-service';
@@ -12,6 +12,7 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
 ) {
+  await connection();
   try {
     const { grantId } = await params;
     const drafts = await draftingService.getDraftArtifacts(grantId);
@@ -26,6 +27,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
 ) {
+  await connection();
   try {
     const { grantId } = await params;
     const rawBody = await request.text();

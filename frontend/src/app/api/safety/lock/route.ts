@@ -1,9 +1,10 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse, connection } from "next/server";
 import { setPasscode, isPasscodeSet, getLockConfig } from "@/server/grant-ops/safety-service";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
+  await connection();
   try {
     if (isPasscodeSet()) {
       return NextResponse.json({

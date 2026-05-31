@@ -30,6 +30,7 @@
  * - The service never crashes — all errors are caught and returned gracefully
  */
 
+import 'server-only';
 import { execFileSync } from 'node:child_process';
 import type { Grant } from '../../../../shared/types';
 import { getDependencies, type Dependencies } from './dependencies';

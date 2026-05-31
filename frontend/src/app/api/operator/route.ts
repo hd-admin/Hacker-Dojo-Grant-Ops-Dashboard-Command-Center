@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from "next/server";
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { resolveDataDir } from '../../../../../shared/grant-ops-sqlite';
@@ -10,6 +10,7 @@ function getOperatorPath(): string {
 }
 
 export async function GET() {
+  await connection();
   try {
     const opPath = getOperatorPath();
     const data = await fs.readFile(opPath, 'utf8').catch(() => null);
@@ -24,6 +25,7 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  await connection();
   try {
     const body = await request.json().catch(() => null);
     const name = (body?.name || '').trim();

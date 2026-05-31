@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
+  await connection();
   try {
     const { jobId } = await params;
     const deps = getDependencies();
@@ -19,6 +20,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
+  await connection();
   try {
     const { jobId } = await params;
     const deps = getDependencies();

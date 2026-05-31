@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { loadSavedSearches, saveSavedSearches } from '../../../../../../shared/grant-ops-persistence';
 
 export const dynamic = 'force-dynamic';
@@ -7,6 +7,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ searchId: string }> },
 ) {
+  await connection();
   try {
     const { searchId } = await params;
     const body = await request.json();
@@ -27,6 +28,7 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ searchId: string }> },
 ) {
+  await connection();
   try {
     const { searchId } = await params;
     const existing = await loadSavedSearches();

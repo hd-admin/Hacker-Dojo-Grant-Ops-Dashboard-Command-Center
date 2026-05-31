@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse, connection } from "next/server";
 import { z } from "zod";
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import type { GrantStatus } from "../../../../../../../shared/types";
@@ -28,6 +28,7 @@ export async function PATCH(
 	request: NextRequest,
 	{ params }: { params: Promise<{ grantId: string }> },
 ) {
+  await connection();
 	try {
 		const { grantId } = await params;
 		const body = await request.json().catch(() => null);

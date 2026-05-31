@@ -787,26 +787,33 @@ export interface EligibilityVetting {
 
 export interface DraftSnippet {
 	id: string;
-	sectionTitle: string;
+	sectionTitle?: string | undefined;
+	title?: string | undefined;
 	content: string;
-	sourceGrantId: string;
-	sourceFunder: string;
-	topicTags: string[];
-	programArea?: string;
-	usedCount: number;
-	lastUsedAt?: string;
+	sourceGrantId?: string | undefined;
+	grantId?: string | undefined;
+	sourceFunder?: string | undefined;
+	topicTags?: string[] | undefined;
+	category?: string | undefined;
+	programArea?: string | undefined;
+	usedCount?: number | undefined;
+	lastUsedAt?: string | undefined;
 	createdAt: string;
 }
 
 export interface Award {
 	id: string;
 	grantId: string;
-	amount: string;
+	funder: string;
+	title: string;
+	amount: number;
 	startDate: string;
 	endDate: string;
-	status: 'active' | 'completed' | 'closed';
+	status: 'active' | 'completed' | 'terminated' | 'pending';
+	awardLetterPath: string;
+	notes: string;
 	createdAt: string;
-	updatedAt: string;
+	updatedAt?: string;
 }
 
 export interface AwardBudgetCategory {
@@ -822,28 +829,33 @@ export interface AwardBudgetCategory {
 export interface AwardExpense {
 	id: string;
 	awardId: string;
-	categoryId: string;
+	categoryId?: string | undefined;
 	date: string;
 	description: string;
 	amount: number;
-	receipt?: string;
+	receiptPath?: string | undefined;
+	isPlanned?: number | undefined;
 }
 
 export interface AwardReportDeadline {
 	id: string;
 	awardId: string;
-	type: string;
+	reportType: string;
 	dueDate: string;
-	format?: string;
+	notes?: string;
 	status: 'pending' | 'submitted' | 'overdue';
+	submittedAt?: string;
+	submittedBy?: string;
 }
 
 export interface AwardComplianceItem {
 	id: string;
 	awardId: string;
 	requirement: string;
-	dueDate?: string;
-	status: 'pending' | 'completed' | 'overdue';
+	dueDate: string;
+	status: 'pending' | 'completed' | 'overdue' | 'waived';
+	notes?: string;
+	completedAt?: string;
 }
 
 export interface PlannedExpense {
@@ -853,4 +865,14 @@ export interface PlannedExpense {
 	date: string;
 	description: string;
 	amount: number;
+}
+
+export interface PipelineTransition {
+	id: string;
+	grantId: string;
+	fromState: string;
+	toState: string;
+	actor: string;
+	timestamp: string;
+	reason?: string;
 }

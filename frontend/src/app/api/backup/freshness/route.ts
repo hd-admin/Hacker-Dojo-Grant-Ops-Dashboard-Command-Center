@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from "next/server";
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  await connection();
   try {
     const deps = getDependencies();
     return NextResponse.json(await deps.loadBackupFreshness());

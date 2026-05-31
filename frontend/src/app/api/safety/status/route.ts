@@ -1,8 +1,10 @@
+import { connection } from 'next/server';
 import { isPasscodeSet, getLockConfig } from '@/server/grant-ops/safety-service';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  await connection();
   try {
     const config = getLockConfig();
     const passcodeSet = isPasscodeSet();

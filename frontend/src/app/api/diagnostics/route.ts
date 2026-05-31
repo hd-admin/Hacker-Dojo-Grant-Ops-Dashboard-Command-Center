@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import { getHealth } from "@/server/grant-ops/health-service";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  await connection();
   try {
     const deps = getDependencies();
     const health = await getHealth(deps);

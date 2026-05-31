@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest, connection } from "next/server";
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { SubmissionManifest, SubmissionManifestItem } from '../../../../../../../shared/types';
@@ -31,6 +31,7 @@ const patchBodySchema = z.object({
 });
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
+  await connection();
   const { grantId } = await params;
   const deps = getDependencies();
   const grant = await deps.repository.getGrant(grantId);
@@ -46,6 +47,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
+  await connection();
   try {
     const { grantId } = await params;
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
@@ -90,6 +92,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
+  await connection();
   try {
     const { grantId } = await params;
     const parsed = patchBodySchema.safeParse(await request.json().catch(() => null));

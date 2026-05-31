@@ -1,3 +1,4 @@
+import 'server-only';
 import type { JobFailureCategory, JobQueueItem } from '../../../../shared/types';
 import { getDependencies } from './dependencies';
 

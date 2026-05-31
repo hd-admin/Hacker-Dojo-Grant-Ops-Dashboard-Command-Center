@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
@@ -9,6 +9,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
+  await connection();
   try {
     const { grantId } = await params;
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));

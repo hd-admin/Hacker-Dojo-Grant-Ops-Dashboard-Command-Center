@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Grant, GrantStatus, HumanOverride, TaskStatus } from '../../../../../../../shared/types';
@@ -72,6 +72,7 @@ function validateTaskOverrideValue(value: unknown): { success: true; parsed: Tas
 }
 
 export async function POST(request: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
+  await connection();
   try {
     const { grantId } = await params;
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));

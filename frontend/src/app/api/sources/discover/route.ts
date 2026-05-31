@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from "next/server";
 import { z } from 'zod';
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
@@ -12,6 +12,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  await connection();
   try {
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {

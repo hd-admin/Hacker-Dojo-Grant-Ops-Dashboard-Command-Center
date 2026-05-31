@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { loadSavedSearches, saveSavedSearches } from '../../../../../shared/grant-ops-persistence';
 import type { SavedSearch } from '../../../../../shared/types';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  await connection();
   try {
     const searches = await loadSavedSearches();
     return NextResponse.json(searches);
@@ -14,6 +15,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json();
     const existing = await loadSavedSearches();

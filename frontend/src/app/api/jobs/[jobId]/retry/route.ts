@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import * as draftingService from '@/server/grant-ops/drafting-service';
 import * as researchService from '@/server/grant-ops/research-service';
@@ -7,6 +7,7 @@ import { executeQueuedJob } from '@/server/grant-ops/job-queue-service';
 export const dynamic = 'force-dynamic';
 
 export async function POST(_request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
+  await connection();
   try {
     const { jobId } = await params;
     const deps = getDependencies();

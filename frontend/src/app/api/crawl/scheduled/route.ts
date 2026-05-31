@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { checkAndRunDue } from '@/server/grant-ops/crawl-scheduler-service';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
+  await connection();
   try {
     const { searchParams } = new URL(request.url);
     const shouldTrigger = searchParams.get('trigger') === 'true';
@@ -16,6 +17,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST() {
+  await connection();
   try {
     const triggered = await checkAndRunDue();
     return NextResponse.json({ triggered });

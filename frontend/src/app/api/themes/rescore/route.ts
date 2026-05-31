@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from "next/server";
 import { loadGrants, saveGrants } from '../../../../../../shared/grant-ops-persistence';
 import { scoreGrantByThemes } from '@/server/grant-ops/theme-service';
 
@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function POST() {
+  await connection();
   try {
     const grants = await loadGrants();
     let changed = 0;

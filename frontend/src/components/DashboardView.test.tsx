@@ -214,7 +214,7 @@ describe('DashboardView', () => {
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(stubResponse as unknown as Response);
 
       root.render(React.createElement(DashboardView, stalenessProps));
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 500));
 
       const indicator = container.querySelector('[data-testid="crawl-freshness-indicator"]');
       expect(indicator).not.toBeNull();

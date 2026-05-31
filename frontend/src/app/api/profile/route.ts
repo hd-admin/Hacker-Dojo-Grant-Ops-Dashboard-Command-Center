@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, connection } from "next/server";
 import * as profileService from '@/server/grant-ops/profile-service';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  await connection();
   try {
     const profile = await profileService.getProfile();
     if (!profile) {

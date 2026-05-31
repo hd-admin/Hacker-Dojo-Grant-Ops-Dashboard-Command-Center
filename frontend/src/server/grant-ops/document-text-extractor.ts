@@ -1,3 +1,4 @@
+import 'server-only';
 import fs from 'node:fs/promises';
 import type { DocumentExtractionStatus } from '../../../../shared/types';
 

@@ -1,3 +1,4 @@
+import 'server-only';
 import { execFileSync } from 'node:child_process';
 import { z } from 'zod';
 import { SourceDiscoverySuggestionSchema } from '../../../../shared/schemas';

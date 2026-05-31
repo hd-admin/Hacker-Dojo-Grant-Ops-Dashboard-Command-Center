@@ -1,10 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, connection } from "next/server";
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Task, TaskStatus, ResponsibilityTag } from '../../../../../shared/types';
 export const dynamic = 'force-dynamic';
 
 // GET: Get all tasks
 export async function GET() {
+  await connection();
   try {
     const deps = getDependencies();
     const tasks = await deps.repository.getTasks();
@@ -17,6 +18,7 @@ export async function GET() {
 
 // POST: Add a new task
 export async function POST(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json();
     const deps = getDependencies();
@@ -74,6 +76,7 @@ export async function POST(request: NextRequest) {
 
 // PATCH: Batch update tasks (replace all tasks)
 export async function PATCH(request: NextRequest) {
+  await connection();
   try {
     const body = await request.json();
     const deps = getDependencies();

@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse, connection } from "next/server";
 import { z } from "zod";
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import type { Grant } from "../../../../../shared/types";
@@ -16,6 +16,7 @@ const manualGrantSchema = z.object({
 });
 
 export async function GET(request: NextRequest) {
+	await connection();
 	try {
 		const deps = getDependencies();
 		const grants = await deps.repository.getGrants();
@@ -49,6 +50,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+	await connection();
 	try {
 		const body = await request.json().catch(() => null);
 		const parsed = manualGrantSchema.safeParse(body);

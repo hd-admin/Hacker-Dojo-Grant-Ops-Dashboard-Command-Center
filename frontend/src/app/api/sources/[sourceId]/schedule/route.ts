@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest, connection } from "next/server";
 import { z } from 'zod';
 import { disableScheduleForSource, getScheduleForSource, upsertScheduleForSource } from '@/server/grant-ops/crawl-scheduler-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -11,6 +11,7 @@ const bodySchema = z.object({
 });
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ sourceId: string }> }) {
+  await connection();
   const { sourceId } = await params;
   const deps = getDependencies();
   const source = (await deps.repository.getSources()).find((item) => item.id === sourceId);
@@ -25,6 +26,7 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
 }
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ sourceId: string }> }) {
+  await connection();
   try {
     const { sourceId } = await params;
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
@@ -45,6 +47,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 }
 
 export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ sourceId: string }> }) {
+  await connection();
   try {
     const { sourceId } = await params;
     const deps = getDependencies();

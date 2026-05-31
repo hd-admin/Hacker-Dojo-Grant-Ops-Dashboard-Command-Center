@@ -7,6 +7,7 @@
  * This module runs server-side and is consumed by API routes.
  */
 
+import 'server-only';
 import crypto from "node:crypto";
 
 // ============ Types ============

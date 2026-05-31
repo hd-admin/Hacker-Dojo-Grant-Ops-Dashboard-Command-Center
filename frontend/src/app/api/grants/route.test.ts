@@ -31,6 +31,7 @@ vi.mock("next/server", async () => {
 		await vi.importActual<typeof import("next/server")>("next/server");
 	return {
 		...actual,
+		connection: async () => {},
 		NextRequest: class MockNextRequest {
 			url: string;
 			constructor(url: string | URL) {

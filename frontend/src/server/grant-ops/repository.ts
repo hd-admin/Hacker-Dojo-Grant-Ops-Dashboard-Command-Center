@@ -5,6 +5,7 @@
  * Uses the shared grant-ops-persistence.ts functions for data storage.
  */
 
+import 'server-only';
 import type {
   ApprovalRecord,
   AuditEvent,
@@ -56,6 +57,24 @@ import {
   updateConflictRecordPersistence,
   updateDuplicateCandidatePersistence,
   updateJobQueueItemPersistence,
+  loadAwards,
+  saveAwards,
+  loadAwardBudgetCategories,
+  saveAwardBudgetCategories,
+  loadAwardExpenses,
+  saveAwardExpenses,
+  loadAwardReportDeadlines,
+  saveAwardReportDeadlines,
+  loadAwardComplianceItems,
+  saveAwardComplianceItems,
+  loadDraftSnippets,
+  saveDraftSnippets,
+  loadPeerDiscoveryResults,
+  savePeerDiscoveryResults,
+  loadSavedSearches,
+  saveSavedSearches,
+  loadFunderProfiles,
+  saveFunderProfiles,
 } from '../../../../shared/grant-ops-persistence';
 
 import type { DocumentMetadata } from '../../../../shared/types';
@@ -387,4 +406,145 @@ export async function updateSource(id: string, updates: Partial<Source>): Promis
   }
   data.sources[index] = { ...data.sources[index]!, ...updates };
   await savePersistedData(data);
+}
+
+// ============ NEW V2 ENTITY METHODS ============
+
+import type {
+  Award,
+  AwardBudgetCategory,
+  AwardExpense,
+  AwardReportDeadline,
+  AwardComplianceItem,
+  DraftSnippet,
+  SavedSearch,
+  FunderProfile,
+  PipelineTransition,
+} from '../../../../shared/types';
+
+export async function getAwards(): Promise<Award[]> {
+  return loadAwards();
+}
+
+export async function createAward(award: Award): Promise<void> {
+  const awards = await loadAwards();
+  awards.push(award);
+  await saveAwards(awards);
+}
+
+export async function getAwardByGrantId(grantId: string): Promise<Award | null> {
+  const awards = await loadAwards();
+  return awards.find((a) => a.grantId === grantId) || null;
+}
+
+export async function updateAward(id: string, updates: Partial<Award>): Promise<void> {
+  const awards = await loadAwards();
+  const index = awards.findIndex((a) => a.id === id);
+  if (index !== -1) {
+    awards[index] = { ...awards[index]!, ...updates };
+    await saveAwards(awards);
+  }
+}
+
+export async function getBudgetCategoriesByAwardId(awardId: string): Promise<AwardBudgetCategory[]> {
+  const categories = await loadAwardBudgetCategories();
+  return categories.filter((c) => c.awardId === awardId);
+}
+
+export async function createBudgetCategory(category: AwardBudgetCategory): Promise<void> {
+  const categories = await loadAwardBudgetCategories();
+  categories.push(category);
+  await saveAwardBudgetCategories(categories);
+}
+
+export async function getExpensesByAwardId(awardId: string): Promise<AwardExpense[]> {
+  const expenses = await loadAwardExpenses();
+  return expenses.filter((e) => e.awardId === awardId);
+}
+
+export async function createExpense(expense: AwardExpense): Promise<void> {
+  const expenses = await loadAwardExpenses();
+  expenses.push(expense);
+  await saveAwardExpenses(expenses);
+}
+
+export async function getReportDeadlinesByAwardId(awardId: string): Promise<AwardReportDeadline[]> {
+  const deadlines = await loadAwardReportDeadlines();
+  return deadlines.filter((d) => d.awardId === awardId);
+}
+
+export async function createReportDeadline(deadline: AwardReportDeadline): Promise<void> {
+  const deadlines = await loadAwardReportDeadlines();
+  deadlines.push(deadline);
+  await saveAwardReportDeadlines(deadlines);
+}
+
+export async function getComplianceItemsByAwardId(awardId: string): Promise<AwardComplianceItem[]> {
+  const items = await loadAwardComplianceItems();
+  return items.filter((i) => i.awardId === awardId);
+}
+
+export async function createComplianceItem(item: AwardComplianceItem): Promise<void> {
+  const items = await loadAwardComplianceItems();
+  items.push(item);
+  await saveAwardComplianceItems(items);
+}
+
+export async function getSnippets(): Promise<DraftSnippet[]> {
+  return loadDraftSnippets();
+}
+
+export async function createSnippet(snippet: DraftSnippet): Promise<void> {
+  const snippets = await loadDraftSnippets();
+  snippets.push(snippet);
+  await saveDraftSnippets(snippets);
+}
+
+export async function getOutreachRecords(): Promise<unknown[]> {
+  // Outreach records stored in peer discovery results for now
+  return loadPeerDiscoveryResults();
+}
+
+export async function createOutreachRecord(record: unknown): Promise<void> {
+  const records = await loadPeerDiscoveryResults();
+  records.push(record as import('../../../../shared/types').PeerDiscoveryResult);
+  await savePeerDiscoveryResults(records);
+}
+
+export async function getSavedSearches(): Promise<SavedSearch[]> {
+  return loadSavedSearches();
+}
+
+export async function createSavedSearch(search: SavedSearch): Promise<void> {
+  const searches = await loadSavedSearches();
+  searches.push(search);
+  await saveSavedSearches(searches);
+}
+
+export async function getFormTemplates(): Promise<unknown[]> {
+  return [];
+}
+
+export async function createFormTemplate(_template: unknown): Promise<void> {
+  // Form templates not yet persisted; stub for API compatibility
+}
+
+export async function getFunderProfiles(): Promise<FunderProfile[]> {
+  return loadFunderProfiles();
+}
+
+export async function createFunderProfile(profile: FunderProfile): Promise<void> {
+  const profiles = await loadFunderProfiles();
+  profiles.push(profile);
+  await saveFunderProfiles(profiles);
+}
+
+export async function getPipelineTransitionsByGrantId(_grantId: string): Promise<PipelineTransition[]> {
+  // Pipeline transitions not yet in dedicated table; return empty
+  return [];
+}
+
+export async function createPipelineTransition(transition: PipelineTransition): Promise<void> {
+  // Pipeline transitions not yet in dedicated table; stub for API compatibility
+  void transition;
 }

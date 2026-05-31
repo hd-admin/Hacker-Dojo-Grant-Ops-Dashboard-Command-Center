@@ -4,6 +4,7 @@
  * Public async façade over the sqlite-backed grant operations store.
  */
 
+import 'server-only';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';

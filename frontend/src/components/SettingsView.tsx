@@ -75,7 +75,7 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
   const [showRestoreWarning, setShowRestoreWarning] = useState(false);
   const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
   const [lastHandshakeAt, setLastHandshakeAt] = useState<string | null>(null);
-  const [testConnectionLoading, setTestConnectionLoading] = useState(false);
+  const [_testConnectionLoading, setTestConnectionLoading] = useState(false);
   const [testConnectionResult, setTestConnectionResult] = useState<'success' | 'failed' | null>(null);
   const [themesData, setThemesData] = useState<ThemesData | null>(null);
   const [matchThreshold, setMatchThreshold] = useState(70);
@@ -142,23 +142,23 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
   }, []);
 
   // Profile is hardcoded — read-only, saveProfileToApi removed.
-  const isDirty = false;
-  const isSaving = false;
-  const lastSaved: string | null = null;
-  const saveNow = async () => {};
-  const markClean = () => {};
+  const _isDirty = false;
+  const _isSaving = false;
+  const _lastSaved: string | null = null;
+  const _saveNow = async () => {};
+  const _markClean = () => {};
 
   // Reset dirty state when profile initially loads
   const profileLoadRef = useRef(false);
   useEffect(() => {
     if (profile && !profileLoadRef.current) {
       profileLoadRef.current = true;
-      markClean();
+      _markClean();
     }
-  }, [profile, markClean]);
+  }, [profile]);
 
 
-  const refreshHealth = async () => {
+  const _refreshHealth = async () => {
     const data = await fetch('/api/health').then((response) => response.json()).catch(() => null);
     setHealth(data);
     if (data?.handshakeSuccess) {
@@ -166,7 +166,7 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
     }
   };
 
-  const handleTestConnection = async () => {
+  const _handleTestConnection = async () => {
     setTestConnectionLoading(true);
     setTestConnectionResult(null);
     try {

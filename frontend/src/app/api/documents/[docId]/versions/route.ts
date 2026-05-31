@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest, connection } from "next/server";
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import * as documentService from '@/server/grant-ops/document-service';
@@ -17,6 +17,7 @@ export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ docId: string }> },
 ) {
+  await connection();
   const { docId } = await params;
   const doc = await documentService.getDocument(docId);
   if (!doc) {
@@ -29,6 +30,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ docId: string }> },
 ) {
+  await connection();
   try {
     const { docId } = await params;
     const parsed = postBodySchema.safeParse(await request.json().catch(() => null));
