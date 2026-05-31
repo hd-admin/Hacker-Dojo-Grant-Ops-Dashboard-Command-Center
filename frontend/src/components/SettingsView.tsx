@@ -60,6 +60,155 @@ function getStatusLabelText(status: string): string {
   }
 }
 
+type LogTab = 'app' | 'error' | 'session';
+
+function LogViewer() {
+  const [activeTab, setActiveTab] = useState<LogTab>('app');
+  const [entries, setEntries] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(50);
+  const [totalEntries, setTotalEntries] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [sessionJobId, setSessionJobId] = useState('');
+
+  const loadLogs = async (targetPage: number) => {
+    setLoading(true);
+    try {
+      let url = `/api/logs/${activeTab}?page=${targetPage}&pageSize=${pageSize}`;
+      if (activeTab === 'session' && sessionJobId) {
+        url = `/api/logs/session/${encodeURIComponent(sessionJobId)}?page=${targetPage}&pageSize=${pageSize}`;
+      }
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('Failed to load logs');
+      const data = (await res.json()) as { entries?: string[]; page?: number; totalEntries?: number };
+      setEntries(data.entries ?? []);
+      setPage(data.page ?? 1);
+      setTotalEntries(data.totalEntries ?? 0);
+    } catch (_err) {
+      setEntries([]);
+      setTotalEntries(0);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    setPage(1);
+    void loadLogs(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
+  const totalPages = Math.max(1, Math.ceil(totalEntries / pageSize));
+
+  return (
+    <div data-testid="log-viewer">
+      <div className="filter-row" role="tablist" aria-label="Log type tabs" style={{ marginBottom: '12px' }}>
+        {(['app', 'error', 'session'] as LogTab[]).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            role="tab"
+            aria-selected={activeTab === tab}
+            className={`btn btn-ghost btn-sm ${activeTab === tab ? 'active' : ''}`}
+            onClick={() => setActiveTab(tab)}
+            data-testid={`log-tab-${tab}`}
+          >
+            {tab === 'app' ? 'App Logs' : tab === 'error' ? 'Error Logs' : 'Session Logs'}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'session' && (
+        <div style={{ marginBottom: '12px' }}>
+          <input
+            type="text"
+            className="form-input"
+            placeholder="Enter job ID"
+            value={sessionJobId}
+            onChange={(e) => setSessionJobId(e.target.value)}
+            style={{ maxWidth: '300px', marginRight: '8px' }}
+            data-testid="session-job-id-input"
+          />
+          <button type="button" className="btn btn-sm" onClick={() => loadLogs(1)} data-testid="session-load-btn">
+            Load
+          </button>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="spinner-overlay" role="status" aria-busy="true" aria-label="Loading logs">
+          <div className="spinner" />
+        </div>
+      ) : (
+        <>
+          <div
+            className="settings-log-container"
+            style={{
+              background: 'var(--bg)',
+              border: '1px solid var(--border)',
+              borderRadius: 'var(--radius)',
+              padding: '12px',
+              maxHeight: '400px',
+              overflow: 'auto',
+              fontFamily: 'var(--mono)',
+              fontSize: '12px',
+              lineHeight: 1.5,
+              color: 'var(--text-dim)',
+            }}
+            data-testid="log-entries-container"
+          >
+            {entries.length === 0 ? (
+              <div className="empty-state">No logs found.</div>
+            ) : (
+              entries.map((entry, idx) => (
+                <div key={idx} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', padding: '2px 0' }}>
+                  {entry}
+                </div>
+              ))
+            )}
+          </div>
+
+          {totalEntries > 0 && (
+            <div
+              className="log-pagination"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginTop: '12px',
+                gap: '12px',
+              }}
+              data-testid="log-pagination"
+            >
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => loadLogs(page - 1)}
+                disabled={page <= 1}
+                data-testid="log-prev-page"
+              >
+                Previous
+              </button>
+              <span className="settings-diag-value" data-testid="log-page-info">
+                Page {page} of {totalPages} ({totalEntries} entries)
+              </span>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => loadLogs(page + 1)}
+                disabled={page >= totalPages}
+                data-testid="log-next-page"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 interface SettingsViewProps {
   onRefreshAppState?: () => Promise<void> | void;
   initiallyEditing?: boolean;
@@ -804,6 +953,13 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
               </div>
             )}
 
+          </div>
+        </section>
+
+        <section className="setting-card" data-testid="log-viewer-card">
+          <div className="setting-card-header"><div className="setting-card-title">Log Viewer</div></div>
+          <div className="setting-card-body">
+            <LogViewer />
           </div>
         </section>
 

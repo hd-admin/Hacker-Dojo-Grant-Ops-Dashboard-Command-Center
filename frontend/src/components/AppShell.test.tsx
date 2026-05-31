@@ -100,6 +100,10 @@ vi.mock('./CalendarView', () => ({ CalendarView: () => <div>calendar</div> }));
 vi.mock('./JobsPanel', () => ({ JobsPanel: () => <div>jobs</div> }));
 vi.mock('./OperatorNamePrompt', () => ({ OperatorNamePrompt: () => <div>operator prompt</div> }));
 vi.mock('./PostAwardView', () => ({ PostAwardView: () => <div>post-award</div> }));
+const { mockAddToast } = vi.hoisted(() => ({ mockAddToast: vi.fn() }));
+vi.mock('./ToastProvider', () => ({
+  useToast: () => ({ addToast: mockAddToast, removeToast: vi.fn(), toasts: [] }),
+}));
 vi.mock('./GrantDrawer', () => ({
   GrantDrawer: ({ grantId, onRefreshAppState }: { grantId: string | null; onRefreshAppState?: () => Promise<void> | void }) =>
     grantId ? (
@@ -445,5 +449,43 @@ describe('AppShell', () => {
     expect(calendarNav?.textContent).toContain('Calendar');
     expect(postAwardNav).not.toBeNull();
     expect(postAwardNav?.textContent).toContain('Post-Award');
+  });
+
+  it('shows a toast when a job transitions to completed', async () => {
+    let jobStatus = 'running';
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/health') {
+        return new Response(JSON.stringify({
+          storage: 'ok',
+          opencode: 'ok',
+          opencodeVersion: '1.0.0',
+          crawlerStatus: 'ok',
+          documentIndexer: 'ok',
+        }), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url === '/api/crawl/scheduled?trigger=true') {
+        return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url === '/api/jobs') {
+        return new Response(JSON.stringify([
+          { id: 'job-1', jobType: 'research', status: jobStatus, progress: jobStatus === 'completed' ? 100 : 50, stage: jobStatus === 'completed' ? 'completed' : 'analyzing', createdAt: new Date().toISOString() },
+        ]), { headers: { 'content-type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({}), { headers: { 'content-type': 'application/json' } });
+    });
+
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('.nav-item[data-view="jobs"]') !== null, 3000);
+
+    // Trigger a refresh that will re-fetch jobs with completed status
+    jobStatus = 'completed';
+    const refreshBtn = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('refresh dashboard'),
+    );
+    refreshBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    await waitFor(() => mockAddToast.mock.calls.length > 0, 3000);
+    expect(mockAddToast).toHaveBeenCalledWith('\u2705 research completed', 'success');
   });
 });

@@ -173,12 +173,12 @@ export function PostAwardView({ onRefreshAppState: _onRefreshAppState }: PostAwa
           {awards.length === 0 && <div className="text-muted">No awards</div>}
           {awards.map((award) => (
             <div key={award.id} className="post-award-section">
-              <div className="font-bold mb-2">{award.title || `Award ${award.grantId}`}</div>
-              <button type="button" className="btn btn-sm mb-2" onClick={() => loadBudgetVsActual(award.id)}>Load Report</button>
+              <div className="post-award-award-title">{award.title || `Award ${award.grantId}`}</div>
+              <button type="button" className="btn btn-sm" style={{ marginBottom: '8px' }} onClick={() => loadBudgetVsActual(award.id)}>Load Report</button>
               {(budgetVsActual[award.id] || []).map((row) => (
                 <div key={row.category} className={`post-award-item post-award-item-${row.status}`}>
                   <div>{row.category}</div>
-                  <div className="text-sm">Budgeted: ${row.budgeted.toLocaleString()} · Spent: ${row.spent.toLocaleString()} · Planned: ${row.planned.toLocaleString()}</div>
+                  <div className="post-award-budget-meta">Budgeted: ${row.budgeted.toLocaleString()} · Spent: ${row.spent.toLocaleString()} · Planned: ${row.planned.toLocaleString()}</div>
                 </div>
               ))}
             </div>

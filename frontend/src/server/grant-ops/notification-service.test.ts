@@ -727,6 +727,61 @@ describe('notification-service', () => {
 		});
 	});
 
+	describe('AC-16.5.3: notification timing', () => {
+		it('generates crawl completion notification within 5 seconds', () => {
+			const service = createNotificationService(deps);
+			const crawlRun: CrawlRun = {
+				id: 'run-1',
+				status: 'completed',
+				startedAt: new Date().toISOString(),
+				completedAt: new Date().toISOString(),
+				sourcesCrawled: 10,
+				grantsFound: 50,
+				grantsMatched: 20,
+			};
+
+			const start = performance.now();
+			const notifications = service.generateCrawlNotifications(crawlRun, 50, 20);
+			const elapsed = performance.now() - start;
+
+			expect(notifications.length).toBeGreaterThan(0);
+			expect(elapsed).toBeLessThan(5000);
+		});
+
+		it('generates draft ready notification within 5 seconds', () => {
+			const service = createNotificationService(deps);
+			const grant: Grant = {
+				id: 'grant-1',
+				title: 'Test Grant',
+				funder: 'NSF',
+				funderShort: 'NSF',
+				award: '$100K',
+				awardSort: 100000,
+				deadline: '2026-12-31',
+				daysOut: 100,
+				fit: 90,
+				tags: ['Science & Tech'],
+				status: 'matched',
+				statusLabel: 'Matched',
+			};
+			const draft: DraftArtifact = {
+				id: 'draft-1',
+				grantId: 'grant-1',
+				version: 1,
+				content: 'Draft content',
+				createdAt: new Date().toISOString(),
+				createdBy: 'agent',
+			};
+
+			const start = performance.now();
+			const notification = service.generateDraftReadyNotification(grant, draft);
+			const elapsed = performance.now() - start;
+
+			expect(notification).not.toBeNull();
+			expect(elapsed).toBeLessThan(5000);
+		});
+	});
+
 	describe('DEFAULT_NOTIFICATION_RULES', () => {
 		it('includes all required event types', () => {
 			const eventTypes = DEFAULT_NOTIFICATION_RULES.map((r) => r.eventType);

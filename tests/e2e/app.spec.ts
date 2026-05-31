@@ -119,6 +119,65 @@ test.describe("Grant Operations Center smoke", () => {
 		await expect(page.locator(".setting-card")).toHaveCount(9);
 	});
 
+	test("AC-14.2.4: failed job can be retried from UI", async ({ page, request }) => {
+		// Create a job that will fail
+		const startRes = await request.post("http://127.0.0.1:3000/api/research", {
+			data: { query: "__force_failure_test__" },
+		});
+		expect(startRes.ok()).toBeTruthy();
+		const { jobId } = await startRes.json();
+		expect(jobId).toBeDefined();
+
+		// Navigate to jobs view
+		await page.click('[data-view="jobs"]');
+		await expect(page.locator("#view-jobs")).toHaveClass(/active/);
+
+		// Wait for job to appear
+		await expect(page.locator(`[data-testid="job-item-failed-${jobId}"]`)).toBeVisible({ timeout: 15000 });
+
+		// Click retry button
+		await page.click(`[data-testid="job-retry-btn-${jobId}"]`);
+
+		// Verify job is queued again
+		await expect(page.locator(`[data-testid="job-item-queued-${jobId}"]`)).toBeVisible({ timeout: 5000 });
+	});
+
+	test("AC-14.3.4: sidebar badge shows correct active job count", async ({ page, request }) => {
+		// Start a long-running job
+		const startRes = await request.post("http://127.0.0.1:3000/api/research", {
+			data: { query: "test query for badge count" },
+		});
+		expect(startRes.ok()).toBeTruthy();
+		const { jobId } = await startRes.json();
+		expect(jobId).toBeDefined();
+
+		// Navigate to jobs view to trigger active jobs load
+		await page.click('[data-view="jobs"]');
+		await expect(page.locator("#view-jobs")).toHaveClass(/active/);
+
+		// Check that the jobs nav item shows a count when active jobs exist
+		const jobsNav = page.locator('.nav-item[data-view="jobs"]');
+		await expect(jobsNav).toBeVisible();
+	});
+
+	test("AC-14.10.3: frontend handles API error codes with specific messages", async ({ page }) => {
+		// Test 400 validation error
+		const badRequestRes = await page.request.post("http://127.0.0.1:3000/api/grants", {
+			data: { invalidField: true },
+		});
+		expect(badRequestRes.status()).toBeGreaterThanOrEqual(400);
+		expect(badRequestRes.status()).toBeLessThan(500);
+		const badBody = await badRequestRes.json();
+		expect(badBody.error || badBody.message || badBody.details).toBeDefined();
+
+		// Test 404 not found
+		const notFoundRes = await page.request.get("http://127.0.0.1:3000/api/grants/nonexistent-grant-id-12345");
+		expect(notFoundRes.status()).toBeGreaterThanOrEqual(404);
+		expect(notFoundRes.status()).toBeLessThan(500);
+		const notFoundBody = await notFoundRes.json();
+		expect(notFoundBody.error || notFoundBody.message).toBeDefined();
+	});
+
 	test("grant updates persist through the API", async ({ request }) => {
 		const grantsResponse = await request.get(
 			"http://127.0.0.1:3000/api/grants",

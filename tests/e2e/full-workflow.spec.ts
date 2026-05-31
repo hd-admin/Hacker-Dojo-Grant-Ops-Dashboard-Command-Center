@@ -42,6 +42,7 @@ async function pollJobCompletion(
 test.describe('Full Workflow E2E', () => {
   test('complete discovery-to-award lifecycle (16 steps)', async ({ page, request }) => {
     test.setTimeout(30000);
+    const workflowStart = Date.now();
 
     // Reset state for clean start
     await resetAppState(request);
@@ -215,6 +216,10 @@ test.describe('Full Workflow E2E', () => {
       // Post-award view may not exist yet — verify page loaded
       expect(page.locator('[data-testid="app-shell"]')).toBeVisible();
     });
+
+    // AC-14.1.2: Full workflow must complete within 30 seconds
+    const workflowElapsed = Date.now() - workflowStart;
+    expect(workflowElapsed).toBeLessThan(30000);
   });
 
   test('job lifecycle API — research job with mocked agent', async ({ request }) => {

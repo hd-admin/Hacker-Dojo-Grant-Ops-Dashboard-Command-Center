@@ -2,7 +2,7 @@
 
 import type { JobQueueItem, JobStatus } from '../../../shared/types';
 import { X, RefreshCw } from 'lucide-react';
-import { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 
 interface JobProgressProps {
   jobId: string;
@@ -79,7 +79,22 @@ export function JobProgress({
   }, [fetchJob]);
 
   if (dismissed) return null;
-  if (!job) return null;
+
+  if (!job) {
+    if (pollFailures >= 3) {
+      return (
+        <div className="job-progress" data-testid="job-progress">
+          <div className="job-progress-connection-lost">
+            Connection lost — retrying...
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setPollFailures(0); void fetchJob(); }}>
+              Retry now
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  }
 
   const status = job.status || 'queued';
   const progress = job.progress ?? 0;

@@ -369,7 +369,7 @@ export function PipelineView({ onGrantSelect, onNavigate }: PipelineViewProps) {
                           <span>{renderDeadlineCell(grant)}</span>
                           <span className="amount">{grant.award}</span>
                         </div>
-                        <div className="mt-2">
+                        <div className="pipeline-move-menu-wrapper">
                           <button
                             type="button"
                             className="btn btn-xs btn-ghost"
@@ -380,12 +380,12 @@ export function PipelineView({ onGrantSelect, onNavigate }: PipelineViewProps) {
                             Move to...
                           </button>
                           {moveMenuOpen === grant.id && (
-                            <div className="absolute z-10 mt-1 bg-white border rounded shadow-lg p-1" style={{ minWidth: '160px' }}>
+                            <div className="pipeline-move-dropdown">
                               {columns.filter((c) => c.key !== grant.status).map((col) => (
                                 <button
                                   key={col.key}
                                   type="button"
-                                  className="block w-full text-left px-3 py-2 text-sm hover:bg-gray-100 rounded"
+                                  className="pipeline-move-dropdown-item"
                                   onClick={() => handleMoveGrant(grant.id, col.key)}
                                 >
                                   {col.title}
@@ -409,16 +409,16 @@ export function PipelineView({ onGrantSelect, onNavigate }: PipelineViewProps) {
           onClick={(e) => { if (e.target === e.currentTarget) { setDeclineModalOpen(false); setDeclineGrantId(null); } }}
         >
           <div className="modal-content" style={{ maxWidth: '500px' }}>
-            <h2 id="decline-modal-title" className="text-xl font-bold mb-4">Mark as Declined</h2>
-            <p className="mb-4 text-sm text-gray-600">Optionally add a lessons learned note for future reference.</p>
+            <h2 id="decline-modal-title" className="modal-title">Mark as Declined</h2>
+            <p className="modal-description">Optionally add a lessons learned note for future reference.</p>
             <textarea
-              className="w-full p-3 border rounded mb-4"
+              className="form-input modal-textarea"
               rows={4}
               placeholder="What did we learn from this?"
               value={lessonsLearned}
               onChange={(e) => setLessonsLearned(e.target.value)}
             />
-            <div className="flex gap-2 justify-end">
+            <div className="modal-actions">
               <button type="button" className="btn btn-ghost" onClick={() => { setDeclineModalOpen(false); setDeclineGrantId(null); }}>Cancel</button>
               <button type="button" className="btn btn-primary" onClick={handleDeclineSubmit}>Confirm Declined</button>
             </div>

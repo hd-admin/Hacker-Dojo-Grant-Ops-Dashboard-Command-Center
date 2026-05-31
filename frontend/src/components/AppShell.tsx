@@ -29,6 +29,7 @@ import {
   X,
 } from "lucide-react";
 import { client } from "../lib/grant-ops-client";
+import { useToast } from './ToastProvider';
 import { DashboardView } from "./DashboardView";
 import { DiscoveryView } from "./DiscoveryView";
 import { GrantDrawer } from "./GrantDrawer";
@@ -115,6 +116,7 @@ function readWorkingContext(): {
 }
 
 export function AppShell() {
+  const { addToast } = useToast();
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
   const [selectedGrantRefreshKey, setSelectedGrantRefreshKey] = useState(0);
@@ -137,6 +139,7 @@ export function AppShell() {
   const [showSafeQuit, setShowSafeQuit] = useState(false);
   const [activeJobs, setActiveJobs] = useState<JobQueueItem[]>([]);
   const isSafeQuit = useRef(false);
+  const previousJobStatuses = useRef<Record<string, JobQueueItem['status']>>({});
 
   // Keyboard navigation
   const mainRef = useRef<HTMLElement>(null);
@@ -209,10 +212,27 @@ export function AppShell() {
         ? data.filter((job) => job.status === 'queued' || job.status === 'running' || job.status === 'verifying' || job.status === 'retrying')
         : [];
       setActiveJobs(active);
+
+      // Toast bridge: detect jobs that transitioned to completed
+      const prevStatuses = previousJobStatuses.current;
+      for (const job of Array.isArray(data) ? data : []) {
+        const prevStatus = prevStatuses[job.id];
+        if (prevStatus && prevStatus !== 'completed' && job.status === 'completed') {
+          addToast(`\u2705 ${job.jobType} completed`, 'success');
+        }
+        if (prevStatus && prevStatus !== 'failed' && job.status === 'failed') {
+          addToast(`\u274C ${job.jobType} failed`, 'error');
+        }
+      }
+      const nextStatuses: Record<string, JobQueueItem['status']> = {};
+      for (const job of Array.isArray(data) ? data : []) {
+        nextStatuses[job.id] = job.status;
+      }
+      previousJobStatuses.current = nextStatuses;
     } catch {
       setActiveJobs([]);
     }
-  }, []);
+  }, [addToast]);
 
   const refreshAppState = useCallback(async (): Promise<void> => {
     const [grantsData, profileData, notificationsData, tasksData, sourcesData, runsResponse, duplicatesData] = await Promise.all([
@@ -237,7 +257,9 @@ export function AppShell() {
       online: latestRun ? latestRun.status !== 'failed' : true,
       lastSync: latestRun?.completedAt || latestRun?.startedAt || '',
     });
-  }, []);
+
+    await loadActiveJobs();
+  }, [loadActiveJobs]);
 
   const refreshSelectedGrant = useCallback(async (): Promise<void> => {
     if (!selectedGrantId) {

@@ -3,12 +3,33 @@ import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import fs from 'node:fs';
 import path from 'node:path';
+import { z } from 'zod';
 
 const LOG_DIR = path.join(process.cwd(), '.grant-ops-data', 'logs');
 
-export async function GET(_request: NextRequest) {
+const querySchema = z.object({
+  page: z.preprocess((val) => (val === null || val === undefined ? undefined : Number(val)), z.number().int().min(1).optional()),
+  pageSize: z.preprocess((val) => (val === null || val === undefined ? undefined : Number(val)), z.number().int().min(1).max(200).optional()),
+}).transform((data) => ({
+  page: data.page ?? 1,
+  pageSize: data.pageSize ?? 50,
+}));
+
+export async function GET(request: NextRequest) {
   await connection();
   try {
+    const { searchParams } = new URL(request.url);
+    const query = querySchema.safeParse({
+      page: searchParams.get('page'),
+      pageSize: searchParams.get('pageSize'),
+    });
+
+    if (!query.success) {
+      return NextResponse.json(createErrorResponse('VALIDATION_ERROR', 'Invalid pagination parameters'), { status: 400 });
+    }
+
+    const { page, pageSize } = query.data;
+
     const logEntries: string[] = [];
     if (fs.existsSync(LOG_DIR)) {
       const files = fs.readdirSync(LOG_DIR)
@@ -23,7 +44,14 @@ export async function GET(_request: NextRequest) {
         logEntries.push(...tail);
       }
     }
-    return NextResponse.json({ entries: logEntries, count: logEntries.length });
+
+    const totalEntries = logEntries.length;
+    const start = (page - 1) * pageSize;
+    const end = start + pageSize;
+    const entries = logEntries.slice(start, end);
+    const count = entries.length;
+
+    return NextResponse.json({ entries, count, page, pageSize, totalEntries });
   } catch (error) {
     logger.error({ err: error }, 'Error reading error logs');
     return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to read error logs'), { status: 500 });
