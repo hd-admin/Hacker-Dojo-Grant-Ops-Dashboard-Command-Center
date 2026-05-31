@@ -156,9 +156,15 @@ describe('executeAgentJob - mocked subprocess', () => {
     mockSpawnImpl.mockReset();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Allow a tick for any pending stream closes before deleting the directory
+    await new Promise((r) => setImmediate(r));
     if (fs.existsSync(currentTestDataDir)) {
-      fs.rmSync(currentTestDataDir, { recursive: true, force: true });
+      try {
+        fs.rmSync(currentTestDataDir, { recursive: true, force: true });
+      } catch {
+        // Suppress cleanup errors (e.g., ENOENT from race conditions)
+      }
     }
   });
 

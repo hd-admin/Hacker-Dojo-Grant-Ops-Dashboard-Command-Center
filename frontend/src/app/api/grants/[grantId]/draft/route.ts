@@ -7,7 +7,12 @@ import { getDependencies } from '@/server/grant-ops/dependencies';
 import * as draftingService from '@/server/grant-ops/drafting-service';
 import { enqueueJob } from '@/server/grant-ops/job-queue-service';
 import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
+import { z } from 'zod';
 export const dynamic = 'force-dynamic';
+
+const bodySchema = z.object({
+  revisionNotes: z.string().optional(),
+});
 
 
 export async function GET(
@@ -33,7 +38,12 @@ export async function POST(
   try {
     const { grantId } = await params;
     const rawBody = await request.text();
-    const body = rawBody.trim() ? JSON.parse(rawBody) as { revisionNotes?: string } : {};
+    const jsonBody = rawBody.trim() ? JSON.parse(rawBody) as unknown : {};
+    const parsed = bodySchema.safeParse(jsonBody);
+    if (!parsed.success) {
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), { status: 400 });
+    }
+    const body = parsed.data;
     const deps = getDependencies();
 
     const grant = await deps.repository.getGrant(grantId);

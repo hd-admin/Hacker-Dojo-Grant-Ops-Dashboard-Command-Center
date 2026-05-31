@@ -3,7 +3,22 @@ import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Task, TaskStatus, ResponsibilityTag } from '../../../../../shared/types';
+import { z } from 'zod';
 export const dynamic = 'force-dynamic';
+
+const bodySchema = z.object({
+  id: z.string().optional(),
+  text: z.string().min(1),
+  completed: z.boolean().optional(),
+  taskStatus: z.enum(['blocked', 'in-progress', 'completed', 'waived', 'not-applicable']).optional(),
+  responsibilityTag: z.enum(['finance', 'program', 'review', 'follow-up']).optional(),
+  dependsOn: z.array(z.string()).optional(),
+  justification: z.string().optional(),
+  dueDate: z.string().optional(),
+  notes: z.string().optional(),
+  evidence: z.string().optional(),
+  blockSubmission: z.boolean().optional(),
+});
 
 // GET: Get all tasks
 export async function GET() {
@@ -22,13 +37,14 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   await connection();
   try {
-    const body = await request.json();
-    const deps = getDependencies();
-    const idGenerator = deps.idGenerator;
-
-    if (typeof body.text !== 'string' || !body.text.trim()) {
+    const rawBody = await request.json();
+    const parsed = bodySchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Text is required'), { status: 400 });
     }
+    const body = parsed.data;
+    const deps = getDependencies();
+    const idGenerator = deps.idGenerator;
 
     const tasks = await deps.repository.getTasks();
 

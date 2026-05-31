@@ -57,7 +57,7 @@ export async function checkAndRunDue(): Promise<number> {
       (all) => all.find((s) => s.id === schedule.sourceId),
     );
     if (!source || source.reviewStatus !== 'approved' || !source.isActive) {
-      console.warn(
+      logger.warn(
         `Skipping scheduled crawl for source ${schedule.sourceId}: not approved or inactive`,
       );
       // Update next schedule time to skip this cycle but keep schedule

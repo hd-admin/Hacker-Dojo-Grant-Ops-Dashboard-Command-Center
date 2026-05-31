@@ -111,7 +111,7 @@ describe('/api/grants/[grantId]/revisions route', () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toMatch(/Revision notes are required/i);
+    expect(data.error).toMatch(/Invalid request body/i);
   });
 
   it('returns 400 when profile or opencode settings are missing', async () => {

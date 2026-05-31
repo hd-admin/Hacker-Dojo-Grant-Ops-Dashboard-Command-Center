@@ -1,6 +1,11 @@
 import { NextResponse, connection } from "next/server";
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
+
+const bodySchema = z.object({
+  name: z.string().min(1),
+});
 
 interface GrantOpsDb {
   prepare(sql: string): { get(key: string): { value: string } | undefined; run(key: string, value: string): void };
@@ -36,11 +41,12 @@ export async function GET() {
 export async function POST(request: Request) {
   await connection();
   try {
-    const body = await request.json().catch(() => null);
-    const name = (body?.name || '').trim();
-    if (!name) {
+    const rawBody = await request.json().catch(() => null);
+    const parsed = bodySchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(createErrorResponse('OPERATOR_NAME_REQUIRED', 'Operator name is required'), { status: 400 });
     }
+    const name = parsed.data.name.trim();
     const db = getDb();
     if (!db) {
       return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Database not available'), { status: 500 });

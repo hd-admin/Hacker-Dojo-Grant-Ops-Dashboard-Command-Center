@@ -65,7 +65,7 @@ describe('/api/grants/[grantId]/approval route', () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toMatch(/ApprovedBy must be a string/i);
+    expect(data.error).toMatch(/Invalid request body/i);
   });
 
   it('returns approvalRecord on success and GET reads it back', async () => {

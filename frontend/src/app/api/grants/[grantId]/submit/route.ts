@@ -4,8 +4,19 @@ import { logger } from '@/lib/logger';
 import * as submissionService from '@/server/grant-ops/submission-service';
 import type { SubmissionInput } from '@/server/grant-ops/submission-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+
+const bodySchema = z.object({
+  method: z.object({
+    type: z.enum(['other', 'portal', 'email', 'mail']),
+    submittedBy: z.string().optional(),
+    portalUrl: z.string().optional(),
+    confirmationId: z.string().optional(),
+  }),
+  notes: z.string().optional(),
+});
 
 export async function GET(
   _request: NextRequest,
@@ -29,12 +40,13 @@ export async function POST(
   await connection();
   try {
     const { grantId } = await params;
-    const body = await request.json().catch(() => null);
-    const deps = getDependencies();
-
-    if (!body || typeof body.method !== 'object' || !body.method || typeof body.method.type !== 'string') {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Submission method is required'), { status: 400 });
+    const rawBody = await request.json().catch(() => null);
+    const parsed = bodySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), { status: 400 });
     }
+    const body = parsed.data;
+    const deps = getDependencies();
 
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {

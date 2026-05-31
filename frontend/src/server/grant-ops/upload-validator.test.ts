@@ -19,6 +19,7 @@ import {
   validateMimeType,
   detectMimeTypeByMagic,
   atomicWrite,
+  computeSha256,
 } from './upload-validator';
 
 const TEST_DIR = path.join(process.cwd(), '.grant-ops-data-test-upload-validator');
@@ -272,5 +273,35 @@ describe('atomicWrite', () => {
     const dirContents = fs.readdirSync(destDir);
     const tmpFiles = dirContents.filter((f) => f.startsWith('.tmp-'));
     expect(tmpFiles).toHaveLength(0);
+  });
+});
+
+describe('computeSha256', () => {
+  beforeEach(() => {
+    fs.mkdirSync(TEST_DIR, { recursive: true });
+  });
+
+  afterEach(() => {
+    if (fs.existsSync(TEST_DIR)) {
+      fs.rmSync(TEST_DIR, { recursive: true, force: true });
+    }
+  });
+
+  it('returns correct SHA-256 hex for a file', () => {
+    const content = Buffer.from('hello world');
+    const filePath = createTestFile('sha-test.txt', content);
+    const hash = computeSha256(filePath);
+    expect(hash).toBe('b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9');
+    expect(hash).toHaveLength(64);
+  });
+
+  it('returns different hashes for different content', () => {
+    const path1 = createTestFile('a.txt', Buffer.from('content-a'));
+    const path2 = createTestFile('b.txt', Buffer.from('content-b'));
+    expect(computeSha256(path1)).not.toBe(computeSha256(path2));
+  });
+
+  it('throws for missing file', () => {
+    expect(() => computeSha256(path.join(TEST_DIR, 'nonexistent.txt'))).toThrow();
   });
 });

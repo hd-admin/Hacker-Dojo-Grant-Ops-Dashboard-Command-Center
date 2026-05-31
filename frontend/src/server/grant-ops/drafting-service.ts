@@ -12,6 +12,7 @@ import type {
 	OrganizationProfile,
 	RevisionRequest,
 } from "../../../../shared/types";
+import { logger } from '@/lib/logger';
 import { escapeForHtml } from "../../lib/sanitize-html";
 import { getDependencies } from "./dependencies";
 
@@ -131,7 +132,7 @@ export async function generateDraft(
 
 	// Handle partial-output: when opencode fails mid-generation but produced partial draft content
 	if (!response.success && response.failureMode === "partial-output" && response.content) {
-		console.warn(
+		logger.warn(
 			`Draft generation for grant ${grant.id} produced partial output. Persisting partial draft.`,
 		);
 

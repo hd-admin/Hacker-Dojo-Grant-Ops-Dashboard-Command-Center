@@ -4,8 +4,14 @@ import { logger } from '@/lib/logger';
 import * as submissionService from '@/server/grant-ops/submission-service';
 import type { ApprovalInput } from '@/server/grant-ops/submission-service';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+
+const bodySchema = z.object({
+  approvedBy: z.string().optional(),
+  lockedUntil: z.string().optional(),
+});
 
 export async function GET(
   _request: NextRequest,
@@ -29,12 +35,13 @@ export async function POST(
   await connection();
   try {
     const { grantId } = await params;
-    const body = await request.json().catch(() => null);
-    const deps = getDependencies();
-
-    if (!body || (body.approvedBy !== undefined && typeof body.approvedBy !== 'string')) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'ApprovedBy must be a string when provided'), { status: 400 });
+    const rawBody = await request.json().catch(() => null);
+    const parsed = bodySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), { status: 400 });
     }
+    const body = parsed.data;
+    const deps = getDependencies();
 
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {

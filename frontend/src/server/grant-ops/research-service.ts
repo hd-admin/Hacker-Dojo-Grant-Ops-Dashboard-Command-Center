@@ -212,15 +212,15 @@ async function performResearch(
 
 			if (response.failureMode === "partial-output" && response.content) {
 				hadPartialOutput = true;
-				console.warn(
+				logger.warn(
 					`Research for source ${source.name} produced partial results. Persisting extracted grants.`,
 				);
 			}
 
 			if (!response.success && !shouldProcessContent) {
-				console.warn(
-					`Research failed for source ${source.name}:`,
-					response.error,
+				logger.warn(
+					{ error: response.error },
+					`Research failed for source ${source.name}`,
 				);
 			}
 

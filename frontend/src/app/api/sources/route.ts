@@ -2,6 +2,19 @@ import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import * as sourceService from '@/server/grant-ops/source-service';
+import { z } from 'zod';
+
+const bodySchema = z.object({
+  name: z.string().min(1),
+  url: z.string().min(1),
+  type: z.enum(['database', 'api', 'website']).optional(),
+  reviewStatus: z.enum(['approved', 'pending-review']).optional(),
+  suggestedBy: z.string().optional(),
+  suggestionReason: z.string().optional(),
+  category: z.enum(['foundation', 'government', 'corporate', 'community', 'other']).optional(),
+  categoryRationale: z.string().optional(),
+  crawlAccessCategory: z.enum(['crawlable', 'manual-only', 'unsupported']).optional(),
+});
 
 export async function GET(request: NextRequest) {
   await connection();
@@ -36,22 +49,24 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   await connection();
   try {
-    const body = await request.json().catch(() => null);
-    if (!body || typeof body.name !== 'string' || typeof body.url !== 'string') {
+    const rawBody = await request.json().catch(() => null);
+    const parsed = bodySchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Name and URL are required'), { status: 400 });
     }
+    const body = parsed.data;
 
     const sourceInput: Parameters<typeof sourceService.addSource>[0] = {
       name: body.name.trim(),
       url: body.url.trim(),
-      type: body.type === 'database' || body.type === 'api' ? body.type : 'website',
-      reviewStatus: body.reviewStatus === 'approved' ? 'approved' : 'pending-review',
+      type: body.type ?? 'website',
+      reviewStatus: body.reviewStatus ?? 'pending-review',
     };
-    if (typeof body.suggestedBy === 'string') sourceInput.suggestedBy = body.suggestedBy;
-    if (typeof body.suggestionReason === 'string') sourceInput.suggestionReason = body.suggestionReason;
-    if (body.category === 'foundation' || body.category === 'government' || body.category === 'corporate' || body.category === 'community' || body.category === 'other') sourceInput.category = body.category;
-    if (typeof body.categoryRationale === 'string') sourceInput.categoryRationale = body.categoryRationale;
-    if (body.crawlAccessCategory === 'crawlable' || body.crawlAccessCategory === 'manual-only' || body.crawlAccessCategory === 'unsupported') sourceInput.crawlAccessCategory = body.crawlAccessCategory;
+    if (body.suggestedBy) sourceInput.suggestedBy = body.suggestedBy;
+    if (body.suggestionReason) sourceInput.suggestionReason = body.suggestionReason;
+    if (body.category) sourceInput.category = body.category;
+    if (body.categoryRationale) sourceInput.categoryRationale = body.categoryRationale;
+    if (body.crawlAccessCategory) sourceInput.crawlAccessCategory = body.crawlAccessCategory;
     const source = await sourceService.addSource(sourceInput);
 
     return NextResponse.json({ success: true, source }, { status: 201 });

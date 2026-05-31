@@ -78,7 +78,7 @@ describe('/api/grants/[grantId]/submit route', () => {
     const data = await response.json();
 
     expect(response.status).toBe(400);
-    expect(data.error).toMatch(/Submission method is required/i);
+    expect(data.error).toMatch(/Invalid request body/i);
   });
 
   it('returns 400 until the grant has been approved', async () => {

@@ -3,8 +3,15 @@ import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { loadSavedSearches, saveSavedSearches } from '../../../../../shared/grant-ops-persistence';
 import type { SavedSearch } from '../../../../../shared/types';
+import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
+
+const bodySchema = z.object({
+  name: z.string().min(1),
+  queryText: z.string().optional(),
+  filters: z.record(z.unknown()).optional(),
+});
 
 export async function GET() {
   await connection();
@@ -20,7 +27,12 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   await connection();
   try {
-    const body = await request.json();
+    const rawBody = await request.json();
+    const parsed = bodySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Name is required'), { status: 400 });
+    }
+    const body = parsed.data;
     const existing = await loadSavedSearches();
     const search: SavedSearch = {
       id: `ss-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,

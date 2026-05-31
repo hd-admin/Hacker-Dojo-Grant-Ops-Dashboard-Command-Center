@@ -2,7 +2,20 @@ import { NextRequest, NextResponse, connection } from "next/server";
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import * as submissionService from '@/server/grant-ops/submission-service';
+import { z } from 'zod';
 export const dynamic = 'force-dynamic';
+
+const bodySchema = z.object({
+  id: z.string(),
+  grantId: z.string().optional(),
+  submissionId: z.string().optional(),
+  type: z.enum(['other', 'report_due', 'progress_check', 'stipulation', 'next_steps']).optional(),
+  title: z.string(),
+  description: z.string().optional(),
+  dueDate: z.string().optional(),
+  status: z.enum(['pending', 'overdue', 'completed']).optional(),
+  completedAt: z.string().optional(),
+});
 
 
 export async function GET(request: NextRequest) {
@@ -34,25 +47,26 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   await connection();
   try {
-    const body = await request.json();
-
-    if (!body.id || !body.title) {
+    const rawBody = await request.json();
+    const parsed = bodySchema.safeParse(rawBody);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'ID and title are required' },
+        createErrorResponse('AGENT_INVALID_JSON', 'ID and title are required'),
         { status: 400 },
       );
     }
+    const body = parsed.data;
 
     const followUp = await submissionService.createFollowUp({
       id: body.id,
-      grantId: body.grantId,
-      submissionId: body.submissionId,
+      ...(body.grantId ? { grantId: body.grantId } : {}),
+      ...(body.submissionId ? { submissionId: body.submissionId } : {}),
       type: body.type || 'other',
       title: body.title,
-      description: body.description,
-      dueDate: body.dueDate,
+      ...(body.description ? { description: body.description } : {}),
+      ...(body.dueDate ? { dueDate: body.dueDate } : {}),
       status: body.status || 'pending',
-      completedAt: body.completedAt,
+      ...(body.completedAt ? { completedAt: body.completedAt } : {}),
       createdAt: new Date().toISOString(),
     });
 

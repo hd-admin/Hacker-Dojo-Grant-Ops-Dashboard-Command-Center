@@ -131,6 +131,14 @@ export async function validateMimeType(filePath: string, originalFilename?: stri
   return null;
 }
 
+/**
+ * Compute SHA-256 hash of a file for integrity verification.
+ */
+export function computeSha256(filePath: string): string {
+  const buffer = fs.readFileSync(filePath);
+  return crypto.createHash('sha256').update(buffer).digest('hex');
+}
+
 export async function validateUpload(filePath: string): Promise<ValidationResult> {
   const checks = [
     () => validateFileExists(filePath),

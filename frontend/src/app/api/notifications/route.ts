@@ -4,7 +4,15 @@ import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { sanitizeNotificationText } from '@/lib/sanitize-html';
 import type { Notification } from '../../../../../shared/types';
+import { z } from 'zod';
 export const dynamic = 'force-dynamic';
+
+const bodySchema = z.object({
+  id: z.string().optional(),
+  text: z.string(),
+  time: z.string().optional(),
+  dot: z.enum(['info', 'accent', 'success', 'warning', 'danger']).optional(),
+});
 
 
 // GET: Get all notifications
@@ -24,7 +32,12 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   await connection();
   try {
-    const body = await request.json();
+    const rawBody = await request.json();
+    const parsed = bodySchema.safeParse(rawBody);
+    if (!parsed.success) {
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), { status: 400 });
+    }
+    const body = parsed.data;
     const deps = getDependencies();
     const clock = deps.clock;
     const idGenerator = deps.idGenerator;
