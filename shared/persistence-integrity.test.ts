@@ -141,7 +141,7 @@ describe('Shared Persistence Integrity', () => {
       await saveOpencodeSettings({ ...defaultOpencodeSettings, isConfigured: true, binaryPath: '/bin/opencode' });
 
       const persisted = await loadPersistedData();
-      expect(persisted.sources).toHaveLength(8);
+      expect(persisted.sources).toHaveLength(13);
       expect(persisted.documents).toEqual([]);
       expect(persisted.opencodeSettings?.binaryPath).toBe('/bin/opencode');
       expect(persisted.lastSync).toBeTruthy();

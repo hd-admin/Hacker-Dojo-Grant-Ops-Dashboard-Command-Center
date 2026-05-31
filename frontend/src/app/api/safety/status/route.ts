@@ -1,4 +1,5 @@
 import { connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
 import { isPasscodeSet, getLockConfig } from '@/server/grant-ops/safety-service';
 
 export const dynamic = 'force-dynamic';
@@ -12,8 +13,11 @@ export async function GET() {
       isPasscodeSet: passcodeSet,
       lockConfig: config,
     });
-  } catch (_error) {
+  } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
-    return Response.json({ error: message }, { status: 500 });
+    return Response.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', message),
+      { status: 500 }
+    );
   }
 }

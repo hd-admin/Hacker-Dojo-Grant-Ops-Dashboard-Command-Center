@@ -270,6 +270,7 @@ export const testProfile: OrganizationProfile = {
   ein: '26-3375350',
   samUEI: 'XK7N4HQ2P3M9',
   nonprofitStatus: '501(c)(3)',
+  yearFounded: 2009,
   contactInfo: {
     email: 'ed@hackerdojo.com',
     website: 'https://hackerdojo.com',
@@ -281,6 +282,9 @@ export const testProfile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
+  boardMembers: [
+    { name: 'Emily Johnson', role: 'Board Member' },
+  ],
   docTypes: ['PDF'],
   searchThemes: ['EdTech', 'Community Innovation'],
   agentBehavior: {

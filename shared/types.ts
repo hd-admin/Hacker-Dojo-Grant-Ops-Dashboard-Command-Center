@@ -267,6 +267,16 @@ export interface Source {
 	lastManualReviewDate?: string;
 	/** Free-form operator notes about this source */
 	operatorNotes?: string;
+	/** Whether this represents a peer organization for discovery (default 0) */
+	isPeerSource?: number;
+	/** Recommended crawl interval in hours */
+	intervalHours?: number;
+	/** ISO timestamp for next scheduled crawl */
+	nextCrawlAt?: string;
+	/** Running count of consecutive crawl errors */
+	errorCount?: number;
+	/** Last crawl error message */
+	lastError?: string;
 }
 
 export interface SourceDiscoverySuggestion {
@@ -402,11 +412,17 @@ export interface FundingHistoryEntry {
 	purpose: string;
 }
 
+export interface BoardMember {
+	name: string;
+	role: string;
+}
+
 export interface OrganizationProfile {
 	legalName: string;
 	ein: string;
 	samUEI: string;
 	nonprofitStatus: string;
+	yearFounded: number;
 	contactInfo: ContactInfo;
 	geography: string;
 	mission: string;
@@ -415,6 +431,7 @@ export interface OrganizationProfile {
 	fundingHistory: FundingHistoryEntry[];
 	partnerships: string[];
 	complianceFacts: string[];
+	boardMembers: BoardMember[];
 	docTypes: string[];
 	searchThemes: string[];
 	agentBehavior: {

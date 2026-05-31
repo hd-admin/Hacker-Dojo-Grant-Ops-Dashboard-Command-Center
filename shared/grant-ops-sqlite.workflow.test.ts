@@ -115,8 +115,8 @@ describe('shared/grant-ops-sqlite workflow primitives', () => {
 		});
 
 		let schedules = await readCrawlSchedules(state);
-		// 8 seed schedules + 1 test schedule = 9
-		expect(schedules).toHaveLength(9);
+		// 13 seed schedules + 1 test schedule = 14
+		expect(schedules).toHaveLength(14);
 		expect(schedules.some(s => s.sourceId === 'source-1')).toBe(true);
 
 		await upsertCrawlSchedule(state, {
@@ -130,13 +130,13 @@ describe('shared/grant-ops-sqlite workflow primitives', () => {
 		});
 
 		schedules = await readCrawlSchedules(state);
-		// 8 seed schedules + 1 test schedule = 9
-		expect(schedules).toHaveLength(9);
+		// 13 seed schedules + 1 test schedule = 14
+		expect(schedules).toHaveLength(14);
 		expect(schedules.find(s => s.id === 'schedule-1')?.intervalHours).toBe(12);
 		expect(schedules.find(s => s.id === 'schedule-1')?.isEnabled).toBe(false);
 
 		await deleteCrawlSchedule(state, 'schedule-1');
-		expect(await readCrawlSchedules(state)).toHaveLength(8);
+		expect(await readCrawlSchedules(state)).toHaveLength(13);
 	});
 
 	it('persists duplicate and conflict records for review flows', async () => {

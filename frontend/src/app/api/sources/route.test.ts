@@ -46,8 +46,8 @@ describe('/api/sources route', () => {
     expect(data.source.isActive).toBe(false);
 
     const sources = await repository.getSources();
-    // 8 seed sources + 1 test source = 9
-    expect(sources).toHaveLength(9);
+    // 13 seed sources + 1 test source = 14
+    expect(sources).toHaveLength(14);
     const created = sources.find((s) => s.url === 'https://www.candid.org');
     expect(created?.name).toBe('Candid');
   });
@@ -65,8 +65,8 @@ describe('/api/sources route', () => {
     expect(data.source.isActive).toBe(true);
 
     const sources = await repository.getSources();
-    // 8 seed sources + 1 test source = 9
-    expect(sources).toHaveLength(9);
+    // 13 seed sources + 1 test source = 14
+    expect(sources).toHaveLength(14);
     const approved = sources.find((s) => s.name === 'CandidApproved');
     expect(approved?.isActive).toBe(true);
   });
@@ -81,8 +81,8 @@ describe('/api/sources route', () => {
     const getResponse = await GET(new Request('http://localhost/api/sources') as never);
     const sources = await getResponse.json();
     expect(getResponse.status).toBe(200);
-    // 8 seed sources + 1 test source = 9
-    expect(Array.isArray(sources) ? sources.length : 9).toBeGreaterThanOrEqual(9);
+    // 13 seed sources + 1 test source = 14
+    expect(Array.isArray(sources) ? sources.length : 14).toBeGreaterThanOrEqual(14);
     expect(Array.isArray(sources) ? sources.some((s: { id: string; name: string; url: string }) => s.id === sourceId) : true).toBe(true);
 
     const deleteResponse = await DELETE(
@@ -93,8 +93,8 @@ describe('/api/sources route', () => {
     expect(deleteData.success).toBe(true);
 
     const afterDelete = await repository.getSources();
-    // 8 seed sources remain after deleting the test source
-    expect(afterDelete).toHaveLength(8);
+    // 13 seed sources remain after deleting the test source
+    expect(afterDelete).toHaveLength(13);
     expect(afterDelete.some((s) => s.id === sourceId)).toBe(false);
   });
 

@@ -122,11 +122,17 @@ export const FundingHistoryEntrySchema = z.object({
   purpose: z.string(),
 });
 
+export const BoardMemberSchema = z.object({
+  name: z.string(),
+  role: z.string(),
+});
+
 export const OrganizationProfileSchema = z.object({
   legalName: z.string(),
   ein: z.string(),
   samUEI: z.string(),
   nonprofitStatus: z.string(),
+  yearFounded: z.number().int().min(1900).max(2100),
   contactInfo: ContactInfoSchema,
   geography: z.string(),
   mission: z.string(),
@@ -135,6 +141,7 @@ export const OrganizationProfileSchema = z.object({
   fundingHistory: z.array(FundingHistoryEntrySchema),
   partnerships: z.array(z.string()),
   complianceFacts: z.array(z.string()),
+  boardMembers: z.array(BoardMemberSchema),
   docTypes: z.array(z.string()),
   searchThemes: z.array(z.string()),
   agentBehavior: z.object({
@@ -299,6 +306,11 @@ export const SourceSchema = z.object({
   crawlFrequencyRecommendation: z.string().optional(),
   lastManualReviewDate: z.string().optional(),
   operatorNotes: z.string().optional(),
+  isPeerSource: z.number().min(0).max(1).optional(),
+  intervalHours: z.number().min(1).optional(),
+  nextCrawlAt: z.string().optional(),
+  errorCount: z.number().min(0).optional(),
+  lastError: z.string().optional(),
 });
 
 export const SourceDiscoverySuggestionSchema = z.object({
@@ -644,6 +656,7 @@ export type {
   Grant,
   GrantStatus,
   OrganizationProfile,
+  BoardMember,
   ContactInfo,
   FundingHistoryEntry,
   ActivityEvent,

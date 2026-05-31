@@ -4,22 +4,9 @@ import { logger } from '@/lib/logger';
 import { z } from "zod";
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import type { GrantStatus } from "../../../../../../../shared/types";
+import { validateTransition, checkSubmissionReadiness } from "../../../../../../../shared/pipeline-logic";
 
 export const dynamic = "force-dynamic";
-
-const VALID_TRANSITIONS: Record<GrantStatus, GrantStatus[]> = {
-	"matched": ["draft", "declined", "closed", "archived"],
-	"draft": ["review", "matched", "declined", "closed"],
-	"review": ["approved", "draft", "declined", "closed"],
-	"approved": ["submission-ready", "review", "declined", "closed"],
-	"submission-ready": ["submitted", "approved", "declined", "closed"],
-	"submitted": ["follow-up", "awarded", "declined", "closed"],
-	"follow-up": ["submitted", "awarded", "declined", "closed"],
-	"awarded": ["declined", "closed"],
-	"declined": ["matched", "closed"],
-	"closed": [],
-	"archived": [],
-};
 
 const statusSchema = z.object({
 	status: z.enum(["matched", "draft", "review", "approved", "submission-ready", "submitted", "follow-up", "awarded", "declined", "closed", "archived"]),
@@ -62,16 +49,15 @@ export async function PATCH(
 		const targetStatus = parsed.data.status as GrantStatus;
 		const fromStatus = existingGrant.status as GrantStatus;
 
-		const allowedTransitions = VALID_TRANSITIONS[fromStatus] ?? [];
-		if (!allowedTransitions.includes(targetStatus)) {
+		const transitionResult = validateTransition(fromStatus, targetStatus);
+		if (!transitionResult.valid) {
 			return NextResponse.json(
 				{
-					error: `Cannot transition from ${fromStatus} to ${targetStatus}`,
+					error: transitionResult.reason ?? `Cannot transition from ${fromStatus} to ${targetStatus}`,
 					code: "INVALID_STATE_TRANSITION",
 					details: {
 						from: fromStatus,
 						to: targetStatus,
-						allowedTransitions,
 					},
 				},
 				{ status: 400 },
@@ -79,19 +65,14 @@ export async function PATCH(
 		}
 
 		if (targetStatus === "submission-ready") {
-			const tasks = await deps.repository.getTasks();
-			const grantTasks = tasks.filter((task) => task.grantId === grantId);
-			const blockingTasks = grantTasks.filter(
-				(task) => task.blockSubmission === true && task.taskStatus !== "completed" && task.taskStatus !== "waived" && task.taskStatus !== "not-applicable",
-			);
-
-			if (blockingTasks.length > 0) {
+			const readiness = checkSubmissionReadiness(existingGrant);
+			if (!readiness.ready) {
 				return NextResponse.json(
 					{
-						error: `Cannot transition to submission-ready: ${blockingTasks.length} blocking task(s) incomplete`,
+						error: `Cannot transition to submission-ready: ${readiness.blockingReasons.join('; ')}`,
 						code: "SUBMISSION_BLOCKED",
 						details: {
-							blockingTasks: blockingTasks.map((t) => ({ id: t.id, text: t.text })),
+							blockingReasons: readiness.blockingReasons,
 						},
 					},
 					{ status: 400 },

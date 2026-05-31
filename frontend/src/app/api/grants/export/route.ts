@@ -13,6 +13,7 @@
 
 import { NextRequest, NextResponse, connection } from "next/server";
 import { logger } from '@/lib/logger';
+import { createErrorResponse } from "@/lib/api-error-handler";
 
 import { getDependencies } from "@/server/grant-ops/dependencies";
 import { exportGrantsToCsv, exportPipelineToCsv } from "@/server/grant-ops/dashboard-service";
@@ -70,10 +71,10 @@ export async function GET(request: NextRequest) {
         "Content-Disposition": `attachment; filename="${csvExport.filename}"`,
       },
     });
-  } catch (_error) {
+  } catch (error) {
     logger.error({ err: error }, '[grants/export] Failed to export grants');
     return NextResponse.json(
-      { error: "Failed to export grants" },
+      createErrorResponse("STORAGE_UNAVAILABLE", "Failed to export grants"),
       { status: 500 }
     );
   }

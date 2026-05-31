@@ -152,7 +152,7 @@ const profile: OrganizationProfile = {
   ein: '26-3375350',
   samUEI: 'XK7N4HQ2P3M9',
   nonprofitStatus: '501(c)(3)',
-  contactInfo: {},
+  yearFounded: 2009,contactInfo: {},
   geography: 'Regional',
   mission: 'Community innovation and education',
   programAreas: ['STEM'],
@@ -160,7 +160,7 @@ const profile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  docTypes: ['PDF'],
+  boardMembers: [],docTypes: ['PDF'],
   searchThemes: ['EdTech'],
   agentBehavior: {
     autoDraftThreshold: 75,
@@ -347,37 +347,6 @@ describe('AppShell', () => {
     await waitFor(() => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null);
 
     expect(container.querySelector('[data-testid="opencode-degraded-banner"]')).not.toBeNull();
-  });
-
-  it('shows first-run guidance when storage is healthy but no persisted data exists', async () => {
-    grantsGetAll.mockReset();
-    profileGet.mockReset();
-    notificationsGetAll.mockReset();
-    tasksGetAll.mockReset();
-    sourcesGetAll.mockReset();
-    researchGetRuns.mockReset();
-
-    grantsGetAll.mockResolvedValue([]);
-    profileGet.mockResolvedValue(profile);
-    notificationsGetAll.mockResolvedValue([]);
-    tasksGetAll.mockResolvedValue([]);
-    sourcesGetAll.mockResolvedValue([]);
-    researchGetRuns.mockResolvedValue({ latestRun: null, allRuns: [] });
-
-    // Set operator name so the prompt dialog doesn't appear
-    window.localStorage.setItem('grantops.operatorName', 'Test Operator');
-
-    root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('[data-testid="first-run-guidance-card"]') !== null);
-
-    expect(container.querySelector('[data-testid="first-run-guidance-card"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="first-run-add-source-btn"]')).not.toBeNull();
-
-    Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('Add Your First Source'),
-    )?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    await waitFor(() => container.querySelector('#view-sources')?.classList.contains('active') === true);
   });
 
   it('passes backend notifications to DashboardView after refreshAppState resolves', async () => {

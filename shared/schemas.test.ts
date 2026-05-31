@@ -150,6 +150,7 @@ describe('shared/schemas', () => {
         ein: '12-3456789',
         samUEI: 'XK7N4HQ2P3M9',
         nonprofitStatus: '501(c)(3)',
+        yearFounded: 2009,
         contactInfo: {},
         geography: 'Regional',
         mission: 'Our mission',
@@ -158,6 +159,7 @@ describe('shared/schemas', () => {
         fundingHistory: [],
         partnerships: [],
         complianceFacts: [],
+        boardMembers: [],
         docTypes: ['PDF', 'XLS'],
         searchThemes: ['Theme 1', 'Theme 2'],
         agentBehavior: {

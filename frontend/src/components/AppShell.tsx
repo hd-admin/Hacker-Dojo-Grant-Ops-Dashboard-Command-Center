@@ -40,6 +40,7 @@ import AuditView from "./AuditView";
 import DuplicatesView from "./DuplicatesView";
 import JobsPanel from "./JobsPanel";
 import LockScreen from "./LockScreen";
+import OperatorNamePrompt from "./OperatorNamePrompt";
 
 type ViewType =
   | "dashboard"
@@ -458,26 +459,34 @@ export default function AppShell() {
 
   // ============ Operator Name Prompt ============
 
-  const handleOperatorNameSave = () => {
-    const trimmed = operatorName.trim();
-    if (!trimmed) return;
+  const [operatorSaving, setOperatorSaving] = useState(false);
+
+  const handleOperatorNameSave = (name: string): Promise<void> => {
+    const trimmed = name.trim();
+    if (!trimmed) return Promise.resolve();
+    setOperatorSaving(true);
     const storage = getWorkingContextStorage();
     if (storage) {
       storage.setItem(OPERATOR_NAME_KEY, trimmed);
     }
-    // Persist to server
-    fetch('/api/operator', {
+    return fetch('/api/operator', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ name: trimmed }),
-    }).catch(() => {});
-    setShowOperatorPrompt(false);
+    })
+      .then(() => {
+        setOperatorName(trimmed);
+        setShowOperatorPrompt(false);
+      })
+      .catch(() => {
+        setOperatorName(trimmed);
+        setShowOperatorPrompt(false);
+      })
+      .finally(() => setOperatorSaving(false));
   };
 
   // ============ Compute derived state ============
 
-  const userSources = sources.filter((s) => s.suggestedBy !== 'system');
-  const isFirstRun = grants.length === 0 && userSources.length === 0 && tasks.length === 0 && notifications.length === 0;
   const hasStorageError = healthResult?.storage === 'error';
   const opencodeBlocked =
     healthResult !== null &&
@@ -681,12 +690,6 @@ export default function AppShell() {
           {(healthResult?.opencode === 'not-installed' || healthResult?.opencode === 'not-reachable') && (
             <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
           )}
-          {isFirstRun && (
-            <div data-testid="first-run-guidance-card">
-              Welcome to Hacker Dojo Grant Ops
-              <button type="button" data-testid="first-run-add-source-btn" onClick={() => handleNavigate('sources')}>Add Your First Source</button>
-            </div>
-          )}
           <button type="button" data-testid="rerun-health-check-btn" onClick={() => { void refreshHealth(); }}>Re-run Health Check</button>
         </div>
 
@@ -798,44 +801,7 @@ export default function AppShell() {
 
       {/* Operator Name Prompt */}
       {showOperatorPrompt && (
-        <div
-          className="operator-prompt-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Operator name prompt"
-        >
-          <div className="operator-prompt-dialog" data-testid="operator-prompt">
-            <h2>Welcome to Hacker Dojo Grant Ops</h2>
-            <div className="operator-prompt-subtitle">
-              What&apos;s your name? This will be used when drafting emails and recording submissions.
-            </div>
-            <div className="operator-prompt-body">
-              <label htmlFor="operator-name-input">Your Name</label>
-              <input
-                id="operator-name-input"
-                type="text"
-                placeholder="e.g., Jane Smith"
-                value={operatorName}
-                onChange={(e) => setOperatorName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleOperatorNameSave();
-                }}
-                autoFocus
-              />
-            </div>
-
-            <div className="operator-prompt-nav">
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={handleOperatorNameSave}
-                disabled={!operatorName.trim()}
-              >
-                Get Started
-              </button>
-            </div>
-          </div>
-        </div>
+        <OperatorNamePrompt onSave={handleOperatorNameSave} saving={operatorSaving} />
       )}
 
       {/* Grant Drawer */}

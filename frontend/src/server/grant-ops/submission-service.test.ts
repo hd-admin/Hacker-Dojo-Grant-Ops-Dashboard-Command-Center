@@ -189,7 +189,7 @@ describe('SubmissionService', () => {
         ein: '12-3456789',
         samUEI: 'XyxabC123AB',
         nonprofitStatus: '501(c)(3)',
-        contactInfo: {},
+  yearFounded: 2009,contactInfo: {},
         geography: 'Regional',
         mission: 'Test mission',
         programAreas: ['STEM'],
@@ -197,7 +197,7 @@ describe('SubmissionService', () => {
         fundingHistory: [],
         partnerships: [],
         complianceFacts: [],
-        docTypes: [],
+  boardMembers: [],docTypes: [],
         searchThemes: [],
         agentBehavior: {
           autoDraftThreshold: 80,

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, connection } from "next/server";
+import { createErrorResponse } from "@/lib/api-error-handler";
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +11,11 @@ export async function POST(request: NextRequest) {
     const deps = getDependencies();
     const jobId = deps.idGenerator.generateId('ext');
     return NextResponse.json({ jobId, documentRef: body.documentRef, grantId: body.grantId, message: 'Extract job queued' }, { status: 202 });
-  } catch {
-    return NextResponse.json({ error: 'Failed to start extraction', code: 'AGENT_TIMEOUT' }, { status: 500 });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Failed to start extraction';
+    return NextResponse.json(
+      createErrorResponse('AGENT_TIMEOUT', message),
+      { status: 500 }
+    );
   }
 }

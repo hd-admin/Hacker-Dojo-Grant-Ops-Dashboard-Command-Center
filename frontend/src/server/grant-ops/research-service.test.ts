@@ -23,6 +23,7 @@ const mockProfile: OrganizationProfile = {
 	ein: "12-3456789",
 	samUEI: "XyxabC123AB",
 	nonprofitStatus: "501(c)(3)",
+	yearFounded: 2009,
 	contactInfo: {},
 	geography: "Regional",
 	mission: "To support tech education and community innovation",
@@ -31,7 +32,7 @@ const mockProfile: OrganizationProfile = {
 	fundingHistory: [],
 	partnerships: [],
 	complianceFacts: [],
-	docTypes: ["501(c)(3) letter", "SAM registration", "Organizational budget"],
+  boardMembers: [],docTypes: ["501(c)(3) letter", "SAM registration", "Organizational budget"],
 	searchThemes: ["EdTech", "Community Innovation", "Science & Tech"],
 	agentBehavior: {
 		autoDraftThreshold: 80,

@@ -5,6 +5,7 @@ export const HARDCODED_PROFILE: OrganizationProfile = {
   ein: '26-4812213',
   samUEI: '',
   nonprofitStatus: '501(c)(3)',
+  yearFounded: 2009,
   contactInfo: {
     phone: '(650) 429-8605',
     website: 'https://hackerdojo.org',
@@ -64,6 +65,14 @@ export const HARDCODED_PROFILE: OrganizationProfile = {
     'California Secretary of State — active nonprofit',
     'Founded 2009 — 17-year track record',
     'Policies published at wiki.hackerdojo.com',
+  ],
+  boardMembers: [
+    { name: 'Emily Johnson', role: 'Board Member' },
+    { name: 'Marco Palacios', role: 'Board Member' },
+    { name: 'Eva Carrender', role: 'Board Member' },
+    { name: 'Peter Theobald', role: 'Board Member' },
+    { name: 'David Weekly', role: 'Board Advisor' },
+    { name: 'Mark Stofer', role: 'Board Advisor' },
   ],
   docTypes: ['PDF', 'DOCX', 'XLSX', 'CSV'],
   searchThemes: [

@@ -79,7 +79,7 @@ const _mockProfile: OrganizationProfile = {
   ein: '26-3375350',
   samUEI: 'XK7N4HQ2P3M9',
   nonprofitStatus: '501(c)(3)',
-  contactInfo: {},
+  yearFounded: 2009,contactInfo: {},
   geography: 'Regional',
   mission: 'Test mission',
   programAreas: ['STEM'],
@@ -87,7 +87,7 @@ const _mockProfile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  docTypes: ['PDF'],
+  boardMembers: [],docTypes: ['PDF'],
   searchThemes: ['Theme 1'],
   agentBehavior: {
     autoDraftThreshold: 75,

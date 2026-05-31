@@ -39,7 +39,10 @@ export const ResearchArtifactSchema = z.object({
   sourcesFound: z.number().int().min(0),
   grantsFound: z.number().int().min(0),
   errors: z.array(z.string()).optional(),
-});
+}).refine(
+  (data) => data.grants.length > 0 || (data.errors && data.errors.length > 0),
+  { message: 'Research must produce at least one grant or list errors', path: ['grants'] },
+);
 
 export const DraftArtifactSchema = z.object({
   artifactType: z.literal('draft'),
@@ -62,7 +65,13 @@ export const DraftArtifactSchema = z.object({
   groundingSourceUrls: z.array(z.string()),
   notes: z.string().optional(),
   errors: z.array(z.string()).optional(),
-});
+}).refine(
+  (data) => data.wordCount >= 500,
+  { message: 'Draft must contain at least 500 words', path: ['wordCount'] },
+).refine(
+  (data) => data.sections.some((s) => s.isGrounded),
+  { message: 'Draft must have at least one grounded section', path: ['sections'] },
+);
 
 export const CrawlArtifactSchema = z.object({
   artifactType: z.literal('crawl'),
@@ -106,7 +115,14 @@ export const MatchArtifactSchema = z.object({
   ),
   totalGrantsEvaluated: z.number().int().min(0),
   grantsAboveThreshold: z.number().int().min(0),
-});
+}).refine(
+  (data) => {
+    if (data.matches.length <= 1) return true;
+    const scores = data.matches.map((m) => m.fitScore);
+    return new Set(scores).size === scores.length || scores.length === 1;
+  },
+  { message: 'Match scores should not all be identical when multiple matches exist', path: ['matches'] },
+);
 
 export const ExtractArtifactSchema = z.object({
   artifactType: z.literal('extract'),
@@ -141,7 +157,12 @@ export const ExtractArtifactSchema = z.object({
   confidence: z.enum(['high', 'medium', 'low']),
   sourceDocumentRef: z.string(),
   errors: z.array(z.string()).optional(),
-});
+}).refine(
+  (data) =>
+    (data.extracted.amount && data.extracted.amount.length > 0) ||
+    (data.errors && data.errors.length > 0),
+  { message: 'Extract must have a non-empty amount or an errors explanation', path: ['extracted', 'amount'] },
+);
 
 export const PeerDiscoveryArtifactSchema = z.object({
   artifactType: z.literal('peer-discovery'),

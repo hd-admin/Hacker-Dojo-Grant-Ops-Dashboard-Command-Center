@@ -1,11 +1,13 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { getGrants } from "@/server/grant-ops/repository";
 import { generatePipelineReport } from "@/server/grant-ops/dashboard-service";
 import { logger } from "@/lib/logger";
+import { createErrorResponse } from "@/lib/api-error-handler";
 
 export const dynamic = "force-dynamic";
 
 export async function GET(): Promise<Response> {
+  await connection();
   try {
     const grants = await getGrants();
     const report = generatePipelineReport(grants);
@@ -46,7 +48,7 @@ export async function GET(): Promise<Response> {
   } catch (error) {
     logger.error({ err: error }, "Error generating pipeline report");
     return NextResponse.json(
-      { error: "Failed to generate pipeline report" },
+      createErrorResponse("STORAGE_UNAVAILABLE", "Failed to generate pipeline report"),
       { status: 500 }
     );
   }

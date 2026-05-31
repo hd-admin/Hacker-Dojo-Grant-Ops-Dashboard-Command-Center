@@ -1,5 +1,6 @@
 import { NextResponse, connection } from "next/server";
 import { logger } from '@/lib/logger';
+import { createErrorResponse } from '@/lib/api-error-handler';
 import { loadGrants, saveGrants } from '../../../../../../shared/grant-ops-persistence';
 import { scoreGrantByThemes } from '@/server/grant-ops/theme-service';
 
@@ -23,10 +24,10 @@ export async function POST() {
     );
     if (changed > 0) await saveGrants(updated);
     return NextResponse.json({ success: true, rescored: changed });
-  } catch (_error) {
+  } catch (error) {
     logger.error({ err: error }, '[themes/rescore] failed');
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : 'Unknown error' },
+      createErrorResponse('STORAGE_UNAVAILABLE', error instanceof Error ? error.message : 'Unknown error'),
       { status: 500 },
     );
   }

@@ -1,5 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
+import { createErrorResponse } from '@/lib/api-error-handler';
 import { NextResponse, connection } from "next/server";
 import { z } from 'zod';
 import { opencodeFailureMessages } from '@/lib/failure-messages';
@@ -22,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     const result = await discoverSourcesFromPrompt(parsed.data.prompt);
     return NextResponse.json(result);
-  } catch (_error) {
+  } catch (error) {
     logger.error({ err: error }, 'Error discovering sources');
     const errorMessage = error instanceof Error ? error.message : 'Failed to discover sources';
     const failureMode = classifyOpencodeError(errorMessage);
@@ -30,12 +31,7 @@ export async function POST(request: NextRequest) {
     const retryable = ['rate-limit', 'malformed-output', 'model-unavailable', 'timeout', 'unknown'].includes(failureMode);
 
     return NextResponse.json(
-      {
-        error: errorMessage,
-        failureMode,
-        retryable,
-        guidance,
-      },
+      createErrorResponse('STORAGE_UNAVAILABLE', errorMessage, { failureMode, guidance, retryable }),
       { status: 500 },
     );
   }

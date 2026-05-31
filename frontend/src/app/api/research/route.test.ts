@@ -12,7 +12,7 @@ const profile: OrganizationProfile = {
   ein: '94-3359594',
   samUEI: 'ABC123DEF456',
   nonprofitStatus: '501(c)(3)',
-  contactInfo: {},
+  yearFounded: 2009,contactInfo: {},
   geography: 'Regional',
   mission: 'Community learning and technology access',
   programAreas: ['STEM'],
@@ -20,7 +20,7 @@ const profile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  docTypes: ['PDF'],
+  boardMembers: [],docTypes: ['PDF'],
   searchThemes: ['EdTech'],
   agentBehavior: {
     autoDraftThreshold: 75,
@@ -124,8 +124,8 @@ describe('/api/research route', () => {
 
     const getResponse = await GET(new Request('http://localhost/api/research') as never);
     const getData = await getResponse.json();
-    // sourcesCrawled includes 8 seed sources + Candid + ProPublica
-    expect(getData.latestRun?.sourcesCrawled).toBe(10);
+    // 13 seed sources + Candid = 14; research includes ProPublica API separately = 15
+    expect(getData.latestRun?.sourcesCrawled).toBe(15);
     expect(getData.allRuns).toHaveLength(1);
   });
 

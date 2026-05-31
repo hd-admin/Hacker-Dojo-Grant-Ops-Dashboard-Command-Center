@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextResponse, connection } from "next/server";
 import { computeBudgetVsActual } from "@/server/grant-ops/award-service";
 import { createErrorResponse } from "@/lib/api-error-handler";
 import { logger } from "@/lib/logger";
@@ -9,6 +9,7 @@ export async function GET(
   _request: Request,
   { params }: { params: Promise<{ awardId: string }> }
 ): Promise<Response> {
+  await connection();
   try {
     const { awardId } = await params;
     const rows = await computeBudgetVsActual(awardId);

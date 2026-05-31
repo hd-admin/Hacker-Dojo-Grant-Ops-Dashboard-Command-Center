@@ -1,5 +1,6 @@
 import { connection } from 'next/server';
 import { logger } from '@/lib/logger';
+import { createErrorResponse } from '@/lib/api-error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -36,9 +37,9 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({ pattern });
-  } catch (_error) {
+  } catch (error) {
     return NextResponse.json(
-      { error: { code: 'VALIDATION_ERROR', message: error instanceof Error ? error.message : 'Invalid input' } },
+      createErrorResponse('AGENT_SCHEMA_MISMATCH', error instanceof Error ? error.message : 'Invalid input'),
       { status: 400 }
     );
   }
@@ -60,8 +61,11 @@ export async function GET(_req: NextRequest) {
         createdAt: e.timestamp,
       }));
     return NextResponse.json({ patterns });
-  } catch (_error) {
+  } catch (error) {
     logger.error({ err: error }, 'Error getting patterns');
-    return NextResponse.json({ error: { code: 'DB_ERROR', message: 'Failed to get patterns' } }, { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('DB_INTEGRITY_ERROR', 'Failed to get patterns'),
+      { status: 500 }
+    );
   }
 }

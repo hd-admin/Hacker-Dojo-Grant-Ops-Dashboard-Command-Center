@@ -206,7 +206,7 @@ const createTestProfile = (): OrganizationProfile => ({
 	ein: '12-3456789',
 	samUEI: 'TEST123',
 	nonprofitStatus: '501(c)(3)',
-	contactInfo: {},
+  yearFounded: 2009,contactInfo: {},
 	geography: 'San Francisco Bay Area',
 	mission: 'Test mission',
 	programAreas: ['education'],
@@ -214,7 +214,7 @@ const createTestProfile = (): OrganizationProfile => ({
 	fundingHistory: [],
 	partnerships: [],
 	complianceFacts: [],
-	docTypes: ['PDF'],
+  boardMembers: [],docTypes: ['PDF'],
 	searchThemes: [],
 	agentBehavior: {
 		autoDraftThreshold: 75,

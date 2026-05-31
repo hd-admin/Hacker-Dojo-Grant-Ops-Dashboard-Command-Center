@@ -1899,3 +1899,152 @@ export function deleteOutreachRecord(state: SqliteBootstrapState, id: string): v
 	db.prepare("DELETE FROM outreach_records WHERE id = ?").run(id);
 	incrementWriteCounterForDb(db);
 }
+
+// ============ FTS5 SEARCH WITH COMBINED FILTERS ============
+
+export interface GrantSearchParams {
+	search?: string;
+	status?: string;
+	funderType?: string;
+	category?: string;
+	minFit?: number;
+	maxDeadline?: string;
+	limit?: number;
+	offset?: number;
+	excludeDeleted?: boolean;
+}
+
+export interface GrantSearchResult {
+	id: string;
+	title: string;
+	funder: string;
+	funderShort: string;
+	award: string;
+	awardSort: number;
+	deadline: string;
+	deadlineConfidence: string;
+	status: string;
+	fitScore: number;
+	tags: string;
+	category: string;
+	summary: string;
+	rank?: number;
+}
+
+export function searchGrants(
+	state: SqliteBootstrapState,
+	params: GrantSearchParams = {},
+): { results: GrantSearchResult[]; total: number } {
+	const db = openDatabase(state);
+	const excludeDeleted = params.excludeDeleted !== false;
+
+	const conditions: string[] = [];
+	const bindings: unknown[] = [];
+
+	if (excludeDeleted) {
+		conditions.push("g.deletedAt IS NULL");
+	}
+
+	if (params.status) {
+		conditions.push("g.status = ?");
+		bindings.push(params.status);
+	}
+
+	if (params.funderType) {
+		conditions.push("g.category = ?");
+		bindings.push(params.funderType);
+	}
+
+	if (params.category) {
+		conditions.push("g.category = ?");
+		bindings.push(params.category);
+	}
+
+	if (params.minFit !== undefined) {
+		conditions.push("g.fitScore >= ?");
+		bindings.push(params.minFit);
+	}
+
+	if (params.maxDeadline) {
+		conditions.push("g.deadline <= ?");
+		bindings.push(params.maxDeadline);
+	}
+
+	const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+	let sql: string;
+	let countSql: string;
+
+	if (params.search && params.search.trim().length > 0) {
+		const searchTerm = params.search.trim();
+		const ftsCondition = `grants_fts MATCH ?`;
+		const fullWhere = conditions.length > 0
+			? `WHERE ${ftsCondition} AND ${conditions.join(' AND ')}`
+			: `WHERE ${ftsCondition}`;
+
+		const prefixQuery = searchTerm.split(/\s+/).map((term) => `"${term}"*`).join(' ');
+
+		sql = `
+			SELECT g.*, fts.rank
+			FROM grants_v2 g
+			JOIN grants_fts fts ON g.id = fts.grantId
+			${fullWhere}
+			ORDER BY fts.rank
+			LIMIT ? OFFSET ?
+		`;
+
+		countSql = `
+			SELECT COUNT(*) as count
+			FROM grants_v2 g
+			JOIN grants_fts fts ON g.id = fts.grantId
+			${fullWhere}
+		`;
+
+		bindings.unshift(prefixQuery);
+	} else {
+		sql = `
+			SELECT g.*
+			FROM grants_v2 g
+			${whereClause}
+			ORDER BY g.fitScore DESC
+			LIMIT ? OFFSET ?
+		`;
+
+		countSql = `
+			SELECT COUNT(*) as count
+			FROM grants_v2 g
+			${whereClause}
+		`;
+	}
+
+	const limit = params.limit ?? 50;
+	const offset = params.offset ?? 0;
+
+	const countResult = db.prepare(countSql).get(...bindings) as { count: number } | undefined;
+	const total = countResult?.count ?? 0;
+
+	const rows = db.prepare(sql).all(...bindings, limit, offset) as Array<Record<string, unknown>>;
+	const results: GrantSearchResult[] = rows.map((row) => {
+		const result: GrantSearchResult = {
+			id: String(row.id),
+			title: String(row.title),
+			funder: String(row.funder),
+			funderShort: String(row.funderShort ?? ''),
+			award: String(row.award ?? ''),
+			awardSort: Number(row.awardSort ?? 0),
+			deadline: String(row.deadline ?? ''),
+			deadlineConfidence: String(row.deadlineConfidence ?? 'unknown'),
+			status: String(row.status),
+			fitScore: Number(row.fitScore ?? 0),
+			tags: String(row.tags ?? '[]'),
+			category: String(row.category ?? ''),
+			summary: String(row.summary ?? ''),
+		};
+		if (row.rank !== undefined && row.rank !== null) {
+			result.rank = Number(row.rank);
+		}
+		return result;
+	});
+
+	return { results, total };
+}

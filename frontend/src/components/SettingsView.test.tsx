@@ -59,7 +59,7 @@ const profile: OrganizationProfile = {
   ein: '26-3375350',
   samUEI: 'XK7N4HQ2P3M9',
   nonprofitStatus: '501(c)(3)',
-  contactInfo: {},
+  yearFounded: 2009,contactInfo: {},
   geography: 'Regional',
   mission: 'Community innovation and technology education',
   programAreas: ['STEM'],
@@ -67,7 +67,7 @@ const profile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  docTypes: ['PDF', 'XLS', 'DOC'],
+  boardMembers: [],docTypes: ['PDF', 'XLS', 'DOC'],
   searchThemes: ['Makerspaces', 'AI literacy', 'Community innovation'],
   agentBehavior: {
     autoDraftThreshold: 75,

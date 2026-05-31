@@ -8,10 +8,11 @@
  * GAP-05: Eliminates fake/seed data from production paths.
  */
 
-import type {
-	OpencodeSettings,
-	OrganizationProfile,
-} from "./types";
+import type { OpencodeSettings } from "./types";
+
+// Import the hardcoded Hacker Dojo profile as the default organization profile.
+// This is the authoritative org profile — no user configuration needed.
+export { HARDCODED_PROFILE as defaultProfile } from "../frontend/src/server/grant-ops/hardcoded-profile";
 
 /**
  * Bootstrap template for Opencode settings.
@@ -22,33 +23,4 @@ export const defaultOpencodeSettings: OpencodeSettings = {
 	workingDirectory: "",
 	timeoutMs: 60000,
 	isConfigured: false,
-};
-
-/**
- * Bootstrap template for organization profile.
- * Used when no profile has been saved yet.
- * Contains placeholder values that should be replaced with real org data.
- */
-export const defaultProfile: OrganizationProfile = {
-	legalName: "",
-	ein: "",
-	samUEI: "",
-	nonprofitStatus: "",
-	contactInfo: {},
-	geography: "",
-	mission: "",
-	programAreas: [],
-	populationsServed: [],
-	fundingHistory: [],
-	partnerships: [],
-	complianceFacts: [],
-	docTypes: ["PDF", "XLS", "DOC"],
-	searchThemes: [],
-	agentBehavior: {
-		autoDraftThreshold: 75,
-		submissionPolicy: "Human approval required",
-		notifyEmail: "",
-		voiceAndTone:
-			"Plain-spoken, evidence-led, builder-community framing. Avoid jargon. Lead with outcomes.",
-	},
 };

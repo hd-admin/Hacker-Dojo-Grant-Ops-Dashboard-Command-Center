@@ -1,27 +1,34 @@
 import { NextResponse, connection } from "next/server";
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
-import fs from 'node:fs/promises';
-import path from 'node:path';
-import { resolveDataDir } from '../../../../../shared/grant-ops-sqlite';
+
+interface GrantOpsDb {
+  prepare(sql: string): { get(key: string): { value: string } | undefined; run(key: string, value: string): void };
+}
+
+interface GrantOpsGlobal {
+  __grantOpsDb?: GrantOpsDb;
+}
 
 export const dynamic = 'force-dynamic';
 
-function getOperatorPath(): string {
-  return path.join(resolveDataDir(), 'operator.json');
+const OPERATOR_NAME_KEY = 'operator.name';
+
+function getDb(): GrantOpsDb | undefined {
+  return (globalThis as unknown as GrantOpsGlobal).__grantOpsDb;
 }
 
 export async function GET() {
   await connection();
   try {
-    const opPath = getOperatorPath();
-    const data = await fs.readFile(opPath, 'utf8').catch(() => null);
-    if (data) {
-      const parsed = JSON.parse(data);
-      return NextResponse.json({ name: parsed.name || '' });
+    const db = getDb();
+    if (!db) {
+      return NextResponse.json({ name: '' });
     }
-    return NextResponse.json({ name: '' });
-  } catch {
+    const row = db.prepare('SELECT value FROM meta WHERE key = ?').get(OPERATOR_NAME_KEY);
+    return NextResponse.json({ name: row?.value || '' });
+  } catch (error) {
+    logger.error({ err: error }, 'Error reading operator name');
     return NextResponse.json({ name: '' });
   }
 }
@@ -32,11 +39,13 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => null);
     const name = (body?.name || '').trim();
     if (!name) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Operator name is required'), { status: 400 });
+      return NextResponse.json(createErrorResponse('OPERATOR_NAME_REQUIRED', 'Operator name is required'), { status: 400 });
     }
-    const opPath = getOperatorPath();
-    await fs.mkdir(path.dirname(opPath), { recursive: true });
-    await fs.writeFile(opPath, JSON.stringify({ name, updatedAt: new Date().toISOString() }), 'utf8');
+    const db = getDb();
+    if (!db) {
+      return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Database not available'), { status: 500 });
+    }
+    db.prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run(OPERATOR_NAME_KEY, name);
     return NextResponse.json({ name });
   } catch (error) {
     logger.error({ err: error }, 'Error saving operator name');

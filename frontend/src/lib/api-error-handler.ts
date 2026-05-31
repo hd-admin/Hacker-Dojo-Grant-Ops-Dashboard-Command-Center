@@ -13,7 +13,9 @@ export type ApiErrorCode =
   | 'UPLOAD_VALIDATION_FAILED'
   | 'INVALID_STATE_TRANSITION'
   | 'SUBMISSION_BLOCKED'
-  | 'STORAGE_UNAVAILABLE';
+  | 'STORAGE_UNAVAILABLE'
+  | 'OPERATOR_NAME_REQUIRED'
+  | 'VALIDATION_ERROR';
 
 export interface ApiErrorResponse {
   error: string;

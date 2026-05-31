@@ -59,7 +59,7 @@ describe('award-service', () => {
 
       const rows = await computeBudgetVsActual(award.id);
       expect(rows).toHaveLength(1);
-      expect(rows[0].status).toBe('green');
+      expect(rows[0]!.status).toBe('green');
     });
 
     it('calculates yellow status when 11-25% off target', async () => {
@@ -68,7 +68,7 @@ describe('award-service', () => {
       await addExpense(award.id, cat.id, '2026-05-01', 'Salary', 23000);
 
       const rows = await computeBudgetVsActual(award.id);
-      expect(rows[0].status).toBe('yellow');
+      expect(rows[0]!.status).toBe('yellow');
     });
 
     it('calculates red status when over 25% off', async () => {
@@ -77,7 +77,7 @@ describe('award-service', () => {
       await addExpense(award.id, cat.id, '2026-05-01', 'Salary', 50000);
 
       const rows = await computeBudgetVsActual(award.id);
-      expect(rows[0].status).toBe('red');
+      expect(rows[0]!.status).toBe('red');
     });
   });
 
@@ -89,8 +89,8 @@ describe('award-service', () => {
 
       const events = await getComplianceCalendar();
       expect(events).toHaveLength(2);
-      expect(events[0].dueDate).toBe('2026-06-10');
-      expect(events[1].dueDate).toBe('2026-06-20');
+      expect(events[0]!.dueDate).toBe('2026-06-10');
+      expect(events[1]!.dueDate).toBe('2026-06-20');
     });
   });
 });

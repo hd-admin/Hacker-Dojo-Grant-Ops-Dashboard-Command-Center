@@ -40,7 +40,7 @@ describe('shared/grant-ops-sqlite migration bootstrap', () => {
     const persisted = await readPersistedData(state);
     const profile = await loadProfile();
 
-    expect(persisted.sources).toHaveLength(8);
+    expect(persisted.sources).toHaveLength(13);
     expect(persisted.crawlRuns).toEqual([]);
     expect(persisted.draftArtifacts).toEqual([]);
     expect(persisted.notifications).toEqual([]);

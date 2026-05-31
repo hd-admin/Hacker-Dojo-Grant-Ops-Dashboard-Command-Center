@@ -18,6 +18,7 @@ function makeFullProfile(overrides: Partial<OrganizationProfile> = {}): Organiza
     ein: '12-3456789',
     samUEI: 'XK7N4HQ2P3M9',
     nonprofitStatus: '501(c)(3)',
+    yearFounded: 2009,
     contactInfo: {
       address: '3350 Thomas Road, Santa Clara, CA 95054',
       phone: '408-123-4567',
@@ -34,6 +35,7 @@ function makeFullProfile(overrides: Partial<OrganizationProfile> = {}): Organiza
     ],
     partnerships: ['Code.org', 'Girls Who Code', 'Local Community College'],
     complianceFacts: ['Registered with SAM.gov', 'UEI verified', 'Annual 990 filed'],
+    boardMembers: [{ name: 'Test Board', role: 'Board Member' }],
     docTypes: ['PDF', 'XLS', 'DOC'],
     searchThemes: ['technology education', 'STEM', 'workforce'],
     agentBehavior: {
@@ -79,8 +81,8 @@ describe('ProfileService', () => {
       const result = await profileService.getProfile();
 
       expect(result).toBeDefined();
-      expect(result?.legalName).toBe('');
-      expect(result?.mission).toBe('');
+      expect(result?.legalName).toBe('Hacker Dojo, a California nonprofit corporation');
+      expect(result?.mission).toContain('Hacker Dojo is a collaborative hackerspace');
     });
   });
 
@@ -108,6 +110,7 @@ describe('ProfileService', () => {
         ein: initial.ein,
         samUEI: initial.samUEI,
         nonprofitStatus: initial.nonprofitStatus,
+        yearFounded: initial.yearFounded,
         contactInfo: initial.contactInfo,
         geography: initial.geography,
         programAreas: initial.programAreas,
@@ -115,6 +118,7 @@ describe('ProfileService', () => {
         fundingHistory: initial.fundingHistory,
         partnerships: initial.partnerships,
         complianceFacts: initial.complianceFacts,
+        boardMembers: initial.boardMembers,
         docTypes: initial.docTypes,
         searchThemes: initial.searchThemes,
         agentBehavior: initial.agentBehavior,

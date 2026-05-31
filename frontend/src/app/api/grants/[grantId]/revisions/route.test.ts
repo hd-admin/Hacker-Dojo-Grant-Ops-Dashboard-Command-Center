@@ -10,7 +10,7 @@ const profile: OrganizationProfile = {
   ein: '12-3456789',
   samUEI: 'XyxabC123AB',
   nonprofitStatus: '501(c)(3)',
-  contactInfo: {},
+  yearFounded: 2009,contactInfo: {},
   geography: 'Regional',
   mission: 'To support tech education',
   programAreas: ['STEM'],
@@ -18,7 +18,7 @@ const profile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  docTypes: ['PDF'],
+  boardMembers: [],docTypes: ['PDF'],
   searchThemes: ['EdTech'],
   agentBehavior: {
     autoDraftThreshold: 80,
