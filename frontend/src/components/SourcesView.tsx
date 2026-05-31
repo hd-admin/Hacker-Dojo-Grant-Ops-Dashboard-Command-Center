@@ -584,7 +584,7 @@ export default function SourcesView({ onRefreshAppState }: SourcesViewProps) {
               display: 'inline-flex',
               alignItems: 'center',
               gap: '2px',
-              color: '#e0a040',
+              color: 'var(--warning)',
               fontSize: '14px',
             }}
             aria-label="Auth configuration warning"

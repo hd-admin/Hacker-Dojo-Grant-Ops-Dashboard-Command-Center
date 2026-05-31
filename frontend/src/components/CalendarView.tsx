@@ -35,7 +35,7 @@ function getUrgencyColor(urgency: string): string {
   switch (urgency) {
     case 'overdue': return 'var(--danger)';
     case 'urgent': return 'var(--warning)';
-    case 'soon': return '#e0c84a';
+    case 'soon': return 'var(--warning)';
     case 'normal': return 'var(--info)';
     default: return 'var(--text-muted)';
   }
@@ -126,7 +126,7 @@ export default function CalendarView({ grants, reportDeadlines = [], taskDueDate
       <div className="calendar-legend">
         <span className="calendar-legend-item"><span className="calendar-dot" style={{ background: 'var(--danger)' }} /> Overdue</span>
         <span className="calendar-legend-item"><span className="calendar-dot" style={{ background: 'var(--warning)' }} /> Urgent (&lt;3 days)</span>
-        <span className="calendar-legend-item"><span className="calendar-dot" style={{ background: '#e0c84a' }} /> Soon (&lt;14 days)</span>
+        <span className="calendar-legend-item"><span className="calendar-dot" style={{ background: 'var(--warning)' }} /> Soon (&lt;14 days)</span>
         <span className="calendar-legend-item"><span className="calendar-dot" style={{ background: 'var(--info)' }} /> Upcoming</span>
       </div>
 

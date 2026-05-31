@@ -210,6 +210,7 @@ export const SEED_SOURCES: Source[] = [
     category: 'community',
     sourceCrawlState: 'never-crawled',
     crawlAccessCategory: 'crawlable',
+    isPeerSource: 1,
   },
   {
     id: 'source-peer-techshop',
@@ -221,6 +222,7 @@ export const SEED_SOURCES: Source[] = [
     category: 'community',
     sourceCrawlState: 'never-crawled',
     crawlAccessCategory: 'crawlable',
+    isPeerSource: 1,
   },
   {
     id: 'source-peer-nyc-resistor',
@@ -232,6 +234,7 @@ export const SEED_SOURCES: Source[] = [
     category: 'community',
     sourceCrawlState: 'never-crawled',
     crawlAccessCategory: 'crawlable',
+    isPeerSource: 1,
   },
   {
     id: 'source-peer-dallas-makerspace',
@@ -243,6 +246,7 @@ export const SEED_SOURCES: Source[] = [
     category: 'community',
     sourceCrawlState: 'never-crawled',
     crawlAccessCategory: 'crawlable',
+    isPeerSource: 1,
   },
   {
     id: 'source-peer-artisans-asylum',
@@ -254,6 +258,7 @@ export const SEED_SOURCES: Source[] = [
     category: 'community',
     sourceCrawlState: 'never-crawled',
     crawlAccessCategory: 'crawlable',
+    isPeerSource: 1,
   },
 ];
 

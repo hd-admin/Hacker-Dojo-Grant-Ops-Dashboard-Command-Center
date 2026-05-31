@@ -443,10 +443,10 @@ export default function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                       fontWeight: 600,
                       padding: '1px 6px',
                       borderRadius: '3px',
-                      ...(doc.classification === 'canonical' ? { background: '#2e7d3222', color: '#4caf50' } : {}),
+                      ...(doc.classification === 'canonical' ? { background: 'color-mix(in srgb, var(--success) 13%, transparent)', color: 'var(--success)' } : {}),
                       ...(doc.classification === 'draft-only' ? { background: 'var(--surface-2)', color: 'var(--text-muted)' } : {}),
-                      ...(doc.classification === 'archived' ? { background: '#e6510022', color: '#ff9800' } : {}),
-                      ...(doc.classification === 'restricted' ? { background: '#c6282822', color: '#ef5350' } : {}),
+                      ...(doc.classification === 'archived' ? { background: 'color-mix(in srgb, var(--warning) 13%, transparent)', color: 'var(--warning)' } : {}),
+                      ...(doc.classification === 'restricted' ? { background: 'color-mix(in srgb, var(--danger) 13%, transparent)', color: 'var(--danger)' } : {}),
                     }} data-testid={`doc-classification-${doc.id}`}>
                       {doc.classification}
                     </span>
