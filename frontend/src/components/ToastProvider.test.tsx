@@ -43,6 +43,7 @@ describe('ToastProvider', () => {
     btn.click();
     await new Promise((r) => setTimeout(r, 50));
     expect(container.textContent).toContain('Hello');
+    expect(container.querySelector('[role="region"][aria-live="polite"]')).not.toBeNull();
     root.unmount();
     container.remove();
   });

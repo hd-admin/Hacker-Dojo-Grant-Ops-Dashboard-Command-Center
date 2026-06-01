@@ -120,6 +120,7 @@ describe('DiscoveryView', () => {
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(container.querySelector('[data-testid="discovery-empty-state"]')).not.toBeNull();
+    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
     root.unmount();
     container.remove();
   });

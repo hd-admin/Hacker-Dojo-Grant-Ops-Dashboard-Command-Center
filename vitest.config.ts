@@ -9,7 +9,7 @@ export default defineConfig({
     globals: true,
     include: ['tests/**/*.test.ts', 'frontend/src/**/*.test.ts', 'frontend/src/**/*.test.tsx', 'shared/**/*.test.ts'],
     environment: 'node',
-    env: { NODE_ENV: 'test' },
+    env: { NODE_ENV: 'test', TMPDIR: '/home/mistlight/tmp-vitest' },
     setupFiles: [path.resolve(__dirname, './tests/vitest-setup.ts')],
   },
   resolve: {

@@ -470,6 +470,9 @@ describe("GrantDrawer", () => {
 		);
 
 		await waitFor(() => container.textContent?.includes("Submission manifest") === true);
+		const dialog = container.querySelector('[role="dialog"]');
+		expect(dialog).not.toBeNull();
+		expect(dialog?.getAttribute('aria-modal')).toBe('true');
 		expect(container.textContent).toContain("Version 1");
 		expect(container.textContent).toContain("Upload all portal materials as PDFs.");
 		expect(container.textContent).toContain("https://example.org/submit");

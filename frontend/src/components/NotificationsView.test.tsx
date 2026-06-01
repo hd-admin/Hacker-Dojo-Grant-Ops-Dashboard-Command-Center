@@ -121,6 +121,7 @@ describe('NotificationsView', () => {
       root.render(React.createElement(NotificationsView, { notifications: [] }));
       await new Promise((r) => setTimeout(r, 0));
       expect(container.querySelector('[data-testid="notifications-empty-state"]')).not.toBeNull();
+      expect(container.querySelector('[aria-live="polite"]')).not.toBeNull();
     });
 
     it('renders all notification items', async () => {

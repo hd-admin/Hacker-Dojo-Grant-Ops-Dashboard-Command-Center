@@ -47,3 +47,5 @@ vi.mock('next/server', async () => {
 vi.mock('server-only', () => {
   return {};
 });
+
+import '@testing-library/jest-dom/vitest';

@@ -33,42 +33,52 @@ describe('OperatorNamePrompt', () => {
 
   it('renders the prompt heading', async () => {
     const el = await render();
-    expect(el.textContent).toContain('Hacker Dojo Grant Ops is ready.');
+    const heading = el.querySelector('h1');
+    expect(heading).not.toBeNull();
+    expect(heading?.textContent).toBe('Hacker Dojo Grant Ops is ready.');
   });
 
   it('renders the subtitle', async () => {
     const el = await render();
-    expect(el.textContent).toContain('What is your name?');
+    const subtitle = el.querySelector('p');
+    expect(subtitle?.textContent).toBe('What is your name?');
   });
 
-  it('renders input field', async () => {
+  it('renders input field with accessible label', async () => {
     const el = await render();
     const input = el.querySelector('input');
-    expect(input).toBeTruthy();
+    expect(input).not.toBeNull();
+    expect(input?.getAttribute('aria-label')).toBe('Your name');
     expect(input?.getAttribute('placeholder')).toBe('Your name');
   });
 
-  it('renders Get Started button', async () => {
+  it('renders Get Started button with accessible name', async () => {
     const el = await render();
     const btn = el.querySelector('button');
+    expect(btn).not.toBeNull();
+    expect(btn?.getAttribute('aria-label')).toBe('Get started');
     expect(btn?.textContent).toBe('Get Started');
   });
 
-  it('shows error message when provided', async () => {
+  it('shows error message via alert role', async () => {
     const el = await render({ error: 'Name already exists' });
-    expect(el.textContent).toContain('Name already exists');
+    const alert = el.querySelector('[role="alert"]');
+    expect(alert).not.toBeNull();
+    expect(alert?.textContent).toBe('Name already exists');
   });
 
   it('shows Saving... when submitting', async () => {
     const el = await render({ isSubmitting: true });
-    expect(el.textContent).toContain('Saving...');
+    const btn = el.querySelector('button');
+    expect(btn?.textContent).toBe('Saving...');
   });
 
-  it('has proper ARIA attributes', async () => {
+  it('has proper ARIA dialog attributes', async () => {
     const el = await render();
     const dialog = el.querySelector('[role="dialog"]');
-    expect(dialog).toBeTruthy();
+    expect(dialog).not.toBeNull();
     expect(dialog?.getAttribute('aria-modal')).toBe('true');
+    expect(dialog?.getAttribute('aria-labelledby')).toBe('operator-prompt-title');
   });
 
   it('calls onSubmit when button clicked', async () => {

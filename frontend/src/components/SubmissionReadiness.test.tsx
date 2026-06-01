@@ -111,6 +111,8 @@ describe("SubmissionReadiness", () => {
 		});
 
 		expect(container.textContent).toBeTruthy();
+		const region = container.querySelector('[role="region"]');
+		expect(region?.getAttribute('aria-label')).toBe('Submission readiness');
 		const draftIndicator = container.querySelector('[data-testid="readiness-draft"]');
 		expect(draftIndicator?.className).toContain("green");
 

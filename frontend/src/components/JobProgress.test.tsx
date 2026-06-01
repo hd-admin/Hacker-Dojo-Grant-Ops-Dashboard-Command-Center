@@ -87,6 +87,9 @@ describe('JobProgress', () => {
       await new Promise((r) => setTimeout(r, 100));
 
       expect(callCount).toBeGreaterThan(beforeClick);
+
+      const progressbar = container.querySelector('[role="progressbar"]');
+      expect(progressbar).not.toBeNull();
     });
 
     it('successful fetch after 500s clears error state', async () => {

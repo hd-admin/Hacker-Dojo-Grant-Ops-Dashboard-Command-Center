@@ -312,6 +312,8 @@ describe('AppShell rendering', () => {
     const duplicatesNav = container.querySelector('.nav-item[data-view="duplicates"]');
     expect(duplicatesNav).not.toBeNull();
     expect(duplicatesNav?.textContent).toContain('Duplicates');
+    const sidebar = container.querySelector('aside[aria-label="Main navigation"]');
+    expect(sidebar).not.toBeNull();
   });
 
   it('shows pending duplicates count badge when duplicates exist', async () => {

@@ -276,6 +276,7 @@ describe('SettingsView', () => {
     expect(container.textContent).toContain('Budget FY2025.xlsx');
     expect(container.textContent).toContain('Opencode');
     expect(container.textContent).toContain('Opencode Agent');
+    expect(container.querySelectorAll('[role="tab"]').length).toBeGreaterThan(0);
   });
 
   it('renders Theme Configuration card with search themes list', async () => {

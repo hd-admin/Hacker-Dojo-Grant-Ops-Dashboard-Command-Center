@@ -20,7 +20,7 @@ describe('BudgetImportView', () => {
   it('renders drop zone', async () => {
     const { container, root } = renderBudgetImport({ awardId: 'award-1' });
     await new Promise((r) => setTimeout(r, 50));
-    expect(container.querySelector('[data-testid="budget-import-view"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Drop budget file here or click to browse"]')).not.toBeNull();
     expect(container.textContent).toContain('Drag and drop');
     root.unmount();
     container.remove();

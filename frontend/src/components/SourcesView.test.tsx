@@ -158,6 +158,8 @@ describe('SourcesView', () => {
 
     expect(container.textContent).toContain('Sources');
     expect(container.textContent).toContain('Review queue');
+    const statusIndicators = container.querySelectorAll('[role="status"]');
+    expect(statusIndicators.length).toBeGreaterThan(0);
   });
 
   it('shows pending sources count in header subtitle', async () => {

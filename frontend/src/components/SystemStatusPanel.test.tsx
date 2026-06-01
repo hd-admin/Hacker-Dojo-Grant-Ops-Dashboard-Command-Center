@@ -46,6 +46,7 @@ describe('SystemStatusPanel', () => {
     ));
     root.render(<SystemStatusPanel />);
     await waitFor(() => container.querySelector('[data-testid="system-status-panel"]') !== null);
+    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
     expect(container.textContent).toContain('Fully Online');
     expect(container.querySelector('[data-testid="status-storage"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="status-opencode"]')).not.toBeNull();

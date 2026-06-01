@@ -54,19 +54,47 @@ describe('pipeline-logic', () => {
       expect(validateTransition('draft', 'submitted').valid).toBe(false);
     });
 
-    it('allows all valid transitions from Each status', () => {
+    it('allows all valid transitions from Each status per AC-7.1.1', () => {
       for (const [from, allowed] of Object.entries({
         matched: ['draft', 'closed', 'archived'],
-        draft: ['review', 'matched', 'closed', 'archived'],
-        review: ['approved', 'draft', 'closed', 'archived'],
-        approved: ['submission-ready', 'submitted', 'review', 'closed', 'archived'],
-        'submission-ready': ['submitted', 'approved', 'closed', 'archived'],
-        submitted: ['follow-up', 'awarded', 'declined', 'closed', 'archived'],
+        draft: ['review', 'closed'],
+        review: ['approved', 'draft', 'closed'],
+        approved: ['submission-ready', 'closed'],
+        'submission-ready': ['submitted', 'closed'],
+        submitted: ['follow-up', 'awarded', 'declined'],
+        'follow-up': ['awarded', 'declined', 'submitted'],
+        awarded: ['closed'],
+        declined: ['closed', 'archived'],
+        closed: ['archived'],
       })) {
         for (const to of allowed) {
           expect(validateTransition(from as GrantStatus, to as GrantStatus).valid).toBe(true);
         }
       }
+    });
+
+    it('rejects transitions removed per AC-7.1.1 (draft -> matched)', () => {
+      expect(validateTransition('draft', 'matched').valid).toBe(false);
+    });
+
+    it('rejects transitions removed per AC-7.1.1 (draft -> archived)', () => {
+      expect(validateTransition('draft', 'archived').valid).toBe(false);
+    });
+
+    it('rejects transitions removed per AC-7.1.1 (approved -> submitted)', () => {
+      expect(validateTransition('approved', 'submitted').valid).toBe(false);
+    });
+
+    it('rejects transitions removed per AC-7.1.1 (approved -> review)', () => {
+      expect(validateTransition('approved', 'review').valid).toBe(false);
+    });
+
+    it('rejects transitions removed per AC-7.1.1 (submitted -> closed)', () => {
+      expect(validateTransition('submitted', 'closed').valid).toBe(false);
+    });
+
+    it('rejects transitions removed per AC-7.1.1 (awarded -> archived)', () => {
+      expect(validateTransition('awarded', 'archived').valid).toBe(false);
     });
   });
 
