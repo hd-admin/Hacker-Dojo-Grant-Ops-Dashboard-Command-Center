@@ -246,7 +246,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
 
   return (
     <>
-      <div className="header" data-testid="jobs-panel-header">
+      <div className="header" data-testid="jobs-panel-header" aria-label="Job Queue">
         <div>
           <h1 className="header-title">
             Job <span className="accent">Queue</span>

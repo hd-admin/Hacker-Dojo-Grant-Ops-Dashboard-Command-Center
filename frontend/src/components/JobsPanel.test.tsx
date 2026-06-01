@@ -91,7 +91,7 @@ describe('JobsPanel', () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const header = container.querySelector('[data-testid="jobs-panel-header"]');
+    const header = container.querySelector('[aria-label="Job Queue"]');
     expect(header).not.toBeNull();
     expect(header?.querySelector('.header-title')?.textContent).toContain('Job');
   });
@@ -100,7 +100,7 @@ describe('JobsPanel', () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const statusFilter = container.querySelector('[data-testid="jobs-status-filter"]');
+    const statusFilter = container.querySelector('[role="tablist"][aria-label="Filter by job status"]');
     expect(statusFilter).not.toBeNull();
     const buttons = statusFilter?.querySelectorAll('button');
     expect(buttons?.length).toBe(6); // All, Queued, Running, Completed, Failed, Cancelled
@@ -110,7 +110,7 @@ describe('JobsPanel', () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const typeFilter = container.querySelector('[data-testid="jobs-type-filter"]');
+    const typeFilter = container.querySelector('[role="tablist"][aria-label="Filter by job type"]');
     expect(typeFilter).not.toBeNull();
     const buttons = typeFilter?.querySelectorAll('button');
     expect(buttons?.length).toBe(10); // All + 9 job types
@@ -147,7 +147,7 @@ describe('JobsPanel', () => {
     await new Promise((r) => setTimeout(r, 100));
 
     // Click "Failed" filter
-    const failedBtn = container.querySelector('[data-testid="jobs-status-filter"] button[data-status="failed"]') as HTMLButtonElement;
+    const failedBtn = container.querySelector('[role="tablist"][aria-label="Filter by job status"] button[data-status="failed"]') as HTMLButtonElement;
     expect(failedBtn).not.toBeNull();
     failedBtn?.click();
     await new Promise((r) => setTimeout(r, 50));
@@ -165,7 +165,7 @@ describe('JobsPanel', () => {
     await new Promise((r) => setTimeout(r, 100));
 
     // Click "Draft" type filter
-    const draftBtn = container.querySelector('[data-testid="jobs-type-filter"] button[data-type="draft"]') as HTMLButtonElement;
+    const draftBtn = container.querySelector('[role="tablist"][aria-label="Filter by job type"] button[data-type="draft"]') as HTMLButtonElement;
     expect(draftBtn).not.toBeNull();
     draftBtn?.click();
     await new Promise((r) => setTimeout(r, 50));

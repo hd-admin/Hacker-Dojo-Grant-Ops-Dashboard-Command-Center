@@ -184,18 +184,18 @@ describe('SourcesView', () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
     await waitFor(() => container.textContent?.includes('Sources') === true);
 
-    const discoverBtn = container.querySelector('[data-testid="discover-sources-btn"]');
+    const discoverBtn = container.querySelector('[aria-label="Discover sources"]');
     expect(discoverBtn).not.toBeNull();
 
-    expect(container.querySelector('[data-testid="discovery-prompt-input"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Describe the grants you are looking for"]')).toBeNull();
 
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(() => container.querySelector('[data-testid="discovery-prompt-input"]') !== null);
+    await waitFor(() => container.querySelector('[aria-label="Describe the grants you are looking for"]') !== null);
 
-    expect(container.querySelector('[data-testid="discovery-prompt-input"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Describe the grants you are looking for"]')).not.toBeNull();
 
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(() => container.querySelector('[data-testid="discovery-prompt-input"]') === null);
+    await waitFor(() => container.querySelector('[aria-label="Describe the grants you are looking for"]') === null);
   });
 
   it('submitting discovery with prompt shows discovery suggestions', async () => {
@@ -210,7 +210,7 @@ describe('SourcesView', () => {
     promptInput.value = 'grants for makerspaces';
     promptInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-    const submitBtn = container.querySelector('[data-testid="find-sources-submit-btn"]');
+    const submitBtn = container.querySelector('[aria-label="Find sources"]');
     submitBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     await waitFor(() => container.textContent?.includes('Discovered Grant Source') === true);
@@ -253,7 +253,7 @@ describe('SourcesView', () => {
     promptInput.value = 'grants for makerspaces';
     promptInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-    const submitBtn = container.querySelector('[data-testid="find-sources-submit-btn"]');
+    const submitBtn = container.querySelector('[aria-label="Find sources"]');
     submitBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     await waitFor(() => container.querySelector('[data-testid="discovery-unavailable-msg"]') !== null);
@@ -281,7 +281,7 @@ describe('SourcesView', () => {
 
     await waitFor(() => container.textContent?.includes('Discovered Grant Source') === true);
 
-    const approveSuggestionBtn = container.querySelector('[data-testid="approve-suggestion-btn"]');
+    const approveSuggestionBtn = container.querySelector('[aria-label="Approve suggestion"]');
     approveSuggestionBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     await waitFor(() => fetchMock.mock.calls.some(([url]) => String(url).includes('/api/sources')) === true);
@@ -333,8 +333,8 @@ describe('ProPublica search section', () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
     await waitFor(() => container.textContent?.includes('Sources') === true);
 
-    expect(container.querySelector('[data-testid="propublica-search-input"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="propublica-search-btn"]')).not.toBeNull();
+    expect(container.querySelector('input[aria-label="Search ProPublica"]')).not.toBeNull();
+    expect(container.querySelector('button[aria-label="Search ProPublica"]')).not.toBeNull();
   });
 
   it('shows propublica-unavailable-msg on unavailable response', async () => {
@@ -353,14 +353,14 @@ describe('ProPublica search section', () => {
     }));
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.querySelector('[data-testid="propublica-search-input"]') !== null);
+    await waitFor(() => container.querySelector('input[aria-label="Search ProPublica"]') !== null);
 
-    const input = container.querySelector('[data-testid="propublica-search-input"]') as HTMLInputElement;
+    const input = container.querySelector('input[aria-label="Search ProPublica"]') as HTMLInputElement;
     // Use native setter to bypass React's internal value tracking
     const nativeInputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
     nativeInputSetter?.call(input, 'STEM education');
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    await waitFor(() => !(container.querySelector('[data-testid="propublica-search-btn"]') as HTMLButtonElement | null)?.disabled);
+    await waitFor(() => !(container.querySelector('button[aria-label="Search ProPublica"]') as HTMLButtonElement | null)?.disabled);
 
     const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
     form.dispatchEvent(new Event('submit', { bubbles: true }));
@@ -385,13 +385,13 @@ describe('ProPublica search section', () => {
     }));
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.querySelector('[data-testid="propublica-search-input"]') !== null);
+    await waitFor(() => container.querySelector('input[aria-label="Search ProPublica"]') !== null);
 
-    const input = container.querySelector('[data-testid="propublica-search-input"]') as HTMLInputElement;
+    const input = container.querySelector('input[aria-label="Search ProPublica"]') as HTMLInputElement;
     const nativeInputSetter2 = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
     nativeInputSetter2?.call(input, 'STEM education');
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    await waitFor(() => !(container.querySelector('[data-testid="propublica-search-btn"]') as HTMLButtonElement | null)?.disabled);
+    await waitFor(() => !(container.querySelector('button[aria-label="Search ProPublica"]') as HTMLButtonElement | null)?.disabled);
 
     const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
     form.dispatchEvent(new Event('submit', { bubbles: true }));
@@ -430,13 +430,13 @@ describe('ProPublica search section', () => {
     }));
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.querySelector('[data-testid="propublica-search-input"]') !== null);
+    await waitFor(() => container.querySelector('input[aria-label="Search ProPublica"]') !== null);
 
-    const input = container.querySelector('[data-testid="propublica-search-input"]') as HTMLInputElement;
+    const input = container.querySelector('input[aria-label="Search ProPublica"]') as HTMLInputElement;
     const nativeInputSetter3 = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
     nativeInputSetter3?.call(input, 'STEM education');
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    await waitFor(() => !(container.querySelector('[data-testid="propublica-search-btn"]') as HTMLButtonElement | null)?.disabled);
+    await waitFor(() => !(container.querySelector('button[aria-label="Search ProPublica"]') as HTMLButtonElement | null)?.disabled);
 
     const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
     form.dispatchEvent(new Event('submit', { bubbles: true }));

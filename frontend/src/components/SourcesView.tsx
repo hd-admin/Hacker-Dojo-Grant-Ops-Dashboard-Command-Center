@@ -1046,6 +1046,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
           <button
             type="button"
             data-testid="discover-sources-btn"
+            aria-label="Discover sources"
             onClick={() => setShowDiscoverForm((value) => !value)}
           >
             Discover Sources
@@ -1057,6 +1058,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         <form onSubmit={handleDiscover}>
           <textarea
             data-testid="discovery-prompt-input"
+            aria-label="Describe the grants you are looking for"
             value={discoverPrompt}
             onChange={(e) => setDiscoverPrompt(e.target.value)}
             placeholder="Describe the grants you are looking for"
@@ -1064,6 +1066,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
           <button
             type="submit"
             data-testid="find-sources-submit-btn"
+            aria-label="Find sources"
             disabled={loading}
           >
             {loading ? 'Finding...' : 'Find Sources'}
@@ -1151,6 +1154,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                   type="button"
                   className="btn-approve"
                   data-testid="approve-suggestion-btn"
+                  aria-label="Approve suggestion"
                   onClick={() =>
                     void approveDiscoverySuggestion(suggestion)
                   }
@@ -1185,6 +1189,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
           <input
             type="text"
             data-testid="propublica-search-input"
+            aria-label="Search ProPublica"
             value={propublicaQuery}
             onChange={(e) => setPropublicaQuery(e.target.value)}
             placeholder="Search for grants (e.g., education grants for nonprofits in California)"
@@ -1193,6 +1198,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
           <button
             type="submit"
             data-testid="propublica-search-btn"
+            aria-label="Search ProPublica"
             disabled={propublicaLoading || !propublicaQuery.trim()}
             className="btn btn-primary"
           >

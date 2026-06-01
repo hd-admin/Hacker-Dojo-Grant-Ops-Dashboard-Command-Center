@@ -60,11 +60,13 @@ export function NotificationsView({ notifications: notificationsProp }: Notifica
             <div className="header-sub">No notifications</div>
           </div>
         </div>
-        <div className="empty-state-guide" data-testid="notifications-empty-state">
-          <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F514)}</div>
-          <div className="empty-state-title">No notifications yet</div>
-          <div className="empty-state-description">
-            Activity appears here as grants are discovered, drafted, and submitted.
+        <div className="empty-state-guide" data-testid="notifications-empty-state" aria-label="No notifications">
+          <div aria-live="polite">
+            <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F514)}</div>
+            <div className="empty-state-title">No notifications yet</div>
+            <div className="empty-state-description">
+              Activity appears here as grants are discovered, drafted, and submitted.
+            </div>
           </div>
         </div>
       </>
