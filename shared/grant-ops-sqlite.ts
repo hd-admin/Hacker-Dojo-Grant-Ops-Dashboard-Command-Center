@@ -992,7 +992,7 @@ function seedDefaultState(db: SqliteDatabase): void {
 	}
 	// Seed default system settings if not present
 	const defaultSettings = [
-		{ key: 'operatorName', value: '' },
+		{ key: 'operator.name', value: '' },
 		{ key: 'agentEnabled', value: 'true' },
 		{ key: 'crawlInterval', value: '168' },
 	];

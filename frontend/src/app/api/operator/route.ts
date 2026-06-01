@@ -30,7 +30,7 @@ export async function GET() {
     if (!db) {
       return NextResponse.json({ name: '' });
     }
-    const row = db.prepare('SELECT value FROM meta WHERE key = ?').get(OPERATOR_NAME_KEY);
+    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(OPERATOR_NAME_KEY);
     return NextResponse.json({ name: row?.value || '' });
   } catch (error) {
     logger.error({ err: error }, 'Error reading operator name');
@@ -44,14 +44,14 @@ export async function POST(request: Request) {
     const rawBody = await request.json().catch(() => null);
     const parsed = bodySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return NextResponse.json(createErrorResponse('OPERATOR_NAME_REQUIRED', 'Operator name is required'), { status: 400 });
+      return NextResponse.json(createErrorResponse('VALIDATION_ERROR', 'Operator name is required'), { status: 400 });
     }
     const name = parsed.data.name.trim();
     const db = getDb();
     if (!db) {
       return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Database not available'), { status: 500 });
     }
-    db.prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run(OPERATOR_NAME_KEY, name);
+    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(OPERATOR_NAME_KEY, name);
     return NextResponse.json({ name });
   } catch (error) {
     logger.error({ err: error }, 'Error saving operator name');

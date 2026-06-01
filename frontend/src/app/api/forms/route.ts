@@ -62,7 +62,7 @@ export async function PUT(req: NextRequest) {
     const body = await req.json();
     const parsed = formSchema.parse(body);
     if (!parsed.id) {
-      return NextResponse.json({ error: { code: 'MISSING_ID', message: 'Form ID is required' } }, { status: 400 });
+      return NextResponse.json(createErrorResponse('VALIDATION_ERROR', 'Form ID is required'), { status: 400 });
     }
     const deps = getDependencies();
     const form = {
@@ -88,7 +88,7 @@ export async function DELETE(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const id = searchParams.get('id');
     if (!id) {
-      return NextResponse.json({ error: { code: 'MISSING_ID', message: 'Form ID is required' } }, { status: 400 });
+      return NextResponse.json(createErrorResponse('VALIDATION_ERROR', 'Form ID is required'), { status: 400 });
     }
     const { deleteFormTemplate, getSqliteState } = await import('../../../../../shared/grant-ops-sqlite');
     deleteFormTemplate(getSqliteState(), id);

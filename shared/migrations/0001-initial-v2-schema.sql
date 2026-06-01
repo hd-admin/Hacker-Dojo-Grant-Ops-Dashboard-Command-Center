@@ -369,3 +369,14 @@ CREATE TABLE IF NOT EXISTS backup_schedule (
   lastBackupVerified INTEGER DEFAULT 0,
   nextBackupAt TEXT DEFAULT ''
 );
+
+-- Audit Events (operational audit log — not spec-defined, used by runtime)
+CREATE TABLE IF NOT EXISTS audit_events (
+  id TEXT PRIMARY KEY,
+  event_type TEXT NOT NULL,
+  entity_id TEXT NOT NULL,
+  entity_type TEXT NOT NULL,
+  actor_label TEXT NOT NULL,
+  timestamp TEXT NOT NULL,
+  metadata TEXT
+);

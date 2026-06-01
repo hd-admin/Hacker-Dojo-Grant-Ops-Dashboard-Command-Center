@@ -333,7 +333,7 @@ export async function resetPersistentStateForTests(): Promise<void> {
     lastSync: new Date().toISOString(),
   });
   const db = await getBootstrappedDatabase(state);
-  db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)").run("operator.name", "Test Operator");
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)").run("operator.name", "Test Operator");
 }
 
 export async function loadAuditEvents(limit?: number): Promise<AuditEvent[]> {

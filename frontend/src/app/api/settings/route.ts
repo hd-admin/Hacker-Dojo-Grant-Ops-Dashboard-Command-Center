@@ -44,11 +44,11 @@ const SettingsBodySchema = z.object({
 });
 
 function setSetting(db: GrantOpsDb, key: string, value: string): void {
-  db.prepare('INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)').run(key, value);
+  db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(key, value);
 }
 
 function getSettings(db: GrantOpsDb): Record<string, string> {
-  const rows = db.prepare('SELECT key, value FROM meta WHERE key LIKE ?').all('settings.%');
+  const rows = db.prepare('SELECT key, value FROM settings WHERE key LIKE ?').all('settings.%');
   const result: Record<string, string> = {};
   for (const row of rows) {
     result[row.key.replace('settings.', '')] = row.value;
