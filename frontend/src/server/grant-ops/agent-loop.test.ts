@@ -200,13 +200,13 @@ describe('executeAgentJob - mocked subprocess', () => {
     mockSpawnImpl.mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
 
     const job = createResearchJob();
-    const { deps, ingestCalls } = createMockDeps();
+    const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
 
     const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
     const execPromise = executeAgentJob(job, deps);
 
     await flushPromises();
-    writeArtifactToPath(artifactPath, 'not valid json {{{');
+    fs.writeFileSync(artifactPath, 'not valid json {{{');
     mockProc1.emit('exit', 0);
     await flushPromises();
     await flushPromises();
@@ -218,6 +218,12 @@ describe('executeAgentJob - mocked subprocess', () => {
 
     expect(ingestCalls.length).toBe(1);
     expect(mockSpawnImpl).toHaveBeenCalledTimes(2);
+    // Verify malformed JSON triggers retry with parse-error reason (structural failure)
+    const parseErrorUpdate = updateProgressCalls.find(
+      (u) => u.stage === 'invalid-json',
+    );
+    expect(parseErrorUpdate).toBeDefined();
+    expect(parseErrorUpdate!.errorMessage).toContain('invalid JSON');
   });
 
   it('3 - 3 consecutive invalid JSON -> final failure (AC-13.2.1)', async () => {
@@ -427,6 +433,95 @@ describe('checkQualityGates - draft wordCount threshold (AC-15.8.1)', () => {
     });
     expect(result.passed).toBe(true);
     expect(result.feedback).toBe('');
+  });
+});
+
+describe('executeAgentJob - edge case coverage (Step 5)', () => {
+  beforeEach(() => {
+    currentTestDataDir = path.join(process.cwd(), `.grant-ops-data-test-agent-loop-edge-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(currentTestDataDir, { recursive: true });
+    fs.mkdirSync(path.join(currentTestDataDir, 'tmp'), { recursive: true });
+    mockSpawnImpl.mockReset();
+  });
+
+  afterEach(async () => {
+    await new Promise((r) => setImmediate(r));
+    if (fs.existsSync(currentTestDataDir)) {
+      try {
+        fs.rmSync(currentTestDataDir, { recursive: true, force: true });
+      } catch {
+        // Suppress cleanup errors
+      }
+    }
+  });
+
+  it('8 - timeout produces correct failure reason in retry prompt (AC-1.6.2)', async () => {
+    const agentLoopModule = await import('./agent-loop');
+    const originalTimeout = agentLoopModule.JOB_TIMEOUTS.research;
+    (agentLoopModule.JOB_TIMEOUTS as Record<string, number>).research = 50;
+
+    try {
+      const mockProc1 = createMockChildProcess();
+      const mockProc2 = createMockChildProcess();
+      mockSpawnImpl.mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
+
+      const job = createResearchJob();
+      const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
+
+      const execPromise = executeAgentJob(job, deps);
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Second attempt: write valid artifact
+      const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
+      writeArtifactToPath(artifactPath, buildValidResearchArtifact(job.id));
+      mockProc2.emit('exit', 0);
+
+      await execPromise;
+
+      expect(ingestCalls.length).toBe(1);
+      const timeoutUpdate = updateProgressCalls.find(
+        (u) => u.status === 'retrying' && u.stage === 'timeout',
+      );
+      expect(timeoutUpdate).toBeDefined();
+      expect(timeoutUpdate!.errorMessage).toContain('timed out');
+    } finally {
+      (agentLoopModule.JOB_TIMEOUTS as Record<string, number>).research = originalTimeout;
+    }
+  });
+
+  it('9 - cancellation preserves job state for retry (AC-1.5.1)', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const mockProc = createMockChildProcess();
+      mockSpawnImpl.mockReturnValue(mockProc);
+
+      const job = createResearchJob({ status: 'running' });
+      const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
+
+      const execPromise = executeAgentJob(job, deps);
+
+      await vi.advanceTimersByTimeAsync(0);
+
+      // Mark job as cancelled
+      job.status = 'cancelled';
+      await vi.advanceTimersByTimeAsync(1100);
+
+      // Advance past SIGTERM/SIGKILL with 5s gap
+      expect(mockProc.kill).toHaveBeenCalledWith('SIGTERM');
+      await vi.advanceTimersByTimeAsync(5100);
+
+      await execPromise;
+
+      expect(ingestCalls.length).toBe(0);
+      const cancelledUpdate = updateProgressCalls.find((u) => u.status === 'cancelled');
+      expect(cancelledUpdate).toBeDefined();
+      // Verify SIGKILL was also called after 5s gap
+      expect(mockProc.kill).toHaveBeenCalledWith('SIGKILL');
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

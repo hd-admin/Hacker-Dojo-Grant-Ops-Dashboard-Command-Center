@@ -537,6 +537,7 @@ function ensureSchema(db: SqliteDatabase): void {
       nextCrawlAt TEXT DEFAULT '',
       errorCount INTEGER DEFAULT 0,
       lastError TEXT DEFAULT '',
+      consecutiveFailures INTEGER DEFAULT 0,
       createdAt TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_sources_v2_type ON sources_v2(type);
@@ -553,7 +554,11 @@ function ensureSchema(db: SqliteDatabase): void {
       grantsNew INTEGER DEFAULT 0,
       grantsUpdated INTEGER DEFAULT 0,
       errorMessage TEXT DEFAULT '',
-      logPath TEXT DEFAULT ''
+      logPath TEXT DEFAULT '',
+      jobId TEXT DEFAULT NULL,
+      pagesCrawled INTEGER DEFAULT 0,
+      pagesFailed INTEGER DEFAULT 0,
+      artifactPath TEXT DEFAULT ''
     );
     CREATE INDEX IF NOT EXISTS idx_crawl_runs_v2_sourceId ON crawl_runs_v2(sourceId);
     CREATE INDEX IF NOT EXISTS idx_crawl_runs_v2_status ON crawl_runs_v2(status);
@@ -604,6 +609,9 @@ function ensureSchema(db: SqliteDatabase): void {
       responsibility TEXT DEFAULT '' CHECK(responsibility IN ('finance','program','review','follow-up','')),
       dueDate TEXT DEFAULT '',
       completedAt TEXT DEFAULT '',
+      blockSubmission INTEGER DEFAULT 0,
+      notes TEXT DEFAULT '',
+      updatedAt TEXT NOT NULL DEFAULT (datetime('now')),
       createdAt TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_tasks_v2_grantId ON tasks_v2(grantId);
@@ -623,6 +631,10 @@ function ensureSchema(db: SqliteDatabase): void {
       extractionStatus TEXT DEFAULT 'pending' CHECK(extractionStatus IN ('pending','extracting','extracted','failed')),
       extractionError TEXT DEFAULT '',
       extractedText TEXT DEFAULT '',
+      originalName TEXT DEFAULT '',
+      classification TEXT DEFAULT 'draft-only',
+      tags TEXT DEFAULT '[]',
+      deletedAt TEXT DEFAULT NULL,
       uploadedAt TEXT NOT NULL DEFAULT (datetime('now'))
     );
     CREATE INDEX IF NOT EXISTS idx_documents_v2_grantId ON documents_v2(grantId);
@@ -636,6 +648,16 @@ function ensureSchema(db: SqliteDatabase): void {
       content TEXT NOT NULL DEFAULT '',
       groundingStatus TEXT DEFAULT 'ungrounded' CHECK(groundingStatus IN ('ungrounded','grounding','grounded','failed')),
       groundingSources TEXT DEFAULT '[]',
+      jobId TEXT DEFAULT '',
+      sections TEXT DEFAULT '[]',
+      wordCount INTEGER DEFAULT 0,
+      groundingDocumentIds TEXT DEFAULT '[]',
+      groundingSourceUrls TEXT DEFAULT '[]',
+      notes TEXT DEFAULT '',
+      status TEXT DEFAULT 'draft',
+      qualityWarning INTEGER DEFAULT 0,
+      approvedAt TEXT DEFAULT '',
+      approvedBy TEXT DEFAULT '',
       createdAt TEXT NOT NULL DEFAULT (datetime('now')),
       createdBy TEXT DEFAULT 'agent'
     );
@@ -789,6 +811,7 @@ function ensureSchema(db: SqliteDatabase): void {
       id TEXT PRIMARY KEY,
       type TEXT NOT NULL DEFAULT 'research' CHECK(type IN ('research','draft','crawl','match','extract','peer-discovery','funder-insights','eligibility-vetting','budget-import','pattern-detection')),
       grantId TEXT DEFAULT NULL,
+      sourceId TEXT DEFAULT NULL,
       status TEXT NOT NULL DEFAULT 'queued' CHECK(status IN ('queued','running','verifying','retrying','completed','failed','cancelled')),
       retryCount INTEGER DEFAULT 0,
       maxRetries INTEGER DEFAULT 3,
@@ -799,6 +822,7 @@ function ensureSchema(db: SqliteDatabase): void {
       artifactPath TEXT DEFAULT '',
       errorMessage TEXT DEFAULT '',
       qualityWarning INTEGER DEFAULT 0,
+      params TEXT DEFAULT '{}',
       createdAt TEXT NOT NULL DEFAULT (datetime('now')),
       updatedAt TEXT NOT NULL DEFAULT (datetime('now'))
     );
