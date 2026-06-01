@@ -1,7 +1,8 @@
 # Technical Acceptance Criteria Inventory
 
 > Generated: 2026-05-31
-> Method: Systematic grep of codebase + test verification
+> Updated: 2026-06-01 (verified with in-session gate execution)
+> Method: Systematic grep of codebase + test verification + in-session CI gate re-execution
 
 ## Summary
 
@@ -86,8 +87,8 @@ All ACs implemented and tested:
 
 ### 8. Persistence & Backup (7 ACs) — PASS
 
-- **AC-8.1.1** to **AC-8.1.3**: WAL mode, integrity check, auto-backup before destructive ops — `db.ts`, `backup/route.ts`
-- **AC-8.2.1** to **AC-8.2.3**: Manual backup, restore with validation, settings view indicators — `backup/route.ts`, Settings view
+- **AC-8.1.1** to **AC-8.1.3**: WAL mode, integrity check, auto-backup before destructive ops — `shared/grant-ops-sqlite.ts`, `frontend/src/app/api/backup/route.ts`
+- **AC-8.2.1** to **AC-8.2.3**: Manual backup, restore with validation, settings view indicators — `frontend/src/app/api/backup/route.ts`, Settings view
 
 ### 9. Accessibility (9 ACs) — PASS
 
@@ -151,14 +152,14 @@ All ACs implemented and tested:
 ### 16. Technical Infrastructure (29 ACs) — PASS
 
 - **AC-16.1.1** to **AC-16.1.3**: API route validation with Zod — all routes use Zod schemas
-- **AC-16.2.1** to **AC-16.2.6**: Database PRAGMAs, integrity check, WAL checkpoint, schema creation, server-only imports, connection await — `db.ts`
+- **AC-16.2.1** to **AC-16.2.6**: Database PRAGMAs, integrity check, WAL checkpoint, schema creation, server-only imports, connection await — `shared/grant-ops-sqlite.ts`
 - **AC-16.3.1** to **AC-16.3.4**: FTS5 search — `grants_fts` table, search endpoint with bm25
-- **AC-16.4.1** to **AC-16.4.4**: Document upload with SHA-256, MIME validation, atomic writes, text extraction — `documents/route.ts`
+- **AC-16.4.1** to **AC-16.4.4**: Document upload with SHA-256, MIME validation, atomic writes, text extraction — `frontend/src/app/api/documents/route.ts`
 - **AC-16.5.1** to **AC-16.5.3**: Notification system — toast component, sidebar badge, timing verified (<5s) in `notification-service.test.ts`
-- **AC-16.6.1** to **AC-16.6.4**: Budget import parsing — `budget-import/route.ts`, `BudgetImportView.tsx`
+- **AC-16.6.1** to **AC-16.6.4**: Budget import parsing — `frontend/src/app/api/budget-import/route.ts`, `frontend/src/components/BudgetImportView.tsx`
 - **AC-16.7.1** & **AC-16.7.2**: Local access model — no passcode, localhost binding
 - **AC-16.8.1** to **AC-16.8.6**: Structured logging with pino — `logger.ts`; log viewer supports pagination and level filtering — `SettingsView.tsx`, `app/route.ts`, `error/route.ts`
-- **AC-16.9.1** to **AC-16.9.5**: Automated backup with adm-zip — `backup/route.ts`
+- **AC-16.9.1** to **AC-16.9.5**: Automated backup with adm-zip — `frontend/src/app/api/backup/route.ts`
 - **AC-16.10.1** to **AC-16.10.4**: Calendar iCal export — `calendar/export/route.ts`
 
 ## Release Gate Checklist
@@ -168,11 +169,11 @@ All ACs implemented and tested:
 | 1 | All 15 sections of AC verified | PASS | This inventory document |
 | 2 | Smoke test suite completed | N/A | Manual pre-release step |
 | 3 | Smoke test results documented | N/A | Manual pre-release step |
-| 4 | `pnpm typecheck` passes | PASS | `npx tsc --noEmit -p frontend/tsconfig.json` = 0 errors |
-| 5 | `pnpm lint` passes | PASS | `npx eslint . --ext .ts,.tsx` = 0 errors, 0 warnings |
-| 6 | `pnpm test` passes | PASS | 119+ test files, 949+ tests, 0 failures |
-| 7 | `pnpm test:e2e` passes | PASS | 17 spec files exist |
-| 8 | No dead code | PASS | `npx knip` = 0 unused exports (only config hints) |
+| 4 | `pnpm typecheck` passes | PASS | `npx tsc --noEmit -p frontend/tsconfig.json` = 0 errors (verified 2026-06-01) |
+| 5 | `pnpm lint` passes | PASS | `npx eslint . --ext .ts,.tsx` = 0 errors, 0 warnings (verified 2026-06-01) |
+| 6 | `pnpm test` passes | PASS | 127 test files, 1034 tests, 0 failures (verified 2026-06-01) |
+| 7 | `pnpm test:e2e` passes | SKIP | 17 spec files exist; server CSS compilation issue prevents in-session e2e execution (env limitation) |
+| 8 | No dead code | PASS | `npx knip` = {"issues":[]} exit code 0 (verified 2026-06-01) |
 | 9 | No `any` types | PASS | Strict mode enforced, zero `any` found |
 | 10 | No `@ts-ignore` / `@ts-expect-error` | PASS | Grep confirms zero matches |
 | 11 | API error responses follow contract | PASS | All routes use Zod validation with standard error shape |
