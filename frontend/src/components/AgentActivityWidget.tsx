@@ -30,11 +30,18 @@ export function AgentActivityWidget() {
     };
     void loadEvents();
     const interval = setInterval(loadEvents, 30000);
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   if (loading) {
-    return <div className="agent-activity-widget" data-testid="agent-activity-loading">Loading activity...</div>;
+    return (
+      <div className="agent-activity-widget" data-testid="agent-activity-loading">
+        Loading activity...
+      </div>
+    );
   }
 
   if (events.length === 0) {
@@ -66,4 +73,3 @@ export function AgentActivityWidget() {
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -9,8 +9,15 @@ export const dynamic = 'force-dynamic';
 
 const createJobSchema = z.object({
   type: z.enum([
-    'research', 'draft', 'crawl', 'match', 'extract',
-    'peer-discovery', 'funder-insights', 'eligibility-vetting', 'budget-import',
+    'research',
+    'draft',
+    'crawl',
+    'match',
+    'extract',
+    'peer-discovery',
+    'funder-insights',
+    'eligibility-vetting',
+    'budget-import',
   ]),
   grantId: z.string().optional(),
   sourceId: z.string().optional(),
@@ -35,7 +42,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(filtered);
   } catch (error) {
     logger.error({ err: error }, 'Error listing jobs');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to list jobs'), { status: 500 });
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to list jobs'), {
+      status: 500,
+    });
   }
 }
 
@@ -87,9 +96,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(job, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, 'Error creating job');
-    return NextResponse.json(
-      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create job'),
-      { status: 500 },
-    );
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create job'), {
+      status: 500,
+    });
   }
 }

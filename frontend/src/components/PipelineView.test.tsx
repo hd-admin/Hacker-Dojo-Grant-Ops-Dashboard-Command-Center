@@ -12,7 +12,7 @@ describe('PipelineView', () => {
     root.render(
       React.createElement(PipelineView, {
         onGrantSelect: () => {},
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(container.querySelector('[data-testid="pipeline-empty-state"]')).not.toBeNull();

@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/server/grant-ops/dependencies', () => ({
   getDependencies: vi.fn(),
-  setDependencies: vi.fn(), resetDependencies: vi.fn(), createDependencies: vi.fn(),
+  setDependencies: vi.fn(),
+  resetDependencies: vi.fn(),
+  createDependencies: vi.fn(),
 }));
 vi.mock('next/server', async () => {
   const actual = await vi.importActual<typeof import('next/server')>('next/server');
@@ -17,8 +19,12 @@ import { GET } from './route';
 import type { NextRequest, NextResponse } from 'next/server';
 
 describe('/api/awards/spenddown-alerts route', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns alerts for overspent categories', async () => {
     const mockCategories = [{ category: 'Staff', budgeted: 10000, spent: 12000 }];

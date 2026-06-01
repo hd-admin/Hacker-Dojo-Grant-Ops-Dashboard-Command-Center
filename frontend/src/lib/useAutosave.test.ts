@@ -90,7 +90,11 @@ describe('useAutosave', () => {
 
   it('saves after debounce delay and clears dirty state', async () => {
     const saveFn = vi.fn().mockResolvedValue(undefined);
-    const { getState, setValue, advanceTimersAndFlush, unmount } = renderAutosaveHook('hello', saveFn, { delayMs: 2000 });
+    const { getState, setValue, advanceTimersAndFlush, unmount } = renderAutosaveHook(
+      'hello',
+      saveFn,
+      { delayMs: 2000 },
+    );
 
     setValue('world');
     expect(getState().isDirty).toBe(true);
@@ -142,7 +146,11 @@ describe('useAutosave', () => {
     const saveFn = vi.fn().mockRejectedValue(error);
     const onError = vi.fn();
 
-    const { getState, setValue, advanceTimersAndFlush, unmount } = renderAutosaveHook('hello', saveFn, { delayMs: 100, onError });
+    const { getState, setValue, advanceTimersAndFlush, unmount } = renderAutosaveHook(
+      'hello',
+      saveFn,
+      { delayMs: 100, onError },
+    );
 
     setValue('world');
 
@@ -155,7 +163,11 @@ describe('useAutosave', () => {
 
   it('lastSaved is an ISO timestamp string after successful save', async () => {
     const saveFn = vi.fn().mockResolvedValue(undefined);
-    const { getState, setValue, advanceTimersAndFlush, unmount } = renderAutosaveHook('hello', saveFn, { delayMs: 10 });
+    const { getState, setValue, advanceTimersAndFlush, unmount } = renderAutosaveHook(
+      'hello',
+      saveFn,
+      { delayMs: 10 },
+    );
 
     setValue('world');
 

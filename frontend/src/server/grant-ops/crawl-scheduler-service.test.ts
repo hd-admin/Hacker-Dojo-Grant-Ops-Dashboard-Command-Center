@@ -4,21 +4,28 @@ import { saveCrawlSchedule, loadCrawlSchedules } from '../../../../shared/grant-
 import { defaultProfile } from '../../../../shared/seed-data';
 import * as repository from './repository';
 
-import { checkAndRunDue, disableScheduleForSource, getScheduleForSource, upsertScheduleForSource } from './crawl-scheduler-service';
+import {
+  checkAndRunDue,
+  disableScheduleForSource,
+  getScheduleForSource,
+  upsertScheduleForSource,
+} from './crawl-scheduler-service';
 
-const runResearchMock = vi.hoisted(() => vi.fn(async () => ({
-  crawlRun: {
-    id: 'crawl-1',
-    startedAt: new Date().toISOString(),
-    completedAt: new Date().toISOString(),
-    status: 'completed' as const,
-    sourcesCrawled: 1,
+const runResearchMock = vi.hoisted(() =>
+  vi.fn(async () => ({
+    crawlRun: {
+      id: 'crawl-1',
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+      status: 'completed' as const,
+      sourcesCrawled: 1,
+      grantsFound: 0,
+      grantsMatched: 0,
+    },
     grantsFound: 0,
     grantsMatched: 0,
-  },
-  grantsFound: 0,
-  grantsMatched: 0,
-})));
+  })),
+);
 
 vi.mock('./research-service', () => ({ runResearch: runResearchMock }));
 
@@ -55,7 +62,10 @@ describe('crawl-scheduler-service', () => {
     expect(schedule.sourceId).toBe('source-1');
     expect(schedule.intervalHours).toBe(12);
     expect(new Date(schedule.nextScheduledAt).getTime()).toBeGreaterThan(Date.now());
-    expect(await getScheduleForSource('source-1')).toMatchObject({ id: schedule.id, isEnabled: true });
+    expect(await getScheduleForSource('source-1')).toMatchObject({
+      id: schedule.id,
+      isEnabled: true,
+    });
   });
 
   it('triggers due schedules with the real research path and persists the rescheduled time', async () => {

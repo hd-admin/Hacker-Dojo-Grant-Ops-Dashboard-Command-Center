@@ -4,11 +4,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { Grant, Source } from '../../../shared/types';
 
-const {
-  mockGetAllGrants,
-  mockGetAllSources,
-  mockGetRuns,
-} = vi.hoisted(() => ({
+const { mockGetAllGrants, mockGetAllSources, mockGetRuns } = vi.hoisted(() => ({
   mockGetAllGrants: vi.fn(),
   mockGetAllSources: vi.fn(),
   mockGetRuns: vi.fn(),
@@ -22,6 +18,7 @@ vi.mock('../lib/grant-ops-client', () => ({
   },
 }));
 
+import { getByRole } from '../test-helpers';
 import { DiscoveryView } from './DiscoveryView';
 
 const mockGrants: Grant[] = [
@@ -116,7 +113,7 @@ describe('DiscoveryView', () => {
     root.render(
       React.createElement(DiscoveryView, {
         onGrantSelect: () => {},
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(container.querySelector('[data-testid="discovery-empty-state"]')).not.toBeNull();
@@ -136,7 +133,7 @@ describe('DiscoveryView', () => {
         onGrantSelect: () => {},
         grants: mockGrants,
         sources: mockSources,
-      })
+      }),
     );
     await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true);
     expect(container.textContent).toContain('NSF STEM Education Grant');
@@ -159,7 +156,7 @@ describe('DiscoveryView', () => {
         onGrantSelect: () => {},
         grants: mockGrants,
         sources: mockSources,
-      })
+      }),
     );
     await waitFor(() => container.textContent?.includes('3 grants') === true);
 
@@ -177,8 +174,6 @@ describe('DiscoveryView', () => {
     container.remove();
   });
 
-
-
   it('shows filter empty state when no grants match', { timeout: 10000 }, async () => {
     mockGetAllGrants.mockResolvedValue(mockGrants);
     mockGetAllSources.mockResolvedValue(mockSources);
@@ -190,7 +185,7 @@ describe('DiscoveryView', () => {
         onGrantSelect: () => {},
         grants: mockGrants,
         sources: mockSources,
-      })
+      }),
     );
     await waitFor(() => container.textContent?.includes('3 grants') === true);
 
@@ -200,7 +195,10 @@ describe('DiscoveryView', () => {
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
     searchInput.dispatchEvent(new Event('change', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('[data-testid="discovery-filter-empty-state"]') !== null, 5000);
+    await waitFor(
+      () => container.querySelector('[data-testid="discovery-filter-empty-state"]') !== null,
+      5000,
+    );
     expect(container.querySelector('[data-testid="discovery-filter-empty-state"]')).not.toBeNull();
     root.unmount();
     container.remove();
@@ -217,16 +215,18 @@ describe('DiscoveryView', () => {
         onGrantSelect: () => {},
         grants: mockGrants,
         sources: mockSources,
-      })
+      }),
     );
     await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true);
 
-    const funderLink = container.querySelector('[aria-label="View funder details for National Science Foundation"]');
+    const funderLink = container.querySelector(
+      '[aria-label="View funder details for National Science Foundation"]',
+    );
     expect(funderLink).not.toBeNull();
     funderLink?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     await waitFor(() => container.querySelector('[data-testid="funder-detail-overlay"]') !== null);
-    expect(container.querySelector('[data-testid="funder-detail-overlay"]')).not.toBeNull();
+    expect(getByRole(container, 'dialog', { name: /Funder details/ })).not.toBeNull();
     expect(container.querySelector('[data-testid="funder-detail"]')).not.toBeNull();
     root.unmount();
     container.remove();
@@ -243,11 +243,13 @@ describe('DiscoveryView', () => {
         onGrantSelect: () => {},
         grants: mockGrants,
         sources: mockSources,
-      })
+      }),
     );
     await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true);
 
-    const funderLink = container.querySelector('[aria-label="View funder details for National Science Foundation"]');
+    const funderLink = container.querySelector(
+      '[aria-label="View funder details for National Science Foundation"]',
+    );
     funderLink?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(() => container.querySelector('[data-testid="funder-detail-overlay"]') !== null);
 

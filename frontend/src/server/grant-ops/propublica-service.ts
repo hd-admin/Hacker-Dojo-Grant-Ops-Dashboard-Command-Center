@@ -98,9 +98,7 @@ function parseProPublicaOutput(rawOutput: string): Grant[] {
     if (parsed && typeof parsed === 'object' && Array.isArray(parsed.grants)) {
       return parsed.grants.filter(
         (item: unknown): item is Grant =>
-          typeof item === 'object' &&
-          item !== null &&
-          typeof (item as Grant).title === 'string',
+          typeof item === 'object' && item !== null && typeof (item as Grant).title === 'string',
       );
     }
     return [];
@@ -129,9 +127,7 @@ function parseProPublicaOutput(rawOutput: string): Grant[] {
           if (Array.isArray(parsed)) {
             return parsed.filter(
               (item): item is Grant =>
-                typeof item === 'object' &&
-                item !== null &&
-                typeof item.title === 'string',
+                typeof item === 'object' && item !== null && typeof item.title === 'string',
             );
           }
         }
@@ -172,11 +168,15 @@ export async function fetchProPublicaGrants(
 
     // Use PATH-found binary
     try {
-      const output = execFileSync(binaryPath, ['run', '--format', 'json', buildProPublicaPrompt(query)], {
-        cwd: settings?.workingDirectory || process.cwd(),
-        timeout: settings?.timeoutMs || 60000,
-        encoding: 'utf8',
-      });
+      const output = execFileSync(
+        binaryPath,
+        ['run', '--format', 'json', buildProPublicaPrompt(query)],
+        {
+          cwd: settings?.workingDirectory || process.cwd(),
+          timeout: settings?.timeoutMs || 60000,
+          encoding: 'utf8',
+        },
+      );
 
       const grants = parseProPublicaOutput(String(output));
       return { grants };
@@ -191,16 +191,21 @@ export async function fetchProPublicaGrants(
   }
 
   try {
-    const output = execFileSync(settings.binaryPath, ['run', '--format', 'json', buildProPublicaPrompt(query)], {
-      cwd: settings.workingDirectory || process.cwd(),
-      timeout: settings.timeoutMs || 60000,
-      encoding: 'utf8',
-    });
+    const output = execFileSync(
+      settings.binaryPath,
+      ['run', '--format', 'json', buildProPublicaPrompt(query)],
+      {
+        cwd: settings.workingDirectory || process.cwd(),
+        timeout: settings.timeoutMs || 60000,
+        encoding: 'utf8',
+      },
+    );
 
     const grants = parseProPublicaOutput(String(output));
     return { grants };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error while fetching ProPublica grants';
+    const message =
+      error instanceof Error ? error.message : 'Unknown error while fetching ProPublica grants';
     if (/not configured|binary not found|enoent|no such file/i.test(message)) {
       return { grants: [], unavailable: true };
     }
@@ -218,9 +223,7 @@ export async function ensureProPublicaSourceRegistered(
   deps: Dependencies = getDependencies(),
 ): Promise<void> {
   const existingSources = await deps.repository.getSources();
-  const alreadyRegistered = existingSources.some(
-    (s) => s.name === PROPUBLICA_SOURCE_NAME,
-  );
+  const alreadyRegistered = existingSources.some((s) => s.name === PROPUBLICA_SOURCE_NAME);
 
   if (alreadyRegistered) {
     return;

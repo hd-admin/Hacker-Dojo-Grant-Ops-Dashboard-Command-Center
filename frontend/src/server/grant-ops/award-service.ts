@@ -74,12 +74,12 @@ async function _getAwards(): Promise<Award[]> {
 
 async function getAward(awardId: string): Promise<Award | null> {
   const awards = await loadAwards();
-  return awards.find(a => a.id === awardId) || null;
+  return awards.find((a) => a.id === awardId) || null;
 }
 
 async function _updateAward(awardId: string, updates: Partial<Award>): Promise<Award | null> {
   const awards = await loadAwards();
-  const index = awards.findIndex(a => a.id === awardId);
+  const index = awards.findIndex((a) => a.id === awardId);
   if (index === -1) return null;
   awards[index] = { ...awards[index], ...updates, updatedAt: new Date().toISOString() } as Award;
   await saveAwards(awards);
@@ -110,7 +110,7 @@ export async function createBudgetCategory(
 
 async function getBudgetCategories(awardId: string): Promise<AwardBudgetCategory[]> {
   const categories = await loadAwardBudgetCategories();
-  return categories.filter(c => c.awardId === awardId);
+  return categories.filter((c) => c.awardId === awardId);
 }
 
 export async function addExpense(
@@ -137,7 +137,7 @@ export async function addExpense(
   await saveAwardExpenses(expenses);
 
   const categories = await loadAwardBudgetCategories();
-  const catIndex = categories.findIndex(c => c.id === categoryId);
+  const catIndex = categories.findIndex((c) => c.id === categoryId);
   if (catIndex !== -1) {
     categories[catIndex]!.spent += amount;
     await saveAwardBudgetCategories(categories);
@@ -191,7 +191,7 @@ export async function addReportDeadline(
 
 async function _getReportDeadlines(awardId: string): Promise<AwardReportDeadline[]> {
   const deadlines = await loadAwardReportDeadlines();
-  return deadlines.filter(d => d.awardId === awardId);
+  return deadlines.filter((d) => d.awardId === awardId);
 }
 
 export async function addComplianceItem(
@@ -216,10 +216,12 @@ export async function addComplianceItem(
 
 async function _getComplianceItems(awardId: string): Promise<AwardComplianceItem[]> {
   const items = await loadAwardComplianceItems();
-  return items.filter(c => c.awardId === awardId);
+  return items.filter((c) => c.awardId === awardId);
 }
 
-async function _getSpendDownAlerts(): Promise<{ awardId: string; type: 'under' | 'over'; category: string }[]> {
+async function _getSpendDownAlerts(): Promise<
+  { awardId: string; type: 'under' | 'over'; category: string }[]
+> {
   const alerts: { awardId: string; type: 'under' | 'over'; category: string }[] = [];
 
   const awards = await loadAwards();
@@ -228,11 +230,14 @@ async function _getSpendDownAlerts(): Promise<{ awardId: string; type: 'under' |
   for (const award of awards) {
     if (award.status !== 'active') continue;
 
-    const awardCats = categories.filter(c => c.awardId === award.id);
+    const awardCats = categories.filter((c) => c.awardId === award.id);
     const now = new Date();
     const start = new Date(award.startDate);
     const end = new Date(award.endDate);
-    const periodProgress = Math.min(1, Math.max(0, (now.getTime() - start.getTime()) / (end.getTime() - start.getTime())));
+    const periodProgress = Math.min(
+      1,
+      Math.max(0, (now.getTime() - start.getTime()) / (end.getTime() - start.getTime())),
+    );
 
     for (const cat of awardCats) {
       if (cat.budgeted <= 0) continue;
@@ -262,22 +267,30 @@ interface BudgetVsActualRow {
 
 export async function computeBudgetVsActual(awardId: string): Promise<BudgetVsActualRow[]> {
   const categories = await getBudgetCategories(awardId);
-  const expenses = (await loadAwardExpenses()).filter(e => e.awardId === awardId);
-  const planned = (await loadPlannedExpenses()).filter(p => p.awardId === awardId);
+  const expenses = (await loadAwardExpenses()).filter((e) => e.awardId === awardId);
+  const planned = (await loadPlannedExpenses()).filter((p) => p.awardId === awardId);
   const award = await getAward(awardId);
   if (!award) return [];
 
   const now = new Date();
   const start = new Date(award.startDate);
   const end = new Date(award.endDate);
-  const periodProgress = Math.min(1, Math.max(0, (now.getTime() - start.getTime()) / (end.getTime() - start.getTime())));
+  const periodProgress = Math.min(
+    1,
+    Math.max(0, (now.getTime() - start.getTime()) / (end.getTime() - start.getTime())),
+  );
 
   return categories.map((cat) => {
-    const catExpenses = expenses.filter((e) => e.categoryId === cat.id).reduce((sum, e) => sum + e.amount, 0);
-    const catPlanned = planned.filter((p) => p.categoryId === cat.id).reduce((sum, p) => sum + p.amount, 0);
+    const catExpenses = expenses
+      .filter((e) => e.categoryId === cat.id)
+      .reduce((sum, e) => sum + e.amount, 0);
+    const catPlanned = planned
+      .filter((p) => p.categoryId === cat.id)
+      .reduce((sum, p) => sum + p.amount, 0);
     const timelineAdjustedTarget = cat.budgeted * periodProgress;
     const variance = catExpenses - timelineAdjustedTarget;
-    const variancePct = timelineAdjustedTarget > 0 ? Math.abs(variance) / timelineAdjustedTarget : 0;
+    const variancePct =
+      timelineAdjustedTarget > 0 ? Math.abs(variance) / timelineAdjustedTarget : 0;
 
     let status: 'green' | 'yellow' | 'red';
     if (variancePct <= 0.1) {

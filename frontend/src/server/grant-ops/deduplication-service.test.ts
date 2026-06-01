@@ -6,17 +6,27 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import {
-  detectDuplicates,
-} from './deduplication-service';
+import { detectDuplicates } from './deduplication-service';
 import type { Grant } from '../../../../shared/types';
 
 // Re-create computeTitleSimilarity inline for direct testing (it's not exported)
 function computeTitleSimilarity(title1: string, title2: string): number {
   const normalize = (input: string): string =>
-    input.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
-  const tokens1 = new Set(normalize(title1).split(' ').filter((t) => t.length > 1));
-  const tokens2 = new Set(normalize(title2).split(' ').filter((t) => t.length > 1));
+    input
+      .toLowerCase()
+      .replace(/[^\w\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  const tokens1 = new Set(
+    normalize(title1)
+      .split(' ')
+      .filter((t) => t.length > 1),
+  );
+  const tokens2 = new Set(
+    normalize(title2)
+      .split(' ')
+      .filter((t) => t.length > 1),
+  );
   if (tokens1.size === 0 || tokens2.size === 0) return 0;
   const intersection = new Set([...tokens1].filter((t) => tokens2.has(t)));
   const union = new Set([...tokens1, ...tokens2]);
@@ -155,7 +165,7 @@ describe('Deduplication Service', () => {
     });
 
     it('handles punctuation and case differences', () => {
-      const sim = computeTitleSimilarity("NSF Grant, EdTech!", "nsf grant edtech");
+      const sim = computeTitleSimilarity('NSF Grant, EdTech!', 'nsf grant edtech');
       // After normalization: ['nsf', 'grant', 'edtech'] vs ['nsf', 'grant', 'edtech']
       expect(sim).toBe(1.0);
     });

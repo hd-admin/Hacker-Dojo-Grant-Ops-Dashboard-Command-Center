@@ -20,14 +20,18 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const awardId = searchParams.get('awardId');
     if (!awardId) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'awardId is required'), { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'awardId is required'), {
+        status: 400,
+      });
     }
     const deps = getDependencies();
-    const expenses = await deps.repository.getExpensesByAwardId?.(awardId) ?? [];
+    const expenses = (await deps.repository.getExpensesByAwardId?.(awardId)) ?? [];
     return NextResponse.json({ expenses });
   } catch (error) {
     logger.error({ err: error }, 'Error getting expenses');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get expenses'), { status: 500 });
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get expenses'), {
+      status: 500,
+    });
   }
 }
 
@@ -37,7 +41,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const parsed = expenseSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid expense payload', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid expense payload', details: parsed.error.format() },
+        { status: 400 },
+      );
     }
     const deps = getDependencies();
     const expense = {
@@ -49,6 +56,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ expense }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, 'Error creating expense');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create expense'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create expense'),
+      { status: 500 },
+    );
   }
 }

@@ -2,19 +2,31 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import type { CrawlRun, Grant, Notification, OrganizationProfile, Task } from '../../../shared/types';
+import type {
+  CrawlRun,
+  Grant,
+  Notification,
+  OrganizationProfile,
+  Task,
+} from '../../../shared/types';
 
-const { grantsGetAll, profileGet, notificationsGetAll, tasksGetAll, sourcesGetAll, researchGetRuns, duplicatesGetAll } = vi.hoisted(
-  () => ({
-    grantsGetAll: vi.fn(),
-    profileGet: vi.fn(),
-    notificationsGetAll: vi.fn(),
-    tasksGetAll: vi.fn(),
-    sourcesGetAll: vi.fn(),
-    researchGetRuns: vi.fn(),
-    duplicatesGetAll: vi.fn().mockResolvedValue([]),
-  }),
-);
+const {
+  grantsGetAll,
+  profileGet,
+  notificationsGetAll,
+  tasksGetAll,
+  sourcesGetAll,
+  researchGetRuns,
+  duplicatesGetAll,
+} = vi.hoisted(() => ({
+  grantsGetAll: vi.fn(),
+  profileGet: vi.fn(),
+  notificationsGetAll: vi.fn(),
+  tasksGetAll: vi.fn(),
+  sourcesGetAll: vi.fn(),
+  researchGetRuns: vi.fn(),
+  duplicatesGetAll: vi.fn().mockResolvedValue([]),
+}));
 
 vi.mock('../lib/grant-ops-client', () => ({
   client: {
@@ -25,12 +37,39 @@ vi.mock('../lib/grant-ops-client', () => ({
     sources: { getAll: sourcesGetAll },
     research: { getRuns: researchGetRuns },
     duplicates: { getAll: duplicatesGetAll },
-    opencodeSettings: { get: vi.fn().mockResolvedValue({ binaryPath: '', workingDirectory: '', timeoutMs: 60000, isConfigured: false }), update: vi.fn().mockResolvedValue({ success: true }) },
-    documents: { getAll: vi.fn().mockResolvedValue([]), create: vi.fn().mockResolvedValue({ id: 'doc-1', name: 'test' }) },
-    backup: { getFreshness: vi.fn().mockResolvedValue({ lastBackupAt: null, isStale: false }), exportBackup: vi.fn().mockResolvedValue({ version: '1.0', createdAt: '' }), restore: vi.fn().mockResolvedValue({ success: true }) },
+    opencodeSettings: {
+      get: vi.fn().mockResolvedValue({
+        binaryPath: '',
+        workingDirectory: '',
+        timeoutMs: 60000,
+        isConfigured: false,
+      }),
+      update: vi.fn().mockResolvedValue({ success: true }),
+    },
+    documents: {
+      getAll: vi.fn().mockResolvedValue([]),
+      create: vi.fn().mockResolvedValue({ id: 'doc-1', name: 'test' }),
+    },
+    backup: {
+      getFreshness: vi.fn().mockResolvedValue({ lastBackupAt: null, isStale: false }),
+      exportBackup: vi.fn().mockResolvedValue({ version: '1.0', createdAt: '' }),
+      restore: vi.fn().mockResolvedValue({ success: true }),
+    },
     themes: {
-      get: vi.fn().mockResolvedValue({ keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] }),
-      update: vi.fn().mockResolvedValue({ keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] }),
+      get: vi.fn().mockResolvedValue({
+        keywordClusters: [],
+        themes: [],
+        regions: [],
+        populations: [],
+        strategicPriorities: [],
+      }),
+      update: vi.fn().mockResolvedValue({
+        keywordClusters: [],
+        themes: [],
+        regions: [],
+        populations: [],
+        strategicPriorities: [],
+      }),
       rescore: vi.fn().mockResolvedValue({ success: true, rescored: 0 }),
     },
   },
@@ -78,7 +117,7 @@ vi.mock('./SourcesView', () => ({
   ),
 }));
 
-vi.mock("./PipelineView", () => ({ PipelineView: () => <div>pipeline</div> }));
+vi.mock('./PipelineView', () => ({ PipelineView: () => <div>pipeline</div> }));
 vi.mock('./SettingsView', () => ({
   SettingsView: ({ onRefreshAppState }: { onRefreshAppState?: () => Promise<void> | void }) => (
     <button type="button" onClick={() => onRefreshAppState?.()}>
@@ -105,7 +144,13 @@ vi.mock('./ToastProvider', () => ({
   useToast: () => ({ addToast: mockAddToast, removeToast: vi.fn(), toasts: [] }),
 }));
 vi.mock('./GrantDrawer', () => ({
-  GrantDrawer: ({ grantId, onRefreshAppState }: { grantId: string | null; onRefreshAppState?: () => Promise<void> | void }) =>
+  GrantDrawer: ({
+    grantId,
+    onRefreshAppState,
+  }: {
+    grantId: string | null;
+    onRefreshAppState?: () => Promise<void> | void;
+  }) =>
     grantId ? (
       <div>
         <button type="button" onClick={() => onRefreshAppState?.()}>
@@ -116,8 +161,8 @@ vi.mock('./GrantDrawer', () => ({
     ) : null,
 }));
 
+import { getByRole } from '../test-helpers';
 import { AppShell } from './AppShell';
-
 
 const initialGrants: Grant[] = [
   {
@@ -161,7 +206,8 @@ const profile: OrganizationProfile = {
   ein: '26-3375350',
   samUEI: 'XK7N4HQ2P3M9',
   nonprofitStatus: '501(c)(3)',
-  yearFounded: 2009,contactInfo: {},
+  yearFounded: 2009,
+  contactInfo: {},
   geography: 'Regional',
   mission: 'Community innovation and education',
   programAreas: ['STEM'],
@@ -169,7 +215,8 @@ const profile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  boardMembers: [],docTypes: ['PDF'],
+  boardMembers: [],
+  docTypes: ['PDF'],
   searchThemes: ['EdTech'],
   agentBehavior: {
     autoDraftThreshold: 75,
@@ -179,7 +226,9 @@ const profile: OrganizationProfile = {
   },
 };
 
-const notifications: Notification[] = [{ id: 'n1', text: 'New grant matched', time: '1h ago', dot: 'blue' }];
+const notifications: Notification[] = [
+  { id: 'n1', text: 'New grant matched', time: '1h ago', dot: 'blue' },
+];
 const tasks: Task[] = [{ id: 't1', text: 'Review uploaded PDF', completed: false }];
 const initialRun: CrawlRun = {
   id: 'run-1',
@@ -248,16 +297,21 @@ beforeEach(() => {
   fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const url = typeof input === 'string' ? input : input.toString();
     if (url === '/api/health') {
-      return new Response(JSON.stringify({
-        storage: 'ok',
-        opencode: 'ok',
-        opencodeVersion: '1.0.0',
-        crawlerStatus: 'ok',
-        documentIndexer: 'ok',
-      }), { headers: { 'content-type': 'application/json' } });
+      return new Response(
+        JSON.stringify({
+          storage: 'ok',
+          opencode: 'ok',
+          opencodeVersion: '1.0.0',
+          crawlerStatus: 'ok',
+          documentIndexer: 'ok',
+        }),
+        { headers: { 'content-type': 'application/json' } },
+      );
     }
     if (url === '/api/crawl/scheduled?trigger=true') {
-      return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify({ triggered: 0 }), {
+        headers: { 'content-type': 'application/json' },
+      });
     }
     return new Response(JSON.stringify({}), { headers: { 'content-type': 'application/json' } });
   });
@@ -286,22 +340,30 @@ afterEach(() => {
 describe('AppShell rendering', () => {
   it('passes backend notifications to DashboardView after refreshAppState resolves', async () => {
     root.render(React.createElement(AppShell));
-    await waitFor(() => capturedDashboardNotifications !== undefined && capturedDashboardNotifications.length > 0);
+    await waitFor(
+      () =>
+        capturedDashboardNotifications !== undefined && capturedDashboardNotifications.length > 0,
+    );
     expect(capturedDashboardNotifications).toEqual(notifications);
   });
 
   it('preserves recentDraftId in the stored working context', async () => {
-    window.localStorage.setItem('grantops.workingContext', JSON.stringify({
-      activeView: 'dashboard',
-      selectedGrantId: null,
-      recentGrantIds: [],
-      recentDraftId: 'draft-99',
-    }));
+    window.localStorage.setItem(
+      'grantops.workingContext',
+      JSON.stringify({
+        activeView: 'dashboard',
+        selectedGrantId: null,
+        recentGrantIds: [],
+        recentDraftId: 'draft-99',
+      }),
+    );
 
     root.render(React.createElement(AppShell));
     await waitFor(() => window.localStorage.getItem('grantops.workingContext') !== null);
 
-    const context = JSON.parse(window.localStorage.getItem('grantops.workingContext') ?? '{}') as { recentDraftId?: string };
+    const context = JSON.parse(window.localStorage.getItem('grantops.workingContext') ?? '{}') as {
+      recentDraftId?: string;
+    };
     expect(context.recentDraftId).toBe('draft-99');
   });
 
@@ -312,17 +374,27 @@ describe('AppShell rendering', () => {
     const duplicatesNav = container.querySelector('.nav-item[data-view="duplicates"]');
     expect(duplicatesNav).not.toBeNull();
     expect(duplicatesNav?.textContent).toContain('Duplicates');
-    const sidebar = container.querySelector('aside[aria-label="Main navigation"]');
+    const sidebar = getByRole(container, 'complementary', { name: 'Main navigation' });
     expect(sidebar).not.toBeNull();
   });
 
   it('shows pending duplicates count badge when duplicates exist', async () => {
     duplicatesGetAll.mockResolvedValue([
-      { id: 'dup-1', grantId1: 'grant-1', grantId2: 'grant-2', confidenceScore: 0.9, status: 'pending', detectedAt: new Date().toISOString(), conflictingFields: ['title'] },
+      {
+        id: 'dup-1',
+        grantId1: 'grant-1',
+        grantId2: 'grant-2',
+        confidenceScore: 0.9,
+        status: 'pending',
+        detectedAt: new Date().toISOString(),
+        conflictingFields: ['title'],
+      },
     ]);
 
     root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"] .nav-count') !== null);
+    await waitFor(
+      () => container.querySelector('.nav-item[data-view="duplicates"] .nav-count') !== null,
+    );
 
     const badge = container.querySelector('.nav-item[data-view="duplicates"] .nav-count');
     expect(badge?.textContent).toBe('1');
@@ -342,34 +414,46 @@ describe('AppShell rendering', () => {
 
   it('refreshes shell-owned badges and footer state when child views mutate state', async () => {
     root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent === '1');
+    await waitFor(
+      () =>
+        container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent === '1',
+    );
 
     expect(fetchMock).toHaveBeenCalledWith('/api/crawl/scheduled?trigger=true');
-    expect(container.querySelector('.nav-item[data-view="settings"]')?.textContent).toContain('Settings');
-    expect(container.querySelector('.nav-item[data-view="notifications"] .nav-count')?.textContent).toBe('1');
+    expect(container.querySelector('.nav-item[data-view="settings"]')?.textContent).toContain(
+      'Settings',
+    );
+    expect(
+      container.querySelector('.nav-item[data-view="notifications"] .nav-count')?.textContent,
+    ).toBe('1');
     expect(container.textContent).toContain('Crawler offline');
     expect(container.textContent).toContain('ed@hackerdojo.com');
 
-    Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('refresh discovery'),
-    )?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(() => container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent === '2');
+    Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('refresh discovery'))
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await waitFor(
+      () =>
+        container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent === '2',
+    );
 
     expect(researchGetRuns).toHaveBeenCalledTimes(2);
     expect(container.textContent).toContain('Crawler online');
 
-    Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('select grant'),
-    )?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('select grant'))
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(() => container.textContent?.includes('grant-1') === true);
 
-    Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('refresh drawer'),
-    )?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent?.includes('refresh drawer'))
+      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(() => grantsGetAll.mock.calls.length === 3);
 
     expect(researchGetRuns).toHaveBeenCalledTimes(3);
-    expect(container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent).toBe('2');
+    expect(
+      container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent,
+    ).toBe('2');
   });
 
   it('shows a toast when a job transitions to completed', async () => {
@@ -377,21 +461,36 @@ describe('AppShell rendering', () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url === '/api/health') {
-        return new Response(JSON.stringify({
-          storage: 'ok',
-          opencode: 'ok',
-          opencodeVersion: '1.0.0',
-          crawlerStatus: 'ok',
-          documentIndexer: 'ok',
-        }), { headers: { 'content-type': 'application/json' } });
+        return new Response(
+          JSON.stringify({
+            storage: 'ok',
+            opencode: 'ok',
+            opencodeVersion: '1.0.0',
+            crawlerStatus: 'ok',
+            documentIndexer: 'ok',
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
       }
       if (url === '/api/crawl/scheduled?trigger=true') {
-        return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+        return new Response(JSON.stringify({ triggered: 0 }), {
+          headers: { 'content-type': 'application/json' },
+        });
       }
       if (url === '/api/jobs') {
-        return new Response(JSON.stringify([
-          { id: 'job-1', jobType: 'research', status: jobStatus, progress: jobStatus === 'completed' ? 100 : 50, stage: jobStatus === 'completed' ? 'completed' : 'analyzing', createdAt: new Date().toISOString() },
-        ]), { headers: { 'content-type': 'application/json' } });
+        return new Response(
+          JSON.stringify([
+            {
+              id: 'job-1',
+              jobType: 'research',
+              status: jobStatus,
+              progress: jobStatus === 'completed' ? 100 : 50,
+              stage: jobStatus === 'completed' ? 'completed' : 'analyzing',
+              createdAt: new Date().toISOString(),
+            },
+          ]),
+          { headers: { 'content-type': 'application/json' } },
+        );
       }
       return new Response(JSON.stringify({}), { headers: { 'content-type': 'application/json' } });
     });
@@ -416,15 +515,20 @@ describe('AppShell error states', () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url === '/api/health') {
-        return new Response(JSON.stringify({
-          storage: 'error',
-          storageError: 'Disk unavailable',
-          opencode: 'ok',
-          crawlerStatus: 'never-run',
-          documentIndexer: 'ok',
-        }), { headers: { 'content-type': 'application/json' } });
+        return new Response(
+          JSON.stringify({
+            storage: 'error',
+            storageError: 'Disk unavailable',
+            opencode: 'ok',
+            crawlerStatus: 'never-run',
+            documentIndexer: 'ok',
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
       }
-      return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify({ triggered: 0 }), {
+        headers: { 'content-type': 'application/json' },
+      });
     });
 
     root.render(React.createElement(AppShell));
@@ -439,18 +543,25 @@ describe('AppShell error states', () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (url === '/api/health') {
-        return new Response(JSON.stringify({
-          storage: 'ok',
-          opencode: 'not-installed',
-          crawlerStatus: 'never-run',
-          documentIndexer: 'ok',
-        }), { headers: { 'content-type': 'application/json' } });
+        return new Response(
+          JSON.stringify({
+            storage: 'ok',
+            opencode: 'not-installed',
+            crawlerStatus: 'never-run',
+            documentIndexer: 'ok',
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
       }
-      return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+      return new Response(JSON.stringify({ triggered: 0 }), {
+        headers: { 'content-type': 'application/json' },
+      });
     });
 
     root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null,
+    );
 
     expect(container.querySelector('[data-testid="opencode-degraded-banner"]')).not.toBeNull();
   });
@@ -458,13 +569,30 @@ describe('AppShell error states', () => {
   it('Discovery and Sources nav items are not disabled in degraded mode', async () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
-      if (url === '/api/health') return new Response(JSON.stringify({ storage: 'ok', opencode: 'not-installed', crawlerStatus: 'never-run', documentIndexer: 'ok' }), { headers: { 'content-type': 'application/json' } });
-      return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+      if (url === '/api/health')
+        return new Response(
+          JSON.stringify({
+            storage: 'ok',
+            opencode: 'not-installed',
+            crawlerStatus: 'never-run',
+            documentIndexer: 'ok',
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
+      return new Response(JSON.stringify({ triggered: 0 }), {
+        headers: { 'content-type': 'application/json' },
+      });
     });
     root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null);
-    const discoveryBtn = container.querySelector('button.nav-item[data-view="discovery"]') as HTMLButtonElement | null;
-    const sourcesBtn = container.querySelector('button.nav-item[data-view="sources"]') as HTMLButtonElement | null;
+    await waitFor(
+      () => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null,
+    );
+    const discoveryBtn = container.querySelector(
+      'button.nav-item[data-view="discovery"]',
+    ) as HTMLButtonElement | null;
+    const sourcesBtn = container.querySelector(
+      'button.nav-item[data-view="sources"]',
+    ) as HTMLButtonElement | null;
     expect(discoveryBtn?.disabled).toBe(false);
     expect(sourcesBtn?.disabled).toBe(false);
   });
@@ -472,15 +600,32 @@ describe('AppShell error states', () => {
   it('DiscoveryView renders in degraded mode rather than being replaced by a blocking banner', async () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
-      if (url === '/api/health') return new Response(JSON.stringify({ storage: 'ok', opencode: 'not-installed', crawlerStatus: 'never-run', documentIndexer: 'ok' }), { headers: { 'content-type': 'application/json' } });
-      return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+      if (url === '/api/health')
+        return new Response(
+          JSON.stringify({
+            storage: 'ok',
+            opencode: 'not-installed',
+            crawlerStatus: 'never-run',
+            documentIndexer: 'ok',
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
+      return new Response(JSON.stringify({ triggered: 0 }), {
+        headers: { 'content-type': 'application/json' },
+      });
     });
     root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null,
+    );
     const discoveryBtn = container.querySelector('button.nav-item[data-view="discovery"]');
     discoveryBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(() => container.querySelector('#view-discovery')?.classList.contains('active') === true);
-    const refreshBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes('refresh discovery'));
+    await waitFor(
+      () => container.querySelector('#view-discovery')?.classList.contains('active') === true,
+    );
+    const refreshBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('refresh discovery'),
+    );
     expect(refreshBtn).not.toBeNull();
   });
 });
@@ -490,10 +635,14 @@ describe('AppShell navigation', () => {
     root.render(React.createElement(AppShell));
     await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"]') !== null);
 
-    const duplicatesNav = container.querySelector('.nav-item[data-view="duplicates"]') as HTMLElement;
+    const duplicatesNav = container.querySelector(
+      '.nav-item[data-view="duplicates"]',
+    ) as HTMLElement;
     duplicatesNav?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('#view-duplicates')?.classList.contains('active') === true);
+    await waitFor(
+      () => container.querySelector('#view-duplicates')?.classList.contains('active') === true,
+    );
     expect(container.querySelector('#view-duplicates.active')).not.toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -8,17 +8,25 @@ import { executeQueuedJob } from '@/server/grant-ops/job-queue-service';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(_request: NextRequest, { params }: { params: Promise<{ jobId: string }> }) {
+export async function POST(
+  _request: NextRequest,
+  { params }: { params: Promise<{ jobId: string }> },
+) {
   await connection();
   try {
     const { jobId } = await params;
     const deps = getDependencies();
     const existing = await deps.repository.getJobQueueItem(jobId);
     if (!existing) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Job not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Job not found'), {
+        status: 404,
+      });
     }
     if (existing.status !== 'failed') {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Only failed jobs can be retried'), { status: 400 });
+      return NextResponse.json(
+        createErrorResponse('AGENT_INVALID_JSON', 'Only failed jobs can be retried'),
+        { status: 400 },
+      );
     }
 
     const newJobId = deps.idGenerator.generateId('job');
@@ -63,14 +71,10 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
       }
       const revisionRequests = await draftingService.getRevisionRequests(grant.id);
       const latestRevisionNotes = revisionRequests.at(-1)?.notes ?? '';
-      const draft = await draftingService.generateDraft(
-        grant,
-        profile,
-        {
-          ...(latestRevisionNotes ? { revisionNotes: latestRevisionNotes } : {}),
-          _jobId: newJobId,
-        },
-      );
+      const draft = await draftingService.generateDraft(grant, profile, {
+        ...(latestRevisionNotes ? { revisionNotes: latestRevisionNotes } : {}),
+        _jobId: newJobId,
+      });
       return `Draft v${draft.version} generated for ${grant.title}`;
     }).catch((error) => {
       logger.error({ err: error }, 'Retry execution failed');
@@ -79,6 +83,8 @@ export async function POST(_request: NextRequest, { params }: { params: Promise<
     return NextResponse.json({ success: true, newJobId }, { status: 202 });
   } catch (error) {
     logger.error({ err: error }, 'Error retrying job');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to retry job'), { status: 500 });
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to retry job'), {
+      status: 500,
+    });
   }
 }

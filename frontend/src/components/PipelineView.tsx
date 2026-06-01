@@ -1,14 +1,38 @@
-"use client";
+'use client';
 
-import React from "react";
-import { useEffect, useMemo, useState } from "react";
-import type { Grant, GrantStatus, PipelineViewMode, ResponsibilityTag } from "../../../shared/types";
-import { client } from "../lib/grant-ops-client";
-import styles from "./PipelineView.module.css";
+import React from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import type {
+  Grant,
+  GrantStatus,
+  PipelineViewMode,
+  ResponsibilityTag,
+} from '../../../shared/types';
+import { client } from '../lib/grant-ops-client';
+import styles from './PipelineView.module.css';
 
-type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'sources' | 'settings' | 'notifications' | 'tasks';
+type ViewType =
+  | 'dashboard'
+  | 'discovery'
+  | 'pipeline'
+  | 'sources'
+  | 'settings'
+  | 'notifications'
+  | 'tasks';
 
-type StatusFilter = 'All' | 'Matched' | 'Drafting' | 'Review' | 'Approved' | 'Submission Ready' | 'Submitted' | 'Follow-up' | 'Awarded' | 'Declined' | 'Closed' | 'Archived';
+type StatusFilter =
+  | 'All'
+  | 'Matched'
+  | 'Drafting'
+  | 'Review'
+  | 'Approved'
+  | 'Submission Ready'
+  | 'Submitted'
+  | 'Follow-up'
+  | 'Awarded'
+  | 'Declined'
+  | 'Closed'
+  | 'Archived';
 type UrgencyFilter = 'all' | 'overdue' | 'soon' | 'normal';
 type FunderTypeFilter = 'all' | 'Foundation' | 'Government' | 'Corporate' | 'Community' | 'Other';
 
@@ -42,7 +66,9 @@ const WORKING_CONTEXT_KEY = 'grantops.workingContext';
 function getWorkingContextStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   const storage = window.localStorage;
-  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function' ? storage : null;
+  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function'
+    ? storage
+    : null;
 }
 
 function readWorkingContext(): Record<string, unknown> {
@@ -67,23 +93,64 @@ function formatDate(dateStr: string): string {
   const parts = dateStr.split('-');
   const month = parts[1] ?? '';
   const day = parts[2] ?? '';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}`;
 }
 
 function renderDeadlineCell(grant: Grant): React.ReactNode {
   const confidence = grant.deadlineConfidence;
   if (confidence === 'unknown') {
-    return <span className="deadline-confidence deadline-confidence-unknown" title="Deadline confidence is unknown">Deadline unknown</span>;
+    return (
+      <span
+        className="deadline-confidence deadline-confidence-unknown"
+        title="Deadline confidence is unknown"
+      >
+        Deadline unknown
+      </span>
+    );
   }
   if (confidence === 'rolling') {
-    return <span className="deadline-confidence deadline-confidence-rolling" title="Rolling deadline — no fixed cutoff">Rolling</span>;
+    return (
+      <span
+        className="deadline-confidence deadline-confidence-rolling"
+        title="Rolling deadline — no fixed cutoff"
+      >
+        Rolling
+      </span>
+    );
   }
   const dateStr = formatDate(grant.deadline);
   if (confidence === 'estimated') {
-    return <span className="deadline-confidence deadline-confidence-estimated" title="Estimated from source date range">~{dateStr}</span>;
+    return (
+      <span
+        className="deadline-confidence deadline-confidence-estimated"
+        title="Estimated from source date range"
+      >
+        ~{dateStr}
+      </span>
+    );
   }
-  return <span className="deadline-confidence deadline-confidence-exact" title="Exact deadline from source">{dateStr}</span>;
+  return (
+    <span
+      className="deadline-confidence deadline-confidence-exact"
+      title="Exact deadline from source"
+    >
+      {dateStr}
+    </span>
+  );
 }
 
 function getUrgency(grant: Grant): UrgencyFilter {
@@ -94,27 +161,45 @@ function getUrgency(grant: Grant): UrgencyFilter {
 
 function statusToLabel(status: GrantStatus): StatusFilter {
   switch (status) {
-    case 'matched': return 'Matched';
-    case 'draft': return 'Drafting';
-    case 'review': return 'Review';
-    case 'approved': return 'Approved';
-    case 'submission-ready': return 'Submission Ready';
-    case 'submitted': return 'Submitted';
-    case 'follow-up': return 'Follow-up';
-    case 'awarded': return 'Awarded';
-    case 'declined': return 'Declined';
-    case 'closed': return 'Closed';
-    case 'archived': return 'Archived';
-    default: return 'Matched';
+    case 'matched':
+      return 'Matched';
+    case 'draft':
+      return 'Drafting';
+    case 'review':
+      return 'Review';
+    case 'approved':
+      return 'Approved';
+    case 'submission-ready':
+      return 'Submission Ready';
+    case 'submitted':
+      return 'Submitted';
+    case 'follow-up':
+      return 'Follow-up';
+    case 'awarded':
+      return 'Awarded';
+    case 'declined':
+      return 'Declined';
+    case 'closed':
+      return 'Closed';
+    case 'archived':
+      return 'Archived';
+    default:
+      return 'Matched';
   }
 }
 
-export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants = [] }: PipelineViewProps) {
+export function PipelineView({
+  onGrantSelect,
+  onNavigate,
+  grants: initialGrants = [],
+}: PipelineViewProps) {
   const [grants, setGrants] = useState<Grant[]>(initialGrants);
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState<PipelineViewMode>('board');
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('All');
-  const [responsibilityFilter, setResponsibilityFilter] = useState<ResponsibilityTag | 'all'>('all');
+  const [responsibilityFilter, setResponsibilityFilter] = useState<ResponsibilityTag | 'all'>(
+    'all',
+  );
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');
   const [funderTypeFilter, setFunderTypeFilter] = useState<FunderTypeFilter>('all');
   const [_error, setError] = useState<string | null>(null);
@@ -127,7 +212,9 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
     const context = readWorkingContext();
     setViewMode((context.pipelineViewMode as PipelineViewMode) ?? 'board');
     setStatusFilter((context.pipelineStatusFilter as StatusFilter) ?? 'All');
-    setResponsibilityFilter((context.pipelineResponsibilityFilter as ResponsibilityTag | 'all') ?? 'all');
+    setResponsibilityFilter(
+      (context.pipelineResponsibilityFilter as ResponsibilityTag | 'all') ?? 'all',
+    );
     setUrgencyFilter((context.pipelineUrgencyFilter as UrgencyFilter) ?? 'all');
     setFunderTypeFilter((context.pipelineFunderTypeFilter as FunderTypeFilter) ?? 'all');
   }, []);
@@ -239,7 +326,8 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
   const filteredGrants = useMemo(() => {
     return grants.filter((grant) => {
       const statusMatches = statusFilter === 'All' || statusToLabel(grant.status) === statusFilter;
-      const responsibilityMatches = responsibilityFilter === 'all' || grant.responsibilityTag === responsibilityFilter;
+      const responsibilityMatches =
+        responsibilityFilter === 'all' || grant.responsibilityTag === responsibilityFilter;
       const urgencyMatches = urgencyFilter === 'all' || getUrgency(grant) === urgencyFilter;
       const funderTypeMatches = funderTypeFilter === 'all' || grant.tags.includes(funderTypeFilter);
       return statusMatches && responsibilityMatches && urgencyMatches && funderTypeMatches;
@@ -269,27 +357,62 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
           <div className="header-sub">{filteredGrants.length} active grants</div>
         </div>
         <div className="header-actions">
-          <button type="button" data-testid="pipeline-view-mode-toggle" onClick={() => setViewMode((current) => current === 'board' ? 'list' : 'board')}>
+          <button
+            type="button"
+            data-testid="pipeline-view-mode-toggle"
+            onClick={() => setViewMode((current) => (current === 'board' ? 'list' : 'board'))}
+          >
             {viewMode === 'board' ? 'Switch to list' : 'Switch to board'}
           </button>
-          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+          >
             <option value="All">Filter: All</option>
-            {['Matched','Drafting','Review','Approved','Submission Ready','Submitted','Follow-up','Awarded','Declined','Closed','Archived'].map((label) => <option key={label} value={label}>{label}</option>)}
+            {[
+              'Matched',
+              'Drafting',
+              'Review',
+              'Approved',
+              'Submission Ready',
+              'Submitted',
+              'Follow-up',
+              'Awarded',
+              'Declined',
+              'Closed',
+              'Archived',
+            ].map((label) => (
+              <option key={label} value={label}>
+                {label}
+              </option>
+            ))}
           </select>
-          <select data-testid="pipeline-responsibility-filter" value={responsibilityFilter} onChange={(e) => setResponsibilityFilter(e.target.value as ResponsibilityTag | 'all')}>
+          <select
+            data-testid="pipeline-responsibility-filter"
+            value={responsibilityFilter}
+            onChange={(e) => setResponsibilityFilter(e.target.value as ResponsibilityTag | 'all')}
+          >
             <option value="all">All responsibilities</option>
             <option value="finance">Finance</option>
             <option value="program">Program</option>
             <option value="review">Review</option>
             <option value="follow-up">Follow-up</option>
           </select>
-          <select data-testid="pipeline-urgency-filter" value={urgencyFilter} onChange={(e) => setUrgencyFilter(e.target.value as UrgencyFilter)}>
+          <select
+            data-testid="pipeline-urgency-filter"
+            value={urgencyFilter}
+            onChange={(e) => setUrgencyFilter(e.target.value as UrgencyFilter)}
+          >
             <option value="all">All urgency</option>
             <option value="overdue">Overdue</option>
             <option value="soon">Soon</option>
             <option value="normal">Normal</option>
           </select>
-          <select data-testid="pipeline-funder-type-filter" value={funderTypeFilter} onChange={(e) => setFunderTypeFilter(e.target.value as FunderTypeFilter)}>
+          <select
+            data-testid="pipeline-funder-type-filter"
+            value={funderTypeFilter}
+            onChange={(e) => setFunderTypeFilter(e.target.value as FunderTypeFilter)}
+          >
             <option value="all">All funder types</option>
             <option value="Foundation">Foundation</option>
             <option value="Government">Government</option>
@@ -305,23 +428,41 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
           >
             Export CSV
           </button>
-          <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('discovery')}>+ Add to pipeline</button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => onNavigate?.('discovery')}
+          >
+            + Add to pipeline
+          </button>
         </div>
       </div>
 
       {grants.length === 0 && (
         <div className="empty-state-guide" data-testid="pipeline-empty-state">
-          <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F4CB)}</div>
+          <div className="empty-state-icon" aria-hidden="true">
+            {String.fromCodePoint(0x1f4cb)}
+          </div>
           <div className="empty-state-title">Your pipeline is empty</div>
           <div className="empty-state-description">
-            Grants move through your pipeline from discovery to submission.
-            Start by discovering grants in the Discovery view and add them to your pipeline.
+            Grants move through your pipeline from discovery to submission. Start by discovering
+            grants in the Discovery view and add them to your pipeline.
           </div>
           <div className="empty-state-actions">
-            <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('discovery')} aria-label="Go to discovery">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => onNavigate?.('discovery')}
+              aria-label="Go to discovery"
+            >
               Discover grants
             </button>
-            <button type="button" className="btn" onClick={() => onNavigate?.('sources')} aria-label="Manage sources">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => onNavigate?.('sources')}
+              aria-label="Manage sources"
+            >
               Manage sources
             </button>
           </div>
@@ -339,7 +480,12 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
             <div>Responsibility</div>
           </div>
           {filteredGrants.map((grant) => (
-            <button key={grant.id} type="button" className="pipeline-list-row" onClick={() => onGrantSelect(grant.id)}>
+            <button
+              key={grant.id}
+              type="button"
+              className="pipeline-list-row"
+              onClick={() => onGrantSelect(grant.id)}
+            >
               <div>{grant.title}</div>
               <div>{grant.funder}</div>
               <div>{statusToLabel(grant.status)}</div>
@@ -388,7 +534,9 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
                           <button
                             type="button"
                             className="btn btn-xs btn-ghost"
-                            onClick={() => setMoveMenuOpen(moveMenuOpen === grant.id ? null : grant.id)}
+                            onClick={() =>
+                              setMoveMenuOpen(moveMenuOpen === grant.id ? null : grant.id)
+                            }
                             aria-haspopup="true"
                             aria-expanded={moveMenuOpen === grant.id}
                           >
@@ -396,16 +544,18 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
                           </button>
                           {moveMenuOpen === grant.id && (
                             <div className="pipeline-move-dropdown">
-                              {columns.filter((c) => c.key !== grant.status).map((col) => (
-                                <button
-                                  key={col.key}
-                                  type="button"
-                                  className="pipeline-move-dropdown-item"
-                                  onClick={() => handleMoveGrant(grant.id, col.key)}
-                                >
-                                  {col.title}
-                                </button>
-                              ))}
+                              {columns
+                                .filter((c) => c.key !== grant.status)
+                                .map((col) => (
+                                  <button
+                                    key={col.key}
+                                    type="button"
+                                    className="pipeline-move-dropdown-item"
+                                    onClick={() => handleMoveGrant(grant.id, col.key)}
+                                  >
+                                    {col.title}
+                                  </button>
+                                ))}
                             </div>
                           )}
                         </div>
@@ -420,12 +570,25 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
       )}
 
       {declineModalOpen && (
-        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="decline-modal-title"
-          onClick={(e) => { if (e.target === e.currentTarget) { setDeclineModalOpen(false); setDeclineGrantId(null); } }}
+        <div
+          className="modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="decline-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setDeclineModalOpen(false);
+              setDeclineGrantId(null);
+            }
+          }}
         >
           <div className={`modal-content ${styles.modalContent}`}>
-            <h2 id="decline-modal-title" className="modal-title">Mark as Declined</h2>
-            <p className="modal-description">Optionally add a lessons learned note for future reference.</p>
+            <h2 id="decline-modal-title" className="modal-title">
+              Mark as Declined
+            </h2>
+            <p className="modal-description">
+              Optionally add a lessons learned note for future reference.
+            </p>
             <textarea
               className="form-input modal-textarea"
               rows={4}
@@ -434,8 +597,19 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
               onChange={(e) => setLessonsLearned(e.target.value)}
             />
             <div className="modal-actions">
-              <button type="button" className="btn btn-ghost" onClick={() => { setDeclineModalOpen(false); setDeclineGrantId(null); }}>Cancel</button>
-              <button type="button" className="btn btn-primary" onClick={handleDeclineSubmit}>Confirm Declined</button>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => {
+                  setDeclineModalOpen(false);
+                  setDeclineGrantId(null);
+                }}
+              >
+                Cancel
+              </button>
+              <button type="button" className="btn btn-primary" onClick={handleDeclineSubmit}>
+                Confirm Declined
+              </button>
             </div>
           </div>
         </div>
@@ -443,4 +617,3 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
     </>
   );
 }
-

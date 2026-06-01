@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -7,7 +7,13 @@ import type { Task } from '../../../../../../../shared/types';
 
 export const dynamic = 'force-dynamic';
 
-const VALID_TASK_STATUSES = ['blocked', 'in-progress', 'completed', 'waived', 'not-applicable'] as const;
+const VALID_TASK_STATUSES = [
+  'blocked',
+  'in-progress',
+  'completed',
+  'waived',
+  'not-applicable',
+] as const;
 
 const bodySchema = z.object({
   newValue: z.enum(VALID_TASK_STATUSES),
@@ -39,15 +45,20 @@ export async function POST(
     const taskIndex = tasks.findIndex((t) => t.id === taskId);
 
     if (taskIndex === -1) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), {
+        status: 404,
+      });
     }
 
     const existingTask = tasks[taskIndex];
     if (!existingTask) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), {
+        status: 404,
+      });
     }
 
-    const previousValue = existingTask.taskStatus ?? (existingTask.completed ? 'completed' : 'blocked');
+    const previousValue =
+      existingTask.taskStatus ?? (existingTask.completed ? 'completed' : 'blocked');
 
     // Update the task with override values
     const updatedTask: Task = {
@@ -81,6 +92,9 @@ export async function POST(
     return NextResponse.json(updatedTask);
   } catch (error) {
     logger.error({ err: error }, 'Error overriding task');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to override task'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to override task'),
+      { status: 500 },
+    );
   }
 }

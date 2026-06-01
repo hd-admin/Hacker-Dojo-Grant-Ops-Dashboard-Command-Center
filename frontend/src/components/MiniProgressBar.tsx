@@ -71,15 +71,12 @@ export function MiniProgressBar({
   errorMessage,
 }: MiniProgressBarProps) {
   const icon = JOB_TYPE_ICONS[jobType] ?? '\u2699\uFE0F';
-  const isActive = status === 'running' || status === 'queued' || status === 'verifying' || status === 'retrying';
+  const isActive =
+    status === 'running' || status === 'queued' || status === 'verifying' || status === 'retrying';
   const isFailed = status === 'failed';
   const isComplete = status === 'completed';
 
-  const fillColor = isFailed
-    ? 'var(--danger)'
-    : isComplete
-      ? 'var(--success)'
-      : 'var(--accent)';
+  const fillColor = isFailed ? 'var(--danger)' : isComplete ? 'var(--success)' : 'var(--accent)';
 
   const fillStyle: React.CSSProperties = {
     height: '100%',
@@ -110,20 +107,12 @@ export function MiniProgressBar({
         <div style={fillStyle} />
       </div>
       {isActive && onCancel && (
-        <button
-          style={btnStyle}
-          onClick={onCancel}
-          aria-label={`Cancel ${jobType} job`}
-        >
+        <button style={btnStyle} onClick={onCancel} aria-label={`Cancel ${jobType} job`}>
           ✕
         </button>
       )}
       {isFailed && onViewLog && (
-        <button
-          style={btnStyle}
-          onClick={onViewLog}
-          aria-label={`View log for ${jobType} job`}
-        >
+        <button style={btnStyle} onClick={onViewLog} aria-label={`View log for ${jobType} job`}>
           Log
         </button>
       )}

@@ -67,18 +67,28 @@ export function BudgetVsActualReport({
   const totalSpent = rows.reduce((sum, r) => sum + r.spent, 0);
 
   const exportCsv = () => {
-    const headers = ['Category', 'Budgeted', 'Spent', '% Spent', 'Timeline %', 'Variance', 'On Track'];
+    const headers = [
+      'Category',
+      'Budgeted',
+      'Spent',
+      '% Spent',
+      'Timeline %',
+      'Variance',
+      'On Track',
+    ];
     const csvRows = [headers.join(',')];
     rows.forEach((r) => {
-      csvRows.push([
-        `"${r.category}"`,
-        r.budgeted,
-        r.spent,
-        `${r.spentPercent}%`,
-        `${r.periodPercent}%`,
-        `${r.variance > 0 ? '+' : ''}${r.variance}%`,
-        Math.abs(r.variance) <= 10 ? 'Yes' : 'No',
-      ].join(','));
+      csvRows.push(
+        [
+          `"${r.category}"`,
+          r.budgeted,
+          r.spent,
+          `${r.spentPercent}%`,
+          `${r.periodPercent}%`,
+          `${r.variance > 0 ? '+' : ''}${r.variance}%`,
+          Math.abs(r.variance) <= 10 ? 'Yes' : 'No',
+        ].join(','),
+      );
     });
     const blob = new Blob([csvRows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -94,7 +104,9 @@ export function BudgetVsActualReport({
       <div className="budget-vs-actual-header">
         <div>
           <h3>Budget vs. Actual Report</h3>
-          <div className="text-dim">Award: {award.grantId} | Period: {periodStart} — {periodEnd} ({periodPercent}% elapsed)</div>
+          <div className="text-dim">
+            Award: {award.grantId} | Period: {periodStart} — {periodEnd} ({periodPercent}% elapsed)
+          </div>
         </div>
         <button type="button" className="btn btn-primary btn-sm" onClick={exportCsv}>
           Export CSV
@@ -122,27 +134,38 @@ export function BudgetVsActualReport({
         <tbody>
           {rows.map((row, i) => (
             <tr key={i}>
-              <td>{row.category}{row.internalCategory ? ` → ${row.internalCategory}` : ''}</td>
+              <td>
+                {row.category}
+                {row.internalCategory ? ` → ${row.internalCategory}` : ''}
+              </td>
               <td className="mono">${row.budgeted.toLocaleString()}</td>
               <td className="mono">${row.spent.toLocaleString()}</td>
               <td>
                 <div className="budget-vs-actual-bar-container">
                   <div
                     className={`budget-vs-actual-bar ${styles.progressBarFill}`}
-                    style={{ transform: `scaleX(${row.spentPercent / 100})`, background: row.color }}
+                    style={{
+                      transform: `scaleX(${row.spentPercent / 100})`,
+                      background: row.color,
+                    }}
                   />
                   <span>{row.spentPercent}%</span>
                 </div>
               </td>
               <td className="mono">{row.periodPercent}%</td>
               <td className="mono" style={{ color: row.color }}>
-                {row.variance > 0 ? '+' : ''}{row.variance}%
+                {row.variance > 0 ? '+' : ''}
+                {row.variance}%
               </td>
               <td>
                 <span
                   className={`status-badge status-badge-${Math.abs(row.variance) <= 10 ? 'success' : Math.abs(row.variance) <= 25 ? 'warning' : 'danger'}`}
                 >
-                  {Math.abs(row.variance) <= 10 ? 'On Track' : Math.abs(row.variance) <= 25 ? 'Watch' : 'Off Track'}
+                  {Math.abs(row.variance) <= 10
+                    ? 'On Track'
+                    : Math.abs(row.variance) <= 25
+                      ? 'Watch'
+                      : 'Off Track'}
                 </span>
               </td>
             </tr>
@@ -152,4 +175,3 @@ export function BudgetVsActualReport({
     </div>
   );
 }
-

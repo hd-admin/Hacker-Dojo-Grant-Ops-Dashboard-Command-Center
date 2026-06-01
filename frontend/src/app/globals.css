@@ -35,11 +35,13 @@
   padding: 0;
 }
 
-
-
 /* Utility classes for text colors */
-.text-dim { color: var(--text-dim); }
-.text-muted { color: var(--text-muted); }
+.text-dim {
+  color: var(--text-dim);
+}
+.text-muted {
+  color: var(--text-muted);
+}
 
 /* Screen-reader-only utility */
 .sr-only {
@@ -53,8 +55,6 @@
   white-space: nowrap;
   border-width: 0;
 }
-
-
 
 body {
   background-image:
@@ -102,22 +102,26 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible,
 [tabindex]:focus-visible,
-[role="button"]:focus-visible,
-[role="link"]:focus-visible,
-[role="tab"]:focus-visible,
-[role="menuitem"]:focus-visible,
-[role="option"]:focus-visible {
+[role='button']:focus-visible,
+[role='link']:focus-visible,
+[role='tab']:focus-visible,
+[role='menuitem']:focus-visible,
+[role='option']:focus-visible {
   outline: 3px solid var(--accent) !important;
   outline-offset: 2px !important;
-  box-shadow: 0 0 0 2px var(--bg), 0 0 0 5px var(--accent) !important;
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 5px var(--accent) !important;
 }
 
 /* Soften focus for text inputs to avoid visual clash */
-input[type="text"]:focus-visible,
-input[type="url"]:focus-visible,
-input[type="email"]:focus-visible,
+input[type='text']:focus-visible,
+input[type='url']:focus-visible,
+input[type='email']:focus-visible,
 textarea:focus-visible {
-  box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent) !important;
+  box-shadow:
+    0 0 0 2px var(--bg),
+    0 0 0 4px var(--accent) !important;
 }
 
 /* Preserve custom focus styles for elements that define their own */
@@ -209,7 +213,10 @@ textarea:focus-visible {
   border-radius: var(--radius);
   color: var(--text-dim);
   cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
   font-size: 13.5px;
   font-weight: 500;
   position: relative;
@@ -334,7 +341,11 @@ textarea:focus-visible {
   background: var(--surface);
   color: var(--text);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s, transform 0.15s, opacity 0.15s;
+  transition:
+    background 0.15s,
+    border-color 0.15s,
+    transform 0.15s,
+    opacity 0.15s;
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -448,7 +459,10 @@ textarea:focus-visible {
   padding: 20px 22px;
   position: relative;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .kpi-card:hover {
@@ -1336,7 +1350,11 @@ textarea:focus-visible {
   border-radius: var(--radius);
   padding: 12px 14px;
   cursor: pointer;
-  transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s, opacity 0.15s;
+  transition:
+    border-color 0.15s,
+    transform 0.15s,
+    box-shadow 0.15s,
+    opacity 0.15s;
 }
 
 .board-card:hover {
@@ -1404,7 +1422,9 @@ textarea:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .setting-card:hover {
@@ -1616,7 +1636,10 @@ textarea:focus-visible {
 
 /* Generic interactive card — hover lift effect */
 .card-interactive {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .card-interactive:hover {
@@ -2170,8 +2193,14 @@ textarea:focus-visible {
 }
 
 @keyframes bannerSlideIn {
-  from { opacity: 0; transform: translateY(-4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .health-banner.degraded {
@@ -2211,7 +2240,9 @@ textarea:focus-visible {
   color: var(--text-dim);
   cursor: pointer;
   white-space: nowrap;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .health-banner-action:hover {
@@ -2237,7 +2268,6 @@ textarea:focus-visible {
   content: '\26A0';
   font-size: 10px;
 }
-
 
 /* === SAFE QUIT DIALOG === */
 .safe-quit-overlay {
@@ -2361,12 +2391,7 @@ input[type='radio'] {
 .progress-bar-fill {
   width: 40%;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--accent) 50%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
   background-size: 200% 100%;
   border-radius: 999px;
   animation: progress-indeterminate 1.5s ease-in-out infinite;
@@ -3096,9 +3121,14 @@ input.input-success:focus {
   align-items: center;
 }
 
-.propublica-search-form .form-input { flex: 1; min-width: 0; }
+.propublica-search-form .form-input {
+  flex: 1;
+  min-width: 0;
+}
 
-.propublica-results { margin-top: 12px; }
+.propublica-results {
+  margin-top: 12px;
+}
 
 .propublica-results h3 {
   font-size: 12px;
@@ -3125,9 +3155,6 @@ input.input-success:focus {
   font-size: 11px;
   color: var(--text-muted);
 }
-
-
-
 
 /* Focus trap helper - prevent body scroll when dialog is open */
 html,
@@ -3209,8 +3236,14 @@ textarea:focus:not(:focus-visible) {
 }
 
 @keyframes settings-toast-in {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .settings-backup-warning {
@@ -3314,8 +3347,12 @@ textarea:focus:not(:focus-visible) {
 }
 
 @keyframes skeleton-shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .skeleton-text {
@@ -3364,7 +3401,9 @@ textarea:focus:not(:focus-visible) {
   animation: spinner-rotate 0.7s linear infinite;
 }
 @keyframes spinner-rotate {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* === EMPTY STATE CONSISTENCY === */
@@ -3415,7 +3454,10 @@ textarea:focus:not(:focus-visible) {
 button.grants-row,
 button.deadline-item,
 button.pipeline-list-row {
-  transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
   width: 100%;
   text-align: left;
   background: none;
@@ -3431,7 +3473,9 @@ button.pipeline-list-row:hover {
 }
 
 .source-row-enhanced {
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 .source-row-enhanced:hover {
   border-color: var(--border-light);
@@ -3440,7 +3484,9 @@ button.pipeline-list-row:hover {
 
 /* Job card hover */
 .job-card {
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 .job-card:hover {
   border-color: var(--border-light);
@@ -3449,7 +3495,10 @@ button.pipeline-list-row:hover {
 
 /* Nav item enhanced transition */
 .nav-item {
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
 /* Filter pill hover */
@@ -3466,7 +3515,9 @@ button.pipeline-list-row:hover {
 
 /* Propublica result item hover */
 .propublica-result-item {
-  transition: background 0.18s ease, border-color 0.18s ease;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
 }
 .propublica-result-item:hover {
   background: var(--surface-2);
@@ -3475,7 +3526,9 @@ button.pipeline-list-row:hover {
 
 /* Manifest / source suggestion card hover */
 .discovery-review-card {
-  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 .discovery-review-card:hover {
   border-color: var(--border-light);
@@ -3765,8 +3818,12 @@ button.pipeline-list-row:hover {
 }
 
 @keyframes indeterminateProgress {
-  0% { transform: translateX(-100%); }
-  100% { transform: translateX(400%); }
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
 }
 
 .job-progress-actions {
@@ -3872,8 +3929,14 @@ button.pipeline-list-row:hover {
 }
 
 @keyframes toastSlideIn {
-  from { opacity: 0; transform: translateX(20px); }
-  to { opacity: 1; transform: translateX(0); }
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .toast-item--success {
@@ -3927,7 +3990,6 @@ button.pipeline-list-row:hover {
 .toast-dismiss:hover {
   opacity: 1;
 }
-
 
 /* === PIPELINE VIEW === */
 .pipeline-move-menu-wrapper {
@@ -3987,7 +4049,6 @@ button.pipeline-list-row:hover {
   gap: 8px;
   justify-content: flex-end;
 }
-
 
 /* === POST AWARD === */
 .post-award-award-title {

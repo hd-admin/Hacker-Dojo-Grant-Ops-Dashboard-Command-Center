@@ -21,12 +21,18 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const grantId = searchParams.get('grantId');
     const deps = getDependencies();
-    const records = (await deps.repository.getOutreachRecords?.() ?? []) as Record<string, unknown>[];
+    const records = ((await deps.repository.getOutreachRecords?.()) ?? []) as Record<
+      string,
+      unknown
+    >[];
     const filtered = grantId ? records.filter((r) => r.grantId === grantId) : records;
     return NextResponse.json({ outreach: filtered });
   } catch (error) {
     logger.error({ err: error }, 'Error getting outreach');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get outreach records'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get outreach records'),
+      { status: 500 },
+    );
   }
 }
 
@@ -36,7 +42,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const parsed = outreachSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid outreach payload', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid outreach payload', details: parsed.error.format() },
+        { status: 400 },
+      );
     }
     const deps = getDependencies();
     const record = {
@@ -48,6 +57,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ outreach: record }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, 'Error creating outreach');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create outreach record'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create outreach record'),
+      { status: 500 },
+    );
   }
 }

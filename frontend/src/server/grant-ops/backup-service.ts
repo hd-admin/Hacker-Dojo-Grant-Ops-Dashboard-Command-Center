@@ -4,9 +4,27 @@ import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
 import AdmZip, { type IZipEntry } from 'adm-zip';
-import type { BackupManifest, BackupVerificationRecord, OpencodeSettings, OrganizationProfile } from '../../../../shared/types';
+import type {
+  BackupManifest,
+  BackupVerificationRecord,
+  OpencodeSettings,
+  OrganizationProfile,
+} from '../../../../shared/types';
 import type { PersistedData } from '../../../../shared/grant-ops-persistence';
-import { getDataDir, loadBackupFreshness, loadPersistedData, loadGrants, loadProfile, loadOpencodeSettings, saveBackupFreshness, saveBackupVerificationRecord, savePersistedData, saveGrants, saveOpencodeSettings, saveProfile } from '../../../../shared/grant-ops-persistence';
+import {
+  getDataDir,
+  loadBackupFreshness,
+  loadPersistedData,
+  loadGrants,
+  loadProfile,
+  loadOpencodeSettings,
+  saveBackupFreshness,
+  saveBackupVerificationRecord,
+  savePersistedData,
+  saveGrants,
+  saveOpencodeSettings,
+  saveProfile,
+} from '../../../../shared/grant-ops-persistence';
 
 export interface BackupSnapshot {
   manifest: BackupManifest;
@@ -17,7 +35,11 @@ export interface BackupSnapshot {
   documents: Array<{ id: string; storagePath: string; contentBase64: string }>;
 }
 
-function buildVerificationOutcome(kind: 'backup' | 'restore', grantCount: number, documentCount: number): string {
+function buildVerificationOutcome(
+  kind: 'backup' | 'restore',
+  grantCount: number,
+  documentCount: number,
+): string {
   return `${kind === 'backup' ? 'Backup' : 'Restore'} verified: ${grantCount} grants, ${documentCount} documents`;
 }
 
@@ -55,7 +77,10 @@ export async function exportBackupSnapshot(): Promise<BackupSnapshot> {
     profile,
     opencodeSettings,
     persistedData,
-    documents: documents.filter((entry): entry is { id: string; storagePath: string; contentBase64: string } => entry !== null),
+    documents: documents.filter(
+      (entry): entry is { id: string; storagePath: string; contentBase64: string } =>
+        entry !== null,
+    ),
   };
 }
 
@@ -68,7 +93,9 @@ function getBackupsDir(): string {
   return path.join(dataDir, 'backups');
 }
 
-export async function createBackupZip(snapshot: BackupSnapshot): Promise<{ zipPath: string; checksum: string }> {
+export async function createBackupZip(
+  snapshot: BackupSnapshot,
+): Promise<{ zipPath: string; checksum: string }> {
   const backupsDir = getBackupsDir();
   await fs.mkdir(backupsDir, { recursive: true });
 
@@ -81,7 +108,10 @@ export async function createBackupZip(snapshot: BackupSnapshot): Promise<{ zipPa
   zip.addFile('manifest.json', Buffer.from(JSON.stringify(snapshot.manifest, null, 2)));
   zip.addFile('grants.json', Buffer.from(JSON.stringify(snapshot.grants, null, 2)));
   zip.addFile('profile.json', Buffer.from(JSON.stringify(snapshot.profile, null, 2)));
-  zip.addFile('opencode-settings.json', Buffer.from(JSON.stringify(snapshot.opencodeSettings ?? {}, null, 2)));
+  zip.addFile(
+    'opencode-settings.json',
+    Buffer.from(JSON.stringify(snapshot.opencodeSettings ?? {}, null, 2)),
+  );
   zip.addFile('persisted-data.json', Buffer.from(JSON.stringify(snapshot.persistedData, null, 2)));
 
   if (snapshot.documents.length > 0) {
@@ -101,7 +131,7 @@ export async function createBackupZip(snapshot: BackupSnapshot): Promise<{ zipPa
   if (freeBytes !== null && freeBytes - zipSize < minFreeBytes) {
     const freeMB = freeBytes !== null ? (freeBytes / (1024 * 1024)).toFixed(1) : 'unknown';
     throw new Error(
-      `Insufficient disk space: ${freeMB}MB available, need at least 200MB free after writing ${(zipSize / (1024 * 1024)).toFixed(1)}MB backup.`
+      `Insufficient disk space: ${freeMB}MB available, need at least 200MB free after writing ${(zipSize / (1024 * 1024)).toFixed(1)}MB backup.`,
     );
   }
 
@@ -153,7 +183,9 @@ export async function importBackupFromZip(zipPath: string): Promise<void> {
   const persistedEntry = entries.find((e: IZipEntry) => e.entryName === 'persisted-data.json');
 
   if (!manifestEntry || !grantsEntry || !profileEntry || !persistedEntry) {
-    throw new Error('Invalid backup archive: missing required files (manifest, grants, profile, or persisted-data)');
+    throw new Error(
+      'Invalid backup archive: missing required files (manifest, grants, profile, or persisted-data)',
+    );
   }
 
   const dataDir = getDataDir();
@@ -167,11 +199,15 @@ export async function importBackupFromZip(zipPath: string): Promise<void> {
 
   const grants = JSON.parse(grantsEntry.getData().toString('utf-8'));
   const profile = JSON.parse(profileEntry.getData().toString('utf-8')) as OrganizationProfile;
-  const opencodeSettings = settingsEntry ? JSON.parse(settingsEntry.getData().toString('utf-8')) as OpencodeSettings : {} as OpencodeSettings;
+  const opencodeSettings = settingsEntry
+    ? (JSON.parse(settingsEntry.getData().toString('utf-8')) as OpencodeSettings)
+    : ({} as OpencodeSettings);
   const persistedData = JSON.parse(persistedEntry.getData().toString('utf-8')) as PersistedData;
 
   // Restore documents from the zip
-  const docEntries = entries.filter((e: IZipEntry) => e.entryName.startsWith('documents/') && !e.isDirectory);
+  const docEntries = entries.filter(
+    (e: IZipEntry) => e.entryName.startsWith('documents/') && !e.isDirectory,
+  );
   for (const docEntry of docEntries) {
     const docId = path.basename(docEntry.entryName, '.data');
     const docBuffer = docEntry.getData();
@@ -223,7 +259,11 @@ export async function importBackupSnapshot(snapshot: BackupSnapshot): Promise<vo
 
   const freshnessRecord: BackupVerificationRecord = {
     checkedAt: new Date().toISOString(),
-    outcome: buildVerificationOutcome('restore', snapshot.grants.length, snapshot.persistedData.documents.length),
+    outcome: buildVerificationOutcome(
+      'restore',
+      snapshot.grants.length,
+      snapshot.persistedData.documents.length,
+    ),
     grantCount: snapshot.grants.length,
     documentCount: snapshot.persistedData.documents.length,
     type: 'restore',
@@ -238,15 +278,17 @@ async function cleanupOldBackups(): Promise<void> {
     if (!fsSync.existsSync(backupsDir)) return;
 
     const files = await fs.readdir(backupsDir);
-    const zipFiles = files.filter((f) => f.endsWith('.zip') && !f.endsWith('.sha256')).map((f) => ({
-      name: f,
-      path: path.join(backupsDir, f),
-    }));
+    const zipFiles = files
+      .filter((f) => f.endsWith('.zip') && !f.endsWith('.sha256'))
+      .map((f) => ({
+        name: f,
+        path: path.join(backupsDir, f),
+      }));
 
     if (zipFiles.length <= 5) return;
 
     const stats = await Promise.all(
-      zipFiles.map(async (f) => ({ ...f, mtime: (await fs.stat(f.path)).mtimeMs }))
+      zipFiles.map(async (f) => ({ ...f, mtime: (await fs.stat(f.path)).mtimeMs })),
     );
     stats.sort((a, b) => a.mtime - b.mtime);
 
@@ -263,7 +305,11 @@ async function cleanupOldBackups(): Promise<void> {
 export async function recordBackupVerification(snapshot: BackupSnapshot): Promise<void> {
   const record: BackupVerificationRecord = {
     checkedAt: new Date().toISOString(),
-    outcome: buildVerificationOutcome('backup', snapshot.grants.length, snapshot.persistedData.documents.length),
+    outcome: buildVerificationOutcome(
+      'backup',
+      snapshot.grants.length,
+      snapshot.persistedData.documents.length,
+    ),
     grantCount: snapshot.grants.length,
     documentCount: snapshot.persistedData.documents.length,
     type: 'backup',

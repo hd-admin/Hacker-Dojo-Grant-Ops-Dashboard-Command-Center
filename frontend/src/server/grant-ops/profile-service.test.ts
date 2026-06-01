@@ -74,7 +74,11 @@ describe('ProfileService', () => {
       expect(result).toBeDefined();
       expect(result?.legalName).toBe('Hacker Dojo');
       expect(result?.nonprofitStatus).toBe('501(c)(3)');
-      expect(result?.programAreas).toEqual(['STEM Education', 'Workforce Development', 'Community Building']);
+      expect(result?.programAreas).toEqual([
+        'STEM Education',
+        'Workforce Development',
+        'Community Building',
+      ]);
     });
 
     it('returns default profile when none exists', async () => {
@@ -320,9 +324,7 @@ describe('ProfileService', () => {
     });
 
     it('handles documents without lastUsed date', async () => {
-      const docs: DocumentMetadata[] = [
-        { id: 'doc-1', name: '990.pdf', type: 'PDF' },
-      ];
+      const docs: DocumentMetadata[] = [{ id: 'doc-1', name: '990.pdf', type: 'PDF' }];
 
       const freshness = profileService.getDocumentFreshness(docs);
       // Documents without lastUsed are considered stale

@@ -33,41 +33,44 @@ export function BudgetImportView({ awardId, onUpload, onConfirm }: BudgetImportV
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFile = useCallback(async (file: File) => {
-    setLoading(true);
-    setError('');
-    setPreview(null);
-    setFileName(file.name);
+  const handleFile = useCallback(
+    async (file: File) => {
+      setLoading(true);
+      setError('');
+      setPreview(null);
+      setFileName(file.name);
 
-    if (onUpload) {
-      onUpload(awardId, file);
-    }
-
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('awardId', awardId);
-
-      const res = await fetch('/api/budget-import', {
-        method: 'POST',
-        body: formData,
-      });
-
-      const json = await res.json();
-
-      if (!res.ok) {
-        setError(json.error || 'Failed to parse budget file');
-        setLoading(false);
-        return;
+      if (onUpload) {
+        onUpload(awardId, file);
       }
 
-      setPreview(json.preview);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to parse budget file');
-    } finally {
-      setLoading(false);
-    }
-  }, [awardId, onUpload]);
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('awardId', awardId);
+
+        const res = await fetch('/api/budget-import', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const json = await res.json();
+
+        if (!res.ok) {
+          setError(json.error || 'Failed to parse budget file');
+          setLoading(false);
+          return;
+        }
+
+        setPreview(json.preview);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to parse budget file');
+      } finally {
+        setLoading(false);
+      }
+    },
+    [awardId, onUpload],
+  );
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
@@ -93,8 +96,8 @@ export function BudgetImportView({ awardId, onUpload, onConfirm }: BudgetImportV
   const handleConfirm = () => {
     if (!preview || !onConfirm) return;
     const validCategories = preview.rows
-      .filter(r => r.errors.length === 0 && r.mappedCategory && r.mappedAmount !== undefined)
-      .map(r => ({
+      .filter((r) => r.errors.length === 0 && r.mappedCategory && r.mappedAmount !== undefined)
+      .map((r) => ({
         category: r.mappedCategory!,
         amount: r.mappedAmount!,
       }));
@@ -130,7 +133,11 @@ export function BudgetImportView({ awardId, onUpload, onConfirm }: BudgetImportV
         />
       </div>
 
-      {loading && <p className="loading-text" aria-live="polite">Parsing budget file...</p>}
+      {loading && (
+        <p className="loading-text" aria-live="polite">
+          Parsing budget file...
+        </p>
+      )}
 
       {error && (
         <div className="error-banner" role="alert" aria-live="assertive">
@@ -151,7 +158,7 @@ export function BudgetImportView({ awardId, onUpload, onConfirm }: BudgetImportV
           <div className="column-mapping">
             <h4>Detected Columns</h4>
             <ul>
-              {preview.detectedColumns.map(col => (
+              {preview.detectedColumns.map((col) => (
                 <li key={col}>{col}</li>
               ))}
             </ul>
@@ -171,7 +178,11 @@ export function BudgetImportView({ awardId, onUpload, onConfirm }: BudgetImportV
                 {preview.rows.map((row, idx) => (
                   <tr key={idx} className={row.errors.length > 0 ? 'invalid-row' : ''}>
                     <td>{row.mappedCategory || '—'}</td>
-                    <td>{row.mappedAmount !== undefined ? `$${row.mappedAmount.toLocaleString()}` : '—'}</td>
+                    <td>
+                      {row.mappedAmount !== undefined
+                        ? `$${row.mappedAmount.toLocaleString()}`
+                        : '—'}
+                    </td>
                     <td>
                       {row.errors.length > 0 ? (
                         <span className="row-errors" role="alert">

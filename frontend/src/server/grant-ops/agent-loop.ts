@@ -129,21 +129,35 @@ const PROGRESS_STAGES: Record<AgentTaskType, { stage: string; progress: number }
 
 function getSchemaForType(type: AgentTaskType): z.ZodType {
   switch (type) {
-    case 'research': return ResearchArtifactSchema;
-    case 'draft': return DraftArtifactSchema;
-    case 'crawl': return CrawlArtifactSchema;
-    case 'match': return MatchArtifactSchema;
-    case 'extract': return ExtractArtifactSchema;
-    case 'peer-discovery': return PeerDiscoveryArtifactSchema;
-    case 'funder-insights': return FunderInsightArtifactSchema;
-    case 'eligibility-vetting': return EligibilityVettingArtifactSchema;
-    case 'budget-import': return BudgetImportArtifactSchema;
+    case 'research':
+      return ResearchArtifactSchema;
+    case 'draft':
+      return DraftArtifactSchema;
+    case 'crawl':
+      return CrawlArtifactSchema;
+    case 'match':
+      return MatchArtifactSchema;
+    case 'extract':
+      return ExtractArtifactSchema;
+    case 'peer-discovery':
+      return PeerDiscoveryArtifactSchema;
+    case 'funder-insights':
+      return FunderInsightArtifactSchema;
+    case 'eligibility-vetting':
+      return EligibilityVettingArtifactSchema;
+    case 'budget-import':
+      return BudgetImportArtifactSchema;
   }
 }
 
 export interface AgentLoopDeps {
   getDataDir(): string;
-  buildPrompt(type: AgentTaskType, params: Record<string, unknown>, artifactPath: string, retryFeedback?: string): string;
+  buildPrompt(
+    type: AgentTaskType,
+    params: Record<string, unknown>,
+    artifactPath: string,
+    retryFeedback?: string,
+  ): string;
   updateJobProgress(jobId: string, update: JobProgressUpdate): Promise<void>;
   ingestArtifact(type: AgentTaskType, artifact: unknown, job: AgentJob): Promise<void>;
   opencodePath?: string;
@@ -152,10 +166,7 @@ export interface AgentLoopDeps {
 
 let activeJobs = 0;
 
-export async function executeAgentJob(
-  job: AgentJob,
-  deps: AgentLoopDeps,
-): Promise<void> {
+export async function executeAgentJob(job: AgentJob, deps: AgentLoopDeps): Promise<void> {
   // Concurrent job gate
   if (activeJobs >= MAX_CONCURRENT_JOBS) {
     const update: JobProgressUpdate = {
@@ -180,8 +191,20 @@ export async function executeAgentJob(
   const promptPath = path.join(tmpDir, `prompt-${job.id}.txt`);
   const timeoutMs = JOB_TIMEOUTS[job.jobType] || 120_000;
 
-  const updateProgress = (status: JobStatus, progress: number, stage: string, retryCount: number, errorMessage?: string) => {
-    const update: JobProgressUpdate = { status, progress, stage, retryCount, maxRetries: MAX_RETRIES };
+  const updateProgress = (
+    status: JobStatus,
+    progress: number,
+    stage: string,
+    retryCount: number,
+    errorMessage?: string,
+  ) => {
+    const update: JobProgressUpdate = {
+      status,
+      progress,
+      stage,
+      retryCount,
+      maxRetries: MAX_RETRIES,
+    };
     if (errorMessage !== undefined) {
       update.errorMessage = errorMessage;
     }
@@ -232,8 +255,13 @@ export async function executeAgentJob(
         activeJobs--;
         const msg = `Cannot spawn OpenCode: ${err instanceof Error ? err.message : String(err)}`;
         failureReasons.push(msg);
-        updateProgress('failed', 0, 'error', attempt - 1,
-          `Failed after ${MAX_RETRIES} attempts: ${failureReasons.join(' | ')}`);
+        updateProgress(
+          'failed',
+          0,
+          'error',
+          attempt - 1,
+          `Failed after ${MAX_RETRIES} attempts: ${failureReasons.join(' | ')}`,
+        );
         return;
       }
 
@@ -241,7 +269,8 @@ export async function executeAgentJob(
       const processPid = proc.pid;
       if (processPid) {
         try {
-          const { updateJobQueueItemPersistence } = await import('../../../../shared/grant-ops-persistence');
+          const { updateJobQueueItemPersistence } =
+            await import('../../../../shared/grant-ops-persistence');
           await updateJobQueueItemPersistence(job.id, { processPid });
         } catch {
           // ignore PID recording errors
@@ -290,7 +319,10 @@ export async function executeAgentJob(
             clearInterval(cancelChecker);
             clearTimeout(timer);
             proc.kill('SIGTERM');
-            setTimeout(() => { proc.kill('SIGKILL'); resolve('killed'); }, 5000);
+            setTimeout(() => {
+              proc.kill('SIGKILL');
+              resolve('killed');
+            }, 5000);
           }
         }, 1000);
 
@@ -355,7 +387,9 @@ export async function executeAgentJob(
       const schema = getSchemaForType(job.jobType);
       const parseResult = schema.safeParse(artifact);
       if (!parseResult.success) {
-        const errors = parseResult.error.issues.map(i => `${i.path.join('.')}: ${i.message}`).join('; ');
+        const errors = parseResult.error.issues
+          .map((i) => `${i.path.join('.')}: ${i.message}`)
+          .join('; ');
         retryFeedback = `Schema validation errors: ${errors}. Fix these issues.`;
         updateProgress('retrying', 50, 'schema-mismatch', attempt - 1, retryFeedback);
         continue;
@@ -378,20 +412,27 @@ export async function executeAgentJob(
 
       const artifactsDir = path.join(dataDir, 'artifacts', `${job.jobType}s`);
       fs.mkdirSync(artifactsDir, { recursive: true });
-      fs.writeFileSync(path.join(artifactsDir, `${job.id}.json`), JSON.stringify(validated, null, 2));
+      fs.writeFileSync(
+        path.join(artifactsDir, `${job.id}.json`),
+        JSON.stringify(validated, null, 2),
+      );
 
       await deps.ingestArtifact(job.jobType, validated, job);
       activeJobs--;
       updateProgress('completed', 100, 'completed', attempt - 1);
       return;
-
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error);
       failureReasons.push(errMsg);
       if (attempt >= MAX_RETRIES) {
         activeJobs--;
-        updateProgress('failed', 0, 'failed', attempt - 1,
-          `Failed after ${MAX_RETRIES} attempts: ${failureReasons.join(' | ')}. Check session log at ${sessionLogPath}`);
+        updateProgress(
+          'failed',
+          0,
+          'failed',
+          attempt - 1,
+          `Failed after ${MAX_RETRIES} attempts: ${failureReasons.join(' | ')}. Check session log at ${sessionLogPath}`,
+        );
         return;
       }
       retryFeedback = `Unexpected error: ${errMsg}`;
@@ -401,8 +442,13 @@ export async function executeAgentJob(
 
   // Exhausted all retries without success (via continue for invalid JSON, missing artifact, etc.)
   activeJobs--;
-  updateProgress('failed', 0, 'failed', MAX_RETRIES,
-    `Failed after ${MAX_RETRIES} attempts: ${failureReasons.join(' | ')}. Check session log at ${sessionLogPath}`);
+  updateProgress(
+    'failed',
+    0,
+    'failed',
+    MAX_RETRIES,
+    `Failed after ${MAX_RETRIES} attempts: ${failureReasons.join(' | ')}. Check session log at ${sessionLogPath}`,
+  );
 }
 
 interface QualityGateResult {
@@ -410,13 +456,20 @@ interface QualityGateResult {
   feedback: string;
 }
 
-export function checkQualityGates(type: AgentTaskType, artifact: Record<string, unknown>): QualityGateResult {
+export function checkQualityGates(
+  type: AgentTaskType,
+  artifact: Record<string, unknown>,
+): QualityGateResult {
   switch (type) {
     case 'research': {
       const grants = artifact.grants as unknown[];
       const errors = artifact.errors as string[] | undefined;
       if ((!grants || grants.length === 0) && (!errors || errors.length === 0)) {
-        return { passed: false, feedback: 'No grants found and no errors reported. If the source has no grants, explain why in the errors array.' };
+        return {
+          passed: false,
+          feedback:
+            'No grants found and no errors reported. If the source has no grants, explain why in the errors array.',
+        };
       }
       return { passed: true, feedback: '' };
     }
@@ -424,19 +477,30 @@ export function checkQualityGates(type: AgentTaskType, artifact: Record<string, 
       const wordCount = artifact.wordCount as number;
       const sections = artifact.sections as Array<{ isGrounded: boolean }> | undefined;
       if (wordCount < 500) {
-        return { passed: false, feedback: `Draft too short (${wordCount} words). Generate at least 500 words across all sections.` };
+        return {
+          passed: false,
+          feedback: `Draft too short (${wordCount} words). Generate at least 500 words across all sections.`,
+        };
       }
-      if (sections && !sections.some(s => s.isGrounded)) {
-        return { passed: false, feedback: 'No sections are grounded. Reference specific Hacker Dojo documents in groundingSources.' };
+      if (sections && !sections.some((s) => s.isGrounded)) {
+        return {
+          passed: false,
+          feedback:
+            'No sections are grounded. Reference specific Hacker Dojo documents in groundingSources.',
+        };
       }
       return { passed: true, feedback: '' };
     }
     case 'match': {
       const matches = artifact.matches as Array<{ fitScore: number }> | undefined;
       if (matches && matches.length > 1) {
-        const scores = matches.map(m => m.fitScore);
-        if (scores.every(s => s === scores[0])) {
-          return { passed: false, feedback: 'All grants received identical scores. Differentiate based on actual alignment.' };
+        const scores = matches.map((m) => m.fitScore);
+        if (scores.every((s) => s === scores[0])) {
+          return {
+            passed: false,
+            feedback:
+              'All grants received identical scores. Differentiate based on actual alignment.',
+          };
         }
       }
       return { passed: true, feedback: '' };
@@ -444,8 +508,12 @@ export function checkQualityGates(type: AgentTaskType, artifact: Record<string, 
     case 'extract': {
       const extracted = artifact.extracted as Record<string, unknown> | undefined;
       const errors = artifact.errors as string[] | undefined;
-      if ((!extracted?.amount) && (!errors || errors.length === 0)) {
-        return { passed: false, feedback: 'No amount extracted and no errors reported. Either find the amount or explain why it couldn\'t be extracted.' };
+      if (!extracted?.amount && (!errors || errors.length === 0)) {
+        return {
+          passed: false,
+          feedback:
+            "No amount extracted and no errors reported. Either find the amount or explain why it couldn't be extracted.",
+        };
       }
       return { passed: true, feedback: '' };
     }
@@ -453,7 +521,11 @@ export function checkQualityGates(type: AgentTaskType, artifact: Record<string, 
       const results = artifact.results as unknown[];
       const errors = artifact.errors as string[] | undefined;
       if ((!results || results.length === 0) && (!errors || errors.length === 0)) {
-        return { passed: false, feedback: 'No peer funders found and no errors reported. Explain why in the errors array.' };
+        return {
+          passed: false,
+          feedback:
+            'No peer funders found and no errors reported. Explain why in the errors array.',
+        };
       }
       return { passed: true, feedback: '' };
     }
@@ -461,7 +533,10 @@ export function checkQualityGates(type: AgentTaskType, artifact: Record<string, 
       const patterns = artifact.patterns as unknown[];
       const errors = artifact.errors as string[] | undefined;
       if ((!patterns || patterns.length === 0) && (!errors || errors.length === 0)) {
-        return { passed: false, feedback: 'No patterns found and no errors reported. Explain why in the errors array.' };
+        return {
+          passed: false,
+          feedback: 'No patterns found and no errors reported. Explain why in the errors array.',
+        };
       }
       return { passed: true, feedback: '' };
     }
@@ -469,7 +544,11 @@ export function checkQualityGates(type: AgentTaskType, artifact: Record<string, 
       const categories = artifact.categories as unknown[];
       const errors = artifact.errors as string[] | undefined;
       if ((!categories || categories.length === 0) && (!errors || errors.length === 0)) {
-        return { passed: false, feedback: 'No budget categories found and no errors reported. Explain why in the errors array.' };
+        return {
+          passed: false,
+          feedback:
+            'No budget categories found and no errors reported. Explain why in the errors array.',
+        };
       }
       return { passed: true, feedback: '' };
     }

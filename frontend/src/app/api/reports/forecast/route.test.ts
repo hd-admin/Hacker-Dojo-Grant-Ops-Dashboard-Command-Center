@@ -23,8 +23,12 @@ import { GET } from './route';
 import type { NextResponse } from 'next/server';
 
 describe('/api/reports/forecast route', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns fundraising forecast data', async () => {
     (getGrants as ReturnType<typeof vi.fn>).mockResolvedValue([]);

@@ -2,6 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { getByText } from '../test-helpers';
 import { SystemStatusPanel } from './SystemStatusPanel';
 
 let container: HTMLDivElement;
@@ -34,20 +35,23 @@ describe('SystemStatusPanel', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
     root.render(<SystemStatusPanel />);
     await waitFor(() => container.querySelector('[data-testid="system-status-loading"]') !== null);
-    expect(container.textContent).toContain('Checking system status');
+    expect(getByText(container, 'Checking system status')).not.toBeNull();
     vi.unstubAllGlobals();
   });
 
   it('renders fully online status', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ storage: 'ok', opencode: 'ok', crawlerStatus: 'ok' }), {
-        headers: { 'content-type': 'application/json' },
-      }),
-    ));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ storage: 'ok', opencode: 'ok', crawlerStatus: 'ok' }), {
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
     root.render(<SystemStatusPanel />);
     await waitFor(() => container.querySelector('[data-testid="system-status-panel"]') !== null);
     expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
-    expect(container.textContent).toContain('Fully Online');
+    expect(getByText(container, 'Fully Online')).not.toBeNull();
     expect(container.querySelector('[data-testid="status-storage"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="status-opencode"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="status-crawler"]')).not.toBeNull();
@@ -55,11 +59,14 @@ describe('SystemStatusPanel', () => {
   });
 
   it('renders partially degraded status', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ storage: 'ok', opencode: 'error', crawlerStatus: 'ok' }), {
-        headers: { 'content-type': 'application/json' },
-      }),
-    ));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ storage: 'ok', opencode: 'error', crawlerStatus: 'ok' }), {
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
     root.render(<SystemStatusPanel />);
     await waitFor(() => container.querySelector('[data-testid="system-status-panel"]') !== null);
     expect(container.textContent).toContain('Partially Degraded');

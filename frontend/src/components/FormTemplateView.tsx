@@ -27,7 +27,12 @@ interface FormTemplateViewProps {
   onInsertDraft?: (template: FormTemplate, answers: Record<string, string>) => void;
 }
 
-export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: FormTemplateViewProps) {
+export function FormTemplateView({
+  template,
+  funderId,
+  onSave,
+  onInsertDraft,
+}: FormTemplateViewProps) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [templates, setTemplates] = useState<FormTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<FormTemplate | null>(template || null);
@@ -130,7 +135,9 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
   if (loading) {
     return (
       <div className="form-template-view" data-testid="form-template-view">
-        <div role="status" aria-busy="true" aria-label="Loading form templates">Loading templates...</div>
+        <div role="status" aria-busy="true" aria-label="Loading form templates">
+          Loading templates...
+        </div>
       </div>
     );
   }
@@ -149,7 +156,11 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
           + Create template
         </button>
         {showCreateForm && (
-          <form onSubmit={handleCreateTemplate} data-testid="template-create-form" className={styles.createFormRow}>
+          <form
+            onSubmit={handleCreateTemplate}
+            data-testid="template-create-form"
+            className={styles.createFormRow}
+          >
             <input
               type="text"
               placeholder="Template name"
@@ -159,10 +170,20 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
               className="form-input"
               required
             />
-            <button type="submit" className="btn btn-sm btn-primary" disabled={saving || !newName.trim()}>
+            <button
+              type="submit"
+              className="btn btn-sm btn-primary"
+              disabled={saving || !newName.trim()}
+            >
               {saving ? 'Creating...' : 'Create'}
             </button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowCreateForm(false)}>Cancel</button>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              onClick={() => setShowCreateForm(false)}
+            >
+              Cancel
+            </button>
           </form>
         )}
       </div>
@@ -184,7 +205,9 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
             data-testid="template-select"
           >
             {templates.map((t) => (
-              <option key={t.id} value={t.id}>{t.name}</option>
+              <option key={t.id} value={t.id}>
+                {t.name}
+              </option>
             ))}
           </select>
         </div>
@@ -197,7 +220,8 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
             {selectedTemplate.fields.map((field) => (
               <div key={field.id} className={`form-field ${styles.fieldBlock}`}>
                 <label className="form-label" htmlFor={`field-${field.id}`}>
-                  {field.label}{field.required ? ' *' : ''}
+                  {field.label}
+                  {field.required ? ' *' : ''}
                 </label>
                 {field.suggestedAnswer && (
                   <div className={`suggested-answer ${styles.suggestedAnswer}`}>
@@ -239,7 +263,11 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
             <button
               type="button"
               className="btn btn-sm btn-ghost"
-              onClick={() => { if (window.confirm(`Delete template "${selectedTemplate.name}"?`)) { void handleDeleteTemplate(selectedTemplate.id); } }}
+              onClick={() => {
+                if (window.confirm(`Delete template "${selectedTemplate.name}"?`)) {
+                  void handleDeleteTemplate(selectedTemplate.id);
+                }
+              }}
               aria-label={`Delete template ${selectedTemplate.name}`}
               data-testid={`delete-template-${selectedTemplate.id}`}
             >
@@ -248,7 +276,11 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
           </div>
 
           {showCreateForm && (
-            <form onSubmit={handleCreateTemplate} data-testid="template-create-form" className={styles.createFormRow}>
+            <form
+              onSubmit={handleCreateTemplate}
+              data-testid="template-create-form"
+              className={styles.createFormRow}
+            >
               <input
                 type="text"
                 placeholder="Template name"
@@ -258,10 +290,20 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
                 className="form-input"
                 required
               />
-              <button type="submit" className="btn btn-sm btn-primary" disabled={saving || !newName.trim()}>
+              <button
+                type="submit"
+                className="btn btn-sm btn-primary"
+                disabled={saving || !newName.trim()}
+              >
                 {saving ? 'Creating...' : 'Create'}
               </button>
-              <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowCreateForm(false)}>Cancel</button>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                onClick={() => setShowCreateForm(false)}
+              >
+                Cancel
+              </button>
             </form>
           )}
         </>

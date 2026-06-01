@@ -10,10 +10,7 @@ import {
   resetDependencies,
   setDependencies,
 } from '@/server/grant-ops/dependencies';
-import {
-  invalidateCache,
-  withTempDataDir,
-} from '../../../../../shared/grant-ops-persistence';
+import { invalidateCache, withTempDataDir } from '../../../../../shared/grant-ops-persistence';
 import type { JobQueueItem } from '../../../../../shared/types';
 import * as repository from '../../../server/grant-ops/repository';
 import { GET } from './route';
@@ -47,9 +44,7 @@ describe('/api/jobs route', () => {
   });
 
   it('returns empty array when no jobs exist', async () => {
-    const response = await GET(
-      new Request('http://localhost/api/jobs') as never,
-    );
+    const response = await GET(new Request('http://localhost/api/jobs') as never);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -61,9 +56,7 @@ describe('/api/jobs route', () => {
     await repository.addJobQueueItem(createJob('job-2', 'running'));
     await repository.addJobQueueItem(createJob('job-3', 'completed'));
 
-    const response = await GET(
-      new Request('http://localhost/api/jobs') as never,
-    );
+    const response = await GET(new Request('http://localhost/api/jobs') as never);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -75,9 +68,7 @@ describe('/api/jobs route', () => {
     await repository.addJobQueueItem(createJob('job-2', 'running'));
     await repository.addJobQueueItem(createJob('job-3', 'completed'));
 
-    const response = await GET(
-      new Request('http://localhost/api/jobs?status=queued') as never,
-    );
+    const response = await GET(new Request('http://localhost/api/jobs?status=queued') as never);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -91,9 +82,7 @@ describe('/api/jobs route', () => {
     await repository.addJobQueueItem(createJob('job-2', 'failed'));
     await repository.addJobQueueItem(createJob('job-3', 'failed'));
 
-    const response = await GET(
-      new Request('http://localhost/api/jobs?status=failed') as never,
-    );
+    const response = await GET(new Request('http://localhost/api/jobs?status=failed') as never);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -106,9 +95,7 @@ describe('/api/jobs route', () => {
   it('returns each job with required fields', async () => {
     await repository.addJobQueueItem(createJob('job-1', 'queued'));
 
-    const response = await GET(
-      new Request('http://localhost/api/jobs') as never,
-    );
+    const response = await GET(new Request('http://localhost/api/jobs') as never);
     const data = await response.json();
 
     expect(response.status).toBe(200);

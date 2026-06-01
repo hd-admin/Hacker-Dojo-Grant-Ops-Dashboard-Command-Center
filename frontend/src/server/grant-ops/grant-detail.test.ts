@@ -6,11 +6,7 @@
 
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
 import { loadGrantDetail } from './grant-detail';
-import {
-  createDependencies,
-  resetDependencies,
-  setDependencies,
-} from './dependencies';
+import { createDependencies, resetDependencies, setDependencies } from './dependencies';
 import type {
   Grant,
   DraftArtifact,
@@ -67,13 +63,25 @@ describe('loadGrantDetail', () => {
       repository: {
         ...deps.repository,
         getGrant: mockGetGrant as unknown as typeof deps.repository.getGrant,
-        getDraftArtifacts: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
-        getRevisionRequests: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
-        getApprovalRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
-        getSubmissionRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
-        getFollowUps: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
+        getDraftArtifacts: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
+        getRevisionRequests: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
+        getApprovalRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
+        getSubmissionRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
+        getFollowUps: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
         getTasks: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getTasks,
-        getDocuments: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
+        getDocuments: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
       },
     });
 
@@ -91,13 +99,25 @@ describe('loadGrantDetail', () => {
       repository: {
         ...deps.repository,
         getGrant: vi.fn().mockResolvedValue(grant) as unknown as typeof deps.repository.getGrant,
-        getDraftArtifacts: vi.fn().mockResolvedValue([draft]) as unknown as typeof deps.repository.getDraftArtifacts,
-        getRevisionRequests: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
-        getApprovalRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
-        getSubmissionRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
-        getFollowUps: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
+        getDraftArtifacts: vi
+          .fn()
+          .mockResolvedValue([draft]) as unknown as typeof deps.repository.getDraftArtifacts,
+        getRevisionRequests: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
+        getApprovalRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
+        getSubmissionRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
+        getFollowUps: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
         getTasks: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getTasks,
-        getDocuments: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
+        getDocuments: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
       },
     });
 
@@ -128,17 +148,38 @@ describe('loadGrantDetail', () => {
       repository: {
         ...deps.repository,
         getGrant: vi.fn().mockResolvedValue(grant) as unknown as typeof deps.repository.getGrant,
-        getDraftArtifacts: vi.fn().mockResolvedValue([draft]) as unknown as typeof deps.repository.getDraftArtifacts,
-        getRevisionRequests: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
-        getApprovalRecord: vi.fn().mockResolvedValue(approval) as unknown as typeof deps.repository.getApprovalRecord,
-        getSubmissionRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
-        getFollowUps: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
-        getTasks: vi.fn().mockResolvedValue([
-          { id: 'task-1', text: 'Task 1', completed: true, grantId: 'grant-1' },
-        ]) as unknown as typeof deps.repository.getTasks,
-        getDocuments: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
+        getDraftArtifacts: vi
+          .fn()
+          .mockResolvedValue([draft]) as unknown as typeof deps.repository.getDraftArtifacts,
+        getRevisionRequests: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
+        getApprovalRecord: vi
+          .fn()
+          .mockResolvedValue(approval) as unknown as typeof deps.repository.getApprovalRecord,
+        getSubmissionRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
+        getFollowUps: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
+        getTasks: vi
+          .fn()
+          .mockResolvedValue([
+            { id: 'task-1', text: 'Task 1', completed: true, grantId: 'grant-1' },
+          ]) as unknown as typeof deps.repository.getTasks,
+        getDocuments: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
         getSubmissionManifests: vi.fn().mockResolvedValue([
-          { id: 'manifest-1', grantId: 'grant-1', version: 1, createdAt: '2026-05-01T00:00:00Z', updatedAt: '2026-05-01T00:00:00Z', materialRefs: [] },
+          {
+            id: 'manifest-1',
+            grantId: 'grant-1',
+            version: 1,
+            createdAt: '2026-05-01T00:00:00Z',
+            updatedAt: '2026-05-01T00:00:00Z',
+            materialRefs: [],
+          },
         ]) as unknown as typeof deps.repository.getSubmissionManifests,
       },
     });
@@ -166,15 +207,33 @@ describe('loadGrantDetail', () => {
       repository: {
         ...deps.repository,
         getGrant: vi.fn().mockResolvedValue(grant) as unknown as typeof deps.repository.getGrant,
-        getDraftArtifacts: vi.fn().mockResolvedValue([draft]) as unknown as typeof deps.repository.getDraftArtifacts,
-        getRevisionRequests: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
-        getApprovalRecord: vi.fn().mockResolvedValue(approval) as unknown as typeof deps.repository.getApprovalRecord,
-        getSubmissionRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
-        getFollowUps: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
+        getDraftArtifacts: vi
+          .fn()
+          .mockResolvedValue([draft]) as unknown as typeof deps.repository.getDraftArtifacts,
+        getRevisionRequests: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
+        getApprovalRecord: vi
+          .fn()
+          .mockResolvedValue(approval) as unknown as typeof deps.repository.getApprovalRecord,
+        getSubmissionRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
+        getFollowUps: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
         getTasks: vi.fn().mockResolvedValue([
-          { id: 'task-1', text: 'Incomplete task', completed: false, grantId: 'grant-1', blockSubmission: true },
+          {
+            id: 'task-1',
+            text: 'Incomplete task',
+            completed: false,
+            grantId: 'grant-1',
+            blockSubmission: true,
+          },
         ]) as unknown as typeof deps.repository.getTasks,
-        getDocuments: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
+        getDocuments: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
       },
     });
 
@@ -198,13 +257,25 @@ describe('loadGrantDetail', () => {
       repository: {
         ...deps.repository,
         getGrant: vi.fn().mockResolvedValue(grant) as unknown as typeof deps.repository.getGrant,
-        getDraftArtifacts: vi.fn().mockResolvedValue(drafts) as unknown as typeof deps.repository.getDraftArtifacts,
-        getRevisionRequests: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
-        getApprovalRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
-        getSubmissionRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
-        getFollowUps: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
+        getDraftArtifacts: vi
+          .fn()
+          .mockResolvedValue(drafts) as unknown as typeof deps.repository.getDraftArtifacts,
+        getRevisionRequests: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
+        getApprovalRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
+        getSubmissionRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
+        getFollowUps: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
         getTasks: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getTasks,
-        getDocuments: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
+        getDocuments: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
       },
     });
 
@@ -243,13 +314,25 @@ describe('loadGrantDetail', () => {
       repository: {
         ...deps.repository,
         getGrant: vi.fn().mockResolvedValue(grant) as unknown as typeof deps.repository.getGrant,
-        getDraftArtifacts: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
-        getRevisionRequests: vi.fn().mockResolvedValue(revisions) as unknown as typeof deps.repository.getRevisionRequests,
-        getApprovalRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
-        getSubmissionRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
-        getFollowUps: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
+        getDraftArtifacts: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
+        getRevisionRequests: vi
+          .fn()
+          .mockResolvedValue(revisions) as unknown as typeof deps.repository.getRevisionRequests,
+        getApprovalRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
+        getSubmissionRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
+        getFollowUps: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
         getTasks: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getTasks,
-        getDocuments: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
+        getDocuments: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
       },
     });
 
@@ -262,9 +345,30 @@ describe('loadGrantDetail', () => {
   it('filters follow-ups by grantId', async () => {
     const grant = createMockGrant({ status: 'submitted' });
     const followUps: FollowUp[] = [
-      { id: 'fu-1', grantId: 'grant-1', title: 'Follow-up 1', type: 'other', status: 'pending', createdAt: '2026-05-01T00:00:00Z' },
-      { id: 'fu-2', grantId: 'grant-2', title: 'Follow-up 2', type: 'other', status: 'pending', createdAt: '2026-05-01T00:00:00Z' },
-      { id: 'fu-3', grantId: 'grant-1', title: 'Follow-up 3', type: 'other', status: 'completed', createdAt: '2026-05-01T00:00:00Z' },
+      {
+        id: 'fu-1',
+        grantId: 'grant-1',
+        title: 'Follow-up 1',
+        type: 'other',
+        status: 'pending',
+        createdAt: '2026-05-01T00:00:00Z',
+      },
+      {
+        id: 'fu-2',
+        grantId: 'grant-2',
+        title: 'Follow-up 2',
+        type: 'other',
+        status: 'pending',
+        createdAt: '2026-05-01T00:00:00Z',
+      },
+      {
+        id: 'fu-3',
+        grantId: 'grant-1',
+        title: 'Follow-up 3',
+        type: 'other',
+        status: 'completed',
+        createdAt: '2026-05-01T00:00:00Z',
+      },
     ];
 
     const deps = createDependencies();
@@ -273,22 +377,34 @@ describe('loadGrantDetail', () => {
       repository: {
         ...deps.repository,
         getGrant: vi.fn().mockResolvedValue(grant) as unknown as typeof deps.repository.getGrant,
-        getDraftArtifacts: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
-        getRevisionRequests: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
-        getApprovalRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
-        getSubmissionRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
-        getFollowUps: vi.fn().mockResolvedValue(followUps) as unknown as typeof deps.repository.getFollowUps,
+        getDraftArtifacts: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
+        getRevisionRequests: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
+        getApprovalRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
+        getSubmissionRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
+        getFollowUps: vi
+          .fn()
+          .mockResolvedValue(followUps) as unknown as typeof deps.repository.getFollowUps,
         getTasks: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getTasks,
-        getDocuments: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
+        getDocuments: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
       },
     });
 
     const result = await loadGrantDetail('grant-1');
     expect(result).not.toBeNull();
     expect(result!.followUps).toHaveLength(2);
-    expect(result!.followUps.map(f => f.id)).toContain('fu-1');
-    expect(result!.followUps.map(f => f.id)).toContain('fu-3');
-    expect(result!.followUps.map(f => f.id)).not.toContain('fu-2');
+    expect(result!.followUps.map((f) => f.id)).toContain('fu-1');
+    expect(result!.followUps.map((f) => f.id)).toContain('fu-3');
+    expect(result!.followUps.map((f) => f.id)).not.toContain('fu-2');
   });
 
   it('normalizes grant fields with safe defaults', async () => {
@@ -302,13 +418,25 @@ describe('loadGrantDetail', () => {
       repository: {
         ...deps.repository,
         getGrant: vi.fn().mockResolvedValue(grant) as unknown as typeof deps.repository.getGrant,
-        getDraftArtifacts: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
-        getRevisionRequests: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
-        getApprovalRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
-        getSubmissionRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
-        getFollowUps: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
+        getDraftArtifacts: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
+        getRevisionRequests: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
+        getApprovalRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
+        getSubmissionRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
+        getFollowUps: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
         getTasks: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getTasks,
-        getDocuments: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
+        getDocuments: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
       },
     });
 
@@ -337,13 +465,25 @@ describe('loadGrantDetail', () => {
       repository: {
         ...deps.repository,
         getGrant: vi.fn().mockResolvedValue(grant) as unknown as typeof deps.repository.getGrant,
-        getDraftArtifacts: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
-        getRevisionRequests: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
-        getApprovalRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
-        getSubmissionRecord: vi.fn().mockResolvedValue(submission) as unknown as typeof deps.repository.getSubmissionRecord,
-        getFollowUps: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
+        getDraftArtifacts: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
+        getRevisionRequests: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
+        getApprovalRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
+        getSubmissionRecord: vi
+          .fn()
+          .mockResolvedValue(submission) as unknown as typeof deps.repository.getSubmissionRecord,
+        getFollowUps: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
         getTasks: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getTasks,
-        getDocuments: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
+        getDocuments: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
       },
     });
 
@@ -364,13 +504,25 @@ describe('loadGrantDetail', () => {
       repository: {
         ...deps.repository,
         getGrant: vi.fn().mockResolvedValue(grant) as unknown as typeof deps.repository.getGrant,
-        getDraftArtifacts: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
-        getRevisionRequests: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
-        getApprovalRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
-        getSubmissionRecord: vi.fn().mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
-        getFollowUps: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
+        getDraftArtifacts: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDraftArtifacts,
+        getRevisionRequests: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getRevisionRequests,
+        getApprovalRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getApprovalRecord,
+        getSubmissionRecord: vi
+          .fn()
+          .mockResolvedValue(null) as unknown as typeof deps.repository.getSubmissionRecord,
+        getFollowUps: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getFollowUps,
         getTasks: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getTasks,
-        getDocuments: vi.fn().mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
+        getDocuments: vi
+          .fn()
+          .mockResolvedValue([]) as unknown as typeof deps.repository.getDocuments,
       },
     });
 

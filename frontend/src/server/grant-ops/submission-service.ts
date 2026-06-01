@@ -84,7 +84,9 @@ export async function canSubmit(grantId: string): Promise<{ canSubmit: boolean; 
     return { canSubmit: false, reason: 'Submission manifest is required before submission' };
   }
 
-  const blockedItems = (grant.checklist || []).filter((item) => item.required === true && item.done === false);
+  const blockedItems = (grant.checklist || []).filter(
+    (item) => item.required === true && item.done === false,
+  );
   if (blockedItems.length > 0) {
     return {
       canSubmit: false,
@@ -129,9 +131,7 @@ export async function approveGrant(input: ApprovalInput): Promise<ApprovalResult
 
     // Get latest draft
     const drafts = await deps.repository.getDraftArtifacts(grant.id);
-    const latestVersion = drafts.length > 0
-      ? Math.max(...drafts.map((d) => d.version))
-      : 1;
+    const latestVersion = drafts.length > 0 ? Math.max(...drafts.map((d) => d.version)) : 1;
 
     // Create approval record
     const approvalRecord: ApprovalRecord = {

@@ -59,7 +59,10 @@ export function SavedSearchesPanel({ currentSearchQuery, onRunSearch }: SavedSea
       const res = await fetch('/api/saved-searches', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: saveName.trim() || 'Saved Search', queryText: currentSearchQuery }),
+        body: JSON.stringify({
+          name: saveName.trim() || 'Saved Search',
+          queryText: currentSearchQuery,
+        }),
       });
       if (res.ok) {
         setSaveName('');
@@ -135,7 +138,10 @@ export function SavedSearchesPanel({ currentSearchQuery, onRunSearch }: SavedSea
           {showSaveInput ? (
             <form
               className="saved-search-edit-form"
-              onSubmit={(e) => { e.preventDefault(); void handleSaveCurrent(); }}
+              onSubmit={(e) => {
+                e.preventDefault();
+                void handleSaveCurrent();
+              }}
             >
               <input
                 type="text"
@@ -146,10 +152,22 @@ export function SavedSearchesPanel({ currentSearchQuery, onRunSearch }: SavedSea
                 data-testid="save-search-name-input"
                 autoFocus
               />
-              <button type="submit" className="btn btn-sm btn-primary" disabled={saving} data-testid="save-search-confirm-btn">
+              <button
+                type="submit"
+                className="btn btn-sm btn-primary"
+                disabled={saving}
+                data-testid="save-search-confirm-btn"
+              >
                 {saving ? 'Saving...' : 'Save'}
               </button>
-              <button type="button" className="btn btn-sm btn-ghost" onClick={() => { setShowSaveInput(false); setSaveName(''); }}>
+              <button
+                type="button"
+                className="btn btn-sm btn-ghost"
+                onClick={() => {
+                  setShowSaveInput(false);
+                  setSaveName('');
+                }}
+              >
                 Cancel
               </button>
             </form>
@@ -171,7 +189,8 @@ export function SavedSearchesPanel({ currentSearchQuery, onRunSearch }: SavedSea
         <>
           {searches.length === 0 ? (
             <div className="saved-searches-empty" data-testid="saved-searches-empty">
-              No saved searches yet. Use the &ldquo;+ Save search&rdquo; button to save your current query.
+              No saved searches yet. Use the &ldquo;+ Save search&rdquo; button to save your current
+              query.
             </div>
           ) : (
             <div className="saved-searches-list">
@@ -180,7 +199,10 @@ export function SavedSearchesPanel({ currentSearchQuery, onRunSearch }: SavedSea
                   {editingId === search.id ? (
                     <form
                       className="saved-search-edit-form"
-                      onSubmit={(e) => { e.preventDefault(); void handleSaveEdit(search.id); }}
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        void handleSaveEdit(search.id);
+                      }}
                     >
                       <input
                         type="text"
@@ -190,10 +212,18 @@ export function SavedSearchesPanel({ currentSearchQuery, onRunSearch }: SavedSea
                         data-testid="edit-search-name-input"
                         autoFocus
                       />
-                      <button type="submit" className="btn btn-sm btn-primary" data-testid="edit-search-save-btn">
+                      <button
+                        type="submit"
+                        className="btn btn-sm btn-primary"
+                        data-testid="edit-search-save-btn"
+                      >
                         Save
                       </button>
-                      <button type="button" className="btn btn-sm btn-ghost" onClick={() => setEditingId(null)}>
+                      <button
+                        type="button"
+                        className="btn btn-sm btn-ghost"
+                        onClick={() => setEditingId(null)}
+                      >
                         Cancel
                       </button>
                     </form>
@@ -237,7 +267,11 @@ export function SavedSearchesPanel({ currentSearchQuery, onRunSearch }: SavedSea
                     <button
                       type="button"
                       className="btn btn-sm btn-ghost btn-danger"
-                      onClick={() => { if (window.confirm(`Delete saved search "${search.name}"?`)) { void handleDelete(search.id); } }}
+                      onClick={() => {
+                        if (window.confirm(`Delete saved search "${search.name}"?`)) {
+                          void handleDelete(search.id);
+                        }
+                      }}
                       aria-label={`Delete saved search ${search.name}`}
                       data-testid="delete-saved-search-btn"
                     >

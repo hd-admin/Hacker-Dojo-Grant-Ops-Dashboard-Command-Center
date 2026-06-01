@@ -2,6 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { getByRole, queryByText } from '../test-helpers';
 import { SavedSearchesPanel } from './SavedSearchesPanel';
 
 let container: HTMLDivElement;
@@ -39,6 +40,8 @@ describe('SavedSearchesPanel', () => {
     );
     await waitFor(() => container.querySelector('[data-testid="saved-searches-empty"]') !== null);
     expect(container.querySelector('[data-testid="saved-searches-empty"]')).not.toBeNull();
+    // also verify via accessible text
+    expect(queryByText(container, 'No saved searches yet')).not.toBeNull();
   });
 
   it('renders saved search cards when data is loaded', async () => {
@@ -88,7 +91,7 @@ describe('SavedSearchesPanel', () => {
 
     await waitFor(() => container.querySelector('[data-testid="saved-searches-empty"]') !== null);
 
-    const saveBtn = container.querySelector('[data-testid="save-current-search-btn"]');
+    const saveBtn = getByRole(container, 'button', { name: 'Save current search' });
     expect(saveBtn).not.toBeNull();
     saveBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
@@ -181,14 +184,14 @@ describe('SavedSearchesPanel', () => {
 
     await waitFor(() => container.querySelector('[data-testid="saved-searches-empty"]') !== null);
 
-    const toggle = container.querySelector('[aria-label="Collapse saved searches"]');
+    const toggle = getByRole(container, 'button', { name: 'Collapse saved searches' });
     expect(toggle).not.toBeNull();
-    toggle?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    toggle.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     await waitFor(() => container.querySelector('[data-testid="saved-searches-empty"]') === null);
     expect(container.querySelector('[data-testid="saved-searches-empty"]')).toBeNull();
 
-    const expandToggle = container.querySelector('[aria-label="Expand saved searches"]');
+    const expandToggle = getByRole(container, 'button', { name: 'Expand saved searches' });
     expect(expandToggle).not.toBeNull();
 
     fetchMock.mockRestore();

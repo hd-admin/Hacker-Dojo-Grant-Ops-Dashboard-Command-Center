@@ -27,15 +27,26 @@ export function SystemStatusPanel() {
     };
     void checkHealth();
     const interval = setInterval(checkHealth, 30000);
-    return () => { cancelled = true; clearInterval(interval); };
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
   }, []);
 
   if (loading) {
-    return <div className="system-status-panel" data-testid="system-status-loading">Checking system status...</div>;
+    return (
+      <div className="system-status-panel" data-testid="system-status-loading">
+        Checking system status...
+      </div>
+    );
   }
 
-  const allOnline = status?.storage === 'ok' && status?.opencode === 'ok' && status?.crawlerStatus === 'ok';
-  const allOffline = status?.storage === 'error' && status?.opencode === 'error' && status?.crawlerStatus === 'error';
+  const allOnline =
+    status?.storage === 'ok' && status?.opencode === 'ok' && status?.crawlerStatus === 'ok';
+  const allOffline =
+    status?.storage === 'error' &&
+    status?.opencode === 'error' &&
+    status?.crawlerStatus === 'error';
   const state = allOnline ? 'fully-online' : allOffline ? 'fully-offline' : 'partially-degraded';
 
   return (
@@ -63,4 +74,3 @@ export function SystemStatusPanel() {
     </div>
   );
 }
-

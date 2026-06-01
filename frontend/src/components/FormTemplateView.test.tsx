@@ -16,10 +16,15 @@ describe('FormTemplateView', () => {
           name: 'Test Funder',
           funderName: 'Test Funder',
           fields: [
-            { id: 'f1', label: 'Mission Statement', type: 'textarea', suggestedAnswer: 'We help...' },
+            {
+              id: 'f1',
+              label: 'Mission Statement',
+              type: 'textarea',
+              suggestedAnswer: 'We help...',
+            },
           ],
         },
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(container.querySelector('[data-testid="form-template-view"]')).not.toBeNull();

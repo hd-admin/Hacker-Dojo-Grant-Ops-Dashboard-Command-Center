@@ -75,7 +75,12 @@ describe('POST /api/budget-import', () => {
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
     const fd = new FormData();
     fd.append('awardId', 'award-1');
-    fd.append('file', new File([buffer], 'budget.xlsx', { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+    fd.append(
+      'file',
+      new File([buffer], 'budget.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      }),
+    );
     const req = createMockNextRequest(fd);
     const res = await POST(req);
     expect(res.status).toBe(200);

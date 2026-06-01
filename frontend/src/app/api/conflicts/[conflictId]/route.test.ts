@@ -33,13 +33,16 @@ describe('/api/conflicts/[conflictId] route', () => {
   });
 
   it('resolves a conflict and records an audit trail entry', async () => {
-    const response = await PATCH(new Request(`http://localhost/api/conflicts/${conflict.id}`, {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ canonicalValue: 'https://canonical.example' }),
-    }) as never, {
-      params: Promise.resolve({ conflictId: conflict.id }),
-    });
+    const response = await PATCH(
+      new Request(`http://localhost/api/conflicts/${conflict.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ canonicalValue: 'https://canonical.example' }),
+      }) as never,
+      {
+        params: Promise.resolve({ conflictId: conflict.id }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);

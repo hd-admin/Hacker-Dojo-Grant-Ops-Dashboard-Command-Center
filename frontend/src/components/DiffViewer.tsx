@@ -114,4 +114,3 @@ export function DiffViewer({ oldText, newText }: DiffViewerProps) {
     </div>
   );
 }
-

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import * as draftingService from '@/server/grant-ops/drafting-service';
@@ -24,7 +24,10 @@ export async function GET(
     return NextResponse.json(revisions);
   } catch (error) {
     logger.error({ err: error }, 'Error getting revisions');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get revisions'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get revisions'),
+      { status: 500 },
+    );
   }
 }
 
@@ -38,14 +41,18 @@ export async function POST(
     const rawBody = await request.json().catch(() => null);
     const parsed = bodySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), {
+        status: 400,
+      });
     }
     const body = parsed.data;
     const deps = getDependencies();
 
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
     }
 
     const profile = await deps.repository.getOrgProfile();
@@ -59,7 +66,10 @@ export async function POST(
     const settings = await deps.repository.getOpencodeSettings();
     if (!settings?.isConfigured) {
       return NextResponse.json(
-        { error: 'Opencode is not configured. Please set up Opencode settings in the application before generating revisions.' },
+        {
+          error:
+            'Opencode is not configured. Please set up Opencode settings in the application before generating revisions.',
+        },
         { status: 400 },
       );
     }

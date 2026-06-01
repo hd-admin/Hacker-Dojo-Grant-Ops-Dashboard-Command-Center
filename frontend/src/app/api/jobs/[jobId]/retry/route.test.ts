@@ -1,7 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
-import type { JobQueueItem, OrganizationProfile, OpencodeSettings } from '../../../../../../../shared/types';
-import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
+import {
+  invalidateCache,
+  withTempDataDir,
+} from '../../../../../../../shared/grant-ops-persistence';
+import type {
+  JobQueueItem,
+  OrganizationProfile,
+  OpencodeSettings,
+} from '../../../../../../../shared/types';
+import {
+  createDependencies,
+  resetDependencies,
+  setDependencies,
+} from '@/server/grant-ops/dependencies';
 import * as repository from '../../../../../server/grant-ops/repository';
 import { POST } from './route';
 
@@ -20,7 +31,10 @@ function createJob(id: string, status: JobQueueItem['status']): JobQueueItem {
   };
 }
 
-async function waitFor(predicate: () => Promise<boolean> | boolean, timeoutMs = 5000): Promise<void> {
+async function waitFor(
+  predicate: () => Promise<boolean> | boolean,
+  timeoutMs = 5000,
+): Promise<void> {
   const start = Date.now();
   while (!(await predicate())) {
     if (Date.now() - start > timeoutMs) {
@@ -35,7 +49,8 @@ const profile: OrganizationProfile = {
   ein: '94-3359594',
   samUEI: 'ABC123DEF456',
   nonprofitStatus: '501(c)(3)',
-  yearFounded: 2009,contactInfo: {},
+  yearFounded: 2009,
+  contactInfo: {},
   geography: 'Regional',
   mission: 'Community learning and technology access',
   programAreas: ['STEM'],
@@ -43,7 +58,8 @@ const profile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  boardMembers: [],docTypes: ['PDF'],
+  boardMembers: [],
+  docTypes: ['PDF'],
   searchThemes: ['EdTech'],
   agentBehavior: {
     autoDraftThreshold: 75,
@@ -106,18 +122,23 @@ describe('/api/jobs/[jobId]/retry route', () => {
     });
     await repository.addJobQueueItem(createJob('job-failed', 'failed'));
 
-    const response = await POST(new Request('http://localhost/api/jobs/job-failed/retry', {
-      method: 'POST',
-    }) as never, {
-      params: Promise.resolve({ jobId: 'job-failed' }),
-    });
+    const response = await POST(
+      new Request('http://localhost/api/jobs/job-failed/retry', {
+        method: 'POST',
+      }) as never,
+      {
+        params: Promise.resolve({ jobId: 'job-failed' }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(202);
     expect(data.success).toBe(true);
     expect(data.newJobId).toMatch(/^job-/);
 
-    await waitFor(async () => (await repository.getJobQueueItem(data.newJobId))?.status === 'completed');
+    await waitFor(
+      async () => (await repository.getJobQueueItem(data.newJobId))?.status === 'completed',
+    );
     const jobs = await repository.getJobQueue();
     expect(jobs).toHaveLength(2);
     const retried = jobs.find((job) => job.id === data.newJobId);
@@ -132,11 +153,14 @@ describe('/api/jobs/[jobId]/retry route', () => {
   it('rejects retry attempts for jobs that are not failed', async () => {
     await repository.addJobQueueItem(createJob('job-running', 'running'));
 
-    const response = await POST(new Request('http://localhost/api/jobs/job-running/retry', {
-      method: 'POST',
-    }) as never, {
-      params: Promise.resolve({ jobId: 'job-running' }),
-    });
+    const response = await POST(
+      new Request('http://localhost/api/jobs/job-running/retry', {
+        method: 'POST',
+      }) as never,
+      {
+        params: Promise.resolve({ jobId: 'job-running' }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(400);

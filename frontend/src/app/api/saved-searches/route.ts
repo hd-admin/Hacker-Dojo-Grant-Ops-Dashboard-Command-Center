@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { loadSavedSearches, saveSavedSearches } from '../../../../../shared/grant-ops-persistence';
@@ -20,7 +20,10 @@ export async function GET() {
     return NextResponse.json(searches);
   } catch (error) {
     logger.error({ err: error }, 'Error loading saved searches');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to load saved searches'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to load saved searches'),
+      { status: 500 },
+    );
   }
 }
 
@@ -30,7 +33,9 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.json();
     const parsed = bodySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Name is required'), { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Name is required'), {
+        status: 400,
+      });
     }
     const body = parsed.data;
     const existing = await loadSavedSearches();
@@ -48,6 +53,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(search, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, 'Error creating saved search');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create saved search'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create saved search'),
+      { status: 500 },
+    );
   }
 }

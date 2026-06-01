@@ -20,7 +20,9 @@ const suggestionInputSchema = z.object({
   id: z.string().optional(),
   createdAt: z.string().optional(),
   suggestedBy: z.literal('ai').optional(),
-  suggestedCategory: z.enum(['foundation', 'government', 'corporate', 'community', 'other']).optional(),
+  suggestedCategory: z
+    .enum(['foundation', 'government', 'corporate', 'community', 'other'])
+    .optional(),
   suggestedCrawlAccess: z.enum(['crawlable', 'manual-only', 'unsupported']).optional(),
   authMethodDescription: z.string().optional(),
   crawlFrequencyRecommendation: z.string().optional(),
@@ -42,7 +44,12 @@ function parseJsonPayload(rawOutput: string): unknown {
   } catch {
     const firstArray = trimmed.indexOf('[');
     const firstObject = trimmed.indexOf('{');
-    const start = firstArray === -1 ? firstObject : firstObject === -1 ? firstArray : Math.min(firstArray, firstObject);
+    const start =
+      firstArray === -1
+        ? firstObject
+        : firstObject === -1
+          ? firstArray
+          : Math.min(firstArray, firstObject);
     if (start >= 0) {
       const candidate = trimmed.slice(start);
       try {
@@ -72,12 +79,15 @@ function normalizeSuggestion(
     createdAt: item.createdAt ?? new Date().toISOString(),
   };
   if (item.suggestedCategory) suggestionInput['suggestedCategory'] = item.suggestedCategory;
-  if (item.suggestedCrawlAccess) suggestionInput['suggestedCrawlAccess'] = item.suggestedCrawlAccess;
-  if (item.authMethodDescription) suggestionInput['authMethodDescription'] = item.authMethodDescription;
-  if (item.crawlFrequencyRecommendation) suggestionInput['crawlFrequencyRecommendation'] = item.crawlFrequencyRecommendation;
+  if (item.suggestedCrawlAccess)
+    suggestionInput['suggestedCrawlAccess'] = item.suggestedCrawlAccess;
+  if (item.authMethodDescription)
+    suggestionInput['authMethodDescription'] = item.authMethodDescription;
+  if (item.crawlFrequencyRecommendation)
+    suggestionInput['crawlFrequencyRecommendation'] = item.crawlFrequencyRecommendation;
   const parsed = SourceDiscoverySuggestionSchema.safeParse(suggestionInput);
 
-  return parsed.success ? parsed.data as SourceDiscoverySuggestion : null;
+  return parsed.success ? (parsed.data as SourceDiscoverySuggestion) : null;
 }
 
 function buildPrompt(prompt: string): string {
@@ -144,7 +154,9 @@ export async function discoverSourcesFromPrompt(
       return { suggestions: [] };
     }
 
-    const rawSuggestions = Array.isArray(validated.data) ? validated.data : validated.data.suggestions;
+    const rawSuggestions = Array.isArray(validated.data)
+      ? validated.data
+      : validated.data.suggestions;
     const suggestions = rawSuggestions
       .map((item) => normalizeSuggestion(item, deps))
       .filter((item): item is SourceDiscoverySuggestion => item !== null)
@@ -157,7 +169,8 @@ export async function discoverSourcesFromPrompt(
 
     return { suggestions };
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error while discovering sources';
+    const message =
+      error instanceof Error ? error.message : 'Unknown error while discovering sources';
     if (/not configured|binary not found|enoent|no such file/i.test(message)) {
       return { suggestions: [], unavailable: true };
     }

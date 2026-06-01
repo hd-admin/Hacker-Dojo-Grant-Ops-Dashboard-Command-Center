@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/server/grant-ops/dependencies', () => ({
   getDependencies: vi.fn(),
-  setDependencies: vi.fn(), resetDependencies: vi.fn(), createDependencies: vi.fn(),
+  setDependencies: vi.fn(),
+  resetDependencies: vi.fn(),
+  createDependencies: vi.fn(),
 }));
 vi.mock('next/server', async () => {
   const actual = await vi.importActual<typeof import('next/server')>('next/server');
@@ -17,14 +19,22 @@ import { POST } from './route';
 import type { NextRequest, NextResponse } from 'next/server';
 
 describe('/api/extract/start route', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('queues an extract job', async () => {
     (getDependencies as ReturnType<typeof vi.fn>).mockReturnValue({
       idGenerator: { generateId: (p: string) => `${p}-test` },
     });
-    const req = new Request('http://localhost/api/extract/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+    const req = new Request('http://localhost/api/extract/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
     const response = await POST(req as unknown as NextRequest);
     expect(response.status).toBe(202);
     const data = await (response as NextResponse).json();
@@ -35,7 +45,11 @@ describe('/api/extract/start route', () => {
     (getDependencies as ReturnType<typeof vi.fn>).mockReturnValue({
       idGenerator: { generateId: () => 'ext-test' },
     });
-    const req = new Request('http://localhost/api/extract/start', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ documentRef: 'doc-1' }) });
+    const req = new Request('http://localhost/api/extract/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ documentRef: 'doc-1' }),
+    });
     const response = await POST(req as unknown as NextRequest);
     expect(response.status).toBe(202);
     const data = await (response as NextResponse).json();

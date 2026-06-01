@@ -14,15 +14,26 @@ const LEVEL_MAP: Record<string, number> = {
   error: 50,
 };
 
-const querySchema = z.object({
-  page: z.preprocess((val) => (val === null || val === undefined ? undefined : Number(val)), z.number().int().min(1).optional()),
-  pageSize: z.preprocess((val) => (val === null || val === undefined ? undefined : Number(val)), z.number().int().min(1).max(200).optional()),
-  level: z.preprocess((val) => (val === null || val === undefined ? undefined : val), z.enum(['debug', 'info', 'warn', 'error']).optional()),
-}).transform((data) => ({
-  page: data.page ?? 1,
-  pageSize: data.pageSize ?? 50,
-  level: data.level,
-}));
+const querySchema = z
+  .object({
+    page: z.preprocess(
+      (val) => (val === null || val === undefined ? undefined : Number(val)),
+      z.number().int().min(1).optional(),
+    ),
+    pageSize: z.preprocess(
+      (val) => (val === null || val === undefined ? undefined : Number(val)),
+      z.number().int().min(1).max(200).optional(),
+    ),
+    level: z.preprocess(
+      (val) => (val === null || val === undefined ? undefined : val),
+      z.enum(['debug', 'info', 'warn', 'error']).optional(),
+    ),
+  })
+  .transform((data) => ({
+    page: data.page ?? 1,
+    pageSize: data.pageSize ?? 50,
+    level: data.level,
+  }));
 
 export async function GET(request: NextRequest) {
   await connection();
@@ -35,7 +46,10 @@ export async function GET(request: NextRequest) {
     });
 
     if (!query.success) {
-      return NextResponse.json(createErrorResponse('VALIDATION_ERROR', 'Invalid pagination parameters'), { status: 400 });
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Invalid pagination parameters'),
+        { status: 400 },
+      );
     }
 
     const { page, pageSize, level } = query.data;
@@ -43,7 +57,8 @@ export async function GET(request: NextRequest) {
 
     const logEntries: string[] = [];
     if (fs.existsSync(LOG_DIR)) {
-      const files = fs.readdirSync(LOG_DIR)
+      const files = fs
+        .readdirSync(LOG_DIR)
         .filter((f) => f.startsWith('app') && f.endsWith('.log'))
         .sort()
         .reverse()
@@ -76,6 +91,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ entries, count, page, pageSize, totalEntries });
   } catch (error) {
     logger.error({ err: error }, 'Error reading app logs');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to read app logs'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to read app logs'),
+      { status: 500 },
+    );
   }
 }

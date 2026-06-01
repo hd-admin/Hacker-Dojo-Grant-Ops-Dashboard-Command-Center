@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import type {
   CrawlStatus,
@@ -9,9 +9,9 @@ import type {
   OrganizationProfile,
   Source,
   Task,
-} from "../../../shared/types";
-import React from "react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+} from '../../../shared/types';
+import React from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Award,
@@ -27,40 +27,40 @@ import {
   Search,
   Settings,
   X,
-} from "lucide-react";
-import { client } from "../lib/grant-ops-client";
+} from 'lucide-react';
+import { client } from '../lib/grant-ops-client';
 import { useToast } from './ToastProvider';
-import { DashboardView } from "./DashboardView";
-import { DiscoveryView } from "./DiscoveryView";
-import { GrantDrawer } from "./GrantDrawer";
-import styles from "./AppShell.module.css";
-import { NotificationsView } from "./NotificationsView";
-import { PipelineView } from "./PipelineView";
-import { SettingsView } from "./SettingsView";
-import { SourcesView } from "./SourcesView";
-import { TasksView } from "./TasksView";
-import { AuditView } from "./AuditView";
-import { CalendarView } from "./CalendarView";
-import { DuplicatesView } from "./DuplicatesView";
-import { JobsPanel } from "./JobsPanel";
-import { OperatorNamePrompt } from "./OperatorNamePrompt";
-import { PostAwardView } from "./PostAwardView";
+import { DashboardView } from './DashboardView';
+import { DiscoveryView } from './DiscoveryView';
+import { GrantDrawer } from './GrantDrawer';
+import styles from './AppShell.module.css';
+import { NotificationsView } from './NotificationsView';
+import { PipelineView } from './PipelineView';
+import { SettingsView } from './SettingsView';
+import { SourcesView } from './SourcesView';
+import { TasksView } from './TasksView';
+import { AuditView } from './AuditView';
+import { CalendarView } from './CalendarView';
+import { DuplicatesView } from './DuplicatesView';
+import { JobsPanel } from './JobsPanel';
+import { OperatorNamePrompt } from './OperatorNamePrompt';
+import { PostAwardView } from './PostAwardView';
 
 type ViewType =
-  | "dashboard"
-  | "discovery"
-  | "pipeline"
-  | "sources"
-  | "calendar"
-  | "post-award"
-  | "tasks"
-  | "settings"
-  | "notifications"
-  | "jobs"
-  | "audit"
-  | "duplicates";
+  | 'dashboard'
+  | 'discovery'
+  | 'pipeline'
+  | 'sources'
+  | 'calendar'
+  | 'post-award'
+  | 'tasks'
+  | 'settings'
+  | 'notifications'
+  | 'jobs'
+  | 'audit'
+  | 'duplicates';
 
-type HealthTier = "fully_online" | "partially_degraded" | "fully_offline";
+type HealthTier = 'fully_online' | 'partially_degraded' | 'fully_offline';
 
 interface NavItem {
   view?: ViewType;
@@ -70,21 +70,56 @@ interface NavItem {
 }
 
 const workspaceNav: NavItem[] = [
-  { view: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} />, ariaLabel: 'View dashboard' },
-  { view: 'discovery', label: 'Discovery', icon: <Search size={18} />, ariaLabel: 'Discover grants' },
-  { view: 'pipeline', label: 'Pipeline', icon: <Columns3 size={18} />, ariaLabel: 'View grant pipeline' },
+  {
+    view: 'dashboard',
+    label: 'Dashboard',
+    icon: <LayoutDashboard size={18} />,
+    ariaLabel: 'View dashboard',
+  },
+  {
+    view: 'discovery',
+    label: 'Discovery',
+    icon: <Search size={18} />,
+    ariaLabel: 'Discover grants',
+  },
+  {
+    view: 'pipeline',
+    label: 'Pipeline',
+    icon: <Columns3 size={18} />,
+    ariaLabel: 'View grant pipeline',
+  },
   { view: 'sources', label: 'Sources', icon: <Database size={18} />, ariaLabel: 'Manage sources' },
   { view: 'calendar', label: 'Calendar', icon: <Calendar size={18} />, ariaLabel: 'View calendar' },
-  { view: 'post-award', label: 'Post-Award', icon: <Award size={18} />, ariaLabel: 'View post-award management' },
+  {
+    view: 'post-award',
+    label: 'Post-Award',
+    icon: <Award size={18} />,
+    ariaLabel: 'View post-award management',
+  },
   { view: 'tasks', label: 'Tasks', icon: <ListChecks size={18} />, ariaLabel: 'View tasks' },
-  { view: 'settings', label: 'Settings', icon: <Settings size={18} />, ariaLabel: 'Application settings' },
+  {
+    view: 'settings',
+    label: 'Settings',
+    icon: <Settings size={18} />,
+    ariaLabel: 'Application settings',
+  },
 ];
 
 const activityNav: NavItem[] = [
-  { view: 'notifications', label: 'Notifications', icon: <Bell size={18} />, ariaLabel: 'View notifications' },
+  {
+    view: 'notifications',
+    label: 'Notifications',
+    icon: <Bell size={18} />,
+    ariaLabel: 'View notifications',
+  },
   { view: 'jobs', label: 'Jobs', icon: <Settings size={18} />, ariaLabel: 'View job queue' },
   { view: 'audit', label: 'Audit', icon: <FileText size={18} />, ariaLabel: 'View audit trail' },
-  { view: 'duplicates', label: 'Duplicates', icon: <GitFork size={18} />, ariaLabel: 'Review duplicate candidates' },
+  {
+    view: 'duplicates',
+    label: 'Duplicates',
+    icon: <GitFork size={18} />,
+    ariaLabel: 'Review duplicate candidates',
+  },
 ];
 
 const WORKING_CONTEXT_KEY = 'grantops.workingContext';
@@ -93,7 +128,9 @@ const OPERATOR_NAME_KEY = 'grantops.operatorName';
 function getWorkingContextStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   const storage = window.localStorage;
-  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function' ? storage : null;
+  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function'
+    ? storage
+    : null;
 }
 
 function readWorkingContext(): {
@@ -145,8 +182,6 @@ export function AppShell() {
   // Keyboard navigation
   const mainRef = useRef<HTMLElement>(null);
 
-
-
   const pendingSourcesCount = useMemo(
     () => sources.filter((source) => source.reviewStatus === 'pending-review').length,
     [sources],
@@ -170,29 +205,33 @@ export function AppShell() {
   // Crawl staleness (>7 days)
   const isCrawlStale = useMemo(() => {
     if (!crawlStatus.lastSync) return false;
-    const diffDays = (Date.now() - new Date(crawlStatus.lastSync).getTime()) / (1000 * 60 * 60 * 24);
+    const diffDays =
+      (Date.now() - new Date(crawlStatus.lastSync).getTime()) / (1000 * 60 * 60 * 24);
     return diffDays > 7;
   }, [crawlStatus.lastSync]);
 
-  const saveWorkingContext = useCallback((next: {
-    activeView?: ViewType;
-    selectedGrantId?: string | null;
-    recentGrantIds?: string[];
-    recentDraftId?: string | null;
-  }) => {
-    const storage = getWorkingContextStorage();
-    if (!storage || typeof storage.setItem !== 'function') return;
-    const current = readWorkingContext();
-    const merged = {
-      ...current,
-      ...next,
-    };
-    try {
-      storage.setItem(WORKING_CONTEXT_KEY, JSON.stringify(merged));
-    } catch {
-      // Ignore storage write failures in non-persistent test environments.
-    }
-  }, []);
+  const saveWorkingContext = useCallback(
+    (next: {
+      activeView?: ViewType;
+      selectedGrantId?: string | null;
+      recentGrantIds?: string[];
+      recentDraftId?: string | null;
+    }) => {
+      const storage = getWorkingContextStorage();
+      if (!storage || typeof storage.setItem !== 'function') return;
+      const current = readWorkingContext();
+      const merged = {
+        ...current,
+        ...next,
+      };
+      try {
+        storage.setItem(WORKING_CONTEXT_KEY, JSON.stringify(merged));
+      } catch {
+        // Ignore storage write failures in non-persistent test environments.
+      }
+    },
+    [],
+  );
 
   const refreshHealth = useCallback(async (): Promise<void> => {
     try {
@@ -201,7 +240,13 @@ export function AppShell() {
       setHealthResult(data);
     } catch (_error) {
       setError('Error loading health');
-      setHealthResult({ storage: 'error', opencode: 'error', crawlerStatus: 'never-run', documentIndexer: 'error', storageError: 'Unable to load health' });
+      setHealthResult({
+        storage: 'error',
+        opencode: 'error',
+        crawlerStatus: 'never-run',
+        documentIndexer: 'error',
+        storageError: 'Unable to load health',
+      });
     }
   }, []);
 
@@ -210,7 +255,13 @@ export function AppShell() {
       const response = await fetch('/api/jobs');
       const data = (await response.json()) as JobQueueItem[];
       const active = Array.isArray(data)
-        ? data.filter((job) => job.status === 'queued' || job.status === 'running' || job.status === 'verifying' || job.status === 'retrying')
+        ? data.filter(
+            (job) =>
+              job.status === 'queued' ||
+              job.status === 'running' ||
+              job.status === 'verifying' ||
+              job.status === 'retrying',
+          )
         : [];
       setActiveJobs(active);
 
@@ -236,7 +287,15 @@ export function AppShell() {
   }, [addToast]);
 
   const refreshAppState = useCallback(async (): Promise<void> => {
-    const [grantsData, profileData, notificationsData, tasksData, sourcesData, runsResponse, duplicatesData] = await Promise.all([
+    const [
+      grantsData,
+      profileData,
+      notificationsData,
+      tasksData,
+      sourcesData,
+      runsResponse,
+      duplicatesData,
+    ] = await Promise.all([
       client.grants.getAll(),
       client.profile.get().catch(() => null),
       client.notifications.getAll().catch(() => []),
@@ -251,7 +310,10 @@ export function AppShell() {
     setNotifications(notificationsData);
     setTasks(tasksData);
     setSources(sourcesData);
-    setPendingDuplicatesCount((Array.isArray(duplicatesData) ? duplicatesData : []).filter((d) => d.status === 'pending').length);
+    setPendingDuplicatesCount(
+      (Array.isArray(duplicatesData) ? duplicatesData : []).filter((d) => d.status === 'pending')
+        .length,
+    );
 
     const latestRun = runsResponse.latestRun;
     setCrawlStatus({
@@ -275,7 +337,8 @@ export function AppShell() {
     const context = readWorkingContext();
     if (context.activeView) setActiveView(context.activeView as ViewType);
     if (context.selectedGrantId !== undefined) setSelectedGrantId(context.selectedGrantId);
-    if (Array.isArray(context.recentGrantIds)) setRecentGrantIds(context.recentGrantIds.slice(0, 5));
+    if (Array.isArray(context.recentGrantIds))
+      setRecentGrantIds(context.recentGrantIds.slice(0, 5));
     if (context.recentDraftId !== undefined) setRecentDraftId(context.recentDraftId);
 
     // Check if operator name has been set
@@ -341,7 +404,10 @@ export function AppShell() {
     saveWorkingContext({ selectedGrantId });
     if (selectedGrantId) {
       setRecentGrantIds((current) => {
-        const next = [selectedGrantId, ...current.filter((id) => id !== selectedGrantId)].slice(0, 5);
+        const next = [selectedGrantId, ...current.filter((id) => id !== selectedGrantId)].slice(
+          0,
+          5,
+        );
         saveWorkingContext({ recentGrantIds: next });
         return next;
       });
@@ -364,7 +430,11 @@ export function AppShell() {
       await loadActiveJobs();
       // Check if there are active jobs after load
       const currentActiveJobs = activeJobs.filter(
-        (job) => job.status === 'queued' || job.status === 'running' || job.status === 'verifying' || job.status === 'retrying',
+        (job) =>
+          job.status === 'queued' ||
+          job.status === 'running' ||
+          job.status === 'verifying' ||
+          job.status === 'retrying',
       );
       if (currentActiveJobs.length > 0) {
         e.preventDefault();
@@ -479,7 +549,14 @@ export function AppShell() {
   // ============ Render ============
 
   if (!isMounted) {
-    return <div className="app-loading" aria-busy="true" role="status" aria-label="Loading application" />;
+    return (
+      <div
+        className="app-loading"
+        aria-busy="true"
+        role="status"
+        aria-label="Loading application"
+      />
+    );
   }
 
   // Storage blocked: critical failure screen
@@ -551,7 +628,9 @@ export function AppShell() {
                 onClick={() => handleNavClick(item)}
                 onKeyDown={(e) => handleNavKeyDown(e, item)}
               >
-                <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+                <span className="nav-icon" aria-hidden="true">
+                  {item.icon}
+                </span>
                 {item.label}
                 {matchedCount > 0 && item.view && <span className="nav-count">{matchedCount}</span>}
               </button>
@@ -573,7 +652,9 @@ export function AppShell() {
               onClick={() => handleNavClick(item)}
               onKeyDown={(e) => handleNavKeyDown(e, item)}
             >
-              <span className="nav-icon" aria-hidden="true">{item.icon}</span>
+              <span className="nav-icon" aria-hidden="true">
+                {item.icon}
+              </span>
               {item.label}
               {item.view === 'notifications' && notifications.length > 0 && (
                 <span className="nav-count">{notifications.length}</span>
@@ -605,7 +686,13 @@ export function AppShell() {
       </aside>
 
       {/* Main content with skip target */}
-      <main className="main" ref={mainRef} id="main-content" tabIndex={-1} aria-label="Main content">
+      <main
+        className="main"
+        ref={mainRef}
+        id="main-content"
+        tabIndex={-1}
+        aria-label="Main content"
+      >
         {/* Health Banner */}
         {healthTier !== 'fully_online' && (
           <div
@@ -625,7 +712,9 @@ export function AppShell() {
             <button
               type="button"
               className="health-banner-action"
-              onClick={() => { void refreshHealth(); }}
+              onClick={() => {
+                void refreshHealth();
+              }}
               aria-label="Re-check system health"
             >
               Re-check
@@ -634,46 +723,73 @@ export function AppShell() {
         )}
 
         {/* Reconnection notification */}
-        {healthTier === 'fully_online' && healthResult && opencodeBlocked === false && healthResult.opencode === 'ok' && (
-          <div
-            className="health-banner online"
-            role="status"
-            aria-live="polite"
-            data-testid="health-banner-online"
-          >
-            <span className="health-banner-icon" aria-hidden="true"><Check size={16} /></span>
-            <span className="health-banner-text">
-              All systems operational
-              {crawlStatus.lastSync && (
-                <>
-                  {' · '}
-                  <span data-testid="health-banner-crawl-sync">
-                    Last crawl: {getRelativeTime(crawlStatus.lastSync)}
-                    {isCrawlStale && (
-                      <span className="health-banner-stale-badge" data-testid="health-banner-stale">
-                        {' '}Stale
-                      </span>
-                    )}
-                  </span>
-                </>
-              )}
-            </span>
-          </div>
-        )}
+        {healthTier === 'fully_online' &&
+          healthResult &&
+          opencodeBlocked === false &&
+          healthResult.opencode === 'ok' && (
+            <div
+              className="health-banner online"
+              role="status"
+              aria-live="polite"
+              data-testid="health-banner-online"
+            >
+              <span className="health-banner-icon" aria-hidden="true">
+                <Check size={16} />
+              </span>
+              <span className="health-banner-text">
+                All systems operational
+                {crawlStatus.lastSync && (
+                  <>
+                    {' · '}
+                    <span data-testid="health-banner-crawl-sync">
+                      Last crawl: {getRelativeTime(crawlStatus.lastSync)}
+                      {isCrawlStale && (
+                        <span
+                          className="health-banner-stale-badge"
+                          data-testid="health-banner-stale"
+                        >
+                          {' '}
+                          Stale
+                        </span>
+                      )}
+                    </span>
+                  </>
+                )}
+              </span>
+            </div>
+          )}
 
         {/* Existing banner row (kept for backward compatibility) */}
         <div className="shell-banner-row">
           {hasStorageError && (
-            <div data-testid="storage-blocked-banner">Storage unavailable: {healthResult?.storageError ?? 'Unknown error'}</div>
+            <div data-testid="storage-blocked-banner">
+              Storage unavailable: {healthResult?.storageError ?? 'Unknown error'}
+            </div>
           )}
-          {(healthResult?.opencode === 'not-installed' || healthResult?.opencode === 'not-reachable') && (
-            <div data-testid="opencode-degraded-banner">AI features unavailable until opencode is configured.</div>
+          {(healthResult?.opencode === 'not-installed' ||
+            healthResult?.opencode === 'not-reachable') && (
+            <div data-testid="opencode-degraded-banner">
+              AI features unavailable until opencode is configured.
+            </div>
           )}
-          <button type="button" data-testid="rerun-health-check-btn" onClick={() => { void refreshHealth(); }}>Re-run Health Check</button>
+          <button
+            type="button"
+            data-testid="rerun-health-check-btn"
+            onClick={() => {
+              void refreshHealth();
+            }}
+          >
+            Re-run Health Check
+          </button>
         </div>
 
         {/* Views */}
-        <div id="view-dashboard" className={`view ${activeView === 'dashboard' ? 'active' : ''}`} role="tabpanel" aria-label="Dashboard">
+        <div
+          id="view-dashboard"
+          className={`view ${activeView === 'dashboard' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Dashboard"
+        >
           <DashboardView
             onGrantSelect={handleGrantSelect}
             onNavigate={handleNavigate}
@@ -686,37 +802,105 @@ export function AppShell() {
             operatorName={operatorName}
           />
         </div>
-        <div id="view-discovery" className={`view ${activeView === 'discovery' ? 'active' : ''}`} role="tabpanel" aria-label="Discovery">
-          <DiscoveryView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} grants={grants} sources={sources} />
+        <div
+          id="view-discovery"
+          className={`view ${activeView === 'discovery' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Discovery"
+        >
+          <DiscoveryView
+            onGrantSelect={handleGrantSelect}
+            onRefreshAppState={refreshAppState}
+            grants={grants}
+            sources={sources}
+          />
         </div>
-        <div id="view-pipeline" className={`view ${activeView === 'pipeline' ? 'active' : ''}`} role="tabpanel" aria-label="Pipeline">
-          <PipelineView onGrantSelect={handleGrantSelect} onNavigate={handleNavigate} grants={grants} />
+        <div
+          id="view-pipeline"
+          className={`view ${activeView === 'pipeline' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Pipeline"
+        >
+          <PipelineView
+            onGrantSelect={handleGrantSelect}
+            onNavigate={handleNavigate}
+            grants={grants}
+          />
         </div>
-        <div id="view-sources" className={`view ${activeView === 'sources' ? 'active' : ''}`} role="tabpanel" aria-label="Sources">
+        <div
+          id="view-sources"
+          className={`view ${activeView === 'sources' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Sources"
+        >
           <SourcesView onRefreshAppState={refreshAppState} />
         </div>
-        <div id="view-tasks" className={`view ${activeView === 'tasks' ? 'active' : ''}`} role="tabpanel" aria-label="Tasks">
-          <TasksView onRefreshAppState={refreshAppState} tasks={tasks} onNavigate={handleNavigate} />
+        <div
+          id="view-tasks"
+          className={`view ${activeView === 'tasks' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Tasks"
+        >
+          <TasksView
+            onRefreshAppState={refreshAppState}
+            tasks={tasks}
+            onNavigate={handleNavigate}
+          />
         </div>
-        <div id="view-settings" className={`view ${activeView === 'settings' ? 'active' : ''}`} role="tabpanel" aria-label="Settings">
+        <div
+          id="view-settings"
+          className={`view ${activeView === 'settings' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Settings"
+        >
           <SettingsView onRefreshAppState={refreshAppState} />
         </div>
-        <div id="view-calendar" className={`view ${activeView === 'calendar' ? 'active' : ''}`} role="tabpanel" aria-label="Calendar">
+        <div
+          id="view-calendar"
+          className={`view ${activeView === 'calendar' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Calendar"
+        >
           <CalendarView grants={grants} />
         </div>
-        <div id="view-post-award" className={`view ${activeView === 'post-award' ? 'active' : ''}`} role="tabpanel" aria-label="Post-Award Management">
+        <div
+          id="view-post-award"
+          className={`view ${activeView === 'post-award' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Post-Award Management"
+        >
           <PostAwardView onRefreshAppState={refreshAppState} />
         </div>
-        <div id="view-notifications" className={`view ${activeView === 'notifications' ? 'active' : ''}`} role="tabpanel" aria-label="Notifications">
+        <div
+          id="view-notifications"
+          className={`view ${activeView === 'notifications' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Notifications"
+        >
           <NotificationsView notifications={notifications} />
         </div>
-        <div id="view-jobs" className={`view ${activeView === 'jobs' ? 'active' : ''}`} role="tabpanel" aria-label="Job Queue">
+        <div
+          id="view-jobs"
+          className={`view ${activeView === 'jobs' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Job Queue"
+        >
           <JobsPanel onRefreshAppState={refreshAppState} />
         </div>
-        <div id="view-audit" className={`view ${activeView === 'audit' ? 'active' : ''}`} role="tabpanel" aria-label="Audit Trail">
+        <div
+          id="view-audit"
+          className={`view ${activeView === 'audit' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Audit Trail"
+        >
           <AuditView />
         </div>
-        <div id="view-duplicates" className={`view ${activeView === 'duplicates' ? 'active' : ''}`} role="tabpanel" aria-label="Duplicate Candidates">
+        <div
+          id="view-duplicates"
+          className={`view ${activeView === 'duplicates' ? 'active' : ''}`}
+          role="tabpanel"
+          aria-label="Duplicate Candidates"
+        >
           <DuplicatesView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} />
         </div>
       </main>
@@ -746,14 +930,20 @@ export function AppShell() {
               <div className="active-jobs-list">
                 {activeJobs.map((job) => (
                   <div key={job.id} className="active-job-item">
-                    <span>{job.jobType} #{job.id.slice(0, 8)}</span>
+                    <span>
+                      {job.jobType} #{job.id.slice(0, 8)}
+                    </span>
                     <span>{job.status}</span>
                   </div>
                 ))}
               </div>
             )}
             <div className="quit-actions">
-              <button type="button" className="btn btn-ghost" onClick={() => setShowSafeQuit(false)}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => setShowSafeQuit(false)}
+              >
                 Cancel
               </button>
               <button
@@ -796,8 +986,6 @@ export function AppShell() {
         onClose={handleDrawerClose}
         onRefreshAppState={refreshSelectedGrant}
       />
-
-
     </div>
   );
 }
@@ -816,4 +1004,3 @@ function getRelativeTime(isoString: string): string {
   if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString();
 }
-

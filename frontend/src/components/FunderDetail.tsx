@@ -23,10 +23,17 @@ export function FunderDetail({ funder, onClose, onDetectPatterns }: FunderDetail
   };
 
   return (
-    <div className="funder-detail" data-testid="funder-detail" role="dialog" aria-label={`Funder details for ${funder.name}`}>
+    <div
+      className="funder-detail"
+      data-testid="funder-detail"
+      role="dialog"
+      aria-label={`Funder details for ${funder.name}`}
+    >
       <div className="funder-detail-header">
         <h2>{funder.name}</h2>
-        <button type="button" className="btn btn-ghost" onClick={onClose} aria-label="Close">✕</button>
+        <button type="button" className="btn btn-ghost" onClick={onClose} aria-label="Close">
+          ✕
+        </button>
       </div>
 
       <div className="funder-detail-body">
@@ -44,7 +51,9 @@ export function FunderDetail({ funder, onClose, onDetectPatterns }: FunderDetail
           <div className="funder-detail-label">Focus Areas</div>
           <div className="funder-detail-tags">
             {funder.focusAreas.map((area) => (
-              <span key={area} className="tag">{area}</span>
+              <span key={area} className="tag">
+                {area}
+              </span>
             ))}
           </div>
         </div>
@@ -55,7 +64,8 @@ export function FunderDetail({ funder, onClose, onDetectPatterns }: FunderDetail
         <div className="funder-detail-section">
           <div className="funder-detail-label">Typical Award Range</div>
           <div className="funder-detail-value">
-            ${funder.typicalAwardRange.min.toLocaleString()} — ${funder.typicalAwardRange.max.toLocaleString()}
+            ${funder.typicalAwardRange.min.toLocaleString()} — $
+            {funder.typicalAwardRange.max.toLocaleString()}
           </div>
         </div>
 
@@ -116,4 +126,3 @@ export function FunderDetail({ funder, onClose, onDetectPatterns }: FunderDetail
     </div>
   );
 }
-

@@ -61,11 +61,20 @@ describe('/api/snippets route', () => {
   describe('GET', () => {
     it('returns snippets via the grant-ops-sqlite module', async () => {
       const { readSnippets } = await import('../../../../../shared/grant-ops-sqlite');
-      (readSnippets as ReturnType<typeof vi.fn>).mockReturnValue([{
-        id: 'snip-1', grantId: 'g1', title: 'Boilerplate', content: 'test', category: 'general', createdAt: '2026-01-01',
-      }]);
+      (readSnippets as ReturnType<typeof vi.fn>).mockReturnValue([
+        {
+          id: 'snip-1',
+          grantId: 'g1',
+          title: 'Boilerplate',
+          content: 'test',
+          category: 'general',
+          createdAt: '2026-01-01',
+        },
+      ]);
 
-      const mockReq = { url: 'http://localhost:3000/api/snippets?grantId=g1' } as unknown as NextRequest;
+      const mockReq = {
+        url: 'http://localhost:3000/api/snippets?grantId=g1',
+      } as unknown as NextRequest;
       const response = await GET(mockReq);
       const data = await (response as NextResponse).json();
       expect(data.snippets).toBeDefined();
@@ -84,20 +93,26 @@ describe('/api/snippets route', () => {
   describe('POST', () => {
     it('returns 400 for invalid body', async () => {
       const { NextRequest } = await import('next/server');
-      const mockReq = new (NextRequest as unknown as new (url: string, init?: Record<string, unknown>) => Request)(
-        'http://localhost:3000/api/snippets',
-        { method: 'POST', body: JSON.stringify({}) }
-      );
+      const mockReq = new (NextRequest as unknown as new (
+        url: string,
+        init?: Record<string, unknown>,
+      ) => Request)('http://localhost:3000/api/snippets', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
       const response = await POST(mockReq as unknown as NextRequest);
       expect(response.status).toBe(400);
     });
 
     it('creates a snippet with valid data', async () => {
       const { NextRequest } = await import('next/server');
-      const mockReq = new (NextRequest as unknown as new (url: string, init?: Record<string, unknown>) => Request)(
-        'http://localhost:3000/api/snippets',
-        { method: 'POST', body: JSON.stringify({ title: 'New Snippet', content: 'Hello' }) }
-      );
+      const mockReq = new (NextRequest as unknown as new (
+        url: string,
+        init?: Record<string, unknown>,
+      ) => Request)('http://localhost:3000/api/snippets', {
+        method: 'POST',
+        body: JSON.stringify({ title: 'New Snippet', content: 'Hello' }),
+      });
       const response = await POST(mockReq as unknown as NextRequest);
       const data = await (response as NextResponse).json();
       expect(response.status).toBe(201);
@@ -113,7 +128,9 @@ describe('/api/snippets route', () => {
     });
 
     it('deletes a snippet by id', async () => {
-      const mockReq = { url: 'http://localhost:3000/api/snippets?id=snip-1' } as unknown as NextRequest;
+      const mockReq = {
+        url: 'http://localhost:3000/api/snippets?id=snip-1',
+      } as unknown as NextRequest;
       const response = await DELETE(mockReq);
       const data = await (response as NextResponse).json();
       expect(data.success).toBe(true);

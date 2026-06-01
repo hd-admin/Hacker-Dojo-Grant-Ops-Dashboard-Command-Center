@@ -56,7 +56,10 @@ describe('fetchProPublicaGrants', () => {
     execFileSyncMock.mockReset();
     mockGetOpencodeSettings = vi.fn<() => Promise<OpencodeSettings | null>>();
     const baseDeps = createDependencies();
-    testDeps = { ...baseDeps, repository: { ...baseDeps.repository, getOpencodeSettings: mockGetOpencodeSettings } };
+    testDeps = {
+      ...baseDeps,
+      repository: { ...baseDeps.repository, getOpencodeSettings: mockGetOpencodeSettings },
+    };
   });
 
   afterEach(() => {
@@ -107,7 +110,9 @@ describe('fetchProPublicaGrants', () => {
       timeoutMs: 60000,
       workingDirectory: '/tmp',
     } as OpencodeSettings);
-    mockExecFileSync.mockReturnValue(JSON.stringify({ grants: [{ id: 'pp-1', title: 'T', funder: 'F' }] }));
+    mockExecFileSync.mockReturnValue(
+      JSON.stringify({ grants: [{ id: 'pp-1', title: 'T', funder: 'F' }] }),
+    );
     const result = await fetchProPublicaGrants('test', testDeps);
     expect(result.grants).toHaveLength(1);
     expect(result.grants[0]!.title).toBe('T');

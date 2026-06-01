@@ -10,10 +10,7 @@ import {
   resetDependencies,
   setDependencies,
 } from '@/server/grant-ops/dependencies';
-import {
-  invalidateCache,
-  withTempDataDir,
-} from '../../../../../../shared/grant-ops-persistence';
+import { invalidateCache, withTempDataDir } from '../../../../../../shared/grant-ops-persistence';
 import type { JobQueueItem } from '../../../../../../shared/types';
 import * as repository from '../../../../server/grant-ops/repository';
 import { DELETE, GET } from './route';

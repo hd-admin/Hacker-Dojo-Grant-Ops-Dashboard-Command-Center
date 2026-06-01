@@ -11,7 +11,10 @@ const fixturePath = path.join(
   'tests/fixtures/documents/hacker-dojo-program-summary.pdf',
 );
 
-function buildMultipartRequest(fields: Record<string, string>, file: { name: string; type: string; bytes: Buffer }) {
+function buildMultipartRequest(
+  fields: Record<string, string>,
+  file: { name: string; type: string; bytes: Buffer },
+) {
   const formData = new FormData();
   for (const [key, value] of Object.entries(fields)) {
     formData.append(key, value);
@@ -34,9 +37,7 @@ describe('/api/documents route', () => {
   });
 
   it('GET returns persisted documents', async () => {
-    const response = await GET(
-      new Request('http://localhost/api/documents') as never,
-    );
+    const response = await GET(new Request('http://localhost/api/documents') as never);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -54,9 +55,7 @@ describe('/api/documents route', () => {
       },
     );
 
-    const response = await POST(
-      { formData: async () => payload.formData } as never,
-    );
+    const response = await POST({ formData: async () => payload.formData } as never);
     const data = await response.json();
 
     expect(response.status).toBe(201);
@@ -85,9 +84,7 @@ describe('/api/documents route', () => {
       },
     );
 
-    const response = await POST(
-      { formData: async () => payload.formData } as never,
-    );
+    const response = await POST({ formData: async () => payload.formData } as never);
     const data = await response.json();
 
     expect(response.status).toBe(201);
@@ -104,10 +101,16 @@ describe('/api/documents route', () => {
       version: '1.0',
       audited: false,
       uploadedAt: new Date().toISOString(),
-      storagePath: path.join(tempDataDir.dataDir, 'documents', 'doc-patch-1-hacker-dojo-program-summary.pdf'),
+      storagePath: path.join(
+        tempDataDir.dataDir,
+        'documents',
+        'doc-patch-1-hacker-dojo-program-summary.pdf',
+      ),
       extractionStatus: 'extracted',
-      extractedText: 'Hacker Dojo Grant Program Summary Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
-      contentSnippet: 'Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
+      extractedText:
+        'Hacker Dojo Grant Program Summary Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
+      contentSnippet:
+        'Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
     });
 
     const response = await PATCH(

@@ -4,14 +4,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { Source, SourceDiscoverySuggestion } from '../../../shared/types';
 
-const {
-  onRefreshAppState,
-} = vi.hoisted(() => ({
+const { onRefreshAppState } = vi.hoisted(() => ({
   onRefreshAppState: vi.fn(),
 }));
 
 vi.mock('../lib/grant-ops-client', () => ({}));
 
+import { getAllByRole } from '../test-helpers';
 import { SourcesView } from './SourcesView';
 
 const mockSources: Source[] = [
@@ -111,33 +110,47 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<void
 beforeEach(() => {
   onRefreshAppState.mockReset();
 
-  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
 
-    if (url.includes('/api/sources/discover')) {
-      return new Response(JSON.stringify({
-        suggestions: mockSuggestions,
-        unavailable: false,
-      }), { headers: { 'content-type': 'application/json' } });
-    }
-
-    if (url.includes('/api/sources?filter=pending-review')) {
-      return new Response(JSON.stringify(mockPendingSources), { headers: { 'content-type': 'application/json' } });
-    }
-
-    if (url.includes('/api/sources')) {
-      return new Response(JSON.stringify(mockSources), { headers: { 'content-type': 'application/json' } });
-    }
-
-    if (url.includes('/api/sources/')) {
-      if (url.includes('/review')) {
-        return new Response(JSON.stringify({ success: true }), { headers: { 'content-type': 'application/json' } });
+      if (url.includes('/api/sources/discover')) {
+        return new Response(
+          JSON.stringify({
+            suggestions: mockSuggestions,
+            unavailable: false,
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
       }
-      return new Response(JSON.stringify({ success: true }), { headers: { 'content-type': 'application/json' } });
-    }
 
-    return new Response('{}', { headers: { 'content-type': 'application/json' } });
-  }));
+      if (url.includes('/api/sources?filter=pending-review')) {
+        return new Response(JSON.stringify(mockPendingSources), {
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/sources')) {
+        return new Response(JSON.stringify(mockSources), {
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
+      if (url.includes('/api/sources/')) {
+        if (url.includes('/review')) {
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+
+      return new Response('{}', { headers: { 'content-type': 'application/json' } });
+    }),
+  );
 
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -158,7 +171,7 @@ describe('SourcesView', () => {
 
     expect(container.textContent).toContain('Sources');
     expect(container.textContent).toContain('Review queue');
-    const statusIndicators = container.querySelectorAll('[role="status"]');
+    const statusIndicators = getAllByRole(container, 'status');
     expect(statusIndicators.length).toBeGreaterThan(0);
   });
 
@@ -171,7 +184,9 @@ describe('SourcesView', () => {
 
   it('shows pending review section with approve/reject buttons when pending sources exist', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.querySelector('[data-testid="approve-source-btn-pending-1"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="approve-source-btn-pending-1"]') !== null,
+    );
 
     expect(container.textContent).toContain('Pending review');
     expect(container.textContent).toContain('Pending Source 1');
@@ -187,26 +202,41 @@ describe('SourcesView', () => {
     const discoverBtn = container.querySelector('[aria-label="Discover sources"]');
     expect(discoverBtn).not.toBeNull();
 
-    expect(container.querySelector('[aria-label="Describe the grants you are looking for"]')).toBeNull();
+    expect(
+      container.querySelector('[aria-label="Describe the grants you are looking for"]'),
+    ).toBeNull();
 
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(() => container.querySelector('[aria-label="Describe the grants you are looking for"]') !== null);
+    await waitFor(
+      () =>
+        container.querySelector('[aria-label="Describe the grants you are looking for"]') !== null,
+    );
 
-    expect(container.querySelector('[aria-label="Describe the grants you are looking for"]')).not.toBeNull();
+    expect(
+      container.querySelector('[aria-label="Describe the grants you are looking for"]'),
+    ).not.toBeNull();
 
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(() => container.querySelector('[aria-label="Describe the grants you are looking for"]') === null);
+    await waitFor(
+      () =>
+        container.querySelector('[aria-label="Describe the grants you are looking for"]') === null,
+    );
   });
 
   it('submitting discovery with prompt shows discovery suggestions', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
     await waitFor(() => container.textContent?.includes('Sources') === true);
 
-    const discoverBtn = container.querySelector('[data-testid="discover-sources-btn"]');
+    const discoverBtn = container.querySelector('[aria-label="Discover sources"]');
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(() => container.querySelector('[data-testid="discovery-prompt-input"]') !== null);
+    await waitFor(
+      () =>
+        container.querySelector('[aria-label="Describe the grants you are looking for"]') !== null,
+    );
 
-    const promptInput = container.querySelector('[data-testid="discovery-prompt-input"]') as HTMLTextAreaElement;
+    const promptInput = container.querySelector(
+      '[aria-label="Describe the grants you are looking for"]',
+    ) as HTMLTextAreaElement;
     promptInput.value = 'grants for makerspaces';
     promptInput.dispatchEvent(new Event('input', { bubbles: true }));
 
@@ -221,26 +251,36 @@ describe('SourcesView', () => {
   });
 
   it('shows "discovery-unavailable-msg" when source discovery is unavailable', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
 
-      if (url.includes('/api/sources/discover')) {
-        return new Response(JSON.stringify({
-          suggestions: [],
-          unavailable: true,
-        }), { headers: { 'content-type': 'application/json' } });
-      }
+        if (url.includes('/api/sources/discover')) {
+          return new Response(
+            JSON.stringify({
+              suggestions: [],
+              unavailable: true,
+            }),
+            { headers: { 'content-type': 'application/json' } },
+          );
+        }
 
-      if (url.includes('/api/sources?filter=pending-review')) {
-        return new Response(JSON.stringify(mockPendingSources), { headers: { 'content-type': 'application/json' } });
-      }
+        if (url.includes('/api/sources?filter=pending-review')) {
+          return new Response(JSON.stringify(mockPendingSources), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
 
-      if (url.includes('/api/sources')) {
-        return new Response(JSON.stringify(mockSources), { headers: { 'content-type': 'application/json' } });
-      }
+        if (url.includes('/api/sources')) {
+          return new Response(JSON.stringify(mockSources), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
 
-      return new Response('{}', { headers: { 'content-type': 'application/json' } });
-    }));
+        return new Response('{}', { headers: { 'content-type': 'application/json' } });
+      }),
+    );
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
     await waitFor(() => container.textContent?.includes('Sources') === true);
@@ -249,17 +289,23 @@ describe('SourcesView', () => {
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(() => container.querySelector('[data-testid="discovery-prompt-input"]') !== null);
 
-    const promptInput = container.querySelector('[data-testid="discovery-prompt-input"]') as HTMLTextAreaElement;
+    const promptInput = container.querySelector(
+      '[data-testid="discovery-prompt-input"]',
+    ) as HTMLTextAreaElement;
     promptInput.value = 'grants for makerspaces';
     promptInput.dispatchEvent(new Event('input', { bubbles: true }));
 
     const submitBtn = container.querySelector('[aria-label="Find sources"]');
     submitBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('[data-testid="discovery-unavailable-msg"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="discovery-unavailable-msg"]') !== null,
+    );
 
     expect(container.querySelector('[data-testid="discovery-unavailable-msg"]')).not.toBeNull();
-    expect(container.textContent).toContain('Source discovery requires opencode. Configure it in Settings.');
+    expect(container.textContent).toContain(
+      'Source discovery requires opencode. Configure it in Settings.',
+    );
   });
 
   it('approving a discovery suggestion calls the approve API', async () => {
@@ -272,7 +318,9 @@ describe('SourcesView', () => {
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(() => container.querySelector('[data-testid="discovery-prompt-input"]') !== null);
 
-    const promptInput = container.querySelector('[data-testid="discovery-prompt-input"]') as HTMLTextAreaElement;
+    const promptInput = container.querySelector(
+      '[data-testid="discovery-prompt-input"]',
+    ) as HTMLTextAreaElement;
     promptInput.value = 'grants for makerspaces';
     promptInput.dispatchEvent(new Event('input', { bubbles: true }));
 
@@ -284,15 +332,22 @@ describe('SourcesView', () => {
     const approveSuggestionBtn = container.querySelector('[aria-label="Approve suggestion"]');
     approveSuggestionBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(() => fetchMock.mock.calls.some(([url]) => String(url).includes('/api/sources')) === true);
+    await waitFor(
+      () => fetchMock.mock.calls.some(([url]) => String(url).includes('/api/sources')) === true,
+    );
 
-    const sourcesApiCalls = fetchMock.mock.calls.filter(([url]) => String(url).includes('/api/sources') && !String(url).includes('/filter=pending-review'));
+    const sourcesApiCalls = fetchMock.mock.calls.filter(
+      ([url]) =>
+        String(url).includes('/api/sources') && !String(url).includes('/filter=pending-review'),
+    );
     expect(sourcesApiCalls.length).toBeGreaterThan(0);
   });
 
   it('editing a source shows edit panel with save button', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.querySelector('[data-testid="edit-source-btn-pending-1"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="edit-source-btn-pending-1"]') !== null,
+    );
 
     const editBtn = container.querySelector('[data-testid="edit-source-btn-pending-1"]');
     editBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
@@ -307,19 +362,26 @@ describe('SourcesView', () => {
   });
 
   it('shows empty state "No sources pending review" when no pending sources', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
 
-      if (url.includes('/api/sources?filter=pending-review')) {
-        return new Response(JSON.stringify([]), { headers: { 'content-type': 'application/json' } });
-      }
+        if (url.includes('/api/sources?filter=pending-review')) {
+          return new Response(JSON.stringify([]), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
 
-      if (url.includes('/api/sources')) {
-        return new Response(JSON.stringify(mockSources), { headers: { 'content-type': 'application/json' } });
-      }
+        if (url.includes('/api/sources')) {
+          return new Response(JSON.stringify(mockSources), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
 
-      return new Response('{}', { headers: { 'content-type': 'application/json' } });
-    }));
+        return new Response('{}', { headers: { 'content-type': 'application/json' } });
+      }),
+    );
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
     await waitFor(() => container.textContent?.includes('0 sources awaiting review') === true);
@@ -338,65 +400,111 @@ describe('ProPublica search section', () => {
   });
 
   it('shows propublica-unavailable-msg on unavailable response', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('propublica')) {
-        return new Response(JSON.stringify({ unavailable: true, grants: [] }), { headers: { 'content-type': 'application/json' } });
-      }
-      if (url.includes('/api/sources?filter=pending-review')) {
-        return new Response(JSON.stringify([]), { headers: { 'content-type': 'application/json' } });
-      }
-      if (url.includes('/api/sources')) {
-        return new Response(JSON.stringify(mockSources), { headers: { 'content-type': 'application/json' } });
-      }
-      return new Response('{}', { headers: { 'content-type': 'application/json' } });
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('propublica')) {
+          return new Response(JSON.stringify({ unavailable: true, grants: [] }), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        if (url.includes('/api/sources?filter=pending-review')) {
+          return new Response(JSON.stringify([]), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        if (url.includes('/api/sources')) {
+          return new Response(JSON.stringify(mockSources), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        return new Response('{}', { headers: { 'content-type': 'application/json' } });
+      }),
+    );
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
     await waitFor(() => container.querySelector('input[aria-label="Search ProPublica"]') !== null);
 
-    const input = container.querySelector('input[aria-label="Search ProPublica"]') as HTMLInputElement;
+    const input = container.querySelector(
+      'input[aria-label="Search ProPublica"]',
+    ) as HTMLInputElement;
     // Use native setter to bypass React's internal value tracking
-    const nativeInputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    const nativeInputSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set;
     nativeInputSetter?.call(input, 'STEM education');
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    await waitFor(() => !(container.querySelector('button[aria-label="Search ProPublica"]') as HTMLButtonElement | null)?.disabled);
+    await waitFor(
+      () =>
+        !(
+          container.querySelector(
+            'button[aria-label="Search ProPublica"]',
+          ) as HTMLButtonElement | null
+        )?.disabled,
+    );
 
     const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
     form.dispatchEvent(new Event('submit', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('[data-testid="propublica-unavailable-msg"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="propublica-unavailable-msg"]') !== null,
+    );
     expect(container.querySelector('[data-testid="propublica-unavailable-msg"]')).not.toBeNull();
   });
 
   it('shows propublica-empty-results when grants array is empty', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('propublica')) {
-        return new Response(JSON.stringify({ grants: [] }), { headers: { 'content-type': 'application/json' } });
-      }
-      if (url.includes('/api/sources?filter=pending-review')) {
-        return new Response(JSON.stringify([]), { headers: { 'content-type': 'application/json' } });
-      }
-      if (url.includes('/api/sources')) {
-        return new Response(JSON.stringify(mockSources), { headers: { 'content-type': 'application/json' } });
-      }
-      return new Response('{}', { headers: { 'content-type': 'application/json' } });
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('propublica')) {
+          return new Response(JSON.stringify({ grants: [] }), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        if (url.includes('/api/sources?filter=pending-review')) {
+          return new Response(JSON.stringify([]), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        if (url.includes('/api/sources')) {
+          return new Response(JSON.stringify(mockSources), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        return new Response('{}', { headers: { 'content-type': 'application/json' } });
+      }),
+    );
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
     await waitFor(() => container.querySelector('input[aria-label="Search ProPublica"]') !== null);
 
-    const input = container.querySelector('input[aria-label="Search ProPublica"]') as HTMLInputElement;
-    const nativeInputSetter2 = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    const input = container.querySelector(
+      'input[aria-label="Search ProPublica"]',
+    ) as HTMLInputElement;
+    const nativeInputSetter2 = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set;
     nativeInputSetter2?.call(input, 'STEM education');
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    await waitFor(() => !(container.querySelector('button[aria-label="Search ProPublica"]') as HTMLButtonElement | null)?.disabled);
+    await waitFor(
+      () =>
+        !(
+          container.querySelector(
+            'button[aria-label="Search ProPublica"]',
+          ) as HTMLButtonElement | null
+        )?.disabled,
+    );
 
     const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
     form.dispatchEvent(new Event('submit', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('[data-testid="propublica-empty-results"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="propublica-empty-results"]') !== null,
+    );
     expect(container.querySelector('[data-testid="propublica-empty-results"]')).not.toBeNull();
   });
 
@@ -415,33 +523,56 @@ describe('ProPublica search section', () => {
       status: 'matched',
       statusLabel: 'Matched',
     };
-    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-      const url = String(input);
-      if (url.includes('propublica')) {
-        return new Response(JSON.stringify({ grants: [mockGrant] }), { headers: { 'content-type': 'application/json' } });
-      }
-      if (url.includes('/api/sources?filter=pending-review')) {
-        return new Response(JSON.stringify([]), { headers: { 'content-type': 'application/json' } });
-      }
-      if (url.includes('/api/sources')) {
-        return new Response(JSON.stringify(mockSources), { headers: { 'content-type': 'application/json' } });
-      }
-      return new Response('{}', { headers: { 'content-type': 'application/json' } });
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL) => {
+        const url = String(input);
+        if (url.includes('propublica')) {
+          return new Response(JSON.stringify({ grants: [mockGrant] }), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        if (url.includes('/api/sources?filter=pending-review')) {
+          return new Response(JSON.stringify([]), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        if (url.includes('/api/sources')) {
+          return new Response(JSON.stringify(mockSources), {
+            headers: { 'content-type': 'application/json' },
+          });
+        }
+        return new Response('{}', { headers: { 'content-type': 'application/json' } });
+      }),
+    );
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
     await waitFor(() => container.querySelector('input[aria-label="Search ProPublica"]') !== null);
 
-    const input = container.querySelector('input[aria-label="Search ProPublica"]') as HTMLInputElement;
-    const nativeInputSetter3 = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+    const input = container.querySelector(
+      'input[aria-label="Search ProPublica"]',
+    ) as HTMLInputElement;
+    const nativeInputSetter3 = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set;
     nativeInputSetter3?.call(input, 'STEM education');
     input.dispatchEvent(new Event('input', { bubbles: true }));
-    await waitFor(() => !(container.querySelector('button[aria-label="Search ProPublica"]') as HTMLButtonElement | null)?.disabled);
+    await waitFor(
+      () =>
+        !(
+          container.querySelector(
+            'button[aria-label="Search ProPublica"]',
+          ) as HTMLButtonElement | null
+        )?.disabled,
+    );
 
     const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
     form.dispatchEvent(new Event('submit', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('[data-testid="propublica-results-list"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="propublica-results-list"]') !== null,
+    );
     expect(container.querySelector('[data-testid="propublica-results-list"]')).not.toBeNull();
   });
 });

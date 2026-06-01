@@ -22,7 +22,9 @@ function createMockDb(): MockDb {
   const store: Record<string, string> = {};
   const stmt = {
     get: vi.fn((_key?: string) => undefined),
-    run: vi.fn((key: string, value: string) => { store[key] = value; }),
+    run: vi.fn((key: string, value: string) => {
+      store[key] = value;
+    }),
     all: vi.fn((_prefix: string) => {
       return Object.entries(store)
         .filter(([k]) => k.startsWith('settings.'))
@@ -64,9 +66,7 @@ describe('/api/settings route', () => {
         'settings.notifications.notifyEmail': 'test@example.com',
       };
       // Override all() to return from store
-      stmt.all = vi.fn(() =>
-        Object.entries(store).map(([key, value]) => ({ key, value }))
-      );
+      stmt.all = vi.fn(() => Object.entries(store).map(([key, value]) => ({ key, value })));
 
       const response = await GET();
       const data = await (response as NextResponse).json();
@@ -176,7 +176,10 @@ describe('/api/settings route', () => {
         }),
       });
       await PUT(request);
-      expect(stmt.run).toHaveBeenCalledWith('settings.notifications.notifyEmail', 'alert@example.com');
+      expect(stmt.run).toHaveBeenCalledWith(
+        'settings.notifications.notifyEmail',
+        'alert@example.com',
+      );
       expect(stmt.run).toHaveBeenCalledWith('settings.notifications.notifyOnMatchAbove', '80');
       expect(stmt.run).toHaveBeenCalledWith('settings.notifications.notifyOnDeadlineDays', '14');
       expect(stmt.run).toHaveBeenCalledWith('settings.backup.intervalHours', '72');

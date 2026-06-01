@@ -45,7 +45,8 @@ export function AuditView({ entityId, entityType }: AuditViewProps) {
       </div>
       {events.length === 0 ? (
         <div className="empty-state">
-          No audit events yet. Audit events are recorded automatically as you work — run discovery, approve drafts, or manage sources to generate activity.
+          No audit events yet. Audit events are recorded automatically as you work — run discovery,
+          approve drafts, or manage sources to generate activity.
         </div>
       ) : (
         <div className="activity-list">
@@ -56,7 +57,9 @@ export function AuditView({ entityId, entityType }: AuditViewProps) {
                   <strong>{event.eventType}</strong> · {event.entityType} {event.entityId}
                 </div>
                 <div className="activity-time">{new Date(event.timestamp).toLocaleString()}</div>
-                {event.metadata && <pre className={styles.preWrap}>{JSON.stringify(event.metadata, null, 2)}</pre>}
+                {event.metadata && (
+                  <pre className={styles.preWrap}>{JSON.stringify(event.metadata, null, 2)}</pre>
+                )}
               </div>
             </div>
           ))}
@@ -65,4 +68,3 @@ export function AuditView({ entityId, entityType }: AuditViewProps) {
     </div>
   );
 }
-

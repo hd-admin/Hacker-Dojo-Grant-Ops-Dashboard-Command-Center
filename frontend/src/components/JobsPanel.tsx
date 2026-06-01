@@ -48,14 +48,22 @@ function formatTime(isoString: string): string {
 
 function statusIcon(status: JobQueueItem['status']): string {
   switch (status) {
-    case 'queued': return '◷';
-    case 'running': return '◉';
-    case 'verifying': return '✓';
-    case 'retrying': return '⟳';
-    case 'completed': return '✔';
-    case 'failed': return '✖';
-    case 'cancelled': return '⊘';
-    default: return '○';
+    case 'queued':
+      return '◷';
+    case 'running':
+      return '◉';
+    case 'verifying':
+      return '✓';
+    case 'retrying':
+      return '⟳';
+    case 'completed':
+      return '✔';
+    case 'failed':
+      return '✖';
+    case 'cancelled':
+      return '⊘';
+    default:
+      return '○';
   }
 }
 
@@ -103,17 +111,14 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
     }
   }, [statusFilter, typeFilter]);
 
-  const setJobActionLoading = useCallback(
-    (jobId: string, loading: boolean) => {
-      setActionLoading((prev) => {
-        if (loading) return { ...prev, [jobId]: true };
-        const next = { ...prev };
-        delete next[jobId];
-        return next;
-      });
-    },
-    [],
-  );
+  const setJobActionLoading = useCallback((jobId: string, loading: boolean) => {
+    setActionLoading((prev) => {
+      if (loading) return { ...prev, [jobId]: true };
+      const next = { ...prev };
+      delete next[jobId];
+      return next;
+    });
+  }, []);
 
   const handleRetry = useCallback(
     async (jobId: string) => {
@@ -129,9 +134,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
         await loadJobs();
         if (onRefreshAppState) await onRefreshAppState();
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : 'Retry failed',
-        );
+        setError(err instanceof Error ? err.message : 'Retry failed');
       } finally {
         setJobActionLoading(jobId, false);
       }
@@ -161,9 +164,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
       await loadJobs();
       if (onRefreshAppState) await onRefreshAppState();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : 'Cancel failed',
-      );
+      setError(err instanceof Error ? err.message : 'Cancel failed');
     } finally {
       setJobActionLoading(jobId, false);
     }
@@ -180,7 +181,11 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
   // Auto-refresh when there are active jobs
   useEffect(() => {
     const hasActiveJobs = jobs.some(
-      (job) => job.status === 'queued' || job.status === 'running' || job.status === 'verifying' || job.status === 'retrying',
+      (job) =>
+        job.status === 'queued' ||
+        job.status === 'running' ||
+        job.status === 'verifying' ||
+        job.status === 'retrying',
     );
     if (!hasActiveJobs) return;
 
@@ -238,7 +243,13 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
 
   if (loading) {
     return (
-      <div className="spinner-overlay" data-testid="jobs-panel-loading" role="status" aria-busy="true" aria-label="Loading jobs">
+      <div
+        className="spinner-overlay"
+        data-testid="jobs-panel-loading"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading jobs"
+      >
         <div className="spinner" />
       </div>
     );
@@ -254,9 +265,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
           <div className="header-sub">
             {jobs.length} total jobs
             {activeCount > 0 && (
-              <span className={`nav-count ${styles.activeCountBadge}`}>
-                {activeCount} active
-              </span>
+              <span className={`nav-count ${styles.activeCountBadge}`}>{activeCount} active</span>
             )}
           </div>
         </div>
@@ -265,7 +274,9 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
             type="button"
             className="btn btn-ghost btn-sm"
             data-testid="jobs-refresh-btn"
-            onClick={() => { void loadJobs(); }}
+            onClick={() => {
+              void loadJobs();
+            }}
           >
             {'↻'} Refresh
           </button>
@@ -274,37 +285,58 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
 
       {error && (
         <div className="panel" data-testid="jobs-error-banner">
-          <div className={`drawer-note ${styles.errorText}`}>
-            {error}
-          </div>
+          <div className={`drawer-note ${styles.errorText}`}>{error}</div>
         </div>
       )}
 
       {/* Filters */}
       <div className="panel">
-        <div className="filter-row" data-testid="jobs-status-filter" role="tablist" aria-label="Filter by job status">
-          {(['all', 'queued', 'running', 'completed', 'failed', 'cancelled'] as JobStatus[]).map((status) => (
-            <button
-              key={status}
-              type="button"
-              role="tab"
-              aria-selected={statusFilter === status}
-              className={`btn btn-ghost btn-sm ${statusFilter === status ? 'active' : ''}`}
-              data-status={status}
-              data-testid={`jobs-status-btn-${status}`}
-              onClick={() => setStatusFilter(status)}
-            >
-              {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
-              {statusCounts[status] > 0 && (
-                <span className={`nav-count ${styles.countBadge}`}>
-                  {statusCounts[status]}
-                </span>
-              )}
-            </button>
-          ))}
+        <div
+          className="filter-row"
+          data-testid="jobs-status-filter"
+          role="tablist"
+          aria-label="Filter by job status"
+        >
+          {(['all', 'queued', 'running', 'completed', 'failed', 'cancelled'] as JobStatus[]).map(
+            (status) => (
+              <button
+                key={status}
+                type="button"
+                role="tab"
+                aria-selected={statusFilter === status}
+                className={`btn btn-ghost btn-sm ${statusFilter === status ? 'active' : ''}`}
+                data-status={status}
+                data-testid={`jobs-status-btn-${status}`}
+                onClick={() => setStatusFilter(status)}
+              >
+                {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
+                {statusCounts[status] > 0 && (
+                  <span className={`nav-count ${styles.countBadge}`}>{statusCounts[status]}</span>
+                )}
+              </button>
+            ),
+          )}
         </div>
-        <div className={`filter-row ${styles.typeFilterRow}`} data-testid="jobs-type-filter" role="tablist" aria-label="Filter by job type">
-          {(['all', 'research', 'draft', 'crawl', 'match', 'extract', 'peer-discovery', 'funder-insights', 'eligibility-vetting', 'budget-import'] as JobTypeFilter[]).map((type) => (
+        <div
+          className={`filter-row ${styles.typeFilterRow}`}
+          data-testid="jobs-type-filter"
+          role="tablist"
+          aria-label="Filter by job type"
+        >
+          {(
+            [
+              'all',
+              'research',
+              'draft',
+              'crawl',
+              'match',
+              'extract',
+              'peer-discovery',
+              'funder-insights',
+              'eligibility-vetting',
+              'budget-import',
+            ] as JobTypeFilter[]
+          ).map((type) => (
             <button
               key={type}
               type="button"
@@ -317,9 +349,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
             >
               {type === 'all' ? 'All' : type.charAt(0).toUpperCase() + type.slice(1)}
               {typeCounts[type] > 0 && (
-                <span className={`nav-count ${styles.countBadge}`}>
-                  {typeCounts[type]}
-                </span>
+                <span className={`nav-count ${styles.countBadge}`}>{typeCounts[type]}</span>
               )}
             </button>
           ))}
@@ -327,12 +357,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
       </div>
 
       {/* ARIA live region for job state announcements */}
-      <div
-        role="status"
-        aria-live="polite"
-        className="sr-only"
-        data-testid="jobs-aria-live"
-      >
+      <div role="status" aria-live="polite" className="sr-only" data-testid="jobs-aria-live">
         {activeCount > 0
           ? `${activeCount} job${activeCount !== 1 ? 's' : ''} active`
           : 'No active jobs'}
@@ -341,7 +366,9 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
       {/* Job list */}
       {filteredJobs.length === 0 ? (
         <div className="empty-state-guide" data-testid="jobs-empty-state">
-          <div className="empty-state-icon" aria-hidden="true">{'📋'}</div>
+          <div className="empty-state-icon" aria-hidden="true">
+            {'📋'}
+          </div>
           <div className="empty-state-title">No jobs found</div>
           <div className="empty-state-description">
             Jobs appear here when the system processes research or generates drafts.
@@ -403,9 +430,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
                         }}
                         title="Cancel this job"
                       >
-                        {actionLoading[job.id] === true
-                          ? '...'
-                          : '✕ Cancel'}
+                        {actionLoading[job.id] === true ? '...' : '✕ Cancel'}
                       </button>
                     )}
                     {job.status === 'failed' && (
@@ -420,9 +445,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
                         }}
                         title="Retry this job"
                       >
-                        {actionLoading[job.id] === true
-                          ? '...'
-                          : '↻ Retry'}
+                        {actionLoading[job.id] === true ? '...' : '↻ Retry'}
                       </button>
                     )}
                   </div>
@@ -431,9 +454,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
                     className="btn btn-ghost btn-sm"
                     data-testid={`job-toggle-details-${job.id}`}
                     onClick={() =>
-                      setSelectedJobId((current) =>
-                        current === job.id ? null : job.id,
-                      )
+                      setSelectedJobId((current) => (current === job.id ? null : job.id))
                     }
                     aria-expanded={selectedJobId === job.id}
                   >
@@ -461,23 +482,15 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
 
                 {/* Timestamps */}
                 <div className="job-timestamps" data-testid={`job-timestamps-${job.id}`}>
-                  <span className="job-timestamp">
-                    Created: {formatTime(job.createdAt)}
-                  </span>
+                  <span className="job-timestamp">Created: {formatTime(job.createdAt)}</span>
                   {job.startedAt && (
-                    <span className="job-timestamp">
-                      Started: {formatTime(job.startedAt)}
-                    </span>
+                    <span className="job-timestamp">Started: {formatTime(job.startedAt)}</span>
                   )}
                   {job.lastUpdate && (
-                    <span className="job-timestamp">
-                      Updated: {formatTime(job.lastUpdate)}
-                    </span>
+                    <span className="job-timestamp">Updated: {formatTime(job.lastUpdate)}</span>
                   )}
                   {job.completedAt && (
-                    <span className="job-timestamp">
-                      Completed: {formatTime(job.completedAt)}
-                    </span>
+                    <span className="job-timestamp">Completed: {formatTime(job.completedAt)}</span>
                   )}
                 </div>
 
@@ -494,15 +507,9 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
                         className={`failure-guidance failure-${job.failureCategory}`}
                         data-testid={`job-failure-guidance-${job.id}`}
                       >
-                        <div className="failure-guidance-title">
-                          {failureMsg.title}
-                        </div>
-                        <div className="failure-guidance-description">
-                          {failureMsg.description}
-                        </div>
-                        <div className="failure-guidance-action">
-                          {failureMsg.action}
-                        </div>
+                        <div className="failure-guidance-title">{failureMsg.title}</div>
+                        <div className="failure-guidance-description">{failureMsg.description}</div>
+                        <div className="failure-guidance-action">{failureMsg.action}</div>
                       </div>
                     )}
                     {job.partialOutput && (
@@ -546,8 +553,8 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
           <div className="safe-quit-dialog">
             <h3>Cancel Job</h3>
             <p>
-              Are you sure you want to cancel this job? Any in-progress
-              work will be lost and cannot be recovered.
+              Are you sure you want to cancel this job? Any in-progress work will be lost and cannot
+              be recovered.
             </p>
             <div className="quit-actions">
               <button
@@ -575,4 +582,3 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
     </>
   );
 }
-

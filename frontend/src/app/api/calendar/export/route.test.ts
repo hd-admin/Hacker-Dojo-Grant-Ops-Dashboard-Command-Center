@@ -46,12 +46,30 @@ import { getDependencies } from '@/server/grant-ops/dependencies';
 import { GET } from './route';
 
 describe('/api/calendar/export route', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('exports iCal with grant deadlines', async () => {
     const mockGrants = [
-      { id: 'g1', title: 'Grant A', funder: 'F1', deadline: '2026-12-31', daysOut: 200, fit: 80, status: 'matched', statusLabel: 'Matched', matchedAt: '2026-01-01', award: '$50k', awardSort: 50000, tags: [], funderShort: 'F' },
+      {
+        id: 'g1',
+        title: 'Grant A',
+        funder: 'F1',
+        deadline: '2026-12-31',
+        daysOut: 200,
+        fit: 80,
+        status: 'matched',
+        statusLabel: 'Matched',
+        matchedAt: '2026-01-01',
+        award: '$50k',
+        awardSort: 50000,
+        tags: [],
+        funderShort: 'F',
+      },
     ];
     (getDependencies as ReturnType<typeof vi.fn>).mockReturnValue({
       repository: {
@@ -61,7 +79,9 @@ describe('/api/calendar/export route', () => {
     });
 
     const { NextRequest } = await import('next/server');
-    const mockReq = new (NextRequest as unknown as new (url: string) => Request)('http://localhost:3000/api/calendar/export?scope=grants');
+    const mockReq = new (NextRequest as unknown as new (url: string) => Request)(
+      'http://localhost:3000/api/calendar/export?scope=grants',
+    );
     const response = await GET(mockReq as unknown as NextRequest);
 
     expect(response.status).toBe(200);
@@ -82,7 +102,9 @@ describe('/api/calendar/export route', () => {
     });
 
     const { NextRequest } = await import('next/server');
-    const mockReq = new (NextRequest as unknown as new (url: string) => Request)('http://localhost:3000/api/calendar/export?scope=reports');
+    const mockReq = new (NextRequest as unknown as new (url: string) => Request)(
+      'http://localhost:3000/api/calendar/export?scope=reports',
+    );
     const response = await GET(mockReq as unknown as NextRequest);
 
     expect(response.status).toBe(200);
@@ -99,7 +121,9 @@ describe('/api/calendar/export route', () => {
     });
 
     const { NextRequest } = await import('next/server');
-    const mockReq = new (NextRequest as unknown as new (url: string) => Request)('http://localhost:3000/api/calendar/export');
+    const mockReq = new (NextRequest as unknown as new (url: string) => Request)(
+      'http://localhost:3000/api/calendar/export',
+    );
     const response = await GET(mockReq as unknown as NextRequest);
 
     expect(response.status).toBe(200);

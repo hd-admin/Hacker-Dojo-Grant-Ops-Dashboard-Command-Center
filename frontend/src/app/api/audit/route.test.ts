@@ -10,10 +10,7 @@ import {
   resetDependencies,
   setDependencies,
 } from '@/server/grant-ops/dependencies';
-import {
-  invalidateCache,
-  withTempDataDir,
-} from '../../../../../shared/grant-ops-persistence';
+import { invalidateCache, withTempDataDir } from '../../../../../shared/grant-ops-persistence';
 import * as repository from '../../../server/grant-ops/repository';
 import { GET } from './route';
 
@@ -33,9 +30,7 @@ describe('/api/audit route', () => {
   });
 
   it('returns empty array when no audit events exist', async () => {
-    const response = await GET(
-      new Request('http://localhost/api/audit') as never,
-    );
+    const response = await GET(new Request('http://localhost/api/audit') as never);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -62,9 +57,7 @@ describe('/api/audit route', () => {
       metadata: {},
     });
 
-    const response = await GET(
-      new Request('http://localhost/api/audit') as never,
-    );
+    const response = await GET(new Request('http://localhost/api/audit') as never);
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -94,9 +87,7 @@ describe('/api/audit route', () => {
       metadata: {},
     });
 
-    const response = await GET(
-      new Request('http://localhost/api/audit?entityId=grant-1') as never,
-    );
+    const response = await GET(new Request('http://localhost/api/audit?entityId=grant-1') as never);
     const data = await response.json();
 
     expect(response.status).toBe(200);

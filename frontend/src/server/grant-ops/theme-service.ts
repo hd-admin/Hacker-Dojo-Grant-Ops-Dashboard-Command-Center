@@ -39,9 +39,7 @@ function cloneThemesData(data: ThemesData): ThemesData {
 
 // ============ KEYWORD CLUSTER CRUD ============
 
-export async function addKeywordCluster(
-  cluster: KeywordCluster,
-): Promise<KeywordCluster> {
+export async function addKeywordCluster(cluster: KeywordCluster): Promise<KeywordCluster> {
   const data = await loadThemesData();
   const now = makeTimestamp();
   const entry: KeywordCluster = {
@@ -81,9 +79,7 @@ export async function updateKeywordCluster(
     createdAt: existing.createdAt,
     updatedAt: makeTimestamp(),
   };
-  data.keywordClusters = data.keywordClusters.map((kc) =>
-    kc.id === id ? updated : kc,
-  );
+  data.keywordClusters = data.keywordClusters.map((kc) => (kc.id === id ? updated : kc));
   await saveThemesData(data);
   return updated;
 }
@@ -244,9 +240,7 @@ export async function updateStrategicPriority(
     createdAt: existing.createdAt,
     updatedAt: makeTimestamp(),
   };
-  data.strategicPriorities = data.strategicPriorities.map((sp) =>
-    sp.id === id ? updated : sp,
-  );
+  data.strategicPriorities = data.strategicPriorities.map((sp) => (sp.id === id ? updated : sp));
   await saveThemesData(data);
   return updated;
 }
@@ -366,7 +360,9 @@ export async function updateMatchingPolicy(
   return { ...theme.matchingPolicy };
 }
 
-export async function addIncludeRule(rule: InclusionExclusionRule): Promise<InclusionExclusionRule> {
+export async function addIncludeRule(
+  rule: InclusionExclusionRule,
+): Promise<InclusionExclusionRule> {
   const data = await loadThemesData();
   const theme = getOrCreateActiveThemeInData(data);
   theme.matchingPolicy.includeRules = theme.matchingPolicy.includeRules.filter(
@@ -378,7 +374,9 @@ export async function addIncludeRule(rule: InclusionExclusionRule): Promise<Incl
   return rule;
 }
 
-export async function addExcludeRule(rule: InclusionExclusionRule): Promise<InclusionExclusionRule> {
+export async function addExcludeRule(
+  rule: InclusionExclusionRule,
+): Promise<InclusionExclusionRule> {
   const data = await loadThemesData();
   const theme = getOrCreateActiveThemeInData(data);
   theme.matchingPolicy.excludeRules = theme.matchingPolicy.excludeRules.filter(
@@ -479,10 +477,7 @@ export async function scoreGrantByThemes(tags: string[]): Promise<number> {
 /**
  * Checks if a given text matches an exclusion rule.
  */
-export function matchesExclusionRule(
-  text: string,
-  rule: InclusionExclusionRule,
-): boolean {
+export function matchesExclusionRule(text: string, rule: InclusionExclusionRule): boolean {
   const lowerText = text.toLowerCase();
   const lowerValue = rule.value.toLowerCase();
 

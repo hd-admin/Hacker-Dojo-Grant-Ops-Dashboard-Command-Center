@@ -4,7 +4,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 vi.mock('@/lib/logger', () => ({
-  getSessionLogPath: (jobId: string) => path.join(process.cwd(), '.grant-ops-data', 'logs', `session-${jobId}.log`),
+  getSessionLogPath: (jobId: string) =>
+    path.join(process.cwd(), '.grant-ops-data', 'logs', `session-${jobId}.log`),
   logger: { error: vi.fn() },
 }));
 
@@ -18,7 +19,9 @@ describe('/api/logs/session/[jobId] route', () => {
   });
 
   afterEach(() => {
-    const sessionFiles = fs.readdirSync(logDir).filter((f) => f.startsWith('session-') && f.endsWith('.log'));
+    const sessionFiles = fs
+      .readdirSync(logDir)
+      .filter((f) => f.startsWith('session-') && f.endsWith('.log'));
     for (const file of sessionFiles) {
       fs.unlinkSync(path.join(logDir, file));
     }
@@ -30,9 +33,17 @@ describe('/api/logs/session/[jobId] route', () => {
     const lines = Array.from({ length: 100 }, (_, i) => `Session log line ${i + 1}`);
     fs.writeFileSync(logFile, lines.join('\n'));
 
-    const request = new Request(`http://localhost/api/logs/session/${jobId}?page=1&pageSize=10`) as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      `http://localhost/api/logs/session/${jobId}?page=1&pageSize=10`,
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request, { params: Promise.resolve({ jobId }) });
-    const data = await response.json() as { entries: string[]; count: number; page: number; pageSize: number; totalEntries: number };
+    const data = (await response.json()) as {
+      entries: string[];
+      count: number;
+      page: number;
+      pageSize: number;
+      totalEntries: number;
+    };
 
     expect(response.status).toBe(200);
     expect(data.entries.length).toBe(10);
@@ -48,9 +59,17 @@ describe('/api/logs/session/[jobId] route', () => {
     const lines = Array.from({ length: 100 }, (_, i) => `Session log line ${i + 1}`);
     fs.writeFileSync(logFile, lines.join('\n'));
 
-    const request = new Request(`http://localhost/api/logs/session/${jobId}?page=2&pageSize=10`) as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      `http://localhost/api/logs/session/${jobId}?page=2&pageSize=10`,
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request, { params: Promise.resolve({ jobId }) });
-    const data = await response.json() as { entries: string[]; count: number; page: number; pageSize: number; totalEntries: number };
+    const data = (await response.json()) as {
+      entries: string[];
+      count: number;
+      page: number;
+      pageSize: number;
+      totalEntries: number;
+    };
 
     expect(response.status).toBe(200);
     expect(data.entries.length).toBe(10);
@@ -60,9 +79,18 @@ describe('/api/logs/session/[jobId] route', () => {
 
   it('returns empty result when no session log exists', async () => {
     const jobId = 'nonexistent-job';
-    const request = new Request(`http://localhost/api/logs/session/${jobId}`) as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      `http://localhost/api/logs/session/${jobId}`,
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request, { params: Promise.resolve({ jobId }) });
-    const data = await response.json() as { entries: string[]; count: number; page: number; pageSize: number; totalEntries: number; note?: string };
+    const data = (await response.json()) as {
+      entries: string[];
+      count: number;
+      page: number;
+      pageSize: number;
+      totalEntries: number;
+      note?: string;
+    };
 
     expect(response.status).toBe(200);
     expect(data.entries.length).toBe(0);
@@ -73,7 +101,9 @@ describe('/api/logs/session/[jobId] route', () => {
 
   it('returns 400 for invalid page parameter', async () => {
     const jobId = 'test-job-3';
-    const request = new Request(`http://localhost/api/logs/session/${jobId}?page=0`) as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      `http://localhost/api/logs/session/${jobId}?page=0`,
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request, { params: Promise.resolve({ jobId }) });
     expect(response.status).toBe(400);
   });

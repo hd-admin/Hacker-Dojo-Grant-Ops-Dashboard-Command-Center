@@ -10,11 +10,16 @@ import {
   normalizeWhitespace,
 } from './document-text-extractor';
 
-const fixturePath = path.join(process.cwd(), 'tests/fixtures/documents/hacker-dojo-program-summary.pdf');
+const fixturePath = path.join(
+  process.cwd(),
+  'tests/fixtures/documents/hacker-dojo-program-summary.pdf',
+);
 
 describe('document-text-extractor', () => {
   it('normalizes whitespace deterministically', () => {
-    expect(normalizeWhitespace('  Hacker   Dojo\n\n expands   access  ')).toBe('Hacker Dojo expands access');
+    expect(normalizeWhitespace('  Hacker   Dojo\n\n expands   access  ')).toBe(
+      'Hacker Dojo expands access',
+    );
   });
 
   it('extracts the fixture pdf and preserves the grounding sentence', async () => {
@@ -36,7 +41,8 @@ describe('document-text-extractor', () => {
     }));
 
     try {
-      const { extractDocumentText: mockedExtractDocumentText } = await import('./document-text-extractor');
+      const { extractDocumentText: mockedExtractDocumentText } =
+        await import('./document-text-extractor');
       const result = await mockedExtractDocumentText(tempPath);
 
       expect(result.extractionStatus).toBe('failed');

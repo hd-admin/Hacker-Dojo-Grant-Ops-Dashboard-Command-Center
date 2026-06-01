@@ -39,8 +39,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ pattern });
   } catch (error) {
     return NextResponse.json(
-      createErrorResponse('AGENT_SCHEMA_MISMATCH', error instanceof Error ? error.message : 'Invalid input'),
-      { status: 400 }
+      createErrorResponse(
+        'AGENT_SCHEMA_MISMATCH',
+        error instanceof Error ? error.message : 'Invalid input',
+      ),
+      { status: 400 },
     );
   }
 }
@@ -49,7 +52,7 @@ export async function GET(_req: NextRequest) {
   await connection();
   try {
     const deps = getDependencies();
-    const events = await deps.repository.getAuditEvents?.(100) ?? [];
+    const events = (await deps.repository.getAuditEvents?.(100)) ?? [];
     const patterns = events
       .filter((e) => e.eventType === 'pattern_detected')
       .map((e) => ({
@@ -63,9 +66,8 @@ export async function GET(_req: NextRequest) {
     return NextResponse.json({ patterns });
   } catch (error) {
     logger.error({ err: error }, 'Error getting patterns');
-    return NextResponse.json(
-      createErrorResponse('DB_INTEGRITY_ERROR', 'Failed to get patterns'),
-      { status: 500 }
-    );
+    return NextResponse.json(createErrorResponse('DB_INTEGRITY_ERROR', 'Failed to get patterns'), {
+      status: 500,
+    });
   }
 }

@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest, connection } from "next/server";
+import { NextResponse, type NextRequest, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -23,7 +23,9 @@ export async function GET(
   const { docId } = await params;
   const doc = await documentService.getDocument(docId);
   if (!doc) {
-    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Document not found'), { status: 404 });
+    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Document not found'), {
+      status: 404,
+    });
   }
   return NextResponse.json(doc.versions ?? []);
 }
@@ -45,7 +47,9 @@ export async function POST(
 
     const doc = await documentService.getDocument(docId);
     if (!doc) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Document not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Document not found'), {
+        status: 404,
+      });
     }
 
     const deps = getDependencies();
@@ -75,9 +79,6 @@ export async function POST(
     return NextResponse.json(newVersion, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, 'Error adding document version');
-    return NextResponse.json(
-      { error: 'Failed to add document version' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to add document version' }, { status: 500 });
   }
 }

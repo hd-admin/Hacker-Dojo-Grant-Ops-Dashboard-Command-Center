@@ -90,7 +90,9 @@ function makeTheme(overrides: Partial<Theme> = {}): Theme {
   };
 }
 
-function makeInclusionExclusionRule(overrides: Partial<InclusionExclusionRule> = {}): InclusionExclusionRule {
+function makeInclusionExclusionRule(
+  overrides: Partial<InclusionExclusionRule> = {},
+): InclusionExclusionRule {
   return {
     id: 'rule-1',
     field: 'tags',
@@ -165,9 +167,9 @@ describe('ThemeService', () => {
     });
 
     it('throws when updating non-existent keyword cluster', async () => {
-      await expect(
-        themeService.updateKeywordCluster('nonexistent', { name: 'X' }),
-      ).rejects.toThrow(/not found/i);
+      await expect(themeService.updateKeywordCluster('nonexistent', { name: 'X' })).rejects.toThrow(
+        /not found/i,
+      );
     });
 
     it('removes a keyword cluster', async () => {
@@ -280,7 +282,9 @@ describe('ThemeService', () => {
     });
 
     it('gets a strategic priority by id', async () => {
-      await themeService.addStrategicPriority(makeStrategicPriority({ id: 'sp-1', name: 'Priority 1' }));
+      await themeService.addStrategicPriority(
+        makeStrategicPriority({ id: 'sp-1', name: 'Priority 1' }),
+      );
       const priority = await themeService.getStrategicPriority('sp-1');
       expect(priority?.name).toBe('Priority 1');
     });
@@ -378,11 +382,13 @@ describe('ThemeService', () => {
         includeRules: [],
         excludeRules: [],
       };
-      await themeService.addTheme(makeTheme({
-        id: 'theme-1',
-        matchingPolicy: customPolicy,
-        isActive: true,
-      }));
+      await themeService.addTheme(
+        makeTheme({
+          id: 'theme-1',
+          matchingPolicy: customPolicy,
+          isActive: true,
+        }),
+      );
 
       const policy = await themeService.getMatchingPolicy();
       expect(policy.matchThreshold).toBe(60);
@@ -405,7 +411,12 @@ describe('ThemeService', () => {
     it('addIncludeRule adds an include rule to active theme', async () => {
       await themeService.addTheme(makeTheme({ id: 'theme-1', isActive: true }));
 
-      const rule = makeInclusionExclusionRule({ id: 'rule-1', field: 'tags', operator: 'contains', value: 'STEM' });
+      const rule = makeInclusionExclusionRule({
+        id: 'rule-1',
+        field: 'tags',
+        operator: 'contains',
+        value: 'STEM',
+      });
       await themeService.addIncludeRule(rule);
 
       const policy = await themeService.getMatchingPolicy();
@@ -416,7 +427,12 @@ describe('ThemeService', () => {
     it('addExcludeRule adds an exclude rule to active theme', async () => {
       await themeService.addTheme(makeTheme({ id: 'theme-1', isActive: true }));
 
-      const rule = makeInclusionExclusionRule({ id: 'rule-2', field: 'funder', operator: 'equals', value: 'ScamCorp' });
+      const rule = makeInclusionExclusionRule({
+        id: 'rule-2',
+        field: 'funder',
+        operator: 'equals',
+        value: 'ScamCorp',
+      });
       await themeService.addExcludeRule(rule);
 
       const policy = await themeService.getMatchingPolicy();
@@ -426,7 +442,9 @@ describe('ThemeService', () => {
 
     it('removeIncludeRule removes an include rule', async () => {
       await themeService.addTheme(makeTheme({ id: 'theme-1', isActive: true }));
-      await themeService.addIncludeRule(makeInclusionExclusionRule({ id: 'rule-1', value: 'test' }));
+      await themeService.addIncludeRule(
+        makeInclusionExclusionRule({ id: 'rule-1', value: 'test' }),
+      );
 
       await themeService.removeIncludeRule('rule-1');
 
@@ -436,7 +454,9 @@ describe('ThemeService', () => {
 
     it('removeExcludeRule removes an exclude rule', async () => {
       await themeService.addTheme(makeTheme({ id: 'theme-1', isActive: true }));
-      await themeService.addExcludeRule(makeInclusionExclusionRule({ id: 'rule-1', value: 'test' }));
+      await themeService.addExcludeRule(
+        makeInclusionExclusionRule({ id: 'rule-1', value: 'test' }),
+      );
 
       await themeService.removeExcludeRule('rule-1');
 
@@ -460,11 +480,13 @@ describe('ThemeService', () => {
         weight: 80,
       });
       await themeService.addKeywordCluster(cluster);
-      await themeService.addTheme(makeTheme({
-        id: 'theme-1',
-        keywordClusters: ['kc-1'],
-        isActive: true,
-      }));
+      await themeService.addTheme(
+        makeTheme({
+          id: 'theme-1',
+          keywordClusters: ['kc-1'],
+          isActive: true,
+        }),
+      );
 
       const score = await themeService.scoreGrantByThemes(['STEM', 'education']);
       expect(score).toBeGreaterThan(50);
@@ -473,11 +495,13 @@ describe('ThemeService', () => {
     it('scoreGrantByThemes applies strategic priority weights', async () => {
       const priority = makeStrategicPriority({ id: 'sp-1', name: 'Workforce', weight: 90 });
       await themeService.addStrategicPriority(priority);
-      await themeService.addTheme(makeTheme({
-        id: 'theme-1',
-        strategicPriorities: ['sp-1'],
-        isActive: true,
-      }));
+      await themeService.addTheme(
+        makeTheme({
+          id: 'theme-1',
+          strategicPriorities: ['sp-1'],
+          isActive: true,
+        }),
+      );
 
       const score = await themeService.scoreGrantByThemes(['workforce', 'development']);
       expect(score).toBeGreaterThan(50);
@@ -508,22 +532,26 @@ describe('ThemeService', () => {
     });
 
     it('shouldAutoDraft returns false when fit is below threshold', async () => {
-      await themeService.addTheme(makeTheme({
-        id: 'theme-1',
-        matchingPolicy: { ...makeDefaultMatchingPolicy(), autoDraftThreshold: 80 },
-        isActive: true,
-      }));
+      await themeService.addTheme(
+        makeTheme({
+          id: 'theme-1',
+          matchingPolicy: { ...makeDefaultMatchingPolicy(), autoDraftThreshold: 80 },
+          isActive: true,
+        }),
+      );
 
       const result = await themeService.shouldAutoDraft(60);
       expect(result).toBe(false);
     });
 
     it('shouldAutoDraft returns true when fit is above threshold', async () => {
-      await themeService.addTheme(makeTheme({
-        id: 'theme-1',
-        matchingPolicy: { ...makeDefaultMatchingPolicy(), autoDraftThreshold: 80 },
-        isActive: true,
-      }));
+      await themeService.addTheme(
+        makeTheme({
+          id: 'theme-1',
+          matchingPolicy: { ...makeDefaultMatchingPolicy(), autoDraftThreshold: 80 },
+          isActive: true,
+        }),
+      );
 
       const result = await themeService.shouldAutoDraft(85);
       expect(result).toBe(true);

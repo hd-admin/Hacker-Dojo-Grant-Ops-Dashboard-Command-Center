@@ -170,9 +170,7 @@ describe('AC-14.5.4: cleanup skips active job files', () => {
     vi.doMock('../../../../shared/grant-ops-sqlite', () => ({
       resolveDataDir: () => dataDir,
       getSqliteState: vi.fn(),
-      readJobQueue: vi.fn().mockReturnValue([
-        { id: activeJobId, status: 'running' },
-      ]),
+      readJobQueue: vi.fn().mockReturnValue([{ id: activeJobId, status: 'running' }]),
     }));
 
     const stats = cleanupTmpDir(dataDir);

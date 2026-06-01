@@ -16,8 +16,12 @@ import type { NextResponse } from 'next/server';
 import { GET } from './route';
 
 describe('/api/awards/[awardId]/budget-vs-actual route', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns budget vs actual rows', async () => {
     const mockRows = [{ category: 'Staff', budgeted: 10000, actual: 8250, variance: 1750 }];

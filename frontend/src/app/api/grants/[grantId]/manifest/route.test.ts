@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import {
+  invalidateCache,
+  withTempDataDir,
+} from '../../../../../../../shared/grant-ops-persistence';
 import type { Grant } from '../../../../../../../shared/types';
 import * as repository from '../../../../../server/grant-ops/repository';
 import { GET, POST } from './route';
@@ -39,13 +42,16 @@ describe('/api/grants/[grantId]/manifest route', () => {
   });
 
   it('returns 404 when creating a manifest for a missing grant', async () => {
-    const response = await POST(new Request('http://localhost/api/grants/missing/manifest', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ materialRefs: [] }),
-    }) as never, {
-      params: Promise.resolve({ grantId: 'missing' }),
-    });
+    const response = await POST(
+      new Request('http://localhost/api/grants/missing/manifest', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ materialRefs: [] }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: 'missing' }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(404);
@@ -53,18 +59,21 @@ describe('/api/grants/[grantId]/manifest route', () => {
   });
 
   it('creates and returns a submission manifest for an existing grant', async () => {
-    const createResponse = await POST(new Request(`http://localhost/api/grants/${grant.id}/manifest`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        instructions: 'Upload all PDF materials in the portal',
-        portalUrl: 'https://example.org/submit',
-        materialRefs: [{ documentId: 'doc-1', documentName: 'Narrative.pdf', role: 'narrative' }],
-        notes: 'Remember to attach the budget workbook',
-      }),
-    }) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const createResponse = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/manifest`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          instructions: 'Upload all PDF materials in the portal',
+          portalUrl: 'https://example.org/submit',
+          materialRefs: [{ documentId: 'doc-1', documentName: 'Narrative.pdf', role: 'narrative' }],
+          notes: 'Remember to attach the budget workbook',
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
     const created = await createResponse.json();
 
     expect(createResponse.status).toBe(200);
@@ -72,9 +81,12 @@ describe('/api/grants/[grantId]/manifest route', () => {
     expect(created.version).toBe(1);
     expect(created.materialRefs).toHaveLength(1);
 
-    const getResponse = await GET(new Request(`http://localhost/api/grants/${grant.id}/manifest`) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const getResponse = await GET(
+      new Request(`http://localhost/api/grants/${grant.id}/manifest`) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
     const fetched = await getResponse.json();
 
     expect(getResponse.status).toBe(200);

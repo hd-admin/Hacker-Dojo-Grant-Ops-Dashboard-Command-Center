@@ -3,12 +3,28 @@
 import React, { useEffect, useState } from 'react';
 import { ClipboardList, MessageCircle, Search } from 'lucide-react';
 import styles from './DashboardView.module.css';
-import type { CrawlRun, FollowUp, Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem, Source } from '../../../shared/types';
+import type {
+  CrawlRun,
+  FollowUp,
+  Grant,
+  OrganizationProfile,
+  ActivityEvent,
+  Notification,
+  JobQueueItem,
+  Source,
+} from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
 import { jobFailureMessages } from '../lib/failure-messages';
 import { sanitizeNotificationText } from '../lib/sanitize-html';
 
-type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'sources' | 'settings' | 'notifications' | 'tasks';
+type ViewType =
+  | 'dashboard'
+  | 'discovery'
+  | 'pipeline'
+  | 'sources'
+  | 'settings'
+  | 'notifications'
+  | 'tasks';
 
 interface DashboardViewProps {
   onGrantSelect: (grantId: string) => void;
@@ -28,8 +44,18 @@ function formatDate(dateStr: string): { day: string; month: string } {
   const month = parts[1] ?? '';
   const day = parts[2] ?? '';
   const months = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
   return { day, month: months[parseInt(month, 10) - 1] ?? '' };
 }
@@ -70,17 +96,32 @@ function stageDescription(stage: string | undefined): string {
   return stage;
 }
 
-export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, grants, profile, notifications, recentGrantIds, sources = [], operatorName }: DashboardViewProps) {
+export function DashboardView({
+  onGrantSelect,
+  onNavigate,
+  onRefreshAppState,
+  grants,
+  profile,
+  notifications,
+  recentGrantIds,
+  sources = [],
+  operatorName,
+}: DashboardViewProps) {
   const [jobs, setJobs] = useState<JobQueueItem[]>([]);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [crawlLatestRun, setCrawlLatestRun] = useState<CrawlRun | null>(null);
   const [crawlFetching, setCrawlFetching] = useState(true);
   const [_error, setError] = useState<string | null>(null);
-  const [forecast, setForecast] = useState<{ projectedSubmissions90d: number; projectedAwardValue: number; atRiskGrantCount: number } | null>(null);
+  const [forecast, setForecast] = useState<{
+    projectedSubmissions90d: number;
+    projectedAwardValue: number;
+    atRiskGrantCount: number;
+  } | null>(null);
   const [forecastLoading, setForecastLoading] = useState(false);
-  const activity: ActivityEvent[] = (notifications && notifications.length > 0)
-    ? notifications.slice(0, 6).map((n) => ({ dot: n.dot, text: n.text, time: n.time }))
-    : [];
+  const activity: ActivityEvent[] =
+    notifications && notifications.length > 0
+      ? notifications.slice(0, 6).map((n) => ({ dot: n.dot, text: n.text, time: n.time }))
+      : [];
 
   const handleRefreshCrawl = async () => {
     try {
@@ -92,7 +133,9 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
     }
   };
 
-  const handleNewSearch = () => { onNavigate?.('discovery'); };
+  const handleNewSearch = () => {
+    onNavigate?.('discovery');
+  };
 
   const handleExportPipeline = async () => {
     try {
@@ -150,7 +193,9 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
       }
     };
     void loadCrawlRuns();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -166,10 +211,16 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
       }
     };
     void loadJobs();
-    const interval = window.setInterval(() => {
-      void loadJobs();
-    }, jobs.some((job) => job.status === 'queued' || job.status === 'running') ? 5000 : 15000);
-    return () => { cancelled = true; window.clearInterval(interval); };
+    const interval = window.setInterval(
+      () => {
+        void loadJobs();
+      },
+      jobs.some((job) => job.status === 'queued' || job.status === 'running') ? 5000 : 15000,
+    );
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
   }, [jobs]);
 
   useEffect(() => {
@@ -184,7 +235,9 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
       }
     };
     void loadFollowUps();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const hour = new Date().getHours();
@@ -200,7 +253,8 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
   const draftedReady = grants.filter((g) => g.status === 'review').length;
 
   const today = new Date();
-  const sevenDaysAgo = new Date(today); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const sevenDaysAgo = new Date(today);
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
   const newMatches7d = grants.filter((g) => {
     if (!g.matchedAt || g.status !== 'matched') return false;
     return new Date(g.matchedAt) >= sevenDaysAgo;
@@ -237,7 +291,11 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
   const mergedActivity = [...followUpActivityItems, ...activity].slice(0, 6);
 
   const dayName = today.toLocaleDateString('en-US', { weekday: 'long' });
-  const dateStr = today.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  const dateStr = today.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
 
   // Crawl freshness computation
   const msInHour = 3600000;
@@ -306,24 +364,37 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
         <div className="header">
           <div>
             <h1 className="header-title">
-              {greeting},{' '}
-              <span className="accent">Welcome</span>.
+              {greeting}, <span className="accent">Welcome</span>.
             </h1>
-            <div className="header-sub">{dayName} \u00b7 {dateStr}</div>
+            <div className="header-sub">
+              {dayName} \u00b7 {dateStr}
+            </div>
           </div>
         </div>
         <div className="empty-state-guide" data-testid="dashboard-empty-state">
-          <div className="empty-state-icon" aria-hidden="true"><ClipboardList size={48} /></div>
+          <div className="empty-state-icon" aria-hidden="true">
+            <ClipboardList size={48} />
+          </div>
           <div className="empty-state-title">Get started with Grant Ops</div>
           <div className="empty-state-description">
-            Add your first grant source to discover funding opportunities,
-            or complete your organization profile to enable AI-powered grant matching and drafting.
+            Add your first grant source to discover funding opportunities, or complete your
+            organization profile to enable AI-powered grant matching and drafting.
           </div>
           <div className="empty-state-actions">
-            <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('sources')} aria-label="Add your first grant source">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => onNavigate?.('sources')}
+              aria-label="Add your first grant source"
+            >
               Add a source
             </button>
-            <button type="button" className="btn" onClick={() => onNavigate?.('settings')} aria-label="Complete organization profile">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => onNavigate?.('settings')}
+              aria-label="Complete organization profile"
+            >
               Complete profile
             </button>
           </div>
@@ -340,25 +411,54 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
           <div>
             <h1 className="header-title">
               {greeting},{' '}
-              <span className="accent">{profile?.agentBehavior.notifyEmail.split('@')[0] ?? 'there'}</span>.
+              <span className="accent">
+                {profile?.agentBehavior.notifyEmail.split('@')[0] ?? 'there'}
+              </span>
+              .
             </h1>
-            <div className="header-sub">{dayName} \u00b7 {dateStr} \u00b7 Ready to discover grants</div>
+            <div className="header-sub">
+              {dayName} \u00b7 {dateStr} \u00b7 Ready to discover grants
+            </div>
           </div>
           <div className="header-actions">
-            <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('sources')}>+ Add a source</button>
-            <button type="button" className="btn" onClick={() => onNavigate?.('discovery')}>Browse discovery</button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => onNavigate?.('sources')}
+            >
+              + Add a source
+            </button>
+            <button type="button" className="btn" onClick={() => onNavigate?.('discovery')}>
+              Browse discovery
+            </button>
           </div>
         </div>
         <div className="empty-state-guide" data-testid="dashboard-empty-grants">
-          <div className="empty-state-icon" aria-hidden="true"><Search size={48} /></div>
+          <div className="empty-state-icon" aria-hidden="true">
+            <Search size={48} />
+          </div>
           <div className="empty-state-title">No grants discovered yet</div>
           <div className="empty-state-description">
-            Add funding sources and run discovery to find grants that match your organization.
-            The AI will crawl your sources and surface the best matches.
+            Add funding sources and run discovery to find grants that match your organization. The
+            AI will crawl your sources and surface the best matches.
           </div>
           <div className="empty-state-actions">
-            <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('sources')} aria-label="Add grant sources">Add sources</button>
-            <button type="button" className="btn" onClick={() => onNavigate?.('discovery')} aria-label="Browse discovery">Open discovery</button>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => onNavigate?.('sources')}
+              aria-label="Add grant sources"
+            >
+              Add sources
+            </button>
+            <button
+              type="button"
+              className="btn"
+              onClick={() => onNavigate?.('discovery')}
+              aria-label="Browse discovery"
+            >
+              Open discovery
+            </button>
           </div>
         </div>
       </>
@@ -371,7 +471,10 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
         <div>
           <h1 className="header-title">
             {greeting},{' '}
-            <span className="accent">{operatorName || profile?.agentBehavior.notifyEmail.split('@')[0] || 'there'}</span>.
+            <span className="accent">
+              {operatorName || profile?.agentBehavior.notifyEmail.split('@')[0] || 'there'}
+            </span>
+            .
           </h1>
           <div className="header-sub">
             {dayName} \u00b7 {dateStr} \u00b7 {activeGrants.length} grants in pipeline
@@ -396,12 +499,15 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
           <div className="kpi-label">Active Pipeline</div>
           <div className="kpi-value">{formatCurrency(activePipeline)}</div>
           <div className="kpi-meta">
-            {activeGrants.length} applications \u00b7 <span className="delta-up">+{grantsThisMonth} this month</span>
+            {activeGrants.length} applications \u00b7{' '}
+            <span className="delta-up">+{grantsThisMonth} this month</span>
           </div>
         </div>
         <div className="kpi-card warning">
           <div className="kpi-label">Next Deadline</div>
-          <div className="kpi-value">{deadlinesGrant ? `${deadlinesGrant.daysOut}d` : '\u2014'}</div>
+          <div className="kpi-value">
+            {deadlinesGrant ? `${deadlinesGrant.daysOut}d` : '\u2014'}
+          </div>
           <div className="kpi-meta">
             {deadlinesGrant?.title.substring(0, 30) || 'No upcoming deadline'}
             {deadlinesGrant && deadlinesGrant.title.length > 30 ? '...' : ''}
@@ -423,15 +529,15 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
       <div className="kpi-grid" data-testid="crawl-freshness-indicator">
         <div className={`kpi-card ${stalenessCardClass}`}>
           <div className="kpi-label">
-            <span className={`staleness-dot ${stalenessDotClass}`} aria-hidden="true" />{' '}
-            Crawl Freshness
+            <span className={`staleness-dot ${stalenessDotClass}`} aria-hidden="true" /> Crawl
+            Freshness
           </div>
           <div className="kpi-value kpi-value-sm">{stalenessLabel}</div>
           <div className="kpi-meta">
             {neverCrawled
               ? 'Run discovery to populate grants'
               : isCrawlFailed
-                ? (crawlLatestRun?.errorMessage?.slice(0, 60) || 'Crawl encountered an error')
+                ? crawlLatestRun?.errorMessage?.slice(0, 60) || 'Crawl encountered an error'
                 : `Last crawl: ${formatAge(ageMs!)}`}
           </div>
           {(isCrawlFailed || neverCrawled || isCrawlPartial) && (
@@ -451,7 +557,11 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
         <div className="kpi-card">
           <div className="kpi-label">Crawl Status</div>
           <div className="kpi-value kpi-value-sm">
-            {crawlFetching ? 'Checking...' : neverCrawled ? 'Never run' : crawlLatestRun?.status ?? 'Unknown'}
+            {crawlFetching
+              ? 'Checking...'
+              : neverCrawled
+                ? 'Never run'
+                : (crawlLatestRun?.status ?? 'Unknown')}
           </div>
           <div className="kpi-meta">
             {crawlLatestRun?.sourcesCrawled !== undefined
@@ -464,9 +574,18 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
             <div className="kpi-label">Per-Source Freshness</div>
             <div className="activity-list">
               {perSourceStaleness.slice(0, 8).map((ps) => {
-                const dotClass = ps.tier === 'fresh' ? 'staleness-dot-fresh' : ps.tier === 'stale' ? 'staleness-dot-stale-warn' : 'staleness-dot-stale-danger';
+                const dotClass =
+                  ps.tier === 'fresh'
+                    ? 'staleness-dot-fresh'
+                    : ps.tier === 'stale'
+                      ? 'staleness-dot-stale-warn'
+                      : 'staleness-dot-stale-danger';
                 return (
-                  <div key={ps.id} className="activity-item" data-testid={`per-source-staleness-row-${ps.id}`}>
+                  <div
+                    key={ps.id}
+                    className="activity-item"
+                    data-testid={`per-source-staleness-row-${ps.id}`}
+                  >
                     <span className={`staleness-dot ${dotClass}`} aria-hidden="true" />
                     <div>
                       <div className="activity-text">{ps.name}</div>
@@ -484,7 +603,12 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
       <div className="panel" data-testid="fundraising-forecast-panel">
         <div className="panel-header">
           <div className="panel-title">Fundraising Forecast</div>
-          <button type="button" className="panel-action" onClick={handleLoadForecast} disabled={forecastLoading}>
+          <button
+            type="button"
+            className="panel-action"
+            onClick={handleLoadForecast}
+            disabled={forecastLoading}
+          >
             {forecastLoading ? 'Loading...' : forecast ? 'Refresh' : 'Load Forecast'}
           </button>
         </div>
@@ -505,7 +629,9 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
           </div>
         ) : (
           <div className="empty-state-guide">
-            <div className="empty-state-description">Load forecast to see projected submissions, award value, and at-risk grants.</div>
+            <div className="empty-state-description">
+              Load forecast to see projected submissions, award value, and at-risk grants.
+            </div>
           </div>
         )}
       </div>
@@ -515,23 +641,36 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
         <div className="panel">
           <div className="panel-header">
             <div className="panel-title">Upcoming Deadlines</div>
-            <button type="button" className="panel-action" data-view-link="pipeline" onClick={() => onNavigate?.('pipeline')}>
+            <button
+              type="button"
+              className="panel-action"
+              data-view-link="pipeline"
+              onClick={() => onNavigate?.('pipeline')}
+            >
               View all
             </button>
           </div>
           <div className="deadline-list">
             {upcomingDeadlines.map((grant) => {
               const { day, month } = formatDate(grant.deadline);
-              const urgency = grant.daysOut < 30 ? 'urgent' : grant.daysOut < 60 ? 'review' : 'draft';
+              const urgency =
+                grant.daysOut < 30 ? 'urgent' : grant.daysOut < 60 ? 'review' : 'draft';
               return (
-                <button type="button" key={grant.id} className="deadline-item" onClick={() => onGrantSelect(grant.id)}>
+                <button
+                  type="button"
+                  key={grant.id}
+                  className="deadline-item"
+                  onClick={() => onGrantSelect(grant.id)}
+                >
                   <div className="deadline-date">
                     <div className="deadline-day">{day}</div>
                     <div className="deadline-month">{month}</div>
                   </div>
                   <div>
                     <div className="deadline-info-title">{grant.title}</div>
-                    <div className="deadline-info-meta">{grant.funder} \u00b7 {grant.award}</div>
+                    <div className="deadline-info-meta">
+                      {grant.funder} \u00b7 {grant.award}
+                    </div>
                   </div>
                   <div className={`deadline-status ${urgency}`}>{grant.statusLabel}</div>
                 </button>
@@ -550,7 +689,10 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
                 <div key={idx} className="activity-item">
                   <div className={`activity-dot ${item.dot}`} />
                   <div>
-                    <div className="activity-text" dangerouslySetInnerHTML={{ __html: sanitizeNotificationText(item.text) }} />
+                    <div
+                      className="activity-text"
+                      dangerouslySetInnerHTML={{ __html: sanitizeNotificationText(item.text) }}
+                    />
                     <div className="activity-time">{item.time}</div>
                   </div>
                 </div>
@@ -558,10 +700,13 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
             </div>
           ) : (
             <div className="empty-state-guide" data-testid="activity-empty-state">
-              <div className="empty-state-icon" aria-hidden="true"><MessageCircle size={48} /></div>
+              <div className="empty-state-icon" aria-hidden="true">
+                <MessageCircle size={48} />
+              </div>
               <div className="empty-state-title">No activity yet</div>
               <div className="empty-state-description">
-                Activity will appear here as the system processes grants, generates drafts, and surfaces new matches.
+                Activity will appear here as the system processes grants, generates drafts, and
+                surfaces new matches.
               </div>
             </div>
           )}
@@ -578,10 +723,17 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
               const grant = grants.find((item) => item.id === grantId);
               if (!grant) return null;
               return (
-                <button key={grant.id} type="button" className="deadline-item" onClick={() => onGrantSelect(grant.id)}>
+                <button
+                  key={grant.id}
+                  type="button"
+                  className="deadline-item"
+                  onClick={() => onGrantSelect(grant.id)}
+                >
                   <div>
                     <div className="deadline-info-title">{grant.title}</div>
-                    <div className="deadline-info-meta">{grant.funder} \u00b7 {grant.statusLabel}</div>
+                    <div className="deadline-info-meta">
+                      {grant.funder} \u00b7 {grant.statusLabel}
+                    </div>
                   </div>
                 </button>
               );
@@ -601,7 +753,8 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
             className="sr-only"
             data-testid="dashboard-jobs-aria-live"
           >
-            {jobs.filter((j) => j.status === 'queued' || j.status === 'running').length} active job(s)
+            {jobs.filter((j) => j.status === 'queued' || j.status === 'running').length} active
+            job(s)
           </div>
           <div className="activity-list">
             {jobs.slice(0, 8).map((job) => {
@@ -618,9 +771,7 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
                       <strong>{job.jobType}</strong> \u00b7 {job.status}
                       {job.failureCategory ? ` \u00b7 ${job.failureCategory}` : ''}
                     </div>
-                    <div className="activity-time">
-                      {stageDescription(job.stage)}
-                    </div>
+                    <div className="activity-time">{stageDescription(job.stage)}</div>
                     <div
                       className="job-progress-container"
                       data-testid={`dashboard-job-progress-${job.id}`}
@@ -667,21 +818,33 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
         <div className="panel">
           <div className="panel-header">
             <div className="panel-title">Awaiting Review</div>
-            <button type="button" className="panel-action" data-view-link="pipeline" onClick={() => onNavigate?.('pipeline')}>
+            <button
+              type="button"
+              className="panel-action"
+              data-view-link="pipeline"
+              onClick={() => onNavigate?.('pipeline')}
+            >
               {reviewQueue.length} drafts
             </button>
           </div>
           {reviewQueue.map((grant) => {
             const { day, month } = formatDate(grant.deadline);
             return (
-              <button type="button" key={grant.id} className="deadline-item" onClick={() => onGrantSelect(grant.id)}>
+              <button
+                type="button"
+                key={grant.id}
+                className="deadline-item"
+                onClick={() => onGrantSelect(grant.id)}
+              >
                 <div className="deadline-date">
                   <div className="deadline-day">{day}</div>
                   <div className="deadline-month">{month}</div>
                 </div>
                 <div>
                   <div className="deadline-info-title">{grant.title}</div>
-                  <div className="deadline-info-meta">{grant.funder} · {grant.award} · Fit {grant.fit}</div>
+                  <div className="deadline-info-meta">
+                    {grant.funder} · {grant.award} · Fit {grant.fit}
+                  </div>
                 </div>
                 <span className="btn btn-sm btn-primary">Review draft</span>
               </button>
@@ -692,4 +855,3 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
     </>
   );
 }
-

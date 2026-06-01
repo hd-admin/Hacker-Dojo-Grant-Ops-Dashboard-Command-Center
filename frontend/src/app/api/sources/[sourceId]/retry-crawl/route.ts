@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -14,11 +14,11 @@ export async function POST(
     const { sourceId } = await params;
     const deps = getDependencies();
 
-    const source = (await deps.repository.getSources()).find(
-      (item) => item.id === sourceId,
-    );
+    const source = (await deps.repository.getSources()).find((item) => item.id === sourceId);
     if (!source) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Source not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Source not found'), {
+        status: 404,
+      });
     }
 
     // Update source to queued state
@@ -68,9 +68,6 @@ export async function POST(
     return NextResponse.json({ success: true, crawlRun });
   } catch (error) {
     logger.error({ err: error }, 'Error retrying crawl for source');
-    return NextResponse.json(
-      { error: 'Failed to retry crawl' },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: 'Failed to retry crawl' }, { status: 500 });
   }
 }

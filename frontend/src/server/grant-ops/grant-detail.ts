@@ -23,7 +23,18 @@ function createDefaultFunderSummary(_grant: Pick<Grant, 'funder' | 'title' | 'ta
  * Create a default grant checklist when none is provided.
  * Returns an empty array - checklist items should be generated from real grant requirements.
  */
-function createDefaultGrantChecklist(_grant: Pick<Grant, 'fit' | 'status' | 'draftContent' | 'funderSummary' | 'latestDraftVersion' | 'groundedDocumentCount' | 'sourceCount'>): Array<{ label: string; done: boolean; source: string }> {
+function createDefaultGrantChecklist(
+  _grant: Pick<
+    Grant,
+    | 'fit'
+    | 'status'
+    | 'draftContent'
+    | 'funderSummary'
+    | 'latestDraftVersion'
+    | 'groundedDocumentCount'
+    | 'sourceCount'
+  >,
+): Array<{ label: string; done: boolean; source: string }> {
   // Return empty checklist - real checklist items should be generated from grant requirements
   return [];
 }
@@ -54,7 +65,11 @@ function latestRevisionRequest(revisions: RevisionRequest[]): RevisionRequest | 
     return null;
   }
 
-  return [...revisions].sort((a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime())[0] ?? null;
+  return (
+    [...revisions].sort(
+      (a, b) => new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime(),
+    )[0] ?? null
+  );
 }
 
 function buildWorkflow(
@@ -77,14 +92,11 @@ function buildWorkflow(
       ? 'Grant has already been submitted'
       : canSubmitResult.canSubmit
         ? null
-        : canSubmitResult.reason ?? 'Submission is blocked',
+        : (canSubmitResult.reason ?? 'Submission is blocked'),
   };
 }
 
-function normalizeDetailGrant(
-  grant: Grant,
-  latestDraft: DraftArtifact | null,
-): Grant {
+function normalizeDetailGrant(grant: Grant, latestDraft: DraftArtifact | null): Grant {
   const normalizedGrant = normalizeGrantDetailFields({
     ...grant,
     funderSummary: grant.funderSummary ?? createDefaultFunderSummary(grant),
@@ -108,14 +120,15 @@ export async function loadGrantDetail(grantId: string): Promise<GrantDetailRespo
     return null;
   }
 
-  const [drafts, revisions, approvalRecord, submissionRecord, followUps, canSubmitResult] = await Promise.all([
-    deps.repository.getDraftArtifacts(grantId),
-    deps.repository.getRevisionRequests(grantId),
-    deps.repository.getApprovalRecord(grantId),
-    deps.repository.getSubmissionRecord(grantId),
-    deps.repository.getFollowUps(),
-    canSubmitGrant(grantId),
-  ]);
+  const [drafts, revisions, approvalRecord, submissionRecord, followUps, canSubmitResult] =
+    await Promise.all([
+      deps.repository.getDraftArtifacts(grantId),
+      deps.repository.getRevisionRequests(grantId),
+      deps.repository.getApprovalRecord(grantId),
+      deps.repository.getSubmissionRecord(grantId),
+      deps.repository.getFollowUps(),
+      canSubmitGrant(grantId),
+    ]);
 
   const grantFollowUps = followUps.filter((followUp) => followUp.grantId === grantId);
   const latestDraft = latestByVersion(drafts);
@@ -129,6 +142,12 @@ export async function loadGrantDetail(grantId: string): Promise<GrantDetailRespo
     approvalRecord,
     submissionRecord,
     followUps: grantFollowUps,
-    workflow: buildWorkflow(normalizedGrant, latestDraft, approvalRecord, submissionRecord, canSubmitResult),
+    workflow: buildWorkflow(
+      normalizedGrant,
+      latestDraft,
+      approvalRecord,
+      submissionRecord,
+      canSubmitResult,
+    ),
   };
 }

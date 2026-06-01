@@ -25,7 +25,9 @@ describe('HARDCODED_PROFILE', () => {
 
   it('should have program areas', () => {
     expect(HARDCODED_PROFILE.programAreas.length).toBeGreaterThan(0);
-    expect(HARDCODED_PROFILE.programAreas).toContain('Makerspace operations (hardware labs, 3D printing, maker tools)');
+    expect(HARDCODED_PROFILE.programAreas).toContain(
+      'Makerspace operations (hardware labs, 3D printing, maker tools)',
+    );
   });
 
   it('should have board members', () => {

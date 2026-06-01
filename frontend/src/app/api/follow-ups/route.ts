@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import * as submissionService from '@/server/grant-ops/submission-service';
@@ -16,7 +16,6 @@ const bodySchema = z.object({
   status: z.enum(['pending', 'overdue', 'completed']).optional(),
   completedAt: z.string().optional(),
 });
-
 
 export async function GET(request: NextRequest) {
   await connection();
@@ -40,7 +39,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(filtered);
   } catch (error) {
     logger.error({ err: error }, 'Error getting follow-ups');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get follow-ups'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get follow-ups'),
+      { status: 500 },
+    );
   }
 }
 
@@ -73,7 +75,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(followUp, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, 'Error creating follow-up');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create follow-up'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create follow-up'),
+      { status: 500 },
+    );
   }
 }
 
@@ -83,7 +88,9 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
 
     if (!body.id) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'ID is required'), { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'ID is required'), {
+        status: 400,
+      });
     }
 
     await submissionService.updateFollowUp({
@@ -102,7 +109,10 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, 'Error updating follow-up');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update follow-up'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update follow-up'),
+      { status: 500 },
+    );
   }
 }
 
@@ -113,18 +123,26 @@ export async function DELETE(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (!id) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Follow-up ID is required'), { status: 400 });
+      return NextResponse.json(
+        createErrorResponse('AGENT_INVALID_JSON', 'Follow-up ID is required'),
+        { status: 400 },
+      );
     }
 
     const deleted = await submissionService.deleteFollowUp(id);
 
     if (!deleted) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Follow-up not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Follow-up not found'), {
+        status: 404,
+      });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, 'Error deleting follow-up');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to delete follow-up'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to delete follow-up'),
+      { status: 500 },
+    );
   }
 }

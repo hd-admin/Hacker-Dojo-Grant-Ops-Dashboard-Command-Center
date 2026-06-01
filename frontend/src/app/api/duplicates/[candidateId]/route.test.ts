@@ -33,13 +33,16 @@ describe('/api/duplicates/[candidateId] route', () => {
   });
 
   it('updates duplicate resolution state and records an audit trail entry', async () => {
-    const response = await PATCH(new Request(`http://localhost/api/duplicates/${candidate.id}`, {
-      method: 'PATCH',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'merge' }),
-    }) as never, {
-      params: Promise.resolve({ candidateId: candidate.id }),
-    });
+    const response = await PATCH(
+      new Request(`http://localhost/api/duplicates/${candidate.id}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'merge' }),
+      }) as never,
+      {
+        params: Promise.resolve({ candidateId: candidate.id }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);

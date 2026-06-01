@@ -157,10 +157,7 @@ describe('/api/grants/[grantId]/approval/reopen route', () => {
       approvedBy: 'human',
     });
 
-    const response = await POST(
-      makeReopenRequest(grant.id, {}) as never,
-      routeParams(grant.id),
-    );
+    const response = await POST(makeReopenRequest(grant.id, {}) as never, routeParams(grant.id));
     const data = await response.json();
 
     expect(response.status).toBe(400);

@@ -16,14 +16,23 @@ interface DiscoveryViewProps {
 }
 
 type SortOption = 'fit' | 'deadline' | 'award' | 'recently-added';
-type CategoryFilter = 'All' | 'EdTech' | 'Community' | 'Science & Tech' | 'Federal' | 'Foundation' | 'Corporate';
+type CategoryFilter =
+  | 'All'
+  | 'EdTech'
+  | 'Community'
+  | 'Science & Tech'
+  | 'Federal'
+  | 'Foundation'
+  | 'Corporate';
 
 const WORKING_CONTEXT_KEY = 'grantops.workingContext';
 
 function getWorkingContextStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
   const storage = window.localStorage;
-  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function' ? storage : null;
+  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function'
+    ? storage
+    : null;
 }
 
 function readWorkingContext(): Record<string, unknown> {
@@ -48,21 +57,41 @@ function formatDate(dateStr: string): string {
   const parts = dateStr.split('-');
   const month = parts[1] ?? '';
   const day = parts[2] ?? '';
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const months = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ];
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}`;
 }
 
 function buildFunderProfileFromGrant(grant: Grant): FunderProfile {
-  const funderType = grant.tags.some((t) => t === 'Federal') ? 'government' :
-    grant.tags.some((t) => t === 'Foundation') ? 'foundation' :
-    grant.tags.some((t) => t === 'Corporate') ? 'corporate' :
-    grant.tags.some((t) => t === 'Community') ? 'community' : 'other';
+  const funderType = grant.tags.some((t) => t === 'Federal')
+    ? 'government'
+    : grant.tags.some((t) => t === 'Foundation')
+      ? 'foundation'
+      : grant.tags.some((t) => t === 'Corporate')
+        ? 'corporate'
+        : grant.tags.some((t) => t === 'Community')
+          ? 'community'
+          : 'other';
 
   return {
     id: `funder-${grant.funderShort || grant.funder.replace(/\s+/g, '-').toLowerCase()}`,
     name: grant.funder,
     type: funderType,
-    focusAreas: grant.tags.filter((t) => !['Federal', 'Foundation', 'Corporate', 'Community'].includes(t)),
+    focusAreas: grant.tags.filter(
+      (t) => !['Federal', 'Foundation', 'Corporate', 'Community'].includes(t),
+    ),
     geographicFocus: ['National'],
     typicalAwardRange: { min: Math.max(0, grant.awardSort - 50000), max: grant.awardSort },
     givingHistory: [],
@@ -76,19 +105,52 @@ function buildFunderProfileFromGrant(grant: Grant): FunderProfile {
 function renderDeadlineCell(grant: Grant): React.ReactNode {
   const confidence = grant.deadlineConfidence;
   if (confidence === 'unknown') {
-    return <span className="deadline-confidence deadline-confidence-unknown" title="Deadline confidence is unknown">Deadline unknown</span>;
+    return (
+      <span
+        className="deadline-confidence deadline-confidence-unknown"
+        title="Deadline confidence is unknown"
+      >
+        Deadline unknown
+      </span>
+    );
   }
   if (confidence === 'rolling') {
-    return <span className="deadline-confidence deadline-confidence-rolling" title="Rolling deadline — no fixed cutoff">Rolling</span>;
+    return (
+      <span
+        className="deadline-confidence deadline-confidence-rolling"
+        title="Rolling deadline — no fixed cutoff"
+      >
+        Rolling
+      </span>
+    );
   }
   const dateStr = formatDate(grant.deadline);
   if (confidence === 'estimated') {
-    return <span className="deadline-confidence deadline-confidence-estimated" title="Estimated from source date range">~{dateStr}</span>;
+    return (
+      <span
+        className="deadline-confidence deadline-confidence-estimated"
+        title="Estimated from source date range"
+      >
+        ~{dateStr}
+      </span>
+    );
   }
-  return <span className="deadline-confidence deadline-confidence-exact" title="Exact deadline from source">{dateStr}</span>;
+  return (
+    <span
+      className="deadline-confidence deadline-confidence-exact"
+      title="Exact deadline from source"
+    >
+      {dateStr}
+    </span>
+  );
 }
 
-export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initialGrants = [], sources: initialSources = [] }: DiscoveryViewProps) {
+export function DiscoveryView({
+  onGrantSelect,
+  onRefreshAppState,
+  grants: initialGrants = [],
+  sources: initialSources = [],
+}: DiscoveryViewProps) {
   const [grants, setGrants] = useState<Grant[]>(initialGrants);
   const [sources, setSources] = useState<Source[]>(initialSources);
   const [sourcesCrawled, setSourcesCrawled] = useState(0);
@@ -102,7 +164,9 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
   const [manualFunder, setManualFunder] = useState('');
   const [manualAward, setManualAward] = useState('');
   const [manualDeadline, setManualDeadline] = useState('');
-  const [manualDeadlineConfidence, setManualDeadlineConfidence] = useState<'exact' | 'estimated' | 'rolling' | 'unknown'>('unknown');
+  const [manualDeadlineConfidence, setManualDeadlineConfidence] = useState<
+    'exact' | 'estimated' | 'rolling' | 'unknown'
+  >('unknown');
   const [manualTags, setManualTags] = useState('');
   const [manualNotes, setManualNotes] = useState('');
   const [manualEligibility, setManualEligibility] = useState('');
@@ -120,9 +184,15 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
     setSearch((context.discoverySearch as string) ?? '');
   }, []);
 
-  useEffect(() => { saveWorkingContextField('discoverySort', sortBy); }, [sortBy]);
-  useEffect(() => { saveWorkingContextField('discoveryCategory', category); }, [category]);
-  useEffect(() => { saveWorkingContextField('discoverySearch', search); }, [search]);
+  useEffect(() => {
+    saveWorkingContextField('discoverySort', sortBy);
+  }, [sortBy]);
+  useEffect(() => {
+    saveWorkingContextField('discoveryCategory', category);
+  }, [category]);
+  useEffect(() => {
+    saveWorkingContextField('discoverySearch', search);
+  }, [search]);
 
   useEffect(() => {
     async function load() {
@@ -144,23 +214,42 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
     load();
   }, []);
 
-  const pendingReviewCount = sources.filter((source) => source.reviewStatus === 'pending-review').length;
+  const pendingReviewCount = sources.filter(
+    (source) => source.reviewStatus === 'pending-review',
+  ).length;
 
   const userAddedSources = sources.filter((s) => s.suggestedBy !== 'system');
 
   const filtered = useMemo(() => {
     const searchLower = search.toLowerCase();
     return [...grants]
-      .filter((g) => !search || g.title.toLowerCase().includes(searchLower) || g.funder.toLowerCase().includes(searchLower) || g.tags.some((t) => t.toLowerCase().includes(searchLower)))
-      .filter((g) => category === 'All' || g.tags.some((t) => t === category || t.includes(category)))
+      .filter(
+        (g) =>
+          !search ||
+          g.title.toLowerCase().includes(searchLower) ||
+          g.funder.toLowerCase().includes(searchLower) ||
+          g.tags.some((t) => t.toLowerCase().includes(searchLower)),
+      )
+      .filter(
+        (g) => category === 'All' || g.tags.some((t) => t === category || t.includes(category)),
+      )
       .filter((g) => !exactDeadlinesOnly || g.deadlineConfidence === 'exact')
       .sort((a, b) => {
         switch (sortBy) {
-          case 'fit': return b.fit - a.fit;
-          case 'deadline': return a.deadline === 'Rolling' ? 1 : b.deadline === 'Rolling' ? -1 : a.daysOut - b.daysOut;
-          case 'award': return b.awardSort - a.awardSort;
-          case 'recently-added': return (b.matchedAt || '').localeCompare(a.matchedAt || '');
-          default: return 0;
+          case 'fit':
+            return b.fit - a.fit;
+          case 'deadline':
+            return a.deadline === 'Rolling'
+              ? 1
+              : b.deadline === 'Rolling'
+                ? -1
+                : a.daysOut - b.daysOut;
+          case 'award':
+            return b.awardSort - a.awardSort;
+          case 'recently-added':
+            return (b.matchedAt || '').localeCompare(a.matchedAt || '');
+          default:
+            return 0;
         }
       });
   }, [grants, search, category, sortBy, exactDeadlinesOnly]);
@@ -174,7 +263,12 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
       award: manualAward.trim() || undefined,
       deadline: manualDeadline || undefined,
       deadlineConfidence: manualDeadlineConfidence,
-      tags: manualTags ? manualTags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,
+      tags: manualTags
+        ? manualTags
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean)
+        : undefined,
       notes: manualNotes.trim() || undefined,
       eligibility: manualEligibility.trim() || undefined,
     };
@@ -200,11 +294,20 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
     if (!newSourceName.trim() || !newSourceUrl.trim()) return;
     setIsAddingSource(true);
     try {
-      await client.sources.add({ name: newSourceName.trim(), url: newSourceUrl.trim(), type: 'website', reviewStatus: 'pending-review' });
+      await client.sources.add({
+        name: newSourceName.trim(),
+        url: newSourceUrl.trim(),
+        type: 'website',
+        reviewStatus: 'pending-review',
+      });
       setNewSourceName('');
       setNewSourceUrl('');
       setShowAddSourceForm(false);
-      await Promise.all([client.grants.getAll().then(setGrants), client.sources.getAll().then(setSources), onRefreshAppState?.()]);
+      await Promise.all([
+        client.grants.getAll().then(setGrants),
+        client.sources.getAll().then(setSources),
+        onRefreshAppState?.(),
+      ]);
     } catch (_error) {
       setError('Error adding source');
     } finally {
@@ -219,15 +322,22 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
   };
 
   const handleExportCsv = () => {
-    const rows = ['title,funder,award,deadline,deadlineConfidence,daysOut,fit', ...filtered.map((grant) => [
-      grant.title,
-      grant.funder,
-      grant.award,
-      grant.deadline,
-      grant.deadlineConfidence ?? 'unknown',
-      String(grant.daysOut),
-      String(grant.fit),
-    ].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))];
+    const rows = [
+      'title,funder,award,deadline,deadlineConfidence,daysOut,fit',
+      ...filtered.map((grant) =>
+        [
+          grant.title,
+          grant.funder,
+          grant.award,
+          grant.deadline,
+          grant.deadlineConfidence ?? 'unknown',
+          String(grant.daysOut),
+          String(grant.fit),
+        ]
+          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+          .join(','),
+      ),
+    ];
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -270,55 +380,145 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
             <div className="header-sub">0 grants · crawled {sourcesCrawled} sources</div>
           </div>
           <div className="header-actions">
-            <button type="button" className="btn btn-primary" onClick={() => setShowAddSourceForm((value) => !value)}>
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setShowAddSourceForm((value) => !value)}
+            >
               + Add source
             </button>
           </div>
         </div>
         <div className="empty-state-guide" data-testid="discovery-empty-state">
-          <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F50D)}</div>
+          <div className="empty-state-icon" aria-hidden="true">
+            {String.fromCodePoint(0x1f50d)}
+          </div>
           <div className="empty-state-title">No grants discovered yet</div>
           <div className="empty-state-description">
-            Add funding sources to start discovering grants. You can add websites, databases,
-            or manually enter grant opportunities. The AI will automatically crawl and match.
+            Add funding sources to start discovering grants. You can add websites, databases, or
+            manually enter grant opportunities. The AI will automatically crawl and match.
           </div>
           <div className="empty-state-actions">
-            <button type="button" className="btn btn-primary" onClick={() => setShowAddSourceForm(true)} aria-label="Add a funding source">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => setShowAddSourceForm(true)}
+              aria-label="Add a funding source"
+            >
               Add a source
             </button>
-            <button type="button" data-testid="add-manually-btn" className="btn" onClick={() => setShowManualIntake(true)} aria-label="Add grant manually">
+            <button
+              type="button"
+              data-testid="add-manually-btn"
+              className="btn"
+              onClick={() => setShowManualIntake(true)}
+              aria-label="Add grant manually"
+            >
               Add grant manually
             </button>
           </div>
         </div>
         {showManualIntake && (
-          <form onSubmit={handleManualSubmit} className="manual-intake-form" data-testid="manual-intake-form">
+          <form
+            onSubmit={handleManualSubmit}
+            className="manual-intake-form"
+            data-testid="manual-intake-form"
+          >
             <label htmlFor="manual-title">Grant Title (required)</label>
-            <input id="manual-title" data-testid="manual-title" value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} placeholder="e.g., NSF STEM Education Grant" required />
+            <input
+              id="manual-title"
+              data-testid="manual-title"
+              value={manualTitle}
+              onChange={(e) => setManualTitle(e.target.value)}
+              placeholder="e.g., NSF STEM Education Grant"
+              required
+            />
             <label htmlFor="manual-funder">Funder (required)</label>
-            <input id="manual-funder" data-testid="manual-funder" value={manualFunder} onChange={(e) => setManualFunder(e.target.value)} placeholder="e.g., National Science Foundation" required />
+            <input
+              id="manual-funder"
+              data-testid="manual-funder"
+              value={manualFunder}
+              onChange={(e) => setManualFunder(e.target.value)}
+              placeholder="e.g., National Science Foundation"
+              required
+            />
             <label htmlFor="manual-award">Award Amount</label>
-            <input id="manual-award" data-testid="manual-award" value={manualAward} onChange={(e) => setManualAward(e.target.value)} placeholder="e.g., $50,000" />
+            <input
+              id="manual-award"
+              data-testid="manual-award"
+              value={manualAward}
+              onChange={(e) => setManualAward(e.target.value)}
+              placeholder="e.g., $50,000"
+            />
             <label htmlFor="manual-deadline">Deadline</label>
-            <input id="manual-deadline" type="date" data-testid="manual-deadline" value={manualDeadline} onChange={(e) => setManualDeadline(e.target.value)} />
+            <input
+              id="manual-deadline"
+              type="date"
+              data-testid="manual-deadline"
+              value={manualDeadline}
+              onChange={(e) => setManualDeadline(e.target.value)}
+            />
             <label htmlFor="manual-deadline-confidence">Deadline Confidence</label>
-            <select id="manual-deadline-confidence" data-testid="manual-deadline-confidence" value={manualDeadlineConfidence} onChange={(e) => setManualDeadlineConfidence(e.target.value as 'exact' | 'estimated' | 'rolling' | 'unknown')}>
+            <select
+              id="manual-deadline-confidence"
+              data-testid="manual-deadline-confidence"
+              value={manualDeadlineConfidence}
+              onChange={(e) =>
+                setManualDeadlineConfidence(
+                  e.target.value as 'exact' | 'estimated' | 'rolling' | 'unknown',
+                )
+              }
+            >
               <option value="exact">Exact</option>
               <option value="estimated">Estimated</option>
               <option value="rolling">Rolling</option>
               <option value="unknown">Unknown</option>
             </select>
             <label htmlFor="manual-tags">Tags (comma-separated)</label>
-            <input id="manual-tags" data-testid="manual-tags" value={manualTags} onChange={(e) => setManualTags(e.target.value)} placeholder="e.g., STEM, Community, Education" />
+            <input
+              id="manual-tags"
+              data-testid="manual-tags"
+              value={manualTags}
+              onChange={(e) => setManualTags(e.target.value)}
+              placeholder="e.g., STEM, Community, Education"
+            />
             <label htmlFor="manual-eligibility">Eligibility Notes</label>
-            <textarea id="manual-eligibility" data-testid="manual-eligibility" rows={3} value={manualEligibility} onChange={(e) => setManualEligibility(e.target.value)} placeholder="Describe eligibility requirements..." />
+            <textarea
+              id="manual-eligibility"
+              data-testid="manual-eligibility"
+              rows={3}
+              value={manualEligibility}
+              onChange={(e) => setManualEligibility(e.target.value)}
+              placeholder="Describe eligibility requirements..."
+            />
             <label htmlFor="manual-notes">Source Notes</label>
-            <textarea id="manual-notes" data-testid="manual-notes" rows={2} value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="Where did you find this opportunity? Any additional context..." />
+            <textarea
+              id="manual-notes"
+              data-testid="manual-notes"
+              rows={2}
+              value={manualNotes}
+              onChange={(e) => setManualNotes(e.target.value)}
+              placeholder="Where did you find this opportunity? Any additional context..."
+            />
             <div className="manual-intake-actions">
               <button type="submit" className="btn btn-primary" data-testid="manual-submit-btn">
                 Add Grant Opportunity
               </button>
-              <button type="button" className="btn btn-ghost" onClick={() => { setShowManualIntake(false); setManualTitle(''); setManualFunder(''); setManualAward(''); setManualDeadline(''); setManualDeadlineConfidence('unknown'); setManualTags(''); setManualNotes(''); setManualEligibility(''); }}>
+              <button
+                type="button"
+                className="btn btn-ghost"
+                onClick={() => {
+                  setShowManualIntake(false);
+                  setManualTitle('');
+                  setManualFunder('');
+                  setManualAward('');
+                  setManualDeadline('');
+                  setManualDeadlineConfidence('unknown');
+                  setManualTags('');
+                  setManualNotes('');
+                  setManualEligibility('');
+                }}
+              >
                 Cancel
               </button>
             </div>
@@ -326,9 +526,25 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
         )}
         {showAddSourceForm && (
           <form onSubmit={handleAddSource} className="add-source-inline">
-            <input type="text" placeholder="Source name" value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)} disabled={isAddingSource} />
-            <input type="url" placeholder="https://..." value={newSourceUrl} onChange={(e) => setNewSourceUrl(e.target.value)} disabled={isAddingSource} />
-            <button type="submit" className="btn btn-primary btn-sm" disabled={isAddingSource || !newSourceName.trim() || !newSourceUrl.trim()}>
+            <input
+              type="text"
+              placeholder="Source name"
+              value={newSourceName}
+              onChange={(e) => setNewSourceName(e.target.value)}
+              disabled={isAddingSource}
+            />
+            <input
+              type="url"
+              placeholder="https://..."
+              value={newSourceUrl}
+              onChange={(e) => setNewSourceUrl(e.target.value)}
+              disabled={isAddingSource}
+            />
+            <button
+              type="submit"
+              className="btn btn-primary btn-sm"
+              disabled={isAddingSource || !newSourceName.trim() || !newSourceUrl.trim()}
+            >
               {isAddingSource ? 'Adding...' : 'Add'}
             </button>
           </form>
@@ -341,7 +557,13 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
                 <div className="source-name">{source.name}</div>
                 <div className="source-url">{source.url}</div>
               </div>
-              <button type="button" aria-label="Delete source" onClick={() => void handleDeleteSource(source.id)}>Delete</button>
+              <button
+                type="button"
+                aria-label="Delete source"
+                onClick={() => void handleDeleteSource(source.id)}
+              >
+                Delete
+              </button>
             </div>
           ))}
         </div>
@@ -356,16 +578,32 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
           <h1 className="header-title">
             Discovery <span className="accent">Find grants</span>
           </h1>
-          <div className="header-sub">{filtered.length} grants · crawled {sourcesCrawled} sources</div>
+          <div className="header-sub">
+            {filtered.length} grants · crawled {sourcesCrawled} sources
+          </div>
         </div>
         <div className="header-actions">
-          <button type="button" data-testid="add-manually-btn" onClick={() => setShowManualIntake((value) => !value)}>
+          <button
+            type="button"
+            data-testid="add-manually-btn"
+            onClick={() => setShowManualIntake((value) => !value)}
+          >
             + Add manually
           </button>
-          <button type="button" onClick={() => { void handleExportCsv(); }} aria-label="Export results as CSV">
+          <button
+            type="button"
+            onClick={() => {
+              void handleExportCsv();
+            }}
+            aria-label="Export results as CSV"
+          >
             Export CSV
           </button>
-          <button type="button" className="btn btn-primary" onClick={() => setShowAddSourceForm((value) => !value)}>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setShowAddSourceForm((value) => !value)}
+          >
             + Add source
           </button>
         </div>
@@ -373,40 +611,116 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
 
       {pendingReviewCount > 0 && (
         <div>
-          <button type="button" onClick={() => window.dispatchEvent(new Event('grantops:navigate-sources'))}>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new Event('grantops:navigate-sources'))}
+          >
             {pendingReviewCount} sources awaiting review
           </button>
         </div>
       )}
 
       {showManualIntake && (
-        <form onSubmit={handleManualSubmit} className="manual-intake-form" data-testid="manual-intake-form">
+        <form
+          onSubmit={handleManualSubmit}
+          className="manual-intake-form"
+          data-testid="manual-intake-form"
+        >
           <label htmlFor="manual-title-main">Grant Title (required)</label>
-          <input id="manual-title-main" data-testid="manual-title" value={manualTitle} onChange={(e) => setManualTitle(e.target.value)} placeholder="e.g., NSF STEM Education Grant" required />
+          <input
+            id="manual-title-main"
+            data-testid="manual-title"
+            value={manualTitle}
+            onChange={(e) => setManualTitle(e.target.value)}
+            placeholder="e.g., NSF STEM Education Grant"
+            required
+          />
           <label htmlFor="manual-funder-main">Funder (required)</label>
-          <input id="manual-funder-main" data-testid="manual-funder" value={manualFunder} onChange={(e) => setManualFunder(e.target.value)} placeholder="e.g., National Science Foundation" required />
+          <input
+            id="manual-funder-main"
+            data-testid="manual-funder"
+            value={manualFunder}
+            onChange={(e) => setManualFunder(e.target.value)}
+            placeholder="e.g., National Science Foundation"
+            required
+          />
           <label htmlFor="manual-award-main">Award Amount</label>
-          <input id="manual-award-main" data-testid="manual-award" value={manualAward} onChange={(e) => setManualAward(e.target.value)} placeholder="e.g., $50,000" />
+          <input
+            id="manual-award-main"
+            data-testid="manual-award"
+            value={manualAward}
+            onChange={(e) => setManualAward(e.target.value)}
+            placeholder="e.g., $50,000"
+          />
           <label htmlFor="manual-deadline-main">Deadline</label>
-          <input id="manual-deadline-main" type="date" data-testid="manual-deadline" value={manualDeadline} onChange={(e) => setManualDeadline(e.target.value)} />
+          <input
+            id="manual-deadline-main"
+            type="date"
+            data-testid="manual-deadline"
+            value={manualDeadline}
+            onChange={(e) => setManualDeadline(e.target.value)}
+          />
           <label htmlFor="manual-deadline-confidence-main">Deadline Confidence</label>
-          <select id="manual-deadline-confidence-main" data-testid="manual-deadline-confidence" value={manualDeadlineConfidence} onChange={(e) => setManualDeadlineConfidence(e.target.value as 'exact' | 'estimated' | 'rolling' | 'unknown')}>
+          <select
+            id="manual-deadline-confidence-main"
+            data-testid="manual-deadline-confidence"
+            value={manualDeadlineConfidence}
+            onChange={(e) =>
+              setManualDeadlineConfidence(
+                e.target.value as 'exact' | 'estimated' | 'rolling' | 'unknown',
+              )
+            }
+          >
             <option value="exact">Exact</option>
             <option value="estimated">Estimated</option>
             <option value="rolling">Rolling</option>
             <option value="unknown">Unknown</option>
           </select>
           <label htmlFor="manual-tags-main">Tags (comma-separated)</label>
-          <input id="manual-tags-main" data-testid="manual-tags" value={manualTags} onChange={(e) => setManualTags(e.target.value)} placeholder="e.g., STEM, Community, Education" />
+          <input
+            id="manual-tags-main"
+            data-testid="manual-tags"
+            value={manualTags}
+            onChange={(e) => setManualTags(e.target.value)}
+            placeholder="e.g., STEM, Community, Education"
+          />
           <label htmlFor="manual-eligibility-main">Eligibility Notes</label>
-          <textarea id="manual-eligibility-main" data-testid="manual-eligibility" rows={3} value={manualEligibility} onChange={(e) => setManualEligibility(e.target.value)} placeholder="Describe eligibility requirements..." />
+          <textarea
+            id="manual-eligibility-main"
+            data-testid="manual-eligibility"
+            rows={3}
+            value={manualEligibility}
+            onChange={(e) => setManualEligibility(e.target.value)}
+            placeholder="Describe eligibility requirements..."
+          />
           <label htmlFor="manual-notes-main">Source Notes</label>
-          <textarea id="manual-notes-main" data-testid="manual-notes" rows={2} value={manualNotes} onChange={(e) => setManualNotes(e.target.value)} placeholder="Where did you find this opportunity? Any additional context..." />
+          <textarea
+            id="manual-notes-main"
+            data-testid="manual-notes"
+            rows={2}
+            value={manualNotes}
+            onChange={(e) => setManualNotes(e.target.value)}
+            placeholder="Where did you find this opportunity? Any additional context..."
+          />
           <div className="manual-intake-actions">
             <button type="submit" className="btn btn-primary" data-testid="manual-submit-btn">
               Add Grant Opportunity
             </button>
-            <button type="button" className="btn btn-ghost" onClick={() => { setShowManualIntake(false); setManualTitle(''); setManualFunder(''); setManualAward(''); setManualDeadline(''); setManualDeadlineConfidence('unknown'); setManualTags(''); setManualNotes(''); setManualEligibility(''); }}>
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => {
+                setShowManualIntake(false);
+                setManualTitle('');
+                setManualFunder('');
+                setManualAward('');
+                setManualDeadline('');
+                setManualDeadlineConfidence('unknown');
+                setManualTags('');
+                setManualNotes('');
+                setManualEligibility('');
+              }}
+            >
               Cancel
             </button>
           </div>
@@ -415,16 +729,37 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
 
       {showAddSourceForm && (
         <form onSubmit={handleAddSource} className="add-source-inline">
-          <input type="text" placeholder="Source name" value={newSourceName} onChange={(e) => setNewSourceName(e.target.value)} disabled={isAddingSource} />
-          <input type="url" placeholder="https://..." value={newSourceUrl} onChange={(e) => setNewSourceUrl(e.target.value)} disabled={isAddingSource} />
-          <button type="submit" className="btn btn-primary btn-sm" disabled={isAddingSource || !newSourceName.trim() || !newSourceUrl.trim()}>
+          <input
+            type="text"
+            placeholder="Source name"
+            value={newSourceName}
+            onChange={(e) => setNewSourceName(e.target.value)}
+            disabled={isAddingSource}
+          />
+          <input
+            type="url"
+            placeholder="https://..."
+            value={newSourceUrl}
+            onChange={(e) => setNewSourceUrl(e.target.value)}
+            disabled={isAddingSource}
+          />
+          <button
+            type="submit"
+            className="btn btn-primary btn-sm"
+            disabled={isAddingSource || !newSourceName.trim() || !newSourceUrl.trim()}
+          >
             {isAddingSource ? 'Adding...' : 'Add'}
           </button>
         </form>
       )}
 
       <div className="filter-bar">
-        <input type="text" placeholder="Search grants, funders, tags..." value={search} onChange={(e) => setSearch(e.target.value)} />
+        <input
+          type="text"
+          placeholder="Search grants, funders, tags..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
         <select value={sortBy} onChange={(e) => setSortBy(e.target.value as SortOption)}>
           <option value="fit">Best fit</option>
           <option value="deadline">Deadline</option>
@@ -439,23 +774,27 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
         >
           Only exact deadlines
         </button>
-        {['All', 'EdTech', 'Community', 'Science & Tech', 'Federal', 'Foundation', 'Corporate'].map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            className={`filter-pill ${category === cat ? 'active' : ''}`}
-            onClick={() => setCategory(cat as CategoryFilter)}
-          >
-            {cat}
-          </button>
-        ))}
+        {['All', 'EdTech', 'Community', 'Science & Tech', 'Federal', 'Foundation', 'Corporate'].map(
+          (cat) => (
+            <button
+              key={cat}
+              type="button"
+              className={`filter-pill ${category === cat ? 'active' : ''}`}
+              onClick={() => setCategory(cat as CategoryFilter)}
+            >
+              {cat}
+            </button>
+          ),
+        )}
       </div>
 
       <SavedSearchesPanel currentSearchQuery={search} onRunSearch={(query) => setSearch(query)} />
 
       {filtered.length === 0 && grants.length > 0 && (
         <div className="empty-state-guide" data-testid="discovery-filter-empty-state">
-          <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F50D)}</div>
+          <div className="empty-state-icon" aria-hidden="true">
+            {String.fromCodePoint(0x1f50d)}
+          </div>
           <div className="empty-state-title">No grants match your current filters</div>
           <div className="empty-state-description">
             Try broadening your search or adding more sources.
@@ -471,14 +810,25 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
           <div>Fit</div>
         </div>
         {filtered.map((grant) => (
-          <button key={grant.id} type="button" className="grants-row" onClick={() => onGrantSelect(grant.id)}>
+          <button
+            key={grant.id}
+            type="button"
+            className="grants-row"
+            onClick={() => onGrantSelect(grant.id)}
+          >
             <div>
               {grant.title}
               {grant.manualOrigin && (
-                <span data-testid="manual-origin-badge" className="ai-badge">Manual</span>
+                <span data-testid="manual-origin-badge" className="ai-badge">
+                  Manual
+                </span>
               )}
-              {grant.humanOverrides?.some((override) => override.field === 'fit' || override.field === 'category') && (
-                <span data-testid="human-confirmed-chip" className="ai-badge">Human-confirmed</span>
+              {grant.humanOverrides?.some(
+                (override) => override.field === 'fit' || override.field === 'category',
+              ) && (
+                <span data-testid="human-confirmed-chip" className="ai-badge">
+                  Human-confirmed
+                </span>
               )}
             </div>
             <div className="grant-funder">
@@ -487,8 +837,17 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
                 tabIndex={0}
                 className="btn btn-ghost btn-funder-link"
                 aria-label={`View funder details for ${grant.funder}`}
-                onClick={(e) => { e.stopPropagation(); setSelectedFunder(buildFunderProfileFromGrant(grant)); }}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); setSelectedFunder(buildFunderProfileFromGrant(grant)); } }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedFunder(buildFunderProfileFromGrant(grant));
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    setSelectedFunder(buildFunderProfileFromGrant(grant));
+                  }
+                }}
               >
                 {grant.funderShort}
               </span>
@@ -507,9 +866,15 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
             <div className="source-info">
               <div className="source-name">{source.name}</div>
               <div className="source-url">{source.url}</div>
-              {source.reviewStatus === 'pending-review' && <div data-testid="sources-pending-review-section">pending review</div>}
+              {source.reviewStatus === 'pending-review' && (
+                <div data-testid="sources-pending-review-section">pending review</div>
+              )}
             </div>
-            <button type="button" aria-label="Delete source" onClick={() => void handleDeleteSource(source.id)}>
+            <button
+              type="button"
+              aria-label="Delete source"
+              onClick={() => void handleDeleteSource(source.id)}
+            >
               Delete
             </button>
           </div>
@@ -522,7 +887,11 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
           aria-modal="true"
           aria-label={`Funder details for ${selectedFunder.name}`}
           data-testid="funder-detail-overlay"
-          onKeyDown={(e) => { if (e.key === 'Escape') { setSelectedFunder(null); } }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              setSelectedFunder(null);
+            }
+          }}
         >
           <button
             type="button"
@@ -530,13 +899,9 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
             onClick={() => setSelectedFunder(null)}
             aria-label="Close funder detail"
           />
-          <FunderDetail
-            funder={selectedFunder}
-            onClose={() => setSelectedFunder(null)}
-          />
+          <FunderDetail funder={selectedFunder} onClose={() => setSelectedFunder(null)} />
         </div>
       )}
     </>
   );
 }
-

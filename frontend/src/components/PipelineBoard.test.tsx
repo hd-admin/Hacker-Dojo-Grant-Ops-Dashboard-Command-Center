@@ -2,6 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { queryByRole } from '../test-helpers';
 import { PipelineBoard } from './PipelineBoard';
 
 let container: HTMLDivElement;
@@ -71,7 +72,7 @@ describe('PipelineBoard', () => {
         onStatusChange={vi.fn().mockResolvedValue(undefined)}
       />,
     );
-    await waitFor(() => container.querySelector('[data-testid="pipeline-board"]') !== null);
+    await waitFor(() => queryByRole(container, 'grid', { name: 'Pipeline Kanban Board' }) !== null);
     expect(container.querySelector('[data-testid="pipeline-column-matched"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="pipeline-column-draft"]')).not.toBeNull();
   });

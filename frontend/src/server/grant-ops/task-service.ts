@@ -50,14 +50,23 @@ export interface SubmissionBlockingResult {
   reason?: string;
 }
 
-export type RequirementPhase = 'draft' | 'review' | 'finance' | 'follow-up' | 'maintenance' | 'program';
+export type RequirementPhase =
+  | 'draft'
+  | 'review'
+  | 'finance'
+  | 'follow-up'
+  | 'maintenance'
+  | 'program';
 
 // ==================== Requirement Extraction ====================
 
-const REQUIREMENT_TEMPLATES: Record<RequirementPhase, {
-  textTemplate: (funder: string, title: string) => string;
-  responsibilityTag: 'finance' | 'program' | 'review' | 'follow-up';
-}> = {
+const REQUIREMENT_TEMPLATES: Record<
+  RequirementPhase,
+  {
+    textTemplate: (funder: string, title: string) => string;
+    responsibilityTag: 'finance' | 'program' | 'review' | 'follow-up';
+  }
+> = {
   draft: {
     textTemplate: (funder) => `Generate draft LOI for ${funder}`,
     responsibilityTag: 'program',
@@ -170,7 +179,13 @@ export async function createTask(input: CreateTaskInput): Promise<CreateTaskResu
 
 // ==================== Task State Machine ====================
 
-const VALID_STATUSES: TaskStatus[] = ['blocked', 'in-progress', 'completed', 'waived', 'not-applicable'];
+const VALID_STATUSES: TaskStatus[] = [
+  'blocked',
+  'in-progress',
+  'completed',
+  'waived',
+  'not-applicable',
+];
 
 /**
  * Transition a task to a new status.
@@ -275,8 +290,8 @@ export async function updateEvidence(taskId: string, evidence: string): Promise<
 export async function checkDependencyBlocked(prerequisiteTaskId: string): Promise<Task[]> {
   const deps = getDependencies();
   const tasks = await deps.repository.getTasks();
-  return tasks.filter((t) =>
-    Array.isArray(t.dependsOn) && t.dependsOn.includes(prerequisiteTaskId),
+  return tasks.filter(
+    (t) => Array.isArray(t.dependsOn) && t.dependsOn.includes(prerequisiteTaskId),
   );
 }
 

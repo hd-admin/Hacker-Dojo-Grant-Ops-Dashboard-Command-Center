@@ -1,4 +1,4 @@
-import { NextResponse, connection } from "next/server";
+import { NextResponse, connection } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { loadGrants, saveGrants } from '../../../../../../shared/grant-ops-persistence';
@@ -27,7 +27,10 @@ export async function POST() {
   } catch (error) {
     logger.error({ err: error }, '[themes/rescore] failed');
     return NextResponse.json(
-      createErrorResponse('STORAGE_UNAVAILABLE', error instanceof Error ? error.message : 'Unknown error'),
+      createErrorResponse(
+        'STORAGE_UNAVAILABLE',
+        error instanceof Error ? error.message : 'Unknown error',
+      ),
       { status: 500 },
     );
   }

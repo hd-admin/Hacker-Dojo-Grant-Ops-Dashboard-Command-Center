@@ -40,47 +40,48 @@ export const opencodeFailureMessages: Record<OpencodeFailureMode, FailureMessage
   },
   'partial-output': {
     title: 'Partial result',
-    description:
-      'Some content was generated before the operation was interrupted.',
+    description: 'Some content was generated before the operation was interrupted.',
     action: 'Review and complete the partial result manually.',
   },
   'model-unavailable': {
     title: 'Model unavailable',
-    description:
-      'The requested model is overloaded, not found, or temporarily unavailable (503).',
+    description: 'The requested model is overloaded, not found, or temporarily unavailable (503).',
     action: 'Wait and retry later, or switch to a different model.',
   },
-  'timeout': {
+  timeout: {
     title: 'Operation timed out',
-    description:
-      'The opencode operation exceeded its time deadline and was terminated.',
+    description: 'The opencode operation exceeded its time deadline and was terminated.',
     action: 'Retry with a smaller scope, or increase the timeout in settings.',
   },
-  'connectivity': {
+  connectivity: {
     title: 'Network not reachable',
     description:
       'Cannot reach the opencode provider — network is unreachable or the connection was refused. This is not a binary installation issue.',
-    action: 'Check your network connection and verify the provider endpoint is accessible. If behind a proxy, configure it in settings.',
+    action:
+      'Check your network connection and verify the provider endpoint is accessible. If behind a proxy, configure it in settings.',
   },
   'quota-exhausted': {
     title: 'Quota exhausted',
     description:
       'The opencode provider has exhausted its usage quota or billing limit. Requests are blocked until quota is restored.',
-    action: 'Check your opencode quota and billing status. Upgrade your plan or wait for quota reset.',
+    action:
+      'Check your opencode quota and billing status. Upgrade your plan or wait for quota reset.',
   },
-  'capacity': {
+  capacity: {
     title: 'Service overloaded',
     description:
       'The opencode provider is experiencing high load or has exhausted available resources (503). This is a provider-side capacity issue.',
-    action: 'Wait and retry later. If the issue persists, contact the provider or switch to a different provider.',
+    action:
+      'Wait and retry later. If the issue persists, contact the provider or switch to a different provider.',
   },
   'interrupted-session': {
     title: 'Session interrupted',
     description:
       'The opencode session was terminated mid-execution — the connection was closed or the process received an interrupt signal. Partial output may be available.',
-    action: 'Check for partial output in the job details. Retry the operation or restart the session.',
+    action:
+      'Check for partial output in the job details. Retry the operation or restart the session.',
   },
-  'unknown': {
+  unknown: {
     title: 'Unknown error',
     description:
       'An unexpected error occurred during opencode execution that could not be classified.',
@@ -91,7 +92,8 @@ export const opencodeFailureMessages: Record<OpencodeFailureMode, FailureMessage
 export const apiErrorMessages: Record<string, FailureMessage> = {
   AGENT_ARTIFACT_NOT_FOUND: {
     title: 'Agent output missing',
-    description: 'The agent did not produce the expected artifact file. This may indicate a failure during generation.',
+    description:
+      'The agent did not produce the expected artifact file. This may indicate a failure during generation.',
     action: 'Check the job details for error messages and retry.',
   },
   AGENT_INVALID_JSON: {
@@ -184,44 +186,37 @@ export const apiErrorMessages: Record<string, FailureMessage> = {
 export const jobFailureMessages: Record<JobFailureCategory, FailureMessage> = {
   connectivity: {
     title: 'Connection error',
-    description:
-      'Cannot reach opencode — check path and settings in Org Profile.',
+    description: 'Cannot reach opencode — check path and settings in Org Profile.',
     action: 'Verify opencode path in Settings.',
   },
   timeout: {
     title: 'Operation timed out',
-    description:
-      'The operation took too long to complete.',
+    description: 'The operation took too long to complete.',
     action: 'Retry or check opencode settings.',
   },
   'rate-limit': {
     title: 'Rate limited',
-    description:
-      'Service rate limited — wait before retrying.',
+    description: 'Service rate limited — wait before retrying.',
     action: 'Wait a few minutes before retrying.',
   },
   'quota-exhausted': {
     title: 'Quota exhausted',
-    description:
-      'Quota exhausted — action required to restore service.',
+    description: 'Quota exhausted — action required to restore service.',
     action: 'Check your opencode quota and billing.',
   },
   capacity: {
     title: 'Capacity error',
-    description:
-      'Service temporarily unavailable — retry later.',
+    description: 'Service temporarily unavailable — retry later.',
     action: 'Wait and retry later.',
   },
   logic: {
     title: 'Logic error',
-    description:
-      'A logic or validation error occurred.',
+    description: 'A logic or validation error occurred.',
     action: 'Check the error details and retry.',
   },
   unknown: {
     title: 'Unknown error',
-    description:
-      'An unexpected error occurred.',
+    description: 'An unexpected error occurred.',
     action: 'Check logs and retry.',
   },
 };

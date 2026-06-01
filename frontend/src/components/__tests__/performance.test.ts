@@ -7,9 +7,28 @@ import { DashboardView } from '../DashboardView';
 import { PipelineBoard } from '../PipelineBoard';
 
 function makeGrant(index: number): Grant {
-  const statuses: Grant['status'][] = ['matched', 'draft', 'review', 'approved', 'submission-ready', 'submitted', 'follow-up', 'awarded', 'declined', 'closed', 'archived'];
+  const statuses: Grant['status'][] = [
+    'matched',
+    'draft',
+    'review',
+    'approved',
+    'submission-ready',
+    'submitted',
+    'follow-up',
+    'awarded',
+    'declined',
+    'closed',
+    'archived',
+  ];
   const tags = ['EdTech', 'Community', 'Science & Tech', 'Federal', 'Foundation', 'Corporate'];
-  const funders = ['National Science Foundation', 'National Institutes of Health', 'Candid', 'Gates Foundation', 'Google.org', 'Local Community Fund'];
+  const funders = [
+    'National Science Foundation',
+    'National Institutes of Health',
+    'Candid',
+    'Gates Foundation',
+    'Google.org',
+    'Local Community Fund',
+  ];
   const funderShorts = ['NSF', 'NIH', 'Candid', 'Gates', 'Google', 'Local'];
   const status = statuses[index % statuses.length]!;
   return {
@@ -31,15 +50,19 @@ function makeGrant(index: number): Grant {
 }
 
 function makeSources(count: number): Source[] {
-  return Array.from({ length: count }, (_, i) => ({
-    id: `source-${i}`,
-    name: `Source ${i}`,
-    url: `https://example${i}.com`,
-    type: 'website',
-    reviewStatus: i % 5 === 0 ? 'pending-review' : 'approved',
-    lastCrawledAt: new Date(Date.now() - (i % 10) * 86400000).toISOString(),
-    sourceCrawlState: 'succeeded',
-  } as Source));
+  return Array.from(
+    { length: count },
+    (_, i) =>
+      ({
+        id: `source-${i}`,
+        name: `Source ${i}`,
+        url: `https://example${i}.com`,
+        type: 'website',
+        reviewStatus: i % 5 === 0 ? 'pending-review' : 'approved',
+        lastCrawledAt: new Date(Date.now() - (i % 10) * 86400000).toISOString(),
+        sourceCrawlState: 'succeeded',
+      }) as Source,
+  );
 }
 
 function makeNotifications(count: number): Notification[] {
@@ -125,8 +148,16 @@ describe('[performance] AC-11.1.1-11.1.4', () => {
 
     const start = performance.now();
     const result = [...grants]
-      .filter((g) => !searchLower || g.title.toLowerCase().includes(searchLower) || g.funder.toLowerCase().includes(searchLower) || g.tags.some((t) => t.toLowerCase().includes(searchLower)))
-      .filter((g) => category === 'All' || g.tags.some((t) => t === category || t.includes(category)))
+      .filter(
+        (g) =>
+          !searchLower ||
+          g.title.toLowerCase().includes(searchLower) ||
+          g.funder.toLowerCase().includes(searchLower) ||
+          g.tags.some((t) => t.toLowerCase().includes(searchLower)),
+      )
+      .filter(
+        (g) => category === 'All' || g.tags.some((t) => t === category || t.includes(category)),
+      )
       .sort((a, b) => b.fit - a.fit);
     const elapsed = performance.now() - start;
 
@@ -163,15 +194,22 @@ describe('[performance] AC-11.1.1-11.1.4', () => {
     const grants = Array.from({ length: 500 }, (_, i) => makeGrant(i));
 
     const start = performance.now();
-    const rows = ['title,funder,award,deadline,deadlineConfidence,daysOut,fit', ...grants.map((grant) => [
-      grant.title,
-      grant.funder,
-      grant.award,
-      grant.deadline,
-      grant.deadlineConfidence ?? 'unknown',
-      String(grant.daysOut),
-      String(grant.fit),
-    ].map((value) => `"${String(value).replaceAll('"', '""')}"`).join(','))];
+    const rows = [
+      'title,funder,award,deadline,deadlineConfidence,daysOut,fit',
+      ...grants.map((grant) =>
+        [
+          grant.title,
+          grant.funder,
+          grant.award,
+          grant.deadline,
+          grant.deadlineConfidence ?? 'unknown',
+          String(grant.daysOut),
+          String(grant.fit),
+        ]
+          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
+          .join(','),
+      ),
+    ];
     const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
     const elapsed = performance.now() - start;
 

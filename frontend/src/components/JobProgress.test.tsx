@@ -49,9 +49,7 @@ describe('JobProgress', () => {
         });
       });
 
-      root.render(
-        React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }),
-      );
+      root.render(React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }));
 
       await waitFor(() => callCount >= 3, 8000);
       await new Promise((r) => setTimeout(r, 100));
@@ -70,9 +68,7 @@ describe('JobProgress', () => {
         });
       });
 
-      root.render(
-        React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }),
-      );
+      root.render(React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }));
 
       await waitFor(() => callCount >= 3, 8000);
       await new Promise((r) => setTimeout(r, 100));
@@ -131,9 +127,7 @@ describe('JobProgress', () => {
         );
       });
 
-      root.render(
-        React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }),
-      );
+      root.render(React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }));
 
       await waitFor(() => callCount >= 3, 8000);
       await new Promise((r) => setTimeout(r, 100));
@@ -165,9 +159,7 @@ describe('JobProgress', () => {
         );
       });
 
-      root.render(
-        React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }),
-      );
+      root.render(React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }));
 
       await waitFor(() => callCount >= 1, 2000);
 
@@ -201,9 +193,7 @@ describe('JobProgress', () => {
         ),
       );
 
-      root.render(
-        React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }),
-      );
+      root.render(React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }));
 
       await new Promise((r) => setTimeout(r, 100));
 

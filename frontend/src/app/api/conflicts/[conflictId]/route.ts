@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest, connection } from "next/server";
+import { NextResponse, type NextRequest, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -10,19 +10,29 @@ const bodySchema = z.object({
   canonicalValue: z.string(),
 });
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ conflictId: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ conflictId: string }> },
+) {
   await connection();
   try {
     const { conflictId } = await params;
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid conflict payload', issues: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid conflict payload', issues: parsed.error.flatten() },
+        { status: 400 },
+      );
     }
 
     const deps = getDependencies();
-    const conflict = (await deps.repository.getConflictRecords()).find((item) => item.id === conflictId);
+    const conflict = (await deps.repository.getConflictRecords()).find(
+      (item) => item.id === conflictId,
+    );
     if (!conflict) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Conflict not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Conflict not found'), {
+        status: 404,
+      });
     }
 
     const resolvedAt = new Date().toISOString();
@@ -40,9 +50,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       timestamp: resolvedAt,
       metadata: { canonicalValue: parsed.data.canonicalValue },
     });
-    return NextResponse.json((await deps.repository.getConflictRecords()).find((item) => item.id === conflictId));
+    return NextResponse.json(
+      (await deps.repository.getConflictRecords()).find((item) => item.id === conflictId),
+    );
   } catch (error) {
     logger.error({ err: error }, 'Error updating conflict record');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update conflict record'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update conflict record'),
+      { status: 500 },
+    );
   }
 }

@@ -102,7 +102,9 @@ export async function deactivateSource(id: string): Promise<boolean> {
 export async function getActiveSources(): Promise<Source[]> {
   const deps = getDependencies();
   const sources = await deps.repository.getSources();
-  return sources.filter((s) => s.isActive && (s.reviewStatus === undefined || s.reviewStatus === 'approved'));
+  return sources.filter(
+    (s) => s.isActive && (s.reviewStatus === undefined || s.reviewStatus === 'approved'),
+  );
 }
 
 export async function updateSourceLastCrawled(id: string): Promise<boolean> {

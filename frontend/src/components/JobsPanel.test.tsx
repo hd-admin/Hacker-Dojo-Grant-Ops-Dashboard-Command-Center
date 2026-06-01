@@ -65,6 +65,7 @@ const mockJobs: JobQueueItem[] = [
   },
 ];
 
+import { getByLabelText } from '../test-helpers';
 import { JobsPanel } from './JobsPanel';
 
 let container: HTMLDivElement;
@@ -91,7 +92,7 @@ describe('JobsPanel', () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const header = container.querySelector('[aria-label="Job Queue"]');
+    const header = getByLabelText(container, 'Job Queue');
     expect(header).not.toBeNull();
     expect(header?.querySelector('.header-title')?.textContent).toContain('Job');
   });
@@ -100,7 +101,9 @@ describe('JobsPanel', () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const statusFilter = container.querySelector('[role="tablist"][aria-label="Filter by job status"]');
+    const statusFilter = container.querySelector(
+      '[role="tablist"][aria-label="Filter by job status"]',
+    );
     expect(statusFilter).not.toBeNull();
     const buttons = statusFilter?.querySelectorAll('button');
     expect(buttons?.length).toBe(6); // All, Queued, Running, Completed, Failed, Cancelled
@@ -133,7 +136,9 @@ describe('JobsPanel', () => {
     const failedItem = container.querySelector('[data-testid="job-item-failed-job-3"]');
     expect(failedItem).not.toBeNull();
     // Expand the job card to see failure guidance
-    const toggleBtn = container.querySelector('[data-testid="job-toggle-details-job-3"]') as HTMLButtonElement;
+    const toggleBtn = container.querySelector(
+      '[data-testid="job-toggle-details-job-3"]',
+    ) as HTMLButtonElement;
     toggleBtn?.click();
     await new Promise((r) => setTimeout(r, 50));
     // Expanded failure guidance should include the category and description
@@ -147,13 +152,17 @@ describe('JobsPanel', () => {
     await new Promise((r) => setTimeout(r, 100));
 
     // Click "Failed" filter
-    const failedBtn = container.querySelector('[role="tablist"][aria-label="Filter by job status"] button[data-status="failed"]') as HTMLButtonElement;
+    const failedBtn = container.querySelector(
+      '[role="tablist"][aria-label="Filter by job status"] button[data-status="failed"]',
+    ) as HTMLButtonElement;
     expect(failedBtn).not.toBeNull();
     failedBtn?.click();
     await new Promise((r) => setTimeout(r, 50));
 
     // Should only show failed jobs
-    const visibleItems = container.querySelectorAll('[data-testid^="job-item-"]:not([style*="display: none"])');
+    const visibleItems = container.querySelectorAll(
+      '[data-testid^="job-item-"]:not([style*="display: none"])',
+    );
     expect(visibleItems.length).toBeGreaterThanOrEqual(1);
     visibleItems.forEach((item) => {
       expect(item.getAttribute('data-testid')).toContain('failed');
@@ -165,13 +174,17 @@ describe('JobsPanel', () => {
     await new Promise((r) => setTimeout(r, 100));
 
     // Click "Draft" type filter
-    const draftBtn = container.querySelector('[role="tablist"][aria-label="Filter by job type"] button[data-type="draft"]') as HTMLButtonElement;
+    const draftBtn = container.querySelector(
+      '[role="tablist"][aria-label="Filter by job type"] button[data-type="draft"]',
+    ) as HTMLButtonElement;
     expect(draftBtn).not.toBeNull();
     draftBtn?.click();
     await new Promise((r) => setTimeout(r, 50));
 
     // Should only show draft jobs
-    const visibleItems = container.querySelectorAll('[data-testid^="job-item-"]:not([style*="display: none"])');
+    const visibleItems = container.querySelectorAll(
+      '[data-testid^="job-item-"]:not([style*="display: none"])',
+    );
     expect(visibleItems.length).toBeGreaterThanOrEqual(1);
     visibleItems.forEach((item) => {
       expect(item.textContent).toMatch(/draft/i);

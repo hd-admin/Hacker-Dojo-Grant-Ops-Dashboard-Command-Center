@@ -18,20 +18,36 @@ afterEach(() => {
 function TestComponent({ jobId }: { jobId: string }) {
   const { job, pollFailures, dismissed, isRetrying, retryNow, dismiss } = useJobProgress(jobId);
   const [lastAction, setLastAction] = useState('');
-  return React.createElement('div', null,
+  return React.createElement(
+    'div',
+    null,
     React.createElement('div', { 'data-testid': 'job-status' }, job?.status ?? 'null'),
     React.createElement('div', { 'data-testid': 'poll-failures' }, String(pollFailures)),
     React.createElement('div', { 'data-testid': 'dismissed' }, String(dismissed)),
     React.createElement('div', { 'data-testid': 'is-retrying' }, String(isRetrying)),
     React.createElement('div', { 'data-testid': 'last-action' }, lastAction),
-    React.createElement('button', {
-      'data-testid': 'btn-retry',
-      onClick: () => { setLastAction('retry'); retryNow(); },
-    }, 'Retry'),
-    React.createElement('button', {
-      'data-testid': 'btn-dismiss',
-      onClick: () => { setLastAction('dismiss'); dismiss(); },
-    }, 'Dismiss'),
+    React.createElement(
+      'button',
+      {
+        'data-testid': 'btn-retry',
+        onClick: () => {
+          setLastAction('retry');
+          retryNow();
+        },
+      },
+      'Retry',
+    ),
+    React.createElement(
+      'button',
+      {
+        'data-testid': 'btn-dismiss',
+        onClick: () => {
+          setLastAction('dismiss');
+          dismiss();
+        },
+      },
+      'Dismiss',
+    ),
   );
 }
 

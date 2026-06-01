@@ -4,10 +4,7 @@ import { createErrorResponse } from '@/lib/api-error-handler';
 import { NextRequest, NextResponse } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: Promise<{ grantId: string }> }
-) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
   await connection();
   try {
     const { grantId } = await params;

@@ -11,26 +11,26 @@
  *   - funderType: optional funder type filter
  */
 
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { logger } from '@/lib/logger';
-import { createErrorResponse } from "@/lib/api-error-handler";
+import { createErrorResponse } from '@/lib/api-error-handler';
 
-import { getDependencies } from "@/server/grant-ops/dependencies";
-import { exportGrantsToCsv, exportPipelineToCsv } from "@/server/grant-ops/dashboard-service";
-import type { Grant } from "../../../../../../shared/types";
+import { getDependencies } from '@/server/grant-ops/dependencies';
+import { exportGrantsToCsv, exportPipelineToCsv } from '@/server/grant-ops/dashboard-service';
+import type { Grant } from '../../../../../../shared/types';
 
-export const runtime = "nodejs";
+export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   await connection();
   const { searchParams } = new URL(request.url);
-  const view = searchParams.get("view") ?? "discovery";
-  const status = searchParams.get("status") ?? undefined;
-  const fitMin = searchParams.get("fit") ? Number(searchParams.get("fit")) : undefined;
-  const category = searchParams.get("category") ?? undefined;
-  const daysOutMax = searchParams.get("daysOut") ? Number(searchParams.get("daysOut")) : undefined;
-  const deadlineConfidence = searchParams.get("deadlineConfidence") ?? undefined;
-  const funderType = searchParams.get("funderType") ?? undefined;
+  const view = searchParams.get('view') ?? 'discovery';
+  const status = searchParams.get('status') ?? undefined;
+  const fitMin = searchParams.get('fit') ? Number(searchParams.get('fit')) : undefined;
+  const category = searchParams.get('category') ?? undefined;
+  const daysOutMax = searchParams.get('daysOut') ? Number(searchParams.get('daysOut')) : undefined;
+  const deadlineConfidence = searchParams.get('deadlineConfidence') ?? undefined;
+  const funderType = searchParams.get('funderType') ?? undefined;
 
   try {
     const { repository } = getDependencies();
@@ -38,14 +38,24 @@ export async function GET(request: NextRequest) {
 
     if (status) grants = grants.filter((g) => g.status === status);
     if (fitMin != null && !Number.isNaN(fitMin)) grants = grants.filter((g) => g.fit >= fitMin);
-    if (category) grants = grants.filter((g) => g.tags.some((t) => t.toLowerCase() === category.toLowerCase() || t.toLowerCase().includes(category.toLowerCase())));
-    if (daysOutMax != null && !Number.isNaN(daysOutMax)) grants = grants.filter((g) => g.daysOut <= daysOutMax);
-    if (deadlineConfidence) grants = grants.filter((g) => g.deadlineConfidence === deadlineConfidence);
+    if (category)
+      grants = grants.filter((g) =>
+        g.tags.some(
+          (t) =>
+            t.toLowerCase() === category.toLowerCase() ||
+            t.toLowerCase().includes(category.toLowerCase()),
+        ),
+      );
+    if (daysOutMax != null && !Number.isNaN(daysOutMax))
+      grants = grants.filter((g) => g.daysOut <= daysOutMax);
+    if (deadlineConfidence)
+      grants = grants.filter((g) => g.deadlineConfidence === deadlineConfidence);
     if (funderType) grants = grants.filter((g) => g.tags.includes(funderType));
 
     const sortedGrants = [...grants].sort((a, b) => {
-      if (view === "pipeline") {
-        const matchedAtDiff = new Date(b.matchedAt ?? 0).getTime() - new Date(a.matchedAt ?? 0).getTime();
+      if (view === 'pipeline') {
+        const matchedAtDiff =
+          new Date(b.matchedAt ?? 0).getTime() - new Date(a.matchedAt ?? 0).getTime();
         if (matchedAtDiff !== 0) return matchedAtDiff;
         return a.daysOut - b.daysOut;
       }
@@ -53,29 +63,30 @@ export async function GET(request: NextRequest) {
       return new Date(b.matchedAt ?? 0).getTime() - new Date(a.matchedAt ?? 0).getTime();
     });
 
-    const csvExport = view === "pipeline"
-      ? exportPipelineToCsv(sortedGrants as Grant[])
-      : exportGrantsToCsv(sortedGrants as Grant[]);
+    const csvExport =
+      view === 'pipeline'
+        ? exportPipelineToCsv(sortedGrants as Grant[])
+        : exportGrantsToCsv(sortedGrants as Grant[]);
 
     const csvLines = [
-      csvExport.headers.join(","),
+      csvExport.headers.join(','),
       ...csvExport.rows.map((row) =>
-        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")
+        row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','),
       ),
     ];
-    const csvContent = csvLines.join("\n");
+    const csvContent = csvLines.join('\n');
 
     return new NextResponse(csvContent, {
       headers: {
-        "Content-Type": "text/csv",
-        "Content-Disposition": `attachment; filename="${csvExport.filename}"`,
+        'Content-Type': 'text/csv',
+        'Content-Disposition': `attachment; filename="${csvExport.filename}"`,
       },
     });
   } catch (error) {
     logger.error({ err: error }, '[grants/export] Failed to export grants');
     return NextResponse.json(
-      createErrorResponse("STORAGE_UNAVAILABLE", "Failed to export grants"),
-      { status: 500 }
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to export grants'),
+      { status: 500 },
     );
   }
 }

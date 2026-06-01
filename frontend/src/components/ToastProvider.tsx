@@ -44,19 +44,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       return setTimeout(() => removeToast(toast.id), 5000);
     });
     return () => {
-      timers.forEach((timer) => { if (timer) clearTimeout(timer); });
+      timers.forEach((timer) => {
+        if (timer) clearTimeout(timer);
+      });
     };
   }, [toasts, removeToast]);
 
   return (
     <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
       {children}
-      <div
-        role="region"
-        aria-live="polite"
-        aria-label="Notifications"
-        className="toast-container"
-      >
+      <div role="region" aria-live="polite" aria-label="Notifications" className="toast-container">
         {toasts.map((toast) => (
           <div
             key={toast.id}
@@ -80,4 +77,3 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     </ToastContext.Provider>
   );
 }
-

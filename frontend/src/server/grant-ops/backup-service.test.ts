@@ -8,10 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import AdmZip from 'adm-zip';
-import {
-  invalidateCache,
-  withTempDataDir,
-} from '../../../../shared/grant-ops-persistence';
+import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
 import * as repository from '../../server/grant-ops/repository';
 import type { Grant } from '../../../../shared/types';
 import { defaultProfile } from '../../../../shared/seed-data';
@@ -105,7 +102,9 @@ describe('backup-service', () => {
       const zip = new AdmZip(zipBuffer);
       const entries = zip.getEntries();
       const entryNames: string[] = [];
-      entries.forEach((e) => { entryNames.push(e.entryName); });
+      entries.forEach((e) => {
+        entryNames.push(e.entryName);
+      });
 
       expect(entryNames).toContain('manifest.json');
       expect(entryNames).toContain('grants.json');
@@ -145,7 +144,7 @@ describe('backup-service', () => {
 
       const original = await fs.readFile(zipPath);
       const tampered = Buffer.from(original);
-      tampered[50] = tampered[50]! ^ 0xFF;
+      tampered[50] = tampered[50]! ^ 0xff;
       await fs.writeFile(zipPath, tampered);
 
       const checksumPath = `${zipPath}.sha256`;

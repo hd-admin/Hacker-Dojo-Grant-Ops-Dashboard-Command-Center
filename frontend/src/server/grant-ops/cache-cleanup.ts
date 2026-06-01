@@ -59,7 +59,13 @@ function getActiveJobIds(): Set<string> {
     const state = getSqliteState(dataDir);
     const activeJobs = readJobQueue(state);
     const activeIds = activeJobs
-      .filter((job) => job.status === 'running' || job.status === 'queued' || job.status === 'retrying' || job.status === 'verifying')
+      .filter(
+        (job) =>
+          job.status === 'running' ||
+          job.status === 'queued' ||
+          job.status === 'retrying' ||
+          job.status === 'verifying',
+      )
       .map((job) => job.id);
     return new Set(activeIds);
   } catch {
@@ -80,11 +86,7 @@ function isFileOpenForWriting(filePath: string): boolean {
   }
 }
 
-function deleteOldFiles(
-  directory: string,
-  maxAgeMs: number,
-  pattern?: RegExp,
-): CleanupStats {
+function deleteOldFiles(directory: string, maxAgeMs: number, pattern?: RegExp): CleanupStats {
   const stats: CleanupStats = { deletedFiles: 0, freedBytes: 0, errors: [] };
 
   try {
@@ -112,7 +114,9 @@ function deleteOldFiles(
       }
     }
   } catch (err) {
-    stats.errors.push(`Failed to read directory ${directory}: ${err instanceof Error ? err.message : String(err)}`);
+    stats.errors.push(
+      `Failed to read directory ${directory}: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   return stats;
@@ -124,15 +128,18 @@ export function enforceCacheSizeLimit(cacheDir: string, maxBytes: number): Clean
   try {
     if (!fs.existsSync(cacheDir)) return stats;
 
-    const entries = fs.readdirSync(cacheDir).map(name => {
-      const fullPath = path.join(cacheDir, name);
-      try {
-        const stat = fs.statSync(fullPath);
-        return { path: fullPath, mtime: stat.mtimeMs, size: stat.size };
-      } catch {
-        return null;
-      }
-    }).filter(Boolean) as { path: string; mtime: number; size: number }[];
+    const entries = fs
+      .readdirSync(cacheDir)
+      .map((name) => {
+        const fullPath = path.join(cacheDir, name);
+        try {
+          const stat = fs.statSync(fullPath);
+          return { path: fullPath, mtime: stat.mtimeMs, size: stat.size };
+        } catch {
+          return null;
+        }
+      })
+      .filter(Boolean) as { path: string; mtime: number; size: number }[];
 
     let totalSize = entries.reduce((sum, e) => sum + e.size, 0);
 
@@ -154,7 +161,9 @@ export function enforceCacheSizeLimit(cacheDir: string, maxBytes: number): Clean
       }
     }
   } catch (err) {
-    stats.errors.push(`Cache size enforcement error: ${err instanceof Error ? err.message : String(err)}`);
+    stats.errors.push(
+      `Cache size enforcement error: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   return stats;

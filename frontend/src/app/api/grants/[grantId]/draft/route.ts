@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
-import { NextResponse, connection } from "next/server";
+import { NextResponse, connection } from 'next/server';
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import * as draftingService from '@/server/grant-ops/drafting-service';
@@ -14,7 +14,6 @@ const bodySchema = z.object({
   revisionNotes: z.string().optional(),
 });
 
-
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
@@ -26,7 +25,10 @@ export async function GET(
     return NextResponse.json(drafts);
   } catch (error) {
     logger.error({ err: error }, 'Error getting drafts');
-    return NextResponse.json({ error: 'Failed to get drafts', failureCategory: 'unknown' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to get drafts', failureCategory: 'unknown' },
+      { status: 500 },
+    );
   }
 }
 
@@ -38,32 +40,36 @@ export async function POST(
   try {
     const { grantId } = await params;
     const rawBody = await request.text();
-    const jsonBody = rawBody.trim() ? JSON.parse(rawBody) as unknown : {};
+    const jsonBody = rawBody.trim() ? (JSON.parse(rawBody) as unknown) : {};
     const parsed = bodySchema.safeParse(jsonBody);
     if (!parsed.success) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), {
+        status: 400,
+      });
     }
     const body = parsed.data;
     const deps = getDependencies();
 
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
     }
 
     const profile = await deps.repository.getOrgProfile();
     if (!profile) {
-      return NextResponse.json(
-        { error: 'Organization profile not configured' },
-        { status: 400 },
-      );
+      return NextResponse.json({ error: 'Organization profile not configured' }, { status: 400 });
     }
 
     // Check if Opencode is configured - draftingService.generateDraft will fail explicitly if not
     const settings = await deps.repository.getOpencodeSettings();
     if (!settings?.isConfigured) {
       return NextResponse.json(
-        { error: 'Opencode is not configured. Please set up Opencode settings before generating drafts.' },
+        {
+          error:
+            'Opencode is not configured. Please set up Opencode settings before generating drafts.',
+        },
         { status: 400 },
       );
     }
@@ -73,14 +79,10 @@ export async function POST(
       { jobType: 'draft', entityId: grantId, retryCount: 0 },
       'drafting',
       async () => {
-        const draft = await draftingService.generateDraft(
-          grant,
-          profile,
-          {
-            ...(body.revisionNotes ? { revisionNotes: body.revisionNotes } : {}),
-            ...(draftJobId ? { _jobId: draftJobId } : {}),
-          },
-        );
+        const draft = await draftingService.generateDraft(grant, profile, {
+          ...(body.revisionNotes ? { revisionNotes: body.revisionNotes } : {}),
+          ...(draftJobId ? { _jobId: draftJobId } : {}),
+        });
         return `Draft v${draft.version} generated for ${grant.title}`;
       },
     );
@@ -92,7 +94,13 @@ export async function POST(
     const errorMessage = error instanceof Error ? error.message : 'Failed to generate draft';
     const failureMode = classifyOpencodeError(errorMessage);
     const guidance = opencodeFailureMessages[failureMode];
-    const retryable = ['rate-limit', 'malformed-output', 'model-unavailable', 'timeout', 'unknown'].includes(failureMode);
+    const retryable = [
+      'rate-limit',
+      'malformed-output',
+      'model-unavailable',
+      'timeout',
+      'unknown',
+    ].includes(failureMode);
 
     return NextResponse.json(
       {

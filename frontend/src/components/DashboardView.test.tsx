@@ -79,7 +79,8 @@ const _mockProfile: OrganizationProfile = {
   ein: '26-3375350',
   samUEI: 'XK7N4HQ2P3M9',
   nonprofitStatus: '501(c)(3)',
-  yearFounded: 2009,contactInfo: {},
+  yearFounded: 2009,
+  contactInfo: {},
   geography: 'Regional',
   mission: 'Test mission',
   programAreas: ['STEM'],
@@ -87,7 +88,8 @@ const _mockProfile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  boardMembers: [],docTypes: ['PDF'],
+  boardMembers: [],
+  docTypes: ['PDF'],
   searchThemes: ['Theme 1'],
   agentBehavior: {
     autoDraftThreshold: 75,
@@ -97,6 +99,7 @@ const _mockProfile: OrganizationProfile = {
   },
 };
 
+import { getByText } from '../test-helpers';
 import { DashboardView } from './DashboardView';
 
 let container: HTMLDivElement;
@@ -210,7 +213,17 @@ describe('DashboardView', () => {
     it('shows fresh (green) staleness for crawl < 24h ago', async () => {
       const now = Date.now();
       const twoHoursAgo = new Date(now - 2 * 60 * 60 * 1000).toISOString();
-      const stubResponse = { ok: true, json: async () => ({ latestRun: { completedAt: twoHoursAgo, status: 'completed', sourcesCrawled: 1, grantsFound: 0 } }) };
+      const stubResponse = {
+        ok: true,
+        json: async () => ({
+          latestRun: {
+            completedAt: twoHoursAgo,
+            status: 'completed',
+            sourcesCrawled: 1,
+            grantsFound: 0,
+          },
+        }),
+      };
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(stubResponse as unknown as Response);
 
       root.render(React.createElement(DashboardView, stalenessProps));
@@ -224,7 +237,17 @@ describe('DashboardView', () => {
     it('shows stale (amber) staleness for crawl 24h-7d ago', async () => {
       const now = Date.now();
       const threeDaysAgo = new Date(now - 3 * msInDay).toISOString();
-      const stubResponse = { ok: true, json: async () => ({ latestRun: { completedAt: threeDaysAgo, status: 'completed', sourcesCrawled: 1, grantsFound: 0 } }) };
+      const stubResponse = {
+        ok: true,
+        json: async () => ({
+          latestRun: {
+            completedAt: threeDaysAgo,
+            status: 'completed',
+            sourcesCrawled: 1,
+            grantsFound: 0,
+          },
+        }),
+      };
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(stubResponse as unknown as Response);
 
       root.render(React.createElement(DashboardView, stalenessProps));
@@ -238,7 +261,17 @@ describe('DashboardView', () => {
     it('shows very-stale (red) staleness for crawl > 7d ago', async () => {
       const now = Date.now();
       const tenDaysAgo = new Date(now - 10 * msInDay).toISOString();
-      const stubResponse = { ok: true, json: async () => ({ latestRun: { completedAt: tenDaysAgo, status: 'completed', sourcesCrawled: 1, grantsFound: 0 } }) };
+      const stubResponse = {
+        ok: true,
+        json: async () => ({
+          latestRun: {
+            completedAt: tenDaysAgo,
+            status: 'completed',
+            sourcesCrawled: 1,
+            grantsFound: 0,
+          },
+        }),
+      };
       vi.spyOn(globalThis, 'fetch').mockResolvedValue(stubResponse as unknown as Response);
 
       root.render(React.createElement(DashboardView, stalenessProps));
@@ -263,7 +296,10 @@ describe('DashboardView', () => {
       container = document.createElement('div');
       document.body.appendChild(container);
       root = createRoot(container);
-      vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({}) } as Response);
+      vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+        ok: true,
+        json: async () => ({}),
+      } as Response);
     });
 
     afterEach(() => {
@@ -278,6 +314,7 @@ describe('DashboardView', () => {
       await new Promise((r) => setTimeout(r, 0));
       // With grants=[], profile=null: renders dashboard-empty-state
       expect(container.querySelector('[data-testid="dashboard-empty-state"]')).not.toBeNull();
+      expect(getByText(container, 'Get started with Grant Ops')).not.toBeNull();
     });
 
     it('uses notifications prop for activity feed when notifications are provided', async () => {
@@ -288,18 +325,38 @@ describe('DashboardView', () => {
         time: '1h ago',
       };
       // Provide grants and profile so the main view (with Agent Activity) renders
-      const profileWithName = { legalName: 'Test Org', agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile;
-      root.render(React.createElement(DashboardView, { ...requiredProps, grants: [...mockGrants], notifications: [testNotification], profile: profileWithName }));
+      const profileWithName = {
+        legalName: 'Test Org',
+        agentBehavior: { notifyEmail: 'test@test.com' },
+      } as OrganizationProfile;
+      root.render(
+        React.createElement(DashboardView, {
+          ...requiredProps,
+          grants: [...mockGrants],
+          notifications: [testNotification],
+          profile: profileWithName,
+        }),
+      );
       await new Promise((r) => setTimeout(r, 0));
       expect(container.querySelector('.activity-text strong')).not.toBeNull();
       expect(container.querySelector('.activity-text')?.innerHTML).toContain('Grant matched');
     });
 
     it('renders activity-empty-state when notifications is empty array', async () => {
-      root.render(React.createElement(DashboardView, { ...requiredProps, grants: [...mockGrants], notifications: [], profile: { agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile }));
+      root.render(
+        React.createElement(DashboardView, {
+          ...requiredProps,
+          grants: [...mockGrants],
+          notifications: [],
+          profile: { agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile,
+        }),
+      );
       await new Promise((r) => setTimeout(r, 0));
       expect(container.querySelector('[data-testid="activity-empty-state"]')).not.toBeNull();
-      expect(container.querySelector('[data-testid="activity-empty-state"] .empty-state-title')?.textContent).toBe('No activity yet');
+      expect(
+        container.querySelector('[data-testid="activity-empty-state"] .empty-state-title')
+          ?.textContent,
+      ).toBe('No activity yet');
     });
 
     it('shows empty state with no synthetic KPI fallbacks when grants are empty', async () => {
@@ -312,7 +369,13 @@ describe('DashboardView', () => {
     });
 
     it('renders KPI cards with real data when grants exist', async () => {
-      root.render(React.createElement(DashboardView, { ...requiredProps, grants: [...mockGrants], profile: { agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile }));
+      root.render(
+        React.createElement(DashboardView, {
+          ...requiredProps,
+          grants: [...mockGrants],
+          profile: { agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile,
+        }),
+      );
       await new Promise((r) => setTimeout(r, 0));
       // KPI grid should exist
       expect(container.querySelector('.kpi-grid')).not.toBeNull();
@@ -321,7 +384,13 @@ describe('DashboardView', () => {
     });
 
     it('renders crawl-freshness-indicator when grants are available', async () => {
-      root.render(React.createElement(DashboardView, { ...requiredProps, grants: [...mockGrants], profile: { agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile }));
+      root.render(
+        React.createElement(DashboardView, {
+          ...requiredProps,
+          grants: [...mockGrants],
+          profile: { agentBehavior: { notifyEmail: 'test@test.com' } } as OrganizationProfile,
+        }),
+      );
       await new Promise((r) => setTimeout(r, 0));
       // Crawl freshness indicator should render
       expect(container.querySelector('[data-testid="crawl-freshness-indicator"]')).not.toBeNull();

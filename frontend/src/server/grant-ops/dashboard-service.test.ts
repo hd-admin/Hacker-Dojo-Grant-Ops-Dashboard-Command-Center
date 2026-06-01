@@ -70,10 +70,17 @@ describe('generateFundraisingForecast', () => {
   it('counts approved/submission-ready grants with deadlines within 90 days', () => {
     const now = new Date();
     const future30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-    const future100 = new Date(now.getTime() + 100 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const future100 = new Date(now.getTime() + 100 * 24 * 60 * 60 * 1000)
+      .toISOString()
+      .slice(0, 10);
     const grants: Grant[] = [
       makeGrant({ id: 'g1', status: 'approved', statusLabel: 'Approved', deadline: future30 }),
-      makeGrant({ id: 'g2', status: 'submission-ready', statusLabel: 'Submission Ready', deadline: future30 }),
+      makeGrant({
+        id: 'g2',
+        status: 'submission-ready',
+        statusLabel: 'Submission Ready',
+        deadline: future30,
+      }),
       makeGrant({ id: 'g3', status: 'approved', statusLabel: 'Approved', deadline: future100 }),
       makeGrant({ id: 'g4', status: 'matched', statusLabel: 'Matched', deadline: future30 }),
     ];
@@ -86,10 +93,30 @@ describe('generateFundraisingForecast', () => {
     const future30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const pastYear = new Date(now.getTime() - 6 * 30 * 24 * 60 * 60 * 1000).toISOString();
     const grants: Grant[] = [
-      makeGrant({ id: 'g1', status: 'approved', statusLabel: 'Approved', awardSort: 100000, deadline: future30 }),
+      makeGrant({
+        id: 'g1',
+        status: 'approved',
+        statusLabel: 'Approved',
+        awardSort: 100000,
+        deadline: future30,
+      }),
       // Need at least 5 submitted in trailing 24 months for success rate
-      ...Array.from({ length: 5 }, (_, i) => makeGrant({ id: `g-sub-${i}`, status: 'submitted', statusLabel: 'Submitted', awardSort: 50000, matchedAt: pastYear })),
-      makeGrant({ id: 'g3', status: 'awarded', statusLabel: 'Awarded', awardSort: 50000, matchedAt: pastYear }),
+      ...Array.from({ length: 5 }, (_, i) =>
+        makeGrant({
+          id: `g-sub-${i}`,
+          status: 'submitted',
+          statusLabel: 'Submitted',
+          awardSort: 50000,
+          matchedAt: pastYear,
+        }),
+      ),
+      makeGrant({
+        id: 'g3',
+        status: 'awarded',
+        statusLabel: 'Awarded',
+        awardSort: 50000,
+        matchedAt: pastYear,
+      }),
     ];
     const forecast = generateFundraisingForecast(grants);
     // success rate = 1/5 = 0.2, projected = 100000 * 0.2 = 20000
@@ -100,7 +127,13 @@ describe('generateFundraisingForecast', () => {
     const now = new Date();
     const future30 = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const grants: Grant[] = [
-      makeGrant({ id: 'g1', status: 'approved', statusLabel: 'Approved', awardSort: 100000, deadline: future30 }),
+      makeGrant({
+        id: 'g1',
+        status: 'approved',
+        statusLabel: 'Approved',
+        awardSort: 100000,
+        deadline: future30,
+      }),
     ];
     const forecast = generateFundraisingForecast(grants);
     expect(forecast.projectedAwardValue).toBe(0);
@@ -139,9 +172,27 @@ describe('generateAnnualSummary', () => {
 
   it('ranks top funders by awarded amount', () => {
     const grants: Grant[] = [
-      makeGrant({ id: 'g1', status: 'awarded', statusLabel: 'Awarded', funder: 'Funder A', awardSort: 100000 }),
-      makeGrant({ id: 'g2', status: 'awarded', statusLabel: 'Awarded', funder: 'Funder B', awardSort: 200000 }),
-      makeGrant({ id: 'g3', status: 'awarded', statusLabel: 'Awarded', funder: 'Funder A', awardSort: 50000 }),
+      makeGrant({
+        id: 'g1',
+        status: 'awarded',
+        statusLabel: 'Awarded',
+        funder: 'Funder A',
+        awardSort: 100000,
+      }),
+      makeGrant({
+        id: 'g2',
+        status: 'awarded',
+        statusLabel: 'Awarded',
+        funder: 'Funder B',
+        awardSort: 200000,
+      }),
+      makeGrant({
+        id: 'g3',
+        status: 'awarded',
+        statusLabel: 'Awarded',
+        funder: 'Funder A',
+        awardSort: 50000,
+      }),
     ];
     const summary = generateAnnualSummary(grants);
     expect(summary.topFunders).toHaveLength(2);
@@ -151,8 +202,21 @@ describe('generateAnnualSummary', () => {
 
   it('collects lessons learned from declined grants', () => {
     const grants: Grant[] = [
-      makeGrant({ id: 'g1', status: 'declined', statusLabel: 'Declined', title: 'Grant 1', funder: 'Funder X', lessonsLearned: 'Need better alignment' }),
-      makeGrant({ id: 'g2', status: 'declined', statusLabel: 'Declined', title: 'Grant 2', funder: 'Funder Y' }),
+      makeGrant({
+        id: 'g1',
+        status: 'declined',
+        statusLabel: 'Declined',
+        title: 'Grant 1',
+        funder: 'Funder X',
+        lessonsLearned: 'Need better alignment',
+      }),
+      makeGrant({
+        id: 'g2',
+        status: 'declined',
+        statusLabel: 'Declined',
+        title: 'Grant 2',
+        funder: 'Funder Y',
+      }),
       makeGrant({ id: 'g3', status: 'matched', statusLabel: 'Matched' }),
     ];
     const summary = generateAnnualSummary(grants);

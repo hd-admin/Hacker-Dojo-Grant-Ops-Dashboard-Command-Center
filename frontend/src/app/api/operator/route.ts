@@ -1,4 +1,4 @@
-import { NextResponse, connection } from "next/server";
+import { NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -8,7 +8,10 @@ const bodySchema = z.object({
 });
 
 interface GrantOpsDb {
-  prepare(sql: string): { get(key: string): { value: string } | undefined; run(key: string, value: string): void };
+  prepare(sql: string): {
+    get(key: string): { value: string } | undefined;
+    run(key: string, value: string): void;
+  };
 }
 
 interface GrantOpsGlobal {
@@ -44,17 +47,29 @@ export async function POST(request: Request) {
     const rawBody = await request.json().catch(() => null);
     const parsed = bodySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return NextResponse.json(createErrorResponse('VALIDATION_ERROR', 'Operator name is required'), { status: 400 });
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Operator name is required'),
+        { status: 400 },
+      );
     }
     const name = parsed.data.name.trim();
     const db = getDb();
     if (!db) {
-      return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Database not available'), { status: 500 });
+      return NextResponse.json(
+        createErrorResponse('STORAGE_UNAVAILABLE', 'Database not available'),
+        { status: 500 },
+      );
     }
-    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(OPERATOR_NAME_KEY, name);
+    db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(
+      OPERATOR_NAME_KEY,
+      name,
+    );
     return NextResponse.json({ name });
   } catch (error) {
     logger.error({ err: error }, 'Error saving operator name');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to save operator name'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to save operator name'),
+      { status: 500 },
+    );
   }
 }

@@ -19,7 +19,13 @@ import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { Writable, Readable } from 'node:stream';
 import type { AgentJob, AgentTaskType } from '../../../../shared/types';
-import { executeAgentJob, MAX_RETRIES, JOB_TIMEOUTS, PROGRESS_STAGES, checkQualityGates } from './agent-loop';
+import {
+  executeAgentJob,
+  MAX_RETRIES,
+  JOB_TIMEOUTS,
+  PROGRESS_STAGES,
+  checkQualityGates,
+} from './agent-loop';
 import type { AgentLoopDeps } from './agent-loop';
 
 let currentTestDataDir: string;
@@ -108,7 +114,11 @@ function createMockDeps(overrides?: Partial<AgentLoopDeps>): {
   updateProgressCalls: Array<{ status: string; stage: string; errorMessage?: string | undefined }>;
   ingestCalls: Array<{ type: AgentTaskType; artifact: unknown; job: AgentJob }>;
 } {
-  const updateProgressCalls: Array<{ status: string; stage: string; errorMessage?: string | undefined }> = [];
+  const updateProgressCalls: Array<{
+    status: string;
+    stage: string;
+    errorMessage?: string | undefined;
+  }> = [];
   const ingestCalls: Array<{ type: AgentTaskType; artifact: unknown; job: AgentJob }> = [];
 
   const deps: AgentLoopDeps = {
@@ -156,7 +166,10 @@ function flushPromises(): Promise<void> {
 
 describe('executeAgentJob - mocked subprocess', () => {
   beforeEach(() => {
-    currentTestDataDir = path.join(process.cwd(), `.grant-ops-data-test-agent-loop-v2-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    currentTestDataDir = path.join(
+      process.cwd(),
+      `.grant-ops-data-test-agent-loop-v2-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     fs.mkdirSync(currentTestDataDir, { recursive: true });
     fs.mkdirSync(path.join(currentTestDataDir, 'tmp'), { recursive: true });
     mockSpawnImpl.mockReset();
@@ -219,9 +232,7 @@ describe('executeAgentJob - mocked subprocess', () => {
     expect(ingestCalls.length).toBe(1);
     expect(mockSpawnImpl).toHaveBeenCalledTimes(2);
     // Verify malformed JSON triggers retry with parse-error reason (structural failure)
-    const parseErrorUpdate = updateProgressCalls.find(
-      (u) => u.stage === 'invalid-json',
-    );
+    const parseErrorUpdate = updateProgressCalls.find((u) => u.stage === 'invalid-json');
     expect(parseErrorUpdate).toBeDefined();
     expect(parseErrorUpdate!.errorMessage).toContain('invalid JSON');
   });
@@ -390,9 +401,7 @@ describe('executeAgentJob - mocked subprocess', () => {
     await execPromise;
 
     expect(ingestCalls.length).toBe(1);
-    const schemaRetry = updateProgressCalls.find(
-      (u) => u.stage === 'schema-mismatch',
-    );
+    const schemaRetry = updateProgressCalls.find((u) => u.stage === 'schema-mismatch');
     expect(schemaRetry).toBeDefined();
     expect(schemaRetry!.errorMessage).toContain('Schema validation');
   }, 10000);
@@ -438,7 +447,10 @@ describe('checkQualityGates - draft wordCount threshold (AC-15.8.1)', () => {
 
 describe('executeAgentJob - edge case coverage (Step 5)', () => {
   beforeEach(() => {
-    currentTestDataDir = path.join(process.cwd(), `.grant-ops-data-test-agent-loop-edge-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    currentTestDataDir = path.join(
+      process.cwd(),
+      `.grant-ops-data-test-agent-loop-edge-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
     fs.mkdirSync(currentTestDataDir, { recursive: true });
     fs.mkdirSync(path.join(currentTestDataDir, 'tmp'), { recursive: true });
     mockSpawnImpl.mockReset();

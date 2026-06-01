@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import {
+  invalidateCache,
+  withTempDataDir,
+} from '../../../../../../../shared/grant-ops-persistence';
 import type { Source } from '../../../../../../../shared/types';
 import * as repository from '../../../../../server/grant-ops/repository';
 import { POST } from './route';
@@ -37,13 +40,20 @@ describe('/api/sources/[sourceId]/review route', () => {
   });
 
   it('approves a pending source and records an audit event', async () => {
-    const response = await POST(new Request(`http://localhost/api/sources/${source.id}/review`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'approve', category: 'foundation', categoryRationale: 'Operator confirmed fit' }),
-    }) as never, {
-      params: Promise.resolve({ sourceId: source.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/sources/${source.id}/review`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          action: 'approve',
+          category: 'foundation',
+          categoryRationale: 'Operator confirmed fit',
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ sourceId: source.id }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -58,13 +68,16 @@ describe('/api/sources/[sourceId]/review route', () => {
   });
 
   it('rejects a source and persists the rejection reason', async () => {
-    const response = await POST(new Request(`http://localhost/api/sources/${source.id}/review`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'reject', reason: 'Not relevant to the org mission' }),
-    }) as never, {
-      params: Promise.resolve({ sourceId: source.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/sources/${source.id}/review`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ action: 'reject', reason: 'Not relevant to the org mission' }),
+      }) as never,
+      {
+        params: Promise.resolve({ sourceId: source.id }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -74,13 +87,20 @@ describe('/api/sources/[sourceId]/review route', () => {
   });
 
   it('categorizes a source without changing its review status', async () => {
-    const response = await POST(new Request(`http://localhost/api/sources/${source.id}/review`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: 'categorize', category: 'community', categoryRationale: 'Local partnerships' }),
-    }) as never, {
-      params: Promise.resolve({ sourceId: source.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/sources/${source.id}/review`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          action: 'categorize',
+          category: 'community',
+          categoryRationale: 'Local partnerships',
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ sourceId: source.id }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);

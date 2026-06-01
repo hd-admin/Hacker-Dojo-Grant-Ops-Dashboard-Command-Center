@@ -8,7 +8,9 @@ vi.mock('@/server/grant-ops/document-service', () => ({
 }));
 vi.mock('@/server/grant-ops/dependencies', () => ({
   getDependencies: vi.fn(),
-  setDependencies: vi.fn(), resetDependencies: vi.fn(), createDependencies: vi.fn(),
+  setDependencies: vi.fn(),
+  resetDependencies: vi.fn(),
+  createDependencies: vi.fn(),
 }));
 vi.mock('next/server', async () => {
   const actual = await vi.importActual<typeof import('next/server')>('next/server');
@@ -29,21 +31,37 @@ describe('/api/documents/[docId]/versions route', () => {
       clock: { now: () => new Date('2026-06-01') },
     });
   });
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns 404 when document not found (GET)', async () => {
     (documentService.getDocument as ReturnType<typeof vi.fn>).mockResolvedValue(null);
     const req = new Request('http://localhost/api/documents/doc1/versions');
-    const response = await GET(req as unknown as NextRequest, { params: Promise.resolve({ docId: 'doc1' }) });
+    const response = await GET(req as unknown as NextRequest, {
+      params: Promise.resolve({ docId: 'doc1' }),
+    });
     expect(response.status).toBe(404);
   });
 
   it('returns versions for a document (GET)', async () => {
     (documentService.getDocument as ReturnType<typeof vi.fn>).mockResolvedValue({
-      id: 'doc1', filename: 'test.pdf', versions: [{ id: 'v1', documentId: 'doc1', versionNumber: 1, uploadedAt: '2026-01-01', storagePath: '/tmp/test.pdf' }],
+      id: 'doc1',
+      filename: 'test.pdf',
+      versions: [
+        {
+          id: 'v1',
+          documentId: 'doc1',
+          versionNumber: 1,
+          uploadedAt: '2026-01-01',
+          storagePath: '/tmp/test.pdf',
+        },
+      ],
     });
     const req = new Request('http://localhost/api/documents/doc1/versions');
-    const response = await GET(req as unknown as NextRequest, { params: Promise.resolve({ docId: 'doc1' }) });
+    const response = await GET(req as unknown as NextRequest, {
+      params: Promise.resolve({ docId: 'doc1' }),
+    });
     const data = await (response as NextResponse).json();
     expect(data.length).toBe(1);
   });
@@ -51,22 +69,30 @@ describe('/api/documents/[docId]/versions route', () => {
   it('returns 404 when document not found (POST)', async () => {
     (documentService.getDocument as ReturnType<typeof vi.fn>).mockResolvedValue(null);
     const req = new Request('http://localhost/api/documents/doc1/versions', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ storagePath: '/tmp/new.pdf' }),
     });
-    const response = await POST(req as unknown as NextRequest, { params: Promise.resolve({ docId: 'doc1' }) });
+    const response = await POST(req as unknown as NextRequest, {
+      params: Promise.resolve({ docId: 'doc1' }),
+    });
     expect(response.status).toBe(404);
   });
 
   it('creates a new version (POST)', async () => {
     (documentService.getDocument as ReturnType<typeof vi.fn>).mockResolvedValue({
-      id: 'doc1', filename: 'test.pdf', versions: [],
+      id: 'doc1',
+      filename: 'test.pdf',
+      versions: [],
     });
     const req = new Request('http://localhost/api/documents/doc1/versions', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ storagePath: '/tmp/new.pdf', notes: 'Updated' }),
     });
-    const response = await POST(req as unknown as NextRequest, { params: Promise.resolve({ docId: 'doc1' }) });
+    const response = await POST(req as unknown as NextRequest, {
+      params: Promise.resolve({ docId: 'doc1' }),
+    });
     expect(response.status).toBe(201);
     const data = await (response as NextResponse).json();
     expect(data.versionNumber).toBe(1);
@@ -75,9 +101,13 @@ describe('/api/documents/[docId]/versions route', () => {
 
   it('returns 400 for invalid POST body', async () => {
     const req = new Request('http://localhost/api/documents/doc1/versions', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
     });
-    const response = await POST(req as unknown as NextRequest, { params: Promise.resolve({ docId: 'doc1' }) });
+    const response = await POST(req as unknown as NextRequest, {
+      params: Promise.resolve({ docId: 'doc1' }),
+    });
     expect(response.status).toBe(400);
   });
 });

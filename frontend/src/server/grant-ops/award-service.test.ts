@@ -21,17 +21,35 @@ const mockStore: Record<string, unknown[]> = {
 
 vi.mock('../../../../shared/grant-ops-persistence', () => ({
   loadAwards: vi.fn(() => Promise.resolve(mockStore.awards)),
-  saveAwards: vi.fn((data: unknown[]) => { mockStore.awards = data; return Promise.resolve(); }),
+  saveAwards: vi.fn((data: unknown[]) => {
+    mockStore.awards = data;
+    return Promise.resolve();
+  }),
   loadAwardBudgetCategories: vi.fn(() => Promise.resolve(mockStore.budgetCategories)),
-  saveAwardBudgetCategories: vi.fn((data: unknown[]) => { mockStore.budgetCategories = data; return Promise.resolve(); }),
+  saveAwardBudgetCategories: vi.fn((data: unknown[]) => {
+    mockStore.budgetCategories = data;
+    return Promise.resolve();
+  }),
   loadAwardExpenses: vi.fn(() => Promise.resolve(mockStore.expenses)),
-  saveAwardExpenses: vi.fn((data: unknown[]) => { mockStore.expenses = data; return Promise.resolve(); }),
+  saveAwardExpenses: vi.fn((data: unknown[]) => {
+    mockStore.expenses = data;
+    return Promise.resolve();
+  }),
   loadPlannedExpenses: vi.fn(() => Promise.resolve(mockStore.plannedExpenses)),
-  savePlannedExpenses: vi.fn((data: unknown[]) => { mockStore.plannedExpenses = data; return Promise.resolve(); }),
+  savePlannedExpenses: vi.fn((data: unknown[]) => {
+    mockStore.plannedExpenses = data;
+    return Promise.resolve();
+  }),
   loadAwardReportDeadlines: vi.fn(() => Promise.resolve(mockStore.reportDeadlines)),
-  saveAwardReportDeadlines: vi.fn((data: unknown[]) => { mockStore.reportDeadlines = data; return Promise.resolve(); }),
+  saveAwardReportDeadlines: vi.fn((data: unknown[]) => {
+    mockStore.reportDeadlines = data;
+    return Promise.resolve();
+  }),
   loadAwardComplianceItems: vi.fn(() => Promise.resolve(mockStore.complianceItems)),
-  saveAwardComplianceItems: vi.fn((data: unknown[]) => { mockStore.complianceItems = data; return Promise.resolve(); }),
+  saveAwardComplianceItems: vi.fn((data: unknown[]) => {
+    mockStore.complianceItems = data;
+    return Promise.resolve();
+  }),
 }));
 vi.mock('./dependencies', () => ({
   getDependencies: () => ({

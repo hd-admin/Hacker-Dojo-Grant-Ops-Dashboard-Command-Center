@@ -1,10 +1,10 @@
-import { NextResponse, connection } from "next/server";
-import { getGrants } from "@/server/grant-ops/repository";
-import { generateFundraisingForecast } from "@/server/grant-ops/dashboard-service";
-import { logger } from "@/lib/logger";
-import { createErrorResponse } from "@/lib/api-error-handler";
+import { NextResponse, connection } from 'next/server';
+import { getGrants } from '@/server/grant-ops/repository';
+import { generateFundraisingForecast } from '@/server/grant-ops/dashboard-service';
+import { logger } from '@/lib/logger';
+import { createErrorResponse } from '@/lib/api-error-handler';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export async function GET(): Promise<Response> {
   await connection();
@@ -25,10 +25,10 @@ export async function GET(): Promise<Response> {
       })),
     });
   } catch (error) {
-    logger.error({ err: error }, "Error generating fundraising forecast");
+    logger.error({ err: error }, 'Error generating fundraising forecast');
     return NextResponse.json(
-      createErrorResponse("STORAGE_UNAVAILABLE", "Failed to generate forecast"),
-      { status: 500 }
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to generate forecast'),
+      { status: 500 },
     );
   }
 }

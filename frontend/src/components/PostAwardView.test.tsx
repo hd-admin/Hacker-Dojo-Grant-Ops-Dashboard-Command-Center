@@ -6,12 +6,15 @@ import { PostAwardView } from './PostAwardView';
 
 describe('PostAwardView', () => {
   beforeEach(() => {
-    vi.stubGlobal('fetch', vi.fn(() =>
-      Promise.resolve({
-        json: () => Promise.resolve({ awards: [], alerts: [], events: [] }),
-        ok: true,
-      } as Response)
-    ));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() =>
+        Promise.resolve({
+          json: () => Promise.resolve({ awards: [], alerts: [], events: [] }),
+          ok: true,
+        } as Response),
+      ),
+    );
   });
 
   afterEach(() => {

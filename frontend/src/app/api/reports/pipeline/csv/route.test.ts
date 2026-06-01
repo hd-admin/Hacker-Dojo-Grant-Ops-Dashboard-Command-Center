@@ -18,8 +18,12 @@ import { getGrants } from '@/server/grant-ops/repository';
 import { GET } from './route';
 
 describe('/api/reports/pipeline/csv route', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns CSV with header row when empty', async () => {
     (getGrants as ReturnType<typeof vi.fn>).mockResolvedValue([]);
@@ -34,7 +38,15 @@ describe('/api/reports/pipeline/csv route', () => {
   it('returns CSV with data rows', async () => {
     const { generatePipelineReport } = await import('@/server/grant-ops/dashboard-service');
     (generatePipelineReport as ReturnType<typeof vi.fn>).mockReturnValue([
-      { title: 'Grant A', funder: 'F1', status: 'matched', deadline: '2026-12-31', awardAmount: '$50,000', daysOut: 200, responsibilityTag: 'finance' },
+      {
+        title: 'Grant A',
+        funder: 'F1',
+        status: 'matched',
+        deadline: '2026-12-31',
+        awardAmount: '$50,000',
+        daysOut: 200,
+        responsibilityTag: 'finance',
+      },
     ]);
     const response = await GET();
     const csv = await (response as Response).text();

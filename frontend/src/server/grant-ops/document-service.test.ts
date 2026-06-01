@@ -21,7 +21,8 @@ function makeDoc(overrides: Partial<DocumentMetadata> = {}): DocumentMetadata {
     uploadedAt: new Date().toISOString(),
     mimeType: 'application/pdf',
     extractionStatus: 'extracted',
-    extractedText: 'Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
+    extractedText:
+      'Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
     ...overrides,
   };
 }
@@ -79,7 +80,8 @@ describe('DocumentService', () => {
   describe('indexDocument', () => {
     it('indexes document with extracted text', async () => {
       const doc = makeDoc({
-        extractedText: 'Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
+        extractedText:
+          'Hacker Dojo expands access to technology education and community innovation in Silicon Valley.',
         extractionStatus: 'extracted',
       });
 
@@ -91,7 +93,7 @@ describe('DocumentService', () => {
 
     it('marks document as not indexed when no text is available', async () => {
       const baseDoc = makeDoc({ extractionStatus: 'stored_unparsed' });
-       
+
       const { extractedText: _text, ...docFields } = baseDoc;
       const doc = docFields as DocumentMetadata;
 
@@ -212,7 +214,6 @@ describe('DocumentService', () => {
     });
 
     it('returns null for document without storage path', async () => {
-       
       const { storagePath: _sp, ...docFields } = makeDoc();
       const doc = docFields as DocumentMetadata;
       const sp = documentService.getStoragePath(doc);
@@ -228,7 +229,6 @@ describe('DocumentService', () => {
     });
 
     it('returns default version when not set', async () => {
-       
       const { version: _v, ...docFields } = makeDoc();
       const doc = docFields as DocumentMetadata;
       const v = documentService.getDocumentVersion(doc);

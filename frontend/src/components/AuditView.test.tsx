@@ -55,13 +55,18 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<void
 beforeEach(() => {
   onRefreshAppState.mockReset();
 
-  vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
-    const url = String(input);
-    if (url.includes('/api/audit')) {
-      return new Response(JSON.stringify(auditEvents), { headers: { 'content-type': 'application/json' } });
-    }
-    return new Response('{}', { headers: { 'content-type': 'application/json' } });
-  }));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/api/audit')) {
+        return new Response(JSON.stringify(auditEvents), {
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response('{}', { headers: { 'content-type': 'application/json' } });
+    }),
+  );
 
   container = document.createElement('div');
   document.body.appendChild(container);
@@ -84,16 +89,24 @@ describe('AuditView', () => {
 
   it('shows loading state ("Loading audit trail...") initially', async () => {
     // Block fetch so loading state persists long enough to assert
-    vi.stubGlobal('fetch', vi.fn(() => new Promise(() => {})));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => new Promise(() => {})),
+    );
     root.render(React.createElement(AuditView));
     await new Promise<void>((resolve) => setTimeout(resolve, 0));
     expect(container.textContent).toContain('Loading audit trail...');
   });
 
   it('shows empty state ("No audit events yet.") when no events returned', async () => {
-    vi.stubGlobal('fetch', vi.fn(async () => {
-      return new Response(JSON.stringify([]), { headers: { 'content-type': 'application/json' } });
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        return new Response(JSON.stringify([]), {
+          headers: { 'content-type': 'application/json' },
+        });
+      }),
+    );
 
     root.render(React.createElement(AuditView));
     await waitFor(() => container.textContent?.includes('No audit events yet.') === true);
@@ -112,18 +125,14 @@ describe('AuditView', () => {
     const fetchMock = vi.mocked(global.fetch as unknown as typeof fetch);
     root.render(React.createElement(AuditView, { entityId: 'grant-123' }));
     await waitFor(() => container.textContent?.includes('Audit Trail') === true);
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('entityId=grant-123'),
-    );
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('entityId=grant-123'));
   });
 
   it('supports entityType query parameter filtering', async () => {
     const fetchMock = vi.mocked(global.fetch as unknown as typeof fetch);
     root.render(React.createElement(AuditView, { entityType: 'grant' }));
     await waitFor(() => container.textContent?.includes('Audit Trail') === true);
-    expect(fetchMock).toHaveBeenCalledWith(
-      expect.stringContaining('entityType=grant'),
-    );
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('entityType=grant'));
   });
 
   it('shows event type, entity type/ID, and timestamp for each event', async () => {

@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { cleanupTmpDir, enforceCacheSizeLimit, _startPeriodicCleanup, _stopPeriodicCleanup } from './cache-cleanup';
+import {
+  cleanupTmpDir,
+  enforceCacheSizeLimit,
+  _startPeriodicCleanup,
+  _stopPeriodicCleanup,
+} from './cache-cleanup';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';

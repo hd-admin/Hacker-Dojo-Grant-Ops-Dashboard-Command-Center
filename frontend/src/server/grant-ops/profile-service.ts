@@ -8,10 +8,7 @@
  * Follows DI pattern via getDependencies().
  */
 
-import type {
-  OrganizationProfile,
-  DocumentMetadata,
-} from '../../../../shared/types';
+import type { OrganizationProfile, DocumentMetadata } from '../../../../shared/types';
 import { getDependencies } from './dependencies';
 import { HARDCODED_PROFILE } from './hardcoded-profile';
 
@@ -65,9 +62,7 @@ export async function getProfile(): Promise<OrganizationProfile> {
  * Update the organization profile.
  * Replaces the entire profile with the provided data.
  */
-export async function updateProfile(
-  profile: OrganizationProfile,
-): Promise<void> {
+export async function updateProfile(profile: OrganizationProfile): Promise<void> {
   const deps = getDependencies();
   await deps.repository.updateOrgProfile(profile);
 }
@@ -76,9 +71,7 @@ export async function updateProfile(
  * Get list of required fields that are missing/empty.
  * Used to flag incomplete profile data.
  */
-export function getMissingRequiredFields(
-  profile: OrganizationProfile,
-): string[] {
+export function getMissingRequiredFields(profile: OrganizationProfile): string[] {
   const missing: string[] = [];
 
   for (const field of REQUIRED_PROFILE_FIELDS) {
@@ -95,9 +88,7 @@ export function getMissingRequiredFields(
  * Check if the profile is ready for grant submission.
  * Returns a structured result with readiness status, missing fields, and blocking reason.
  */
-export async function isSubmissionReady(
-  profile: OrganizationProfile,
-): Promise<{
+export async function isSubmissionReady(profile: OrganizationProfile): Promise<{
   ready: boolean;
   missingFields: string[];
   blockingReason: string | null;
@@ -123,9 +114,7 @@ export async function isSubmissionReady(
  * Flag documents that match restricted patterns.
  * These documents contain sensitive information and should not be shared.
  */
-export function enforceRestrictedDocuments(
-  documents: DocumentMetadata[],
-): DocumentMetadata[] {
+export function enforceRestrictedDocuments(documents: DocumentMetadata[]): DocumentMetadata[] {
   return documents.filter((doc) => {
     const name = doc.name.toLowerCase();
     return RESTRICTED_PATTERNS.some((pattern) => pattern.test(name));
@@ -136,9 +125,7 @@ export function enforceRestrictedDocuments(
  * Check document freshness and staleness.
  * Returns a structured assessment of document health.
  */
-export function getDocumentFreshness(
-  documents: DocumentMetadata[],
-): {
+export function getDocumentFreshness(documents: DocumentMetadata[]): {
   isStale: boolean;
   staleCount: number;
   unauditedCount: number;
@@ -146,9 +133,7 @@ export function getDocumentFreshness(
   lastUpdated: string | null;
 } {
   const now = new Date();
-  const staleThreshold = new Date(
-    now.getTime() - DOCUMENT_STALENESS_DAYS * 24 * 60 * 60 * 1000,
-  );
+  const staleThreshold = new Date(now.getTime() - DOCUMENT_STALENESS_DAYS * 24 * 60 * 60 * 1000);
 
   const staleDocuments: DocumentMetadata[] = [];
   let unauditedCount = 0;
@@ -188,10 +173,7 @@ export function getDocumentFreshness(
 
 // --- Helpers ---
 
-function getNestedValue(
-  obj: Record<string, unknown>,
-  path: string,
-): unknown {
+function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
   const parts = path.split('.');
   let current: unknown = obj;
 

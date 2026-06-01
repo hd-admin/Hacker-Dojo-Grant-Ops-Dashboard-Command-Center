@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { loadCrawlSchedules, invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import {
+  loadCrawlSchedules,
+  invalidateCache,
+  withTempDataDir,
+} from '../../../../../../../shared/grant-ops-persistence';
 import type { Source } from '../../../../../../../shared/types';
 import * as repository from '../../../../../server/grant-ops/repository';
 import { DELETE, GET, PUT } from './route';
@@ -35,13 +39,16 @@ describe('/api/sources/[sourceId]/schedule route', () => {
   });
 
   it('returns 404 when saving a schedule for an unknown source', async () => {
-    const response = await PUT(new Request('http://localhost/api/sources/missing/schedule', {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ intervalHours: 6, isEnabled: true }),
-    }) as never, {
-      params: Promise.resolve({ sourceId: 'missing' }),
-    });
+    const response = await PUT(
+      new Request('http://localhost/api/sources/missing/schedule', {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ intervalHours: 6, isEnabled: true }),
+      }) as never,
+      {
+        params: Promise.resolve({ sourceId: 'missing' }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(404);
@@ -49,22 +56,28 @@ describe('/api/sources/[sourceId]/schedule route', () => {
   });
 
   it('creates, reads, and deletes schedules for a source', async () => {
-    const putResponse = await PUT(new Request(`http://localhost/api/sources/${source.id}/schedule`, {
-      method: 'PUT',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ intervalHours: 12, isEnabled: true }),
-    }) as never, {
-      params: Promise.resolve({ sourceId: source.id }),
-    });
+    const putResponse = await PUT(
+      new Request(`http://localhost/api/sources/${source.id}/schedule`, {
+        method: 'PUT',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ intervalHours: 12, isEnabled: true }),
+      }) as never,
+      {
+        params: Promise.resolve({ sourceId: source.id }),
+      },
+    );
     const created = await putResponse.json();
 
     expect(putResponse.status).toBe(200);
     expect(created.sourceId).toBe(source.id);
     expect(created.intervalHours).toBe(12);
 
-    const getResponse = await GET(new Request(`http://localhost/api/sources/${source.id}/schedule`) as never, {
-      params: Promise.resolve({ sourceId: source.id }),
-    });
+    const getResponse = await GET(
+      new Request(`http://localhost/api/sources/${source.id}/schedule`) as never,
+      {
+        params: Promise.resolve({ sourceId: source.id }),
+      },
+    );
     const fetched = await getResponse.json();
     expect(getResponse.status).toBe(200);
     expect(fetched.id).toBe(created.id);
@@ -74,18 +87,24 @@ describe('/api/sources/[sourceId]/schedule route', () => {
     expect(schedules.length).toBeGreaterThanOrEqual(9);
     expect(schedules.some((s) => s.sourceId === source.id)).toBe(true);
 
-    const deleteResponse = await DELETE(new Request(`http://localhost/api/sources/${source.id}/schedule`, {
-      method: 'DELETE',
-    }) as never, {
-      params: Promise.resolve({ sourceId: source.id }),
-    });
+    const deleteResponse = await DELETE(
+      new Request(`http://localhost/api/sources/${source.id}/schedule`, {
+        method: 'DELETE',
+      }) as never,
+      {
+        params: Promise.resolve({ sourceId: source.id }),
+      },
+    );
     const deleteData = await deleteResponse.json();
     expect(deleteResponse.status).toBe(200);
     expect(deleteData.success).toBe(true);
 
-    const getAfterDelete = await GET(new Request(`http://localhost/api/sources/${source.id}/schedule`) as never, {
-      params: Promise.resolve({ sourceId: source.id }),
-    });
+    const getAfterDelete = await GET(
+      new Request(`http://localhost/api/sources/${source.id}/schedule`) as never,
+      {
+        params: Promise.resolve({ sourceId: source.id }),
+      },
+    );
     expect(getAfterDelete.status).toBe(404);
   });
 });

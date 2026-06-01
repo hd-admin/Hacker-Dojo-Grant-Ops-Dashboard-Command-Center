@@ -12,9 +12,17 @@ describe('SnippetsBrowser', () => {
     root.render(
       React.createElement(SnippetsBrowser, {
         snippets: [
-          { id: 's1', title: 'Test Snippet', sourceGrant: 'Grant 1', funder: 'Funder A', topicTags: ['STEM'], usageCount: 5, content: 'Hello world' },
+          {
+            id: 's1',
+            title: 'Test Snippet',
+            sourceGrant: 'Grant 1',
+            funder: 'Funder A',
+            topicTags: ['STEM'],
+            usageCount: 5,
+            content: 'Hello world',
+          },
         ],
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(container.querySelector('[data-testid="snippets-browser"]')).not.toBeNull();

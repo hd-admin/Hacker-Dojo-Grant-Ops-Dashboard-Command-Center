@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -28,10 +28,15 @@ export async function GET(request: NextRequest) {
     }
 
     return NextResponse.json(snapshot, {
-      headers: { 'content-disposition': `attachment; filename=grant-ops-backup-${snapshot.manifest.createdAt}.json` },
+      headers: {
+        'content-disposition': `attachment; filename=grant-ops-backup-${snapshot.manifest.createdAt}.json`,
+      },
     });
   } catch (error) {
     logger.error({ err: error }, 'Error exporting backup');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to export backup'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to export backup'),
+      { status: 500 },
+    );
   }
 }

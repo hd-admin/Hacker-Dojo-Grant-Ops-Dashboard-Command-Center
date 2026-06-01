@@ -37,7 +37,9 @@ describe('/api/duplicates route', () => {
     expect(allResponse.status).toBe(200);
     expect(allData).toHaveLength(2);
 
-    const filteredResponse = await GET(new Request('http://localhost/api/duplicates?status=pending') as never);
+    const filteredResponse = await GET(
+      new Request('http://localhost/api/duplicates?status=pending') as never,
+    );
     const filteredData = await filteredResponse.json();
     expect(filteredResponse.status).toBe(200);
     expect(filteredData).toHaveLength(1);

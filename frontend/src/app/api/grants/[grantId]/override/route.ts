@@ -1,9 +1,14 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
-import type { Grant, GrantStatus, HumanOverride, TaskStatus } from '../../../../../../../shared/types';
+import type {
+  Grant,
+  GrantStatus,
+  HumanOverride,
+  TaskStatus,
+} from '../../../../../../../shared/types';
 import { GrantStatusSchema } from '../../../../../../../shared/schemas';
 
 export const dynamic = 'force-dynamic';
@@ -20,7 +25,7 @@ const OVERRIDABLE_FIELDS = [
   'funderShort',
   'category',
 ] as const;
-type OverridableField = typeof OVERRIDABLE_FIELDS[number];
+type OverridableField = (typeof OVERRIDABLE_FIELDS)[number];
 
 // Task override field pattern: task.{taskId}.status
 const TASK_OVERRIDE_FIELD_REGEX = /^task\.(.+)\.status$/;
@@ -32,14 +37,26 @@ const bodySchema = z.object({
   overrideType: z.enum(['score', 'category', 'task', 'status']),
 });
 
-const VALID_TASK_STATUSES: TaskStatus[] = ['blocked', 'in-progress', 'completed', 'waived', 'not-applicable'];
+const VALID_TASK_STATUSES: TaskStatus[] = [
+  'blocked',
+  'in-progress',
+  'completed',
+  'waived',
+  'not-applicable',
+];
 
-function validateNewValueForField(field: OverridableField, value: unknown): { success: true; parsed: GrantStatus | string | number } | { success: false; error: string } {
+function validateNewValueForField(
+  field: OverridableField,
+  value: unknown,
+): { success: true; parsed: GrantStatus | string | number } | { success: false; error: string } {
   switch (field) {
     case 'status': {
       const result = GrantStatusSchema.safeParse(value);
       if (!result.success) {
-        return { success: false, error: `Invalid status value. Must be one of: matched, draft, review, approved, submission-ready, submitted, follow-up, awarded, declined, closed, archived` };
+        return {
+          success: false,
+          error: `Invalid status value. Must be one of: matched, draft, review, approved, submission-ready, submitted, follow-up, awarded, declined, closed, archived`,
+        };
       }
       return { success: true, parsed: result.data };
     }
@@ -66,26 +83,39 @@ function validateNewValueForField(field: OverridableField, value: unknown): { su
   }
 }
 
-function validateTaskOverrideValue(value: unknown): { success: true; parsed: TaskStatus } | { success: false; error: string } {
+function validateTaskOverrideValue(
+  value: unknown,
+): { success: true; parsed: TaskStatus } | { success: false; error: string } {
   if (!VALID_TASK_STATUSES.includes(value as TaskStatus)) {
-    return { success: false, error: `Invalid task status. Must be one of: ${VALID_TASK_STATUSES.join(', ')}` };
+    return {
+      success: false,
+      error: `Invalid task status. Must be one of: ${VALID_TASK_STATUSES.join(', ')}`,
+    };
   }
   return { success: true, parsed: value as TaskStatus };
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ grantId: string }> },
+) {
   await connection();
   try {
     const { grantId } = await params;
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid override payload', issues: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid override payload', issues: parsed.error.flatten() },
+        { status: 400 },
+      );
     }
 
     const deps = getDependencies();
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
     }
 
     const isTaskOverride = TASK_OVERRIDE_FIELD_REGEX.test(parsed.data.field);
@@ -96,7 +126,10 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       // Handle task.{taskId}.status override
       const match = parsed.data.field.match(TASK_OVERRIDE_FIELD_REGEX);
       if (!match) {
-        return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid task override field format'), { status: 400 });
+        return NextResponse.json(
+          createErrorResponse('AGENT_INVALID_JSON', 'Invalid task override field format'),
+          { status: 400 },
+        );
       }
       const taskId = match[1];
 
@@ -109,17 +142,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       const tasks = await deps.repository.getTasks();
       const taskIndex = tasks.findIndex((t) => t.id === taskId);
       if (taskIndex === -1) {
-        return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), { status: 404 });
+        return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), {
+          status: 404,
+        });
       }
 
       const existingTask = tasks[taskIndex]!;
 
       // Security: verify the task belongs to this grant before modifying it
       if (existingTask.grantId !== grantId) {
-        return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), { status: 404 });
+        return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Task not found'), {
+          status: 404,
+        });
       }
 
-      const previousTaskStatus = existingTask.taskStatus ?? (existingTask.completed ? 'completed' : 'blocked');
+      const previousTaskStatus =
+        existingTask.taskStatus ?? (existingTask.completed ? 'completed' : 'blocked');
 
       // Update the task
       tasks[taskIndex] = {
@@ -187,12 +225,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       entityType: 'grant',
       actorLabel: 'operator',
       timestamp: override.overriddenAt,
-      metadata: { field: override.field, previousValue: override.previousValue, newValue: override.newValue, rationale: override.rationale, overrideType: override.overrideType },
+      metadata: {
+        field: override.field,
+        previousValue: override.previousValue,
+        newValue: override.newValue,
+        rationale: override.rationale,
+        overrideType: override.overrideType,
+      },
     });
 
     return NextResponse.json(await deps.repository.getGrant(grantId));
   } catch (error) {
     logger.error({ err: error }, 'Error overriding grant');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to override grant'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to override grant'),
+      { status: 500 },
+    );
   }
 }

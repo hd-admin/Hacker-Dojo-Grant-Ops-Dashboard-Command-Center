@@ -1,10 +1,10 @@
-import { NextResponse, connection } from "next/server";
+import { NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
-import { getDependencies } from "@/server/grant-ops/dependencies";
-import { getHealth } from "@/server/grant-ops/health-service";
+import { getDependencies } from '@/server/grant-ops/dependencies';
+import { getHealth } from '@/server/grant-ops/health-service';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export async function GET() {
   await connection();
@@ -16,9 +16,11 @@ export async function GET() {
       deps.repository.getJobQueue(),
     ]);
 
-    const recentErrors = events.filter((event) => /failed|error|rejected/i.test(event.eventType)).slice(0, 20);
-    const activeJobs = jobs.filter((job) => job.status === "queued" || job.status === "running");
-    const failedJobs = jobs.filter((job) => job.status === "failed").slice(0, 10);
+    const recentErrors = events
+      .filter((event) => /failed|error|rejected/i.test(event.eventType))
+      .slice(0, 20);
+    const activeJobs = jobs.filter((job) => job.status === 'queued' || job.status === 'running');
+    const failedJobs = jobs.filter((job) => job.status === 'failed').slice(0, 10);
 
     return NextResponse.json({
       health,
@@ -34,6 +36,9 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, 'Error getting diagnostics');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get diagnostics'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get diagnostics'),
+      { status: 500 },
+    );
   }
 }

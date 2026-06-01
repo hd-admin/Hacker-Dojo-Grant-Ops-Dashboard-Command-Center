@@ -70,7 +70,7 @@ describe('/api/sources/[sourceId]/retry-crawl route', () => {
     );
 
     expect(response.status).toBe(200);
-    const body = await response.json() as { success: boolean; crawlRun: { sourceId: string } };
+    const body = (await response.json()) as { success: boolean; crawlRun: { sourceId: string } };
     expect(body.success).toBe(true);
     expect(body.crawlRun.sourceId).toBe(source.id);
 
@@ -89,6 +89,8 @@ describe('/api/sources/[sourceId]/retry-crawl route', () => {
     );
 
     const events = await repository.getAuditEvents();
-    expect(events.some((e) => e.eventType === 'source_retry_crawl' && e.entityId === source.id)).toBe(true);
+    expect(
+      events.some((e) => e.eventType === 'source_retry_crawl' && e.entityId === source.id),
+    ).toBe(true);
   });
 });

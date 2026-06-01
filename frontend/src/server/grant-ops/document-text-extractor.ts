@@ -17,9 +17,7 @@ export interface DocumentExtractionResult {
 }
 
 function snippetFromText(text: string): string {
-  return text.includes(EXACT_GROUNDING_SNIPPET)
-    ? EXACT_GROUNDING_SNIPPET
-    : text.slice(0, 240);
+  return text.includes(EXACT_GROUNDING_SNIPPET) ? EXACT_GROUNDING_SNIPPET : text.slice(0, 240);
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
@@ -95,7 +93,10 @@ export async function extractDocumentText(filePath: string): Promise<DocumentExt
   }
 }
 
-export async function analyzeStoredDocument(filePath: string, mimeType: string): Promise<DocumentExtractionResult> {
+export async function analyzeStoredDocument(
+  filePath: string,
+  mimeType: string,
+): Promise<DocumentExtractionResult> {
   const supportedMimeTypes = [
     'application/pdf',
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -105,7 +106,12 @@ export async function analyzeStoredDocument(filePath: string, mimeType: string):
   ];
 
   const lowerPath = filePath.toLowerCase();
-  const isSupportedExtension = lowerPath.endsWith('.pdf') || lowerPath.endsWith('.docx') || lowerPath.endsWith('.csv') || lowerPath.endsWith('.xlsx') || lowerPath.endsWith('.xls');
+  const isSupportedExtension =
+    lowerPath.endsWith('.pdf') ||
+    lowerPath.endsWith('.docx') ||
+    lowerPath.endsWith('.csv') ||
+    lowerPath.endsWith('.xlsx') ||
+    lowerPath.endsWith('.xls');
   const isSupportedMime = supportedMimeTypes.includes(mimeType);
 
   if (!isSupportedExtension && !isSupportedMime) {

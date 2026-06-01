@@ -92,21 +92,23 @@ async function _getDocumentsForExport(): Promise<DocumentMetadata[]> {
 /**
  * Get documents available for submission packages (excludes restricted unless explicitly included).
  */
-async function _getDocumentsForSubmission(includeRestrictedIds?: string[]): Promise<DocumentMetadata[]> {
+async function _getDocumentsForSubmission(
+  includeRestrictedIds?: string[],
+): Promise<DocumentMetadata[]> {
   const deps = getDependencies();
   const docs = await deps.repository.getDocuments();
   if (!includeRestrictedIds || includeRestrictedIds.length === 0) {
     return docs.filter((d) => d.classification !== 'restricted');
   }
-  return docs.filter((d) => d.classification !== 'restricted' || includeRestrictedIds.includes(d.id));
+  return docs.filter(
+    (d) => d.classification !== 'restricted' || includeRestrictedIds.includes(d.id),
+  );
 }
 
 /**
  * Get a single document by ID.
  */
-export async function getDocument(
-  id: string,
-): Promise<DocumentMetadata | null> {
+export async function getDocument(id: string): Promise<DocumentMetadata | null> {
   const deps = getDependencies();
   const docs = await deps.repository.getDocuments();
   return docs.find((d) => d.id === id) ?? null;
@@ -116,9 +118,7 @@ export async function getDocument(
  * Index a document's extracted text for search.
  * Returns indexing result with status.
  */
-export async function indexDocument(
-  doc: DocumentMetadata,
-): Promise<{
+export async function indexDocument(doc: DocumentMetadata): Promise<{
   indexed: boolean;
   indexedText?: string;
   error?: string;
@@ -130,10 +130,7 @@ export async function indexDocument(
     };
   }
 
-  if (
-    doc.extractionStatus === 'stored_unparsed' ||
-    !doc.extractedText
-  ) {
+  if (doc.extractionStatus === 'stored_unparsed' || !doc.extractedText) {
     return {
       indexed: false,
       error: 'No extracted text available for indexing',
@@ -159,9 +156,7 @@ export async function indexDocument(
  * Search indexed documents by text query.
  * Returns matching document metadata ordered by relevance.
  */
-export async function searchDocuments(
-  query: string,
-): Promise<DocumentMetadata[]> {
+export async function searchDocuments(query: string): Promise<DocumentMetadata[]> {
   const deps = getDependencies();
   const queryTokens = tokenize(query);
 
@@ -197,7 +192,10 @@ export async function searchDocuments(
     }
     // Also check partial matches for scoring
     for (const [indexedToken, docIds] of searchIndex) {
-      if (indexedToken !== token && (indexedToken.includes(token) || token.includes(indexedToken))) {
+      if (
+        indexedToken !== token &&
+        (indexedToken.includes(token) || token.includes(indexedToken))
+      ) {
         for (const docId of docIds) {
           docScores.set(docId, (docScores.get(docId) ?? 0) + 0.5);
         }

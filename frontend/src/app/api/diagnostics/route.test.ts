@@ -5,11 +5,11 @@ import * as repository from '../../../server/grant-ops/repository';
 import { GET } from './route';
 
 const { getHealthMock } = vi.hoisted(() => ({
-	getHealthMock: vi.fn(),
+  getHealthMock: vi.fn(),
 }));
 
 vi.mock('@/server/grant-ops/health-service', () => ({
-	getHealth: getHealthMock,
+  getHealth: getHealthMock,
 }));
 
 function createAuditEvent(id: string, eventType: string): AuditEvent {

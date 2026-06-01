@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { checkAndRunDue } from '@/server/grant-ops/crawl-scheduler-service';
@@ -14,7 +14,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ triggered });
   } catch (error) {
     logger.error({ err: error }, 'Error checking scheduled crawls');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to check scheduled crawls'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to check scheduled crawls'),
+      { status: 500 },
+    );
   }
 }
 
@@ -25,6 +28,9 @@ export async function POST() {
     return NextResponse.json({ triggered });
   } catch (error) {
     logger.error({ err: error }, 'Error triggering scheduled crawls');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to trigger scheduled crawls'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to trigger scheduled crawls'),
+      { status: 500 },
+    );
   }
 }

@@ -1,6 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
-import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import {
+  createDependencies,
+  resetDependencies,
+  setDependencies,
+} from '@/server/grant-ops/dependencies';
+import {
+  invalidateCache,
+  withTempDataDir,
+} from '../../../../../../../shared/grant-ops-persistence';
 import * as repository from '@/server/grant-ops/repository';
 import { POST } from './route';
 
@@ -38,7 +45,11 @@ describe('POST /api/tasks/[taskId]/override', () => {
       new Request('http://localhost/api/tasks/nonexistent/override', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ newValue: 'completed', rationale: 'Manual override', overrideType: 'task' }),
+        body: JSON.stringify({
+          newValue: 'completed',
+          rationale: 'Manual override',
+          overrideType: 'task',
+        }),
       }) as never,
       { params: Promise.resolve({ taskId: 'nonexistent' }) },
     );
@@ -79,7 +90,11 @@ describe('POST /api/tasks/[taskId]/override', () => {
       new Request(`http://localhost/api/tasks/${taskId}/override`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ newValue: 'completed', rationale: 'Manually verified as done', overrideType: 'task' }),
+        body: JSON.stringify({
+          newValue: 'completed',
+          rationale: 'Manually verified as done',
+          overrideType: 'task',
+        }),
       }) as never,
       { params: Promise.resolve({ taskId }) },
     );
@@ -108,7 +123,11 @@ describe('POST /api/tasks/[taskId]/override', () => {
       new Request(`http://localhost/api/tasks/${taskId}/override`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ newValue: 'waived', rationale: 'Not applicable for this cycle', overrideType: 'task' }),
+        body: JSON.stringify({
+          newValue: 'waived',
+          rationale: 'Not applicable for this cycle',
+          overrideType: 'task',
+        }),
       }) as never,
       { params: Promise.resolve({ taskId }) },
     );

@@ -67,8 +67,10 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
           body: JSON.stringify({ action: resolution === 'merged' ? 'merge' : 'keep-separate' }),
         });
         if (!response.ok) {
-          const body = await response.json().catch(() => ({})) as { error?: string };
-          throw new Error(body.error ?? `Failed to ${resolution === 'merged' ? 'merge' : 'separate'}`);
+          const body = (await response.json().catch(() => ({}))) as { error?: string };
+          throw new Error(
+            body.error ?? `Failed to ${resolution === 'merged' ? 'merge' : 'separate'}`,
+          );
         }
         await loadData();
         await onRefreshAppState?.();
@@ -121,7 +123,9 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
             type="button"
             className="btn btn-ghost btn-sm"
             data-testid="duplicates-refresh-btn"
-            onClick={() => { void loadData(); }}
+            onClick={() => {
+              void loadData();
+            }}
           >
             {'↻'} Refresh
           </button>
@@ -130,20 +134,19 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
 
       {error && (
         <div className="panel" data-testid="duplicates-error-banner">
-          <div className={`drawer-note ${styles.errorText}`}>
-            {error}
-          </div>
+          <div className={`drawer-note ${styles.errorText}`}>{error}</div>
         </div>
       )}
 
       {candidates.length === 0 ? (
         <div className="empty-state-guide" data-testid="duplicates-empty-state">
-          <div className="empty-state-icon" aria-hidden="true">{'🔄'}</div>
+          <div className="empty-state-icon" aria-hidden="true">
+            {'🔄'}
+          </div>
           <div className="empty-state-title">No duplicate candidates</div>
           <div className="empty-state-description">
-            Potential duplicate grants will appear here when the system detects
-            similar grant records from different sources. You can review, merge,
-            or keep them separate.
+            Potential duplicate grants will appear here when the system detects similar grant
+            records from different sources. You can review, merge, or keep them separate.
           </div>
         </div>
       ) : (
@@ -193,7 +196,8 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                         </button>
                       </div>
                       <div className={styles.funderInfo}>
-                        {getGrantFunder(candidate.grantId1) || 'Unknown funder'} · {getGrantFunder(candidate.grantId2) || 'Unknown funder'}
+                        {getGrantFunder(candidate.grantId1) || 'Unknown funder'} ·{' '}
+                        {getGrantFunder(candidate.grantId2) || 'Unknown funder'}
                       </div>
                     </div>
                     <div className={styles.statusBadgeGroup}>
@@ -201,7 +205,9 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                         className={`status-badge ${styles.statusBadge}`}
                         data-testid={`duplicate-status-${candidate.id}`}
                         style={{
-                          background: isPending ? 'rgba(224, 137, 74, 0.12)' : 'rgba(138, 171, 111, 0.12)',
+                          background: isPending
+                            ? 'rgba(224, 137, 74, 0.12)'
+                            : 'rgba(138, 171, 111, 0.12)',
                           color: isPending ? 'var(--warning)' : 'var(--success)',
                         }}
                       >
@@ -214,7 +220,11 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                   <div className={styles.confidenceSection}>
                     <div className={styles.confidenceHeader}>
                       <span className={styles.confidenceLabel}>Duplicate confidence</span>
-                      <span className={styles.confidencePct} style={{ color: confidenceColor }} data-testid={`confidence-pct-${candidate.id}`}>
+                      <span
+                        className={styles.confidencePct}
+                        style={{ color: confidenceColor }}
+                        data-testid={`confidence-pct-${candidate.id}`}
+                      >
                         {confidencePct}%
                       </span>
                     </div>
@@ -229,7 +239,11 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                         aria-valuemin={0}
                         aria-valuemax={100}
                         aria-label={`Duplicate confidence: ${confidencePct}%`}
-                        style={{ transform: `scaleX(${confidencePct / 100})`, transformOrigin: 'left', background: confidenceColor }}
+                        style={{
+                          transform: `scaleX(${confidencePct / 100})`,
+                          transformOrigin: 'left',
+                          background: confidenceColor,
+                        }}
                       />
                     </div>
                   </div>
@@ -237,9 +251,7 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                   {/* Conflicting fields */}
                   {candidate.conflictingFields.length > 0 && (
                     <div className={styles.conflictingSection}>
-                      <div className={styles.conflictingLabel}>
-                        Conflicting fields:
-                      </div>
+                      <div className={styles.conflictingLabel}>Conflicting fields:</div>
                       <div className={styles.conflictingFieldsWrap}>
                         {candidate.conflictingFields.map((field) => (
                           <span
@@ -260,9 +272,7 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                     {candidate.resolvedAt && (
                       <span> · Resolved: {new Date(candidate.resolvedAt).toLocaleString()}</span>
                     )}
-                    {candidate.resolvedBy && (
-                      <span> · By: {candidate.resolvedBy}</span>
-                    )}
+                    {candidate.resolvedBy && <span> · By: {candidate.resolvedBy}</span>}
                   </div>
 
                   {/* Action buttons */}
@@ -272,6 +282,7 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                         type="button"
                         className="btn btn-primary btn-sm"
                         data-testid={`keep-separate-btn-${candidate.id}`}
+                        aria-label="Keep Separate"
                         disabled={actionLoading[candidate.id] === true}
                         onClick={() => void handleResolve(candidate.id, 'kept-separate')}
                       >
@@ -281,6 +292,7 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                         type="button"
                         className="btn btn-sm"
                         data-testid={`merge-btn-${candidate.id}`}
+                        aria-label="Merge"
                         disabled={actionLoading[candidate.id] === true}
                         onClick={() => void handleResolve(candidate.id, 'merged')}
                       >
@@ -296,4 +308,3 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
     </>
   );
 }
-

@@ -6,7 +6,14 @@ import type { FollowUp, Task, TaskStatus, ResponsibilityTag } from '../../../sha
 import styles from './TasksView.module.css';
 import { tasksApi, followUpsApi, grantsApi } from '../lib/grant-ops-client';
 
-type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'sources' | 'settings' | 'notifications' | 'tasks';
+type ViewType =
+  | 'dashboard'
+  | 'discovery'
+  | 'pipeline'
+  | 'sources'
+  | 'settings'
+  | 'notifications'
+  | 'tasks';
 
 interface TasksViewProps {
   onRefreshAppState?: () => Promise<void> | void;
@@ -183,7 +190,11 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
   };
 
   if (loading) {
-    return <div className="header-title" role="status" aria-busy="true" aria-label="Loading tasks">Loading...</div>;
+    return (
+      <div className="header-title" role="status" aria-busy="true" aria-label="Loading tasks">
+        Loading...
+      </div>
+    );
   }
 
   if (tasks.length === 0 && followUps.length === 0) {
@@ -203,10 +214,20 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
             Tasks appear here when you add grants to your pipeline.
           </div>
           <div className="empty-state-actions">
-            <button type="button" className="btn btn-primary" onClick={() => onNavigate?.('pipeline')} aria-label="Go to Pipeline">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={() => onNavigate?.('pipeline')}
+              aria-label="Go to Pipeline"
+            >
               View Pipeline
             </button>
-            <button type="button" className="btn" onClick={() => onNavigate?.('discovery')} aria-label="Go to Discovery">
+            <button
+              type="button"
+              className="btn"
+              onClick={() => onNavigate?.('discovery')}
+              aria-label="Go to Discovery"
+            >
               Discover grants
             </button>
           </div>
@@ -312,16 +333,27 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
               <div>{task.text}</div>
               <div className="task-meta">
                 {task.taskStatus && <span className="task-badge">{task.taskStatus}</span>}
-                {task.responsibilityTag && <span className="task-badge">{task.responsibilityTag}</span>}
+                {task.responsibilityTag && (
+                  <span className="task-badge">{task.responsibilityTag}</span>
+                )}
                 {task.blockSubmission && <span className="task-badge">Blocks submission</span>}
               </div>
-              {task.justification && <div className="task-rationale">Rationale: {task.justification}</div>}
-              <button type="button" data-testid="task-override-btn" onClick={() => handleStartTaskOverride(task)}>
+              {task.justification && (
+                <div className="task-rationale">Rationale: {task.justification}</div>
+              )}
+              <button
+                type="button"
+                data-testid="task-override-btn"
+                onClick={() => handleStartTaskOverride(task)}
+              >
                 Override
               </button>
               {overrideTaskId === task.id && (
                 <div className="task-override-panel">
-                  <select value={overrideTaskStatus} onChange={(e) => setOverrideTaskStatus(e.target.value as TaskStatus)}>
+                  <select
+                    value={overrideTaskStatus}
+                    onChange={(e) => setOverrideTaskStatus(e.target.value as TaskStatus)}
+                  >
                     <option value="blocked">blocked</option>
                     <option value="in-progress">in-progress</option>
                     <option value="completed">completed</option>
@@ -334,10 +366,16 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
                     onChange={(e) => setOverrideTaskRationale(e.target.value)}
                   />
                   <div>
-                    <button type="button" onClick={() => void handleSaveTaskOverride(task.id, task.grantId)} disabled={!overrideTaskRationale.trim()}>
+                    <button
+                      type="button"
+                      onClick={() => void handleSaveTaskOverride(task.id, task.grantId)}
+                      disabled={!overrideTaskRationale.trim()}
+                    >
                       Save override
                     </button>
-                    <button type="button" onClick={handleCancelTaskOverride}>Cancel</button>
+                    <button type="button" onClick={handleCancelTaskOverride}>
+                      Cancel
+                    </button>
                   </div>
                 </div>
               )}
@@ -351,11 +389,22 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
           <div className="section-heading">Follow-ups</div>
           {followUps.map((fu) => (
             <div key={fu.id} className={`followup-item ${fu.status}`}>
-              <input type="checkbox" checked={fu.status === 'completed'} onChange={() => { void handleToggleFollowUp(fu.id); }} className="task-checkbox" />
+              <input
+                type="checkbox"
+                checked={fu.status === 'completed'}
+                onChange={() => {
+                  void handleToggleFollowUp(fu.id);
+                }}
+                className="task-checkbox"
+              />
               <div className="followup-info">
                 <span className="followup-type">{fu.type.replace(/_/g, ' ')}</span>
                 <div className="followup-title">{fu.title}</div>
-                {fu.dueDate && (<div className="followup-due">Due: {new Date(fu.dueDate).toLocaleDateString()}</div>)}
+                {fu.dueDate && (
+                  <div className="followup-due">
+                    Due: {new Date(fu.dueDate).toLocaleDateString()}
+                  </div>
+                )}
               </div>
               <div className={`followup-status ${fu.status}`}>{fu.status}</div>
             </div>
@@ -365,4 +414,3 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
     </>
   );
 }
-

@@ -134,7 +134,10 @@ describe('detectMimeTypeByMagic', () => {
   });
 
   it('detects PDF by magic bytes', async () => {
-    const filePath = createTestFile('test.pdf', Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34]));
+    const filePath = createTestFile(
+      'test.pdf',
+      Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31, 0x2e, 0x34]),
+    );
     const result = await detectMimeTypeByMagic(filePath);
     expect(result).toBe('application/pdf');
   });
@@ -142,8 +145,8 @@ describe('detectMimeTypeByMagic', () => {
   it('detects PNG by magic bytes', async () => {
     // Minimal PNG: signature + IHDR chunk header
     const png = Buffer.concat([
-      Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
-      Buffer.from([0x00, 0x00, 0x00, 0x0D]), // IHDR length
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      Buffer.from([0x00, 0x00, 0x00, 0x0d]), // IHDR length
       Buffer.from('IHDR'),
       Buffer.alloc(17, 0), // IHDR data + CRC placeholder
     ]);
@@ -153,7 +156,10 @@ describe('detectMimeTypeByMagic', () => {
   });
 
   it('detects JPEG by magic bytes', async () => {
-    const filePath = createTestFile('test.jpg', Buffer.from([0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 0x4A, 0x46]));
+    const filePath = createTestFile(
+      'test.jpg',
+      Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46]),
+    );
     const result = await detectMimeTypeByMagic(filePath);
     expect(result).toBe('image/jpeg');
   });
@@ -189,15 +195,15 @@ describe('validateMimeType', () => {
   });
 
   it('returns null when MIME matches extension (PDF)', async () => {
-    const filePath = createTestFile('test.pdf', Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31]));
+    const filePath = createTestFile('test.pdf', Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31]));
     const result = await validateMimeType(filePath);
     expect(result).toBeNull();
   });
 
   it('returns null when MIME matches extension (PNG)', async () => {
     const png = Buffer.concat([
-      Buffer.from([0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]),
-      Buffer.from([0x00, 0x00, 0x00, 0x0D]),
+      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      Buffer.from([0x00, 0x00, 0x00, 0x0d]),
       Buffer.from('IHDR'),
       Buffer.alloc(17, 0),
     ]);
@@ -214,7 +220,10 @@ describe('validateMimeType', () => {
   });
 
   it('accepts originalFilename parameter for extension lookup', async () => {
-    const filePath = createTestFile('upload.tmp.upload', Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31]));
+    const filePath = createTestFile(
+      'upload.tmp.upload',
+      Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0x31]),
+    );
     const result = await validateMimeType(filePath, 'original.pdf');
     expect(result).toBeNull();
   });

@@ -167,7 +167,9 @@ describe('SourceService', () => {
       const updatedSource = sources.find((s) => s.id === source.id)!;
       expect(updatedSource.lastCrawledAt).toBeDefined();
       expect(typeof updatedSource.lastCrawledAt).toBe('string');
-      expect(new Date(updatedSource.lastCrawledAt!).toISOString()).toBe(updatedSource.lastCrawledAt);
+      expect(new Date(updatedSource.lastCrawledAt!).toISOString()).toBe(
+        updatedSource.lastCrawledAt,
+      );
     });
   });
 

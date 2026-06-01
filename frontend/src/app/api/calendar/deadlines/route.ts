@@ -21,6 +21,9 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json({ deadlines });
   } catch (error) {
     logger.error({ err: error }, 'Error getting deadlines');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get deadlines'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get deadlines'),
+      { status: 500 },
+    );
   }
 }

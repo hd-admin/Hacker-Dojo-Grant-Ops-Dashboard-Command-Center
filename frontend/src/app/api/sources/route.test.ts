@@ -54,7 +54,12 @@ describe('/api/sources route', () => {
 
   it('creates an approved source when reviewStatus is explicitly approved', async () => {
     const response = await POST(
-      makeRequest({ name: 'CandidApproved', url: 'https://www.candid.org/approved', type: 'website', reviewStatus: 'approved' }) as never,
+      makeRequest({
+        name: 'CandidApproved',
+        url: 'https://www.candid.org/approved',
+        type: 'website',
+        reviewStatus: 'approved',
+      }) as never,
     );
     const data = await response.json();
 
@@ -73,7 +78,11 @@ describe('/api/sources route', () => {
 
   it('GET returns persisted sources and DELETE removes them', async () => {
     const createResponse = await POST(
-      makeRequest({ name: 'GrantWatch', url: 'https://grantwatch.example', type: 'database' }) as never,
+      makeRequest({
+        name: 'GrantWatch',
+        url: 'https://grantwatch.example',
+        type: 'database',
+      }) as never,
     );
     const createData = await createResponse.json();
     const sourceId = createData.source.id as string;
@@ -83,10 +92,16 @@ describe('/api/sources route', () => {
     expect(getResponse.status).toBe(200);
     // 13 seed sources + 1 test source = 14
     expect(Array.isArray(sources) ? sources.length : 14).toBeGreaterThanOrEqual(14);
-    expect(Array.isArray(sources) ? sources.some((s: { id: string; name: string; url: string }) => s.id === sourceId) : true).toBe(true);
+    expect(
+      Array.isArray(sources)
+        ? sources.some((s: { id: string; name: string; url: string }) => s.id === sourceId)
+        : true,
+    ).toBe(true);
 
     const deleteResponse = await DELETE(
-      new Request(`http://localhost/api/sources?id=${encodeURIComponent(sourceId)}`, { method: 'DELETE' }) as never,
+      new Request(`http://localhost/api/sources?id=${encodeURIComponent(sourceId)}`, {
+        method: 'DELETE',
+      }) as never,
     );
     const deleteData = await deleteResponse.json();
     expect(deleteResponse.status).toBe(200);
@@ -99,7 +114,9 @@ describe('/api/sources route', () => {
   });
 
   it('rejects missing source id on delete', async () => {
-    const response = await DELETE(new Request('http://localhost/api/sources', { method: 'DELETE' }) as never);
+    const response = await DELETE(
+      new Request('http://localhost/api/sources', { method: 'DELETE' }) as never,
+    );
     const data = await response.json();
 
     expect(response.status).toBe(400);

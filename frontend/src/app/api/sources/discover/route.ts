@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createErrorResponse } from '@/lib/api-error-handler';
-import { NextResponse, connection } from "next/server";
+import { NextResponse, connection } from 'next/server';
 import { z } from 'zod';
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
@@ -18,7 +18,10 @@ export async function POST(request: NextRequest) {
   try {
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid discovery prompt', issues: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid discovery prompt', issues: parsed.error.flatten() },
+        { status: 400 },
+      );
     }
 
     const result = await discoverSourcesFromPrompt(parsed.data.prompt);
@@ -28,10 +31,20 @@ export async function POST(request: NextRequest) {
     const errorMessage = error instanceof Error ? error.message : 'Failed to discover sources';
     const failureMode = classifyOpencodeError(errorMessage);
     const guidance = opencodeFailureMessages[failureMode];
-    const retryable = ['rate-limit', 'malformed-output', 'model-unavailable', 'timeout', 'unknown'].includes(failureMode);
+    const retryable = [
+      'rate-limit',
+      'malformed-output',
+      'model-unavailable',
+      'timeout',
+      'unknown',
+    ].includes(failureMode);
 
     return NextResponse.json(
-      createErrorResponse('STORAGE_UNAVAILABLE', errorMessage, { failureMode, guidance, retryable }),
+      createErrorResponse('STORAGE_UNAVAILABLE', errorMessage, {
+        failureMode,
+        guidance,
+        retryable,
+      }),
       { status: 500 },
     );
   }

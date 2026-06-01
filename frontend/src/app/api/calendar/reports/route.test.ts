@@ -15,7 +15,9 @@ vi.mock('next/server', async () => {
   return {
     ...actual,
     connection: async () => {},
-    NextRequest: class { url = 'http://localhost:3000/api/calendar/reports'; },
+    NextRequest: class {
+      url = 'http://localhost:3000/api/calendar/reports';
+    },
   };
 });
 
@@ -24,8 +26,12 @@ import { GET } from './route';
 import type { NextRequest, NextResponse } from 'next/server';
 
 describe('/api/calendar/reports route', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns report deadlines for awards', async () => {
     const mockAwards = [
@@ -62,7 +68,10 @@ describe('/api/calendar/reports route', () => {
 
   it('returns empty reports when no awards', async () => {
     (getDependencies as ReturnType<typeof vi.fn>).mockReturnValue({
-      repository: { getAwards: vi.fn().mockResolvedValue([]), getReportDeadlinesByAwardId: vi.fn() },
+      repository: {
+        getAwards: vi.fn().mockResolvedValue([]),
+        getReportDeadlinesByAwardId: vi.fn(),
+      },
     });
 
     const { NextRequest } = await import('next/server');

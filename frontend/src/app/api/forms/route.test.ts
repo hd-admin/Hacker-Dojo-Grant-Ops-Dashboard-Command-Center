@@ -57,7 +57,9 @@ describe('/api/forms route', () => {
 
   describe('GET', () => {
     it('returns forms list', async () => {
-      const mockForms = [{ id: 'form-1', name: 'Test Form', funderId: null, fields: [], createdAt: '2026-01-01' }];
+      const mockForms = [
+        { id: 'form-1', name: 'Test Form', funderId: null, fields: [], createdAt: '2026-01-01' },
+      ];
       const deps = getDependencies();
       (deps.repository.getFormTemplates as ReturnType<typeof vi.fn>).mockResolvedValue(mockForms);
 
@@ -78,10 +80,13 @@ describe('/api/forms route', () => {
   describe('POST', () => {
     it('creates a form with valid data', async () => {
       const { NextRequest } = await import('next/server');
-      const mockReq = new (NextRequest as unknown as new (url: string, init?: Record<string, unknown>) => Request)(
-        'http://localhost:3000/api/forms',
-        { method: 'POST', body: JSON.stringify({ name: 'New Form' }) }
-      );
+      const mockReq = new (NextRequest as unknown as new (
+        url: string,
+        init?: Record<string, unknown>,
+      ) => Request)('http://localhost:3000/api/forms', {
+        method: 'POST',
+        body: JSON.stringify({ name: 'New Form' }),
+      });
       const response = await POST(mockReq as unknown as NextRequest);
       const data = await (response as NextResponse).json();
       expect(data.form).toBeDefined();
@@ -90,10 +95,13 @@ describe('/api/forms route', () => {
 
     it('returns 400 for invalid body', async () => {
       const { NextRequest } = await import('next/server');
-      const mockReq = new (NextRequest as unknown as new (url: string, init?: Record<string, unknown>) => Request)(
-        'http://localhost:3000/api/forms',
-        { method: 'POST', body: JSON.stringify({}) }
-      );
+      const mockReq = new (NextRequest as unknown as new (
+        url: string,
+        init?: Record<string, unknown>,
+      ) => Request)('http://localhost:3000/api/forms', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
       const response = await POST(mockReq as unknown as NextRequest);
       expect(response.status).toBe(400);
     });
@@ -102,10 +110,13 @@ describe('/api/forms route', () => {
   describe('PUT', () => {
     it('returns 400 when no id provided', async () => {
       const { NextRequest } = await import('next/server');
-      const mockReq = new (NextRequest as unknown as new (url: string, init?: Record<string, unknown>) => Request)(
-        'http://localhost:3000/api/forms',
-        { method: 'PUT', body: JSON.stringify({ name: 'Updated Form' }) }
-      );
+      const mockReq = new (NextRequest as unknown as new (
+        url: string,
+        init?: Record<string, unknown>,
+      ) => Request)('http://localhost:3000/api/forms', {
+        method: 'PUT',
+        body: JSON.stringify({ name: 'Updated Form' }),
+      });
       const response = await PUT(mockReq as unknown as NextRequest);
       const data = await (response as NextResponse).json();
       expect(response.status).toBe(400);
@@ -114,10 +125,13 @@ describe('/api/forms route', () => {
 
     it('updates a form with valid data and id', async () => {
       const { NextRequest } = await import('next/server');
-      const mockReq = new (NextRequest as unknown as new (url: string, init?: Record<string, unknown>) => Request)(
-        'http://localhost:3000/api/forms',
-        { method: 'PUT', body: JSON.stringify({ id: 'form-1', name: 'Updated Form' }) }
-      );
+      const mockReq = new (NextRequest as unknown as new (
+        url: string,
+        init?: Record<string, unknown>,
+      ) => Request)('http://localhost:3000/api/forms', {
+        method: 'PUT',
+        body: JSON.stringify({ id: 'form-1', name: 'Updated Form' }),
+      });
       const response = await PUT(mockReq as unknown as NextRequest);
       const data = await (response as NextResponse).json();
       expect(data.form).toBeDefined();
@@ -136,7 +150,9 @@ describe('/api/forms route', () => {
     });
 
     it('deletes a form by id', async () => {
-      const mockReq = { url: 'http://localhost:3000/api/forms?id=form-1' } as unknown as NextRequest;
+      const mockReq = {
+        url: 'http://localhost:3000/api/forms?id=form-1',
+      } as unknown as NextRequest;
       const response = await DELETE(mockReq);
       const data = await (response as NextResponse).json();
       expect(data.success).toBe(true);

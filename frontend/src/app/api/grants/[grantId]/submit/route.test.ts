@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import {
+  invalidateCache,
+  withTempDataDir,
+} from '../../../../../../../shared/grant-ops-persistence';
 import type { Grant, SubmissionManifest } from '../../../../../../../shared/types';
 import * as repository from '../../../../../server/grant-ops/repository';
 import { POST as approvalPOST } from '../approval/route';
@@ -172,9 +175,12 @@ describe('/api/grants/[grantId]/submit route', () => {
       { params: Promise.resolve({ grantId: grant.id }) },
     );
 
-    const getResponse = await GET(new Request(`http://localhost/api/grants/${grant.id}/submit`) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const getResponse = await GET(
+      new Request(`http://localhost/api/grants/${grant.id}/submit`) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
     const getData = await getResponse.json();
     expect(getData?.grantId).toBe(grant.id);
   });

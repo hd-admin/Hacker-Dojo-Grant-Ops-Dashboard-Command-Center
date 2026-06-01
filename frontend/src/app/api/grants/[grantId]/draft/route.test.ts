@@ -5,10 +5,21 @@ import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { POST as documentPOST } from '../../../documents/route';
-import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
+import {
+  createDependencies,
+  resetDependencies,
+  setDependencies,
+} from '@/server/grant-ops/dependencies';
 import * as repository from '../../../../../server/grant-ops/repository';
-import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
-import type { Grant, OrganizationProfile, OpencodeSettings } from '../../../../../../../shared/types';
+import {
+  invalidateCache,
+  withTempDataDir,
+} from '../../../../../../../shared/grant-ops-persistence';
+import type {
+  Grant,
+  OrganizationProfile,
+  OpencodeSettings,
+} from '../../../../../../../shared/types';
 import { POST as draftPOST } from './route';
 
 const fixturePath = path.join(
@@ -16,7 +27,10 @@ const fixturePath = path.join(
   'tests/fixtures/documents/hacker-dojo-program-summary.pdf',
 );
 
-function buildMultipartRequest(fields: Record<string, string>, file: { name: string; type: string; bytes: Buffer }) {
+function buildMultipartRequest(
+  fields: Record<string, string>,
+  file: { name: string; type: string; bytes: Buffer },
+) {
   const formData = new FormData();
   for (const [key, value] of Object.entries(fields)) {
     formData.append(key, value);
@@ -30,7 +44,8 @@ const profile: OrganizationProfile = {
   ein: '12-3456789',
   samUEI: 'XyxabC123AB',
   nonprofitStatus: '501(c)(3)',
-  yearFounded: 2009,contactInfo: {},
+  yearFounded: 2009,
+  contactInfo: {},
   geography: 'Regional',
   mission: 'Test mission',
   programAreas: ['STEM'],
@@ -38,7 +53,8 @@ const profile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  boardMembers: [],docTypes: ['PDF', 'DOCX'],
+  boardMembers: [],
+  docTypes: ['PDF', 'DOCX'],
   searchThemes: ['EdTech'],
   agentBehavior: {
     autoDraftThreshold: 80,
@@ -65,7 +81,10 @@ const fakeAdapter = {
   isConfigured: () => true,
 };
 
-async function waitFor(predicate: () => Promise<boolean> | boolean, timeoutMs = 5000): Promise<void> {
+async function waitFor(
+  predicate: () => Promise<boolean> | boolean,
+  timeoutMs = 5000,
+): Promise<void> {
   const start = Date.now();
   while (!(await predicate())) {
     if (Date.now() - start > timeoutMs) {
@@ -138,7 +157,9 @@ describe('/api/grants/[grantId]/draft route', () => {
       },
     );
 
-    const documentResponse = await documentPOST({ formData: async () => payload.formData } as never);
+    const documentResponse = await documentPOST({
+      formData: async () => payload.formData,
+    } as never);
     const documentData = await documentResponse.json();
 
     expect(documentResponse.status).toBe(201);
@@ -158,7 +179,9 @@ describe('/api/grants/[grantId]/draft route', () => {
 
     expect(response.status).toBe(202);
     expect(queued.queued).toBe(true);
-    await waitFor(async () => (await repository.getJobQueueItem(queued.job.id))?.status === 'completed');
+    await waitFor(
+      async () => (await repository.getJobQueueItem(queued.job.id))?.status === 'completed',
+    );
     const job = await repository.getJobQueueItem(queued.job.id);
     expect(job?.resultSummary).toMatch(/Draft v1 generated/i);
     const drafts = await repository.getDraftArtifacts(grant.id);

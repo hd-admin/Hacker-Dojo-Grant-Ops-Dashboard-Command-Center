@@ -1,7 +1,18 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
-import type { Grant, OrganizationProfile, OpencodeSettings } from '../../../../../../../shared/types';
-import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
+import {
+  invalidateCache,
+  withTempDataDir,
+} from '../../../../../../../shared/grant-ops-persistence';
+import type {
+  Grant,
+  OrganizationProfile,
+  OpencodeSettings,
+} from '../../../../../../../shared/types';
+import {
+  createDependencies,
+  resetDependencies,
+  setDependencies,
+} from '@/server/grant-ops/dependencies';
 import * as repository from '../../../../../server/grant-ops/repository';
 import { POST } from './route';
 
@@ -10,7 +21,8 @@ const profile: OrganizationProfile = {
   ein: '12-3456789',
   samUEI: 'XyxabC123AB',
   nonprofitStatus: '501(c)(3)',
-  yearFounded: 2009,contactInfo: {},
+  yearFounded: 2009,
+  contactInfo: {},
   geography: 'Regional',
   mission: 'To support tech education',
   programAreas: ['STEM'],
@@ -18,7 +30,8 @@ const profile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  boardMembers: [],docTypes: ['PDF'],
+  boardMembers: [],
+  docTypes: ['PDF'],
   searchThemes: ['EdTech'],
   agentBehavior: {
     autoDraftThreshold: 80,

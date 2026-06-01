@@ -6,7 +6,11 @@ import { logger } from '@/lib/logger';
 export const dynamic = 'force-dynamic';
 
 interface GrantOpsDb {
-  prepare(sql: string): { get(key: string): { value: string } | undefined; run(key: string, value: string): void; all(...args: string[]): { key: string; value: string }[] };
+  prepare(sql: string): {
+    get(key: string): { value: string } | undefined;
+    run(key: string, value: string): void;
+    all(...args: string[]): { key: string; value: string }[];
+  };
 }
 
 interface GrantOpsGlobal {
@@ -19,28 +23,36 @@ function getDb(): GrantOpsDb | undefined {
 
 const SettingsBodySchema = z.object({
   operatorName: z.string().min(1).optional(),
-  agentSettings: z.object({
-    autoDraftThreshold: z.number().int().min(0).max(100).optional(),
-    voiceAndTone: z.string().optional(),
-    maxConcurrentJobs: z.number().int().min(1).max(10).optional(),
-  }).optional(),
-  crawlSettings: z.object({
-    intervalHours: z.number().int().min(1).optional(),
-    maxConcurrentCrawls: z.number().int().min(1).max(10).optional(),
-    requestDelayMs: z.number().int().min(0).optional(),
-    respectRobotsTxt: z.boolean().optional(),
-    userAgent: z.string().optional(),
-  }).optional(),
-  notificationSettings: z.object({
-    notifyEmail: z.string().optional(),
-    notifyOnMatchAbove: z.number().int().min(0).max(100).optional(),
-    notifyOnDeadlineDays: z.number().int().min(1).optional(),
-  }).optional(),
-  backupSchedule: z.object({
-    intervalHours: z.number().int().min(1).optional(),
-    maxBackups: z.number().int().min(1).optional(),
-    enabled: z.boolean().optional(),
-  }).optional(),
+  agentSettings: z
+    .object({
+      autoDraftThreshold: z.number().int().min(0).max(100).optional(),
+      voiceAndTone: z.string().optional(),
+      maxConcurrentJobs: z.number().int().min(1).max(10).optional(),
+    })
+    .optional(),
+  crawlSettings: z
+    .object({
+      intervalHours: z.number().int().min(1).optional(),
+      maxConcurrentCrawls: z.number().int().min(1).max(10).optional(),
+      requestDelayMs: z.number().int().min(0).optional(),
+      respectRobotsTxt: z.boolean().optional(),
+      userAgent: z.string().optional(),
+    })
+    .optional(),
+  notificationSettings: z
+    .object({
+      notifyEmail: z.string().optional(),
+      notifyOnMatchAbove: z.number().int().min(0).max(100).optional(),
+      notifyOnDeadlineDays: z.number().int().min(1).optional(),
+    })
+    .optional(),
+  backupSchedule: z
+    .object({
+      intervalHours: z.number().int().min(1).optional(),
+      maxBackups: z.number().int().min(1).optional(),
+      enabled: z.boolean().optional(),
+    })
+    .optional(),
 });
 
 function setSetting(db: GrantOpsDb, key: string, value: string): void {
@@ -61,13 +73,19 @@ export async function GET() {
   try {
     const db = getDb();
     if (!db) {
-      return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Database not available'), { status: 500 });
+      return NextResponse.json(
+        createErrorResponse('STORAGE_UNAVAILABLE', 'Database not available'),
+        { status: 500 },
+      );
     }
     const settings = getSettings(db);
     return NextResponse.json(settings);
   } catch (error) {
     logger.error({ err: error }, 'Error reading settings');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to read settings'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to read settings'),
+      { status: 500 },
+    );
   }
 }
 
@@ -76,7 +94,10 @@ export async function PUT(request: Request) {
   try {
     const body = await request.json().catch(() => null);
     if (!body) {
-      return NextResponse.json(createErrorResponse('VALIDATION_ERROR', 'Request body is required'), { status: 400 });
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Request body is required'),
+        { status: 400 },
+      );
     }
 
     const validation = withZodValidation(SettingsBodySchema, body);
@@ -86,17 +107,25 @@ export async function PUT(request: Request) {
 
     const db = getDb();
     if (!db) {
-      return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Database not available'), { status: 500 });
+      return NextResponse.json(
+        createErrorResponse('STORAGE_UNAVAILABLE', 'Database not available'),
+        { status: 500 },
+      );
     }
 
-    const { operatorName, agentSettings, crawlSettings, notificationSettings, backupSchedule } = validation.data;
+    const { operatorName, agentSettings, crawlSettings, notificationSettings, backupSchedule } =
+      validation.data;
 
     if (operatorName !== undefined) {
       setSetting(db, 'operator.name', operatorName);
     }
     if (agentSettings) {
       if (agentSettings.autoDraftThreshold !== undefined) {
-        setSetting(db, 'settings.agent.autoDraftThreshold', String(agentSettings.autoDraftThreshold));
+        setSetting(
+          db,
+          'settings.agent.autoDraftThreshold',
+          String(agentSettings.autoDraftThreshold),
+        );
       }
       if (agentSettings.voiceAndTone !== undefined) {
         setSetting(db, 'settings.agent.voiceAndTone', agentSettings.voiceAndTone);
@@ -110,7 +139,11 @@ export async function PUT(request: Request) {
         setSetting(db, 'settings.crawl.intervalHours', String(crawlSettings.intervalHours));
       }
       if (crawlSettings.maxConcurrentCrawls !== undefined) {
-        setSetting(db, 'settings.crawl.maxConcurrentCrawls', String(crawlSettings.maxConcurrentCrawls));
+        setSetting(
+          db,
+          'settings.crawl.maxConcurrentCrawls',
+          String(crawlSettings.maxConcurrentCrawls),
+        );
       }
       if (crawlSettings.requestDelayMs !== undefined) {
         setSetting(db, 'settings.crawl.requestDelayMs', String(crawlSettings.requestDelayMs));
@@ -127,10 +160,18 @@ export async function PUT(request: Request) {
         setSetting(db, 'settings.notifications.notifyEmail', notificationSettings.notifyEmail);
       }
       if (notificationSettings.notifyOnMatchAbove !== undefined) {
-        setSetting(db, 'settings.notifications.notifyOnMatchAbove', String(notificationSettings.notifyOnMatchAbove));
+        setSetting(
+          db,
+          'settings.notifications.notifyOnMatchAbove',
+          String(notificationSettings.notifyOnMatchAbove),
+        );
       }
       if (notificationSettings.notifyOnDeadlineDays !== undefined) {
-        setSetting(db, 'settings.notifications.notifyOnDeadlineDays', String(notificationSettings.notifyOnDeadlineDays));
+        setSetting(
+          db,
+          'settings.notifications.notifyOnDeadlineDays',
+          String(notificationSettings.notifyOnDeadlineDays),
+        );
       }
     }
     if (backupSchedule) {
@@ -149,6 +190,9 @@ export async function PUT(request: Request) {
     return NextResponse.json(updatedSettings);
   } catch (error) {
     logger.error({ err: error }, 'Error saving settings');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to save settings'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to save settings'),
+      { status: 500 },
+    );
   }
 }

@@ -8,7 +8,10 @@ export interface CloudSyncCheck {
 
 export function detectCloudSync(dataDir: string): CloudSyncCheck {
   // Check for Dropbox
-  if (fs.existsSync(path.join(dataDir, '.dropbox')) || fs.existsSync(path.join(path.dirname(dataDir), '.dropbox'))) {
+  if (
+    fs.existsSync(path.join(dataDir, '.dropbox')) ||
+    fs.existsSync(path.join(path.dirname(dataDir), '.dropbox'))
+  ) {
     return { isCloudSynced: true, service: 'Dropbox' };
   }
 
@@ -26,7 +29,10 @@ export function detectCloudSync(dataDir: string): CloudSyncCheck {
   }
 
   // Check for OneDrive
-  if (fs.existsSync(path.join(path.dirname(dataDir), 'OneDrive')) || fs.existsSync(path.join(path.dirname(dataDir), 'OneDrive - '))) {
+  if (
+    fs.existsSync(path.join(path.dirname(dataDir), 'OneDrive')) ||
+    fs.existsSync(path.join(path.dirname(dataDir), 'OneDrive - '))
+  ) {
     return { isCloudSynced: true, service: 'OneDrive' };
   }
 

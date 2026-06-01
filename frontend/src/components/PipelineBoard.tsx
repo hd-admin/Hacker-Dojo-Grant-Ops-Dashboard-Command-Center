@@ -23,9 +23,15 @@ interface PipelineBoardProps {
   onStatusChange: (grantId: string, newStatus: GrantStatus) => Promise<void>;
 }
 
-export function PipelineBoard({ grants, onSelectGrant, onStatusChange: _onStatusChange }: PipelineBoardProps) {
+export function PipelineBoard({
+  grants,
+  onSelectGrant,
+  onStatusChange: _onStatusChange,
+}: PipelineBoardProps) {
   const [activeColumn, setActiveColumn] = useState(0);
-  const [activeCard, setActiveCard] = useState<number[]>(Array.from({ length: PIPELINE_COLUMNS.length }, () => 0));
+  const [activeCard, setActiveCard] = useState<number[]>(
+    Array.from({ length: PIPELINE_COLUMNS.length }, () => 0),
+  );
   const columnRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const getColumnGrants = useCallback(
@@ -33,10 +39,7 @@ export function PipelineBoard({ grants, onSelectGrant, onStatusChange: _onStatus
     [grants],
   );
 
-  const getActiveCardIndex = useCallback(
-    (col: number) => activeCard[col] ?? 0,
-    [activeCard],
-  );
+  const getActiveCardIndex = useCallback((col: number) => activeCard[col] ?? 0, [activeCard]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -106,7 +109,9 @@ export function PipelineBoard({ grants, onSelectGrant, onStatusChange: _onStatus
               className={`pipeline-column ${activeColumn === colIndex ? 'pipeline-column-active' : ''}`}
               role="gridcell"
               aria-label={`${col.label} column, ${colGrants.length} grants`}
-              ref={(el) => { columnRefs.current[colIndex] = el; }}
+              ref={(el) => {
+                columnRefs.current[colIndex] = el;
+              }}
               tabIndex={activeColumn === colIndex ? 0 : -1}
               data-testid={`pipeline-column-${col.status}`}
             >
@@ -149,9 +154,7 @@ export function PipelineBoard({ grants, onSelectGrant, onStatusChange: _onStatus
                     )}
                   </div>
                 ))}
-                {colGrants.length === 0 && (
-                  <div className="pipeline-column-empty">No grants</div>
-                )}
+                {colGrants.length === 0 && <div className="pipeline-column-empty">No grants</div>}
               </div>
             </div>
           );
@@ -162,4 +165,3 @@ export function PipelineBoard({ grants, onSelectGrant, onStatusChange: _onStatus
 }
 
 // PIPELINE_COLUMNS is used only within this module
-

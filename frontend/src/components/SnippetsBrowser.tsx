@@ -19,7 +19,11 @@ interface SnippetsBrowserProps {
   grantId?: string;
 }
 
-export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: SnippetsBrowserProps) {
+export function SnippetsBrowser({
+  snippets: propSnippets,
+  onInsert,
+  grantId,
+}: SnippetsBrowserProps) {
   const [search, setSearch] = useState('');
   const [snippets, setSnippets] = useState<Snippet[]>(propSnippets || []);
   const [loading, setLoading] = useState(!propSnippets);
@@ -65,7 +69,12 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
       const res = await fetch('/api/snippets', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ title: newTitle.trim(), content: newContent, category: newCategory || 'general', grantId: grantId || null }),
+        body: JSON.stringify({
+          title: newTitle.trim(),
+          content: newContent,
+          category: newCategory || 'general',
+          grantId: grantId || null,
+        }),
       });
       if (res.ok) {
         const data = (await res.json()) as { snippet: Snippet };
@@ -93,16 +102,19 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
     }
   };
 
-  const filtered = snippets.filter((s) =>
-    s.title.toLowerCase().includes(search.toLowerCase()) ||
-    s.funder.toLowerCase().includes(search.toLowerCase()) ||
-    s.topicTags.some((t) => t.toLowerCase().includes(search.toLowerCase()))
+  const filtered = snippets.filter(
+    (s) =>
+      s.title.toLowerCase().includes(search.toLowerCase()) ||
+      s.funder.toLowerCase().includes(search.toLowerCase()) ||
+      s.topicTags.some((t) => t.toLowerCase().includes(search.toLowerCase())),
   );
 
   if (loading) {
     return (
       <div className="snippets-browser" data-testid="snippets-browser">
-        <div role="status" aria-busy="true" aria-label="Loading snippets">Loading snippets...</div>
+        <div role="status" aria-busy="true" aria-label="Loading snippets">
+          Loading snippets...
+        </div>
       </div>
     );
   }
@@ -130,7 +142,11 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
       </div>
 
       {showCreateForm && (
-        <form className={`snippet-create-form ${styles.createForm}`} onSubmit={handleCreate} data-testid="snippet-create-form">
+        <form
+          className={`snippet-create-form ${styles.createForm}`}
+          onSubmit={handleCreate}
+          data-testid="snippet-create-form"
+        >
           <input
             type="text"
             placeholder="Snippet title"
@@ -159,10 +175,18 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
             className="form-input"
           />
           <div className={styles.formActions}>
-            <button type="submit" className="btn btn-sm btn-primary" disabled={saving || !newTitle.trim()}>
+            <button
+              type="submit"
+              className="btn btn-sm btn-primary"
+              disabled={saving || !newTitle.trim()}
+            >
               {saving ? 'Saving...' : 'Save'}
             </button>
-            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowCreateForm(false)}>
+            <button
+              type="button"
+              className="btn btn-sm btn-ghost"
+              onClick={() => setShowCreateForm(false)}
+            >
               Cancel
             </button>
           </div>
@@ -170,18 +194,22 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
       )}
 
       <div className="snippets-list">
-        {filtered.length === 0 && (
-          <div className="empty-state">No snippets found.</div>
-        )}
+        {filtered.length === 0 && <div className="empty-state">No snippets found.</div>}
         {filtered.map((snippet) => (
-          <div key={snippet.id} className={`snippet-card ${styles.cardBody}`} data-testid="snippet-card">
+          <div
+            key={snippet.id}
+            className={`snippet-card ${styles.cardBody}`}
+            data-testid="snippet-card"
+          >
             <div className={`snippet-title ${styles.cardTitle}`}>{snippet.title}</div>
             <div className={`snippet-meta ${styles.cardMeta}`}>
               {snippet.funder} · Used {snippet.usageCount} times
             </div>
             <div className={`snippet-tags ${styles.cardTags}`}>
               {snippet.topicTags.map((tag) => (
-                <span key={tag} className={`tag ${styles.tag}`}>{tag}</span>
+                <span key={tag} className={`tag ${styles.tag}`}>
+                  {tag}
+                </span>
               ))}
             </div>
             <div className={`snippet-actions ${styles.cardActions}`}>
@@ -198,7 +226,11 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
               <button
                 type="button"
                 className="btn btn-sm btn-ghost"
-                onClick={() => { if (window.confirm(`Delete snippet "${snippet.title}"?`)) { void handleDelete(snippet.id); } }}
+                onClick={() => {
+                  if (window.confirm(`Delete snippet "${snippet.title}"?`)) {
+                    void handleDelete(snippet.id);
+                  }
+                }}
                 aria-label={`Delete snippet ${snippet.title}`}
                 data-testid={`delete-snippet-${snippet.id}`}
               >

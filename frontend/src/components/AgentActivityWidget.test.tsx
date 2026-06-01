@@ -2,6 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { getByText } from '../test-helpers';
 import { AgentActivityWidget } from './AgentActivityWidget';
 
 vi.mock('lucide-react', () => ({
@@ -38,14 +39,19 @@ describe('AgentActivityWidget', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
     root.render(<AgentActivityWidget />);
     await waitFor(() => container.querySelector('[data-testid="agent-activity-loading"]') !== null);
-    expect(container.textContent).toContain('Loading activity');
+    expect(getByText(container, 'Loading activity')).not.toBeNull();
     vi.unstubAllGlobals();
   });
 
   it('renders empty state when no events', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ events: [] }), { headers: { 'content-type': 'application/json' } }),
-    ));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ events: [] }), {
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
     root.render(<AgentActivityWidget />);
     await waitFor(() => container.querySelector('[data-testid="agent-activity-empty"]') !== null);
     expect(container.textContent).toContain('No recent agent activity');
@@ -54,12 +60,27 @@ describe('AgentActivityWidget', () => {
 
   it('renders events list', async () => {
     const events = [
-      { id: 'evt-1', eventType: 'crawl', description: 'Crawl completed', createdAt: '2026-05-20T10:00:00Z' },
-      { id: 'evt-2', eventType: 'draft', description: 'Draft completed', createdAt: '2026-05-21T11:00:00Z' },
+      {
+        id: 'evt-1',
+        eventType: 'crawl',
+        description: 'Crawl completed',
+        createdAt: '2026-05-20T10:00:00Z',
+      },
+      {
+        id: 'evt-2',
+        eventType: 'draft',
+        description: 'Draft completed',
+        createdAt: '2026-05-21T11:00:00Z',
+      },
     ];
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ events }), { headers: { 'content-type': 'application/json' } }),
-    ));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ events }), {
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
     root.render(<AgentActivityWidget />);
     await waitFor(() => container.querySelector('[data-testid="agent-activity-widget"]') !== null);
     expect(container.querySelector('[data-testid="activity-evt-1"]')).not.toBeNull();

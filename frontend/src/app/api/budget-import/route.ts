@@ -1,13 +1,19 @@
-import { NextRequest, NextResponse, connection } from "next/server";
-import { createErrorResponse } from "@/lib/api-error-handler";
+import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
-
 
 export const dynamic = 'force-dynamic';
 
 const HEADER_KEYWORDS = [
-  'category', 'item', 'line', 'description', 'amount',
-  'budget', 'total', 'cost', 'expense'
+  'category',
+  'item',
+  'line',
+  'description',
+  'amount',
+  'budget',
+  'total',
+  'cost',
+  'expense',
 ];
 
 export interface ParsedBudgetRow {
@@ -30,10 +36,10 @@ function detectHeaderRow(rows: string[][]): { headerRowIndex: number; headers: s
   for (let i = 0; i < Math.min(rows.length, 10); i++) {
     const row = rows[i];
     if (!row || row.length === 0) continue;
-    const lowerCells = row.map(c => String(c).toLowerCase().trim());
-    const matchCount = lowerCells.filter(c => HEADER_KEYWORDS.some(k => c.includes(k))).length;
+    const lowerCells = row.map((c) => String(c).toLowerCase().trim());
+    const matchCount = lowerCells.filter((c) => HEADER_KEYWORDS.some((k) => c.includes(k))).length;
     if (matchCount >= 2) {
-      return { headerRowIndex: i, headers: row.map(h => String(h).trim()) };
+      return { headerRowIndex: i, headers: row.map((h) => String(h).trim()) };
     }
   }
   return { headerRowIndex: 0, headers: rows[0]?.map((_, idx) => `Column ${idx + 1}`) ?? [] };
@@ -54,7 +60,7 @@ function parseXlsxBuffer(buffer: Buffer): string[][] {
   const sheet = workbook.Sheets[sheetName];
   if (!sheet) return [];
   const json: unknown[][] = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-  return json.map(row => row.map(cell => String(cell)));
+  return json.map((row) => row.map((cell) => String(cell)));
 }
 
 function parseBudgetFile(buffer: Buffer, mimeType: string, fileName: string): BudgetImportPreview {
@@ -86,17 +92,33 @@ function parseBudgetFile(buffer: Buffer, mimeType: string, fileName: string): Bu
       raw[h] = row[i] ?? '';
     });
 
-    const detectedColumns = headers.filter(h =>
-      HEADER_KEYWORDS.some(k => h.toLowerCase().includes(k))
+    const detectedColumns = headers.filter((h) =>
+      HEADER_KEYWORDS.some((k) => h.toLowerCase().includes(k)),
     );
 
     const errors: string[] = [];
 
-    const categoryCol = headers.find(h => h.toLowerCase().includes('category'));
-    const itemCol = headers.find(h => h.toLowerCase().includes('item') || h.toLowerCase().includes('description') || h.toLowerCase().includes('line'));
-    const amountCol = headers.find(h => h.toLowerCase().includes('amount') || h.toLowerCase().includes('budget') || h.toLowerCase().includes('total') || h.toLowerCase().includes('cost') || h.toLowerCase().includes('expense'));
+    const categoryCol = headers.find((h) => h.toLowerCase().includes('category'));
+    const itemCol = headers.find(
+      (h) =>
+        h.toLowerCase().includes('item') ||
+        h.toLowerCase().includes('description') ||
+        h.toLowerCase().includes('line'),
+    );
+    const amountCol = headers.find(
+      (h) =>
+        h.toLowerCase().includes('amount') ||
+        h.toLowerCase().includes('budget') ||
+        h.toLowerCase().includes('total') ||
+        h.toLowerCase().includes('cost') ||
+        h.toLowerCase().includes('expense'),
+    );
 
-    const mappedCategory = categoryCol ? String(raw[categoryCol] ?? '').trim() : itemCol ? String(raw[itemCol] ?? '').trim() : undefined;
+    const mappedCategory = categoryCol
+      ? String(raw[categoryCol] ?? '').trim()
+      : itemCol
+        ? String(raw[itemCol] ?? '').trim()
+        : undefined;
     const amountRaw = amountCol ? raw[amountCol] : undefined;
     let mappedAmount: number | undefined;
 
@@ -123,10 +145,10 @@ function parseBudgetFile(buffer: Buffer, mimeType: string, fileName: string): Bu
     };
   });
 
-  const validRowCount = parsedRows.filter(r => r.errors.length === 0).length;
-  const invalidRowCount = parsedRows.filter(r => r.errors.length > 0).length;
+  const validRowCount = parsedRows.filter((r) => r.errors.length === 0).length;
+  const invalidRowCount = parsedRows.filter((r) => r.errors.length > 0).length;
   const totalAmount = parsedRows
-    .filter(r => r.mappedAmount !== undefined && r.errors.length === 0)
+    .filter((r) => r.mappedAmount !== undefined && r.errors.length === 0)
     .reduce((sum, r) => sum + (r.mappedAmount ?? 0), 0);
 
   return {
@@ -144,8 +166,11 @@ export async function POST(request: NextRequest) {
     const contentType = request.headers.get('content-type') || '';
     if (!contentType.includes('multipart/form-data')) {
       return NextResponse.json(
-        createErrorResponse('AGENT_INVALID_JSON', 'Request must be multipart/form-data with a file upload'),
-        { status: 400 }
+        createErrorResponse(
+          'AGENT_INVALID_JSON',
+          'Request must be multipart/form-data with a file upload',
+        ),
+        { status: 400 },
       );
     }
 
@@ -154,10 +179,9 @@ export async function POST(request: NextRequest) {
     const awardId = formData.get('awardId');
 
     if (!file || !(file instanceof File)) {
-      return NextResponse.json(
-        createErrorResponse('AGENT_INVALID_JSON', 'No file provided'),
-        { status: 400 }
-      );
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'No file provided'), {
+        status: 400,
+      });
     }
 
     const fileName = file.name;
@@ -165,26 +189,27 @@ export async function POST(request: NextRequest) {
     const buffer = Buffer.from(await file.arrayBuffer());
 
     if (buffer.length === 0) {
-      return NextResponse.json(
-        createErrorResponse('AGENT_INVALID_JSON', 'File is empty'),
-        { status: 400 }
-      );
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'File is empty'), {
+        status: 400,
+      });
     }
 
     const preview = parseBudgetFile(buffer, mimeType, fileName);
 
-    return NextResponse.json({
-      preview,
-      awardId: awardId ? String(awardId) : undefined,
-      fileName,
-      message: 'Budget file parsed successfully. Review and confirm before ingestion.',
-    }, { status: 200 });
+    return NextResponse.json(
+      {
+        preview,
+        awardId: awardId ? String(awardId) : undefined,
+        fileName,
+        message: 'Budget file parsed successfully. Review and confirm before ingestion.',
+      },
+      { status: 200 },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to parse budget file';
     logger.error({ err: error }, 'Error parsing budget import');
-    return NextResponse.json(
-      createErrorResponse('AGENT_SCHEMA_MISMATCH', message),
-      { status: 400 }
-    );
+    return NextResponse.json(createErrorResponse('AGENT_SCHEMA_MISMATCH', message), {
+      status: 400,
+    });
   }
 }

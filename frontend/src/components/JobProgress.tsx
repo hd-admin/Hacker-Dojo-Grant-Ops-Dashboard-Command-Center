@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import type { JobQueueItem, JobStatus } from '../../../shared/types';
 import { X, RefreshCw } from 'lucide-react';
@@ -18,13 +18,20 @@ interface JobProgressProps {
 
 function getStatusColor(status: JobStatus): string {
   switch (status) {
-    case 'queued': return 'var(--text-muted)';
-    case 'running': return 'var(--info)';
-    case 'verifying': return 'var(--info)';
-    case 'retrying': return 'var(--warning)';
-    case 'completed': return 'var(--success)';
-    case 'failed': return 'var(--danger)';
-    case 'cancelled': return 'var(--text-muted)';
+    case 'queued':
+      return 'var(--text-muted)';
+    case 'running':
+      return 'var(--info)';
+    case 'verifying':
+      return 'var(--info)';
+    case 'retrying':
+      return 'var(--warning)';
+    case 'completed':
+      return 'var(--success)';
+    case 'failed':
+      return 'var(--danger)';
+    case 'cancelled':
+      return 'var(--text-muted)';
   }
 }
 
@@ -45,7 +52,7 @@ export function JobProgress({
     try {
       const res = await fetchFn(`/api/jobs/${jobId}`);
       if (!res.ok) {
-        setPollFailures(prev => prev + 1);
+        setPollFailures((prev) => prev + 1);
         return;
       }
       setPollFailures(0);
@@ -59,7 +66,7 @@ export function JobProgress({
         setTimeout(() => setDismissed(true), 3000);
       }
     } catch {
-      setPollFailures(prev => prev + 1);
+      setPollFailures((prev) => prev + 1);
     }
   }, [jobId, onComplete, fetchFn]);
 
@@ -90,7 +97,14 @@ export function JobProgress({
         <div className="job-progress" data-testid="job-progress">
           <div className="job-progress-connection-lost">
             Connection lost — retrying...
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setPollFailures(0); void fetchJob(); }}>
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                setPollFailures(0);
+                void fetchJob();
+              }}
+            >
               Retry now
             </button>
           </div>
@@ -106,7 +120,8 @@ export function JobProgress({
   const maxRetries = job.maxRetries ?? 3;
   const stage = job.stage || 'idle';
   const errorMessage = job.errorMessage;
-  const isActive = status === 'queued' || status === 'running' || status === 'verifying' || status === 'retrying';
+  const isActive =
+    status === 'queued' || status === 'running' || status === 'verifying' || status === 'retrying';
   const isFailed = status === 'failed';
 
   if (mini) {
@@ -127,11 +142,19 @@ export function JobProgress({
         <div className="job-progress-mini-bar">
           <div
             className="job-progress-mini-fill"
-            style={{ transform: `scaleX(${progress / 100})`, backgroundColor: getStatusColor(status) }}
+            style={{
+              transform: `scaleX(${progress / 100})`,
+              backgroundColor: getStatusColor(status),
+            }}
           />
         </div>
         {isActive && onCancel && (
-          <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel} aria-label="Cancel job">
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={onCancel}
+            aria-label="Cancel job"
+          >
             <X size={14} />
           </button>
         )}
@@ -146,7 +169,10 @@ export function JobProgress({
         <span className="job-progress-stage">
           {stage.replace(/-/g, ' ')}
           {retryCount > 0 && (
-            <span className="job-progress-retry-badge" aria-label={`Attempt ${retryCount + 1} of ${maxRetries}`}>
+            <span
+              className="job-progress-retry-badge"
+              aria-label={`Attempt ${retryCount + 1} of ${maxRetries}`}
+            >
               Attempt {retryCount + 1} of {maxRetries}
             </span>
           )}
@@ -163,7 +189,11 @@ export function JobProgress({
       >
         <div
           className={`job-progress-fill ${progress === 0 ? 'indeterminate' : ''}`}
-          style={progress > 0 ? { transform: `scaleX(${progress / 100})`, backgroundColor: getStatusColor(status) } : undefined}
+          style={
+            progress > 0
+              ? { transform: `scaleX(${progress / 100})`, backgroundColor: getStatusColor(status) }
+              : undefined
+          }
         />
       </div>
 
@@ -190,16 +220,24 @@ export function JobProgress({
       {pollFailures >= 3 && isActive && (
         <div className="job-progress-connection-lost">
           Connection lost — retrying...
-          <button type="button" className="btn btn-ghost btn-sm" onClick={() => { setPollFailures(0); void fetchJob(); }}>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            onClick={() => {
+              setPollFailures(0);
+              void fetchJob();
+            }}
+          >
             Retry now
           </button>
         </div>
       )}
 
       {status === 'completed' && (
-        <div className="job-progress-success" role="status">✓ Completed</div>
+        <div className="job-progress-success" role="status">
+          ✓ Completed
+        </div>
       )}
     </div>
   );
 }
-

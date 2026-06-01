@@ -51,9 +51,30 @@ describe('BudgetVsActualReport', () => {
   ];
 
   const mockExpenses = [
-    { id: 'exp-1', awardId: 'award-1', categoryId: 'cat-1', amount: 25000, date: '2026-02-01', description: 'Salaries' },
-    { id: 'exp-2', awardId: 'award-1', categoryId: 'cat-1', amount: 10000, date: '2026-03-01', description: 'Benefits' },
-    { id: 'exp-3', awardId: 'award-1', categoryId: 'cat-2', amount: 15000, date: '2026-02-15', description: 'Computers' },
+    {
+      id: 'exp-1',
+      awardId: 'award-1',
+      categoryId: 'cat-1',
+      amount: 25000,
+      date: '2026-02-01',
+      description: 'Salaries',
+    },
+    {
+      id: 'exp-2',
+      awardId: 'award-1',
+      categoryId: 'cat-1',
+      amount: 10000,
+      date: '2026-03-01',
+      description: 'Benefits',
+    },
+    {
+      id: 'exp-3',
+      awardId: 'award-1',
+      categoryId: 'cat-2',
+      amount: 15000,
+      date: '2026-02-15',
+      description: 'Computers',
+    },
   ];
 
   it('renders with minimal props', async () => {
@@ -66,7 +87,9 @@ describe('BudgetVsActualReport', () => {
         periodEnd="2026-12-31"
       />,
     );
-    await waitFor(() => container.querySelector('[data-testid="budget-vs-actual-report"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="budget-vs-actual-report"]') !== null,
+    );
     expect(container.textContent).toContain('Budget vs. Actual Report');
     expect(container.textContent).toContain('Personnel');
     expect(container.textContent).toContain('Equipment');
@@ -82,7 +105,9 @@ describe('BudgetVsActualReport', () => {
         periodEnd="2026-12-31"
       />,
     );
-    await waitFor(() => container.querySelector('[data-testid="budget-vs-actual-report"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="budget-vs-actual-report"]') !== null,
+    );
     expect(container.textContent).toContain('Total Spent: $0');
   });
 
@@ -96,7 +121,9 @@ describe('BudgetVsActualReport', () => {
         periodEnd="2026-12-31"
       />,
     );
-    await waitFor(() => container.querySelector('[data-testid="budget-vs-actual-report"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="budget-vs-actual-report"]') !== null,
+    );
     expect(container.textContent).toContain('Total Budgeted: $100,000');
     expect(container.textContent).toContain('Total Spent: $50,000');
     expect(container.textContent).toContain('Remaining: $50,000');
@@ -112,7 +139,10 @@ describe('BudgetVsActualReport', () => {
       }
       return el;
     });
-    vi.stubGlobal('URL', { createObjectURL: vi.fn().mockReturnValue('blob:test'), revokeObjectURL: vi.fn() });
+    vi.stubGlobal('URL', {
+      createObjectURL: vi.fn().mockReturnValue('blob:test'),
+      revokeObjectURL: vi.fn(),
+    });
 
     root.render(
       <BudgetVsActualReport
@@ -123,9 +153,13 @@ describe('BudgetVsActualReport', () => {
         periodEnd="2026-12-31"
       />,
     );
-    await waitFor(() => container.querySelector('[data-testid="budget-vs-actual-report"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="budget-vs-actual-report"]') !== null,
+    );
 
-    const exportBtn = Array.from(container.querySelectorAll('button')).find((b) => b.textContent?.includes('Export CSV'));
+    const exportBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Export CSV'),
+    );
     expect(exportBtn).toBeDefined();
     exportBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 

@@ -42,7 +42,13 @@ describe('GroundingReview', () => {
       content: 'test content',
       createdAt: new Date().toISOString(),
       createdBy: 'agent',
-      groundingSections: [{ sectionTitle: 'Mission', evidence: ['Document: Impact Report', 'Source: NSF', 'Federal grants database'], isGrounded: true }],
+      groundingSections: [
+        {
+          sectionTitle: 'Mission',
+          evidence: ['Document: Impact Report', 'Source: NSF', 'Federal grants database'],
+          isGrounded: true,
+        },
+      ],
     };
     await act(async () => {
       createRoot(container).render(<GroundingReview draftArtifact={draft} />);
@@ -58,7 +64,9 @@ describe('GroundingReview', () => {
       content: 'test content',
       createdAt: new Date().toISOString(),
       createdBy: 'agent',
-      groundingSections: [{ sectionTitle: 'Mission', evidence: ['Document: Impact Report'], isGrounded: true }],
+      groundingSections: [
+        { sectionTitle: 'Mission', evidence: ['Document: Impact Report'], isGrounded: true },
+      ],
     };
     await act(async () => {
       createRoot(container).render(<GroundingReview draftArtifact={draft} />);
@@ -109,13 +117,21 @@ describe('GroundingReview', () => {
       content: 'test content',
       createdAt: new Date().toISOString(),
       createdBy: 'agent',
-      groundingSections: [{ sectionTitle: 'Programs', evidence: ['Document: Budget', 'Federal grants database'], isGrounded: true }],
+      groundingSections: [
+        {
+          sectionTitle: 'Programs',
+          evidence: ['Document: Budget', 'Federal grants database'],
+          isGrounded: true,
+        },
+      ],
     };
     await act(async () => {
       createRoot(container).render(<GroundingReview draftArtifact={draft} />);
     });
     // Expand evidence section
-    const expandBtn = container.querySelector('.grounding-expand-toggle') as HTMLButtonElement | null;
+    const expandBtn = container.querySelector(
+      '.grounding-expand-toggle',
+    ) as HTMLButtonElement | null;
     if (expandBtn) {
       await act(async () => {
         expandBtn.click();
@@ -137,7 +153,9 @@ describe('GroundingReview', () => {
       groundingSections: [{ sectionTitle: 'Mission', evidence: [], isGrounded: true }],
     };
     await act(async () => {
-      createRoot(container).render(<GroundingReview draftArtifact={draft} onReviewComplete={onReviewComplete} />);
+      createRoot(container).render(
+        <GroundingReview draftArtifact={draft} onReviewComplete={onReviewComplete} />,
+      );
     });
     expect(container.textContent).toBeTruthy();
   });

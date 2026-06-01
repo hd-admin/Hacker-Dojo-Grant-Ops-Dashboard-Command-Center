@@ -1,6 +1,10 @@
 import { logger } from '@/lib/logger';
 import type { CrawlSchedule } from '../../../../shared/types';
-import { deleteCrawlSchedule, loadCrawlSchedules, saveCrawlSchedule } from '../../../../shared/grant-ops-persistence';
+import {
+  deleteCrawlSchedule,
+  loadCrawlSchedules,
+  saveCrawlSchedule,
+} from '../../../../shared/grant-ops-persistence';
 import { getDependencies } from './dependencies';
 import { runResearch } from './research-service';
 
@@ -15,7 +19,11 @@ export async function getScheduleForSource(sourceId: string): Promise<CrawlSched
   return schedules.find((schedule) => schedule.sourceId === sourceId) ?? null;
 }
 
-export async function upsertScheduleForSource(sourceId: string, intervalHours: number, isEnabled = true): Promise<CrawlSchedule> {
+export async function upsertScheduleForSource(
+  sourceId: string,
+  intervalHours: number,
+  isEnabled = true,
+): Promise<CrawlSchedule> {
   const now = new Date();
   const existing = await getScheduleForSource(sourceId);
   const schedule: CrawlSchedule = {
@@ -40,7 +48,9 @@ export async function disableScheduleForSource(sourceId: string): Promise<void> 
 export async function checkAndRunDue(): Promise<number> {
   const now = new Date();
   const schedules = await loadCrawlSchedules();
-  const dueSchedules = schedules.filter((schedule) => schedule.isEnabled && new Date(schedule.nextScheduledAt) <= now);
+  const dueSchedules = schedules.filter(
+    (schedule) => schedule.isEnabled && new Date(schedule.nextScheduledAt) <= now,
+  );
   if (dueSchedules.length === 0) {
     return 0;
   }
@@ -53,9 +63,9 @@ export async function checkAndRunDue(): Promise<number> {
 
   for (const schedule of dueSchedules) {
     // Approval gate: skip sources that are not approved
-    const source = await deps.repository.getSources().then(
-      (all) => all.find((s) => s.id === schedule.sourceId),
-    );
+    const source = await deps.repository
+      .getSources()
+      .then((all) => all.find((s) => s.id === schedule.sourceId));
     if (!source || source.reviewStatus !== 'approved' || !source.isActive) {
       logger.warn(
         `Skipping scheduled crawl for source ${schedule.sourceId}: not approved or inactive`,

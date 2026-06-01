@@ -16,8 +16,12 @@ import { GET } from './route';
 import type { NextResponse } from 'next/server';
 
 describe('/api/awards/calendar route', () => {
-  beforeEach(() => { vi.clearAllMocks(); });
-  afterEach(() => { vi.restoreAllMocks(); });
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns compliance calendar events', async () => {
     const mockEvents = [{ id: 'ev1', title: 'Report Due', date: '2026-12-15' }];

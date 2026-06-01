@@ -1,109 +1,111 @@
-import { type NextRequest, NextResponse, connection } from "next/server";
+import { type NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
-import { z } from "zod";
-import { getDependencies } from "@/server/grant-ops/dependencies";
-import { loadGrantDetail } from "@/server/grant-ops/grant-detail";
-import type { GrantDetailUpdate } from "../../../../../../shared/types";
+import { z } from 'zod';
+import { getDependencies } from '@/server/grant-ops/dependencies';
+import { loadGrantDetail } from '@/server/grant-ops/grant-detail';
+import type { GrantDetailUpdate } from '../../../../../../shared/types';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 const checklistItemSchema = z.object({
-	label: z.string(),
-	done: z.boolean(),
-	source: z.string(),
+  label: z.string(),
+  done: z.boolean(),
+  source: z.string(),
 });
 
 const fitBreakdownSchema = z.object({
-	missionAlignment: z.number(),
-	geographicFocus: z.number(),
-	programTrackrecord: z.number(),
-	budgetCapacity: z.number(),
-	partnershipReadiness: z.number(),
+  missionAlignment: z.number(),
+  geographicFocus: z.number(),
+  programTrackrecord: z.number(),
+  budgetCapacity: z.number(),
+  partnershipReadiness: z.number(),
 });
 
 const grantDetailUpdateSchema = z
-	.object({
-		fitBreakdown: fitBreakdownSchema.optional(),
-		checklist: z.array(checklistItemSchema).optional(),
-		funderSummary: z.string().optional(),
-		latestDraftVersion: z.number().int().min(0).optional(),
-		groundedDocumentCount: z.number().int().min(0).optional(),
-		sourceCount: z.number().int().min(0).optional(),
-		draftContent: z.string().optional(),
-	})
-	.strict();
+  .object({
+    fitBreakdown: fitBreakdownSchema.optional(),
+    checklist: z.array(checklistItemSchema).optional(),
+    funderSummary: z.string().optional(),
+    latestDraftVersion: z.number().int().min(0).optional(),
+    groundedDocumentCount: z.number().int().min(0).optional(),
+    sourceCount: z.number().int().min(0).optional(),
+    draftContent: z.string().optional(),
+  })
+  .strict();
 
 export async function GET(
-	_request: NextRequest,
-	{ params }: { params: Promise<{ grantId: string }> },
+  _request: NextRequest,
+  { params }: { params: Promise<{ grantId: string }> },
 ) {
   await connection();
-	try {
-		const { grantId } = await params;
-		const detail = await loadGrantDetail(grantId);
+  try {
+    const { grantId } = await params;
+    const detail = await loadGrantDetail(grantId);
 
-		if (!detail) {
-			return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
-		}
+    if (!detail) {
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
+    }
 
-		return NextResponse.json(detail);
-	} catch (error) {
-		logger.error({ err: error }, 'Error getting grant detail');
-		return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get grant'), { status: 500 });
-	}
+    return NextResponse.json(detail);
+  } catch (error) {
+    logger.error({ err: error }, 'Error getting grant detail');
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get grant'), {
+      status: 500,
+    });
+  }
 }
 
 export async function PATCH(
-	request: NextRequest,
-	{ params }: { params: Promise<{ grantId: string }> },
+  request: NextRequest,
+  { params }: { params: Promise<{ grantId: string }> },
 ) {
   await connection();
-	try {
-		const { grantId } = await params;
-		const body = await request.json().catch(() => null);
+  try {
+    const { grantId } = await params;
+    const body = await request.json().catch(() => null);
 
-		if (!body || typeof body !== "object" || Array.isArray(body)) {
-			return NextResponse.json(
-				{ error: "Request body must be a JSON object" },
-				{ status: 400 },
-			);
-		}
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return NextResponse.json({ error: 'Request body must be a JSON object' }, { status: 400 });
+    }
 
-		const parsed = grantDetailUpdateSchema.safeParse(body);
-		if (!parsed.success) {
-			return NextResponse.json(
-				{
-					error: "Invalid grant detail payload",
-					issues: parsed.error.flatten(),
-				},
-				{ status: 400 },
-			);
-		}
+    const parsed = grantDetailUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        {
+          error: 'Invalid grant detail payload',
+          issues: parsed.error.flatten(),
+        },
+        { status: 400 },
+      );
+    }
 
-		const deps = getDependencies();
-		const existingGrant = await deps.repository.getGrant(grantId);
-		if (!existingGrant) {
-			return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
-		}
+    const deps = getDependencies();
+    const existingGrant = await deps.repository.getGrant(grantId);
+    if (!existingGrant) {
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
+    }
 
-		const updates = Object.fromEntries(
-			Object.entries(parsed.data).filter(([, value]) => value !== undefined),
-		) as GrantDetailUpdate;
+    const updates = Object.fromEntries(
+      Object.entries(parsed.data).filter(([, value]) => value !== undefined),
+    ) as GrantDetailUpdate;
 
-		await deps.repository.updateGrant(grantId, updates);
+    await deps.repository.updateGrant(grantId, updates);
 
-		const updatedDetail = await loadGrantDetail(grantId);
-		if (!updatedDetail) {
-			return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
-		}
+    const updatedDetail = await loadGrantDetail(grantId);
+    if (!updatedDetail) {
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
+    }
 
-		return NextResponse.json(updatedDetail);
-	} catch (error) {
-		logger.error({ err: error }, 'Error updating grant detail');
-		return NextResponse.json(
-			{ error: "Failed to update grant" },
-			{ status: 500 },
-		);
-	}
+    return NextResponse.json(updatedDetail);
+  } catch (error) {
+    logger.error({ err: error }, 'Error updating grant detail');
+    return NextResponse.json({ error: 'Failed to update grant' }, { status: 500 });
+  }
 }

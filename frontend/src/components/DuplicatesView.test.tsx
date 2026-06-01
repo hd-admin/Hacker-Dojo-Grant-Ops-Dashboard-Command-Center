@@ -143,6 +143,7 @@ vi.mock('../lib/grant-ops-client', () => ({
   },
 }));
 
+import { getByRole, getByText } from '../test-helpers';
 import { DuplicatesView } from './DuplicatesView';
 
 let container: HTMLDivElement;
@@ -183,9 +184,8 @@ describe('DuplicatesView', () => {
     root.render(React.createElement(DuplicatesView, { onGrantSelect: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const emptyState = container.querySelector('[data-testid="duplicates-empty-state"]');
+    const emptyState = getByText(container, 'No duplicate candidates');
     expect(emptyState).not.toBeNull();
-    expect(emptyState?.textContent).toContain('No duplicate candidates');
   });
 
   it('renders duplicate cards with confidence bars', async () => {
@@ -220,13 +220,11 @@ describe('DuplicatesView', () => {
     root.render(React.createElement(DuplicatesView, { onGrantSelect: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const keepBtn = container.querySelector('[data-testid="keep-separate-btn-dup-1"]');
+    const keepBtn = getByRole(container, 'button', { name: 'Keep Separate' });
     expect(keepBtn).not.toBeNull();
-    expect(keepBtn?.textContent).toContain('Keep Separate');
 
-    const mergeBtn = container.querySelector('[data-testid="merge-btn-dup-1"]');
+    const mergeBtn = getByRole(container, 'button', { name: 'Merge' });
     expect(mergeBtn).not.toBeNull();
-    expect(mergeBtn?.textContent).toContain('Merge');
   });
 
   it('does not show action buttons for resolved candidates', async () => {
@@ -254,7 +252,9 @@ describe('DuplicatesView', () => {
     root.render(React.createElement(DuplicatesView, { onGrantSelect }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const grantLink = container.querySelector('[data-testid="duplicate-grant-link-1-dup-1"]') as HTMLButtonElement;
+    const grantLink = container.querySelector(
+      '[data-testid="duplicate-grant-link-1-dup-1"]',
+    ) as HTMLButtonElement;
     expect(grantLink).not.toBeNull();
     expect(grantLink?.textContent).toContain('NSF Technology Access Grant');
 

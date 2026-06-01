@@ -10,10 +10,7 @@ import {
   resetDependencies,
   setDependencies,
 } from '@/server/grant-ops/dependencies';
-import {
-  invalidateCache,
-  withTempDataDir,
-} from '../../../../../../shared/grant-ops-persistence';
+import { invalidateCache, withTempDataDir } from '../../../../../../shared/grant-ops-persistence';
 import type { Source } from '../../../../../../shared/types';
 import * as repository from '../../../../server/grant-ops/repository';
 import { PUT } from './route';
@@ -62,10 +59,9 @@ describe('/api/sources/[sourceId] route', () => {
   });
 
   it('updates source name', async () => {
-    const response = await PUT(
-      makeUpdateRequest(source.id, { name: 'Updated Name' }) as never,
-      { params: Promise.resolve({ sourceId: source.id }) },
-    );
+    const response = await PUT(makeUpdateRequest(source.id, { name: 'Updated Name' }) as never, {
+      params: Promise.resolve({ sourceId: source.id }),
+    });
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -91,10 +87,9 @@ describe('/api/sources/[sourceId] route', () => {
   });
 
   it('updates source type', async () => {
-    const response = await PUT(
-      makeUpdateRequest(source.id, { type: 'database' }) as never,
-      { params: Promise.resolve({ sourceId: source.id }) },
-    );
+    const response = await PUT(makeUpdateRequest(source.id, { type: 'database' }) as never, {
+      params: Promise.resolve({ sourceId: source.id }),
+    });
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -118,7 +113,10 @@ describe('/api/sources/[sourceId] route', () => {
 
   it('records an audit event on update', async () => {
     const response = await PUT(
-      makeUpdateRequest(source.id, { name: 'Audited Name', url: 'https://audited.example' }) as never,
+      makeUpdateRequest(source.id, {
+        name: 'Audited Name',
+        url: 'https://audited.example',
+      }) as never,
       { params: Promise.resolve({ sourceId: source.id }) },
     );
 
@@ -131,10 +129,9 @@ describe('/api/sources/[sourceId] route', () => {
   });
 
   it('returns 404 for non-existent source', async () => {
-    const response = await PUT(
-      makeUpdateRequest('non-existent', { name: 'Ghost' }) as never,
-      { params: Promise.resolve({ sourceId: 'non-existent' }) },
-    );
+    const response = await PUT(makeUpdateRequest('non-existent', { name: 'Ghost' }) as never, {
+      params: Promise.resolve({ sourceId: 'non-existent' }),
+    });
     const data = await response.json();
 
     expect(response.status).toBe(404);
@@ -142,10 +139,9 @@ describe('/api/sources/[sourceId] route', () => {
   });
 
   it('rejects invalid update payload with 400', async () => {
-    const response = await PUT(
-      makeUpdateRequest(source.id, { type: 'invalid-type' }) as never,
-      { params: Promise.resolve({ sourceId: source.id }) },
-    );
+    const response = await PUT(makeUpdateRequest(source.id, { type: 'invalid-type' }) as never, {
+      params: Promise.resolve({ sourceId: source.id }),
+    });
     const data = await response.json();
 
     expect(response.status).toBe(400);

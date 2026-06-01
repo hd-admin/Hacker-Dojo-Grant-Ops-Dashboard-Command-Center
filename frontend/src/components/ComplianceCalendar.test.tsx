@@ -2,6 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { getByText } from '../test-helpers';
 import { ComplianceCalendar } from './ComplianceCalendar';
 
 let container: HTMLDivElement;
@@ -33,19 +34,38 @@ describe('ComplianceCalendar', () => {
   it('renders loading state initially', async () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
     root.render(<ComplianceCalendar />);
-    await waitFor(() => container.querySelector('[data-testid="compliance-calendar-loading"]') !== null);
-    expect(container.textContent).toContain('Loading');
+    await waitFor(
+      () => container.querySelector('[data-testid="compliance-calendar-loading"]') !== null,
+    );
+    expect(getByText(container, 'Loading')).not.toBeNull();
     vi.unstubAllGlobals();
   });
 
   it('renders compliance items sorted by due date', async () => {
     const items = [
-      { id: 'item-2', title: 'Annual Report', dueDate: '2026-12-31', status: 'pending', awardId: 'award-1' },
-      { id: 'item-1', title: 'Quarterly Update', dueDate: '2026-06-30', status: 'pending', awardId: 'award-1' },
+      {
+        id: 'item-2',
+        title: 'Annual Report',
+        dueDate: '2026-12-31',
+        status: 'pending',
+        awardId: 'award-1',
+      },
+      {
+        id: 'item-1',
+        title: 'Quarterly Update',
+        dueDate: '2026-06-30',
+        status: 'pending',
+        awardId: 'award-1',
+      },
     ];
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ items }), { headers: { 'content-type': 'application/json' } }),
-    ));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ items }), {
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
     root.render(<ComplianceCalendar awardId="award-1" />);
     await waitFor(() => container.querySelector('[data-testid="compliance-calendar"]') !== null);
     expect(container.querySelector('[data-testid="compliance-item-item-1"]')).not.toBeNull();
@@ -57,11 +77,22 @@ describe('ComplianceCalendar', () => {
 
   it('shows overdue status for past due dates', async () => {
     const items = [
-      { id: 'item-1', title: 'Late Report', dueDate: '2020-01-01', status: 'pending', awardId: 'award-1' },
+      {
+        id: 'item-1',
+        title: 'Late Report',
+        dueDate: '2020-01-01',
+        status: 'pending',
+        awardId: 'award-1',
+      },
     ];
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      new Response(JSON.stringify({ items }), { headers: { 'content-type': 'application/json' } }),
-    ));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ items }), {
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    );
     root.render(<ComplianceCalendar />);
     await waitFor(() => container.querySelector('[data-testid="compliance-calendar"]') !== null);
     expect(container.textContent).toContain('overdue');

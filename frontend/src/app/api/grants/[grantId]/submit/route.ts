@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import * as submissionService from '@/server/grant-ops/submission-service';
@@ -29,7 +29,10 @@ export async function GET(
     return NextResponse.json(submission);
   } catch (error) {
     logger.error({ err: error }, 'Error getting submission');
-    return NextResponse.json({ error: 'Failed to get submission', failureCategory: 'unknown' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to get submission', failureCategory: 'unknown' },
+      { status: 500 },
+    );
   }
 }
 
@@ -43,14 +46,18 @@ export async function POST(
     const rawBody = await request.json().catch(() => null);
     const parsed = bodySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), {
+        status: 400,
+      });
     }
     const body = parsed.data;
     const deps = getDependencies();
 
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
     }
 
     const method: SubmissionInput['method'] = {
@@ -58,7 +65,8 @@ export async function POST(
       submittedBy: typeof body.method.submittedBy === 'string' ? body.method.submittedBy : 'human',
     };
     if (typeof body.method.portalUrl === 'string') method.portalUrl = body.method.portalUrl;
-    if (typeof body.method.confirmationId === 'string') method.confirmationId = body.method.confirmationId;
+    if (typeof body.method.confirmationId === 'string')
+      method.confirmationId = body.method.confirmationId;
     const submissionInput: SubmissionInput = {
       grant,
       method,
@@ -68,12 +76,21 @@ export async function POST(
     const result = await submissionService.recordSubmission(submissionInput);
 
     if (!result.success) {
-      return NextResponse.json({ error: result.error || 'Failed to record submission' }, { status: 400 });
+      return NextResponse.json(
+        { error: result.error || 'Failed to record submission' },
+        { status: 400 },
+      );
     }
 
-    return NextResponse.json({ success: true, submissionRecord: result.submissionRecord, followUps: result.followUps }, { status: 201 });
+    return NextResponse.json(
+      { success: true, submissionRecord: result.submissionRecord, followUps: result.followUps },
+      { status: 201 },
+    );
   } catch (error) {
     logger.error({ err: error }, 'Error recording submission');
-    return NextResponse.json({ error: 'Failed to record submission', failureCategory: 'unknown' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to record submission', failureCategory: 'unknown' },
+      { status: 500 },
+    );
   }
 }

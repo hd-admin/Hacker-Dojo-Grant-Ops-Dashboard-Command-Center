@@ -6,9 +6,17 @@
  * directly importing repository globals or creating adapters inline.
  */
 
-import { getDataDir, loadBackupFreshness, resetPersistentStateForTests } from '../../../../shared/grant-ops-persistence';
+import {
+  getDataDir,
+  loadBackupFreshness,
+  resetPersistentStateForTests,
+} from '../../../../shared/grant-ops-persistence';
 import type { BackupFreshnessStatus, OpencodeSettings } from '../../../../shared/types';
-import { exportBackupSnapshot, importBackupSnapshot, recordBackupVerification } from './backup-service';
+import {
+  exportBackupSnapshot,
+  importBackupSnapshot,
+  recordBackupVerification,
+} from './backup-service';
 import type { BackupSnapshot } from './backup-service';
 import { createOpencodeAdapter } from './opencode-client';
 import type { OpencodeAdapter } from './opencode-client';
@@ -59,7 +67,10 @@ export function createDependencies(
   overrides: Partial<{
     repository: typeof repository;
     sourceService: typeof sourceService;
-    createOpencodeAdapter(settings: OpencodeSettings, providerType?: 'cli' | 'fake'): OpencodeAdapter;
+    createOpencodeAdapter(
+      settings: OpencodeSettings,
+      providerType?: 'cli' | 'fake',
+    ): OpencodeAdapter;
     clock: Clock;
     idGenerator: IdGenerator;
     persistenceRoot: PersistenceRoot;
@@ -71,8 +82,7 @@ export function createDependencies(
   return {
     repository,
     sourceService,
-    createOpencodeAdapter:
-      overrides.createOpencodeAdapter ?? createOpencodeAdapter,
+    createOpencodeAdapter: overrides.createOpencodeAdapter ?? createOpencodeAdapter,
     clock: overrides.clock ?? systemClock,
     idGenerator: overrides.idGenerator ?? cryptoIdGenerator,
     persistenceRoot: overrides.persistenceRoot ?? cwdPersistenceRoot,
@@ -82,7 +92,8 @@ export function createDependencies(
       recordBackupVerification,
     },
     loadBackupFreshness: overrides.loadBackupFreshness ?? loadBackupFreshness,
-    resetPersistentStateForTests: overrides.resetPersistentStateForTests ?? resetPersistentStateForTests,
+    resetPersistentStateForTests:
+      overrides.resetPersistentStateForTests ?? resetPersistentStateForTests,
   };
 }
 

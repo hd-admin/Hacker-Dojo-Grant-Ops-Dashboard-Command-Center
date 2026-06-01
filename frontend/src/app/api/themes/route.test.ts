@@ -42,7 +42,16 @@ describe('PUT /api/themes', () => {
 
   it('saves keyword clusters and returns updated data', async () => {
     const body = {
-      keywordClusters: [{ id: 'kc-1', name: 'STEM', keywords: ['STEM'], weight: 80, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }],
+      keywordClusters: [
+        {
+          id: 'kc-1',
+          name: 'STEM',
+          keywords: ['STEM'],
+          weight: 80,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      ],
       themes: [],
       regions: [],
       populations: [],
@@ -68,12 +77,23 @@ describe('PUT /api/themes', () => {
       regions: [],
       populations: [],
       strategicPriorities: [],
-      matchingPolicy: { matchThreshold: 150, autoDraftThreshold: 85, includeRules: [], excludeRules: [] },
+      matchingPolicy: {
+        matchThreshold: 150,
+        autoDraftThreshold: 85,
+        includeRules: [],
+        excludeRules: [],
+      },
       isActive: true,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
-    const body = { keywordClusters: [], themes: [invalidTheme], regions: [], populations: [], strategicPriorities: [] };
+    const body = {
+      keywordClusters: [],
+      themes: [invalidTheme],
+      regions: [],
+      populations: [],
+      strategicPriorities: [],
+    };
     const req = new Request('http://localhost/api/themes', {
       method: 'PUT',
       body: JSON.stringify(body),

@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createErrorResponse } from '@/lib/api-error-handler';
-import { NextResponse, connection } from "next/server";
+import { NextResponse, connection } from 'next/server';
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
 import {
@@ -65,9 +65,8 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     logger.error({ err: error }, 'Error in ProPublica search');
     const errorMessage = error instanceof Error ? error.message : 'Failed to search ProPublica';
-    return NextResponse.json(
-      createErrorResponse('STORAGE_UNAVAILABLE', errorMessage),
-      { status: 500 },
-    );
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', errorMessage), {
+      status: 500,
+    });
   }
 }

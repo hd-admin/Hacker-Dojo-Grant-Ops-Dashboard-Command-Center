@@ -38,24 +38,30 @@ describe('/api/sources/discover route', () => {
   });
 
   it('rejects invalid discovery prompts', async () => {
-    const response = await POST(new Request('http://localhost/api/sources/discover', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ prompt: '' }),
-    }) as never);
+    const response = await POST(
+      new Request('http://localhost/api/sources/discover', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ prompt: '' }),
+      }) as never,
+    );
 
     expect(response.status).toBe(400);
   });
 
   it('returns unavailable when opencode is not configured', async () => {
     // When opencode is not on PATH, the PATH fallback throws ENOENT
-    execFileSyncMock.mockImplementation(() => { throw Object.assign(new Error('ENOENT: which not found'), { code: 'ENOENT' }); });
+    execFileSyncMock.mockImplementation(() => {
+      throw Object.assign(new Error('ENOENT: which not found'), { code: 'ENOENT' });
+    });
 
-    const response = await POST(new Request('http://localhost/api/sources/discover', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ prompt: 'Find education grant sources' }),
-    }) as never);
+    const response = await POST(
+      new Request('http://localhost/api/sources/discover', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ prompt: 'Find education grant sources' }),
+      }) as never,
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -70,21 +76,25 @@ describe('/api/sources/discover route', () => {
       isConfigured: true,
     });
 
-    execFileSyncMock.mockReturnValueOnce(JSON.stringify([
-      {
-        name: 'Community Grants Tracker',
-        url: 'https://www.communitygrants.org/active-grants',
-        type: 'website',
-        rationale: 'Tracks active grant opportunities for nonprofits.',
-        confidence: 0.95,
-      },
-    ]));
+    execFileSyncMock.mockReturnValueOnce(
+      JSON.stringify([
+        {
+          name: 'Community Grants Tracker',
+          url: 'https://www.communitygrants.org/active-grants',
+          type: 'website',
+          rationale: 'Tracks active grant opportunities for nonprofits.',
+          confidence: 0.95,
+        },
+      ]),
+    );
 
-    const response = await POST(new Request('http://localhost/api/sources/discover', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ prompt: 'Find education community innovation grants' }),
-    }) as never);
+    const response = await POST(
+      new Request('http://localhost/api/sources/discover', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ prompt: 'Find education community innovation grants' }),
+      }) as never,
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);

@@ -1,13 +1,13 @@
-import { NextResponse, connection } from "next/server";
-import { computeBudgetVsActual } from "@/server/grant-ops/award-service";
-import { createErrorResponse } from "@/lib/api-error-handler";
-import { logger } from "@/lib/logger";
+import { NextResponse, connection } from 'next/server';
+import { computeBudgetVsActual } from '@/server/grant-ops/award-service';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 
-export const dynamic = "force-dynamic";
+export const dynamic = 'force-dynamic';
 
 export async function GET(
   _request: Request,
-  { params }: { params: Promise<{ awardId: string }> }
+  { params }: { params: Promise<{ awardId: string }> },
 ): Promise<Response> {
   await connection();
   try {
@@ -15,10 +15,10 @@ export async function GET(
     const rows = await computeBudgetVsActual(awardId);
     return NextResponse.json({ rows });
   } catch (error) {
-    logger.error({ err: error }, "Error computing budget vs actual");
+    logger.error({ err: error }, 'Error computing budget vs actual');
     return NextResponse.json(
-      createErrorResponse("STORAGE_UNAVAILABLE", "Failed to compute budget vs actual"),
-      { status: 500 }
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to compute budget vs actual'),
+      { status: 500 },
     );
   }
 }

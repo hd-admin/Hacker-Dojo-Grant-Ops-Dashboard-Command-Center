@@ -10,10 +10,7 @@ import {
   resetDependencies,
   setDependencies,
 } from '@/server/grant-ops/dependencies';
-import {
-  invalidateCache,
-  withTempDataDir,
-} from '../../../../../shared/grant-ops-persistence';
+import { invalidateCache, withTempDataDir } from '../../../../../shared/grant-ops-persistence';
 import * as repository from '../../../server/grant-ops/repository';
 import type { Grant, OrganizationProfile, OpencodeSettings } from '../../../../../shared/types';
 import { defaultOpencodeSettings, defaultProfile } from '../../../../../shared/seed-data';
@@ -45,7 +42,11 @@ function makeRestoreRequest(body: unknown) {
   });
 }
 
-function buildSnapshot(grants: Grant[], profile: OrganizationProfile, opencodeSettings: OpencodeSettings) {
+function buildSnapshot(
+  grants: Grant[],
+  profile: OrganizationProfile,
+  opencodeSettings: OpencodeSettings,
+) {
   return {
     manifest: {
       version: '1',

@@ -2,13 +2,24 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { getByRole } from '../test-helpers';
 import { ToastProvider, useToast } from './ToastProvider';
 
 function TestComponent() {
   const { addToast } = useToast();
-  return React.createElement('div', null,
-    React.createElement('button', { onClick: () => addToast('Hello', 'success'), 'data-testid': 'add-success' }, 'Add Success'),
-    React.createElement('button', { onClick: () => addToast('Error', 'error'), 'data-testid': 'add-error' }, 'Add Error')
+  return React.createElement(
+    'div',
+    null,
+    React.createElement(
+      'button',
+      { onClick: () => addToast('Hello', 'success'), 'data-testid': 'add-success' },
+      'Add Success',
+    ),
+    React.createElement(
+      'button',
+      { onClick: () => addToast('Error', 'error'), 'data-testid': 'add-error' },
+      'Add Error',
+    ),
   );
 }
 
@@ -18,9 +29,11 @@ describe('ToastProvider', () => {
     document.body.appendChild(container);
     const root = createRoot(container);
     root.render(
-      React.createElement(ToastProvider, null,
-        React.createElement('div', { 'data-testid': 'child' }, 'Child')
-      )
+      React.createElement(
+        ToastProvider,
+        null,
+        React.createElement('div', { 'data-testid': 'child' }, 'Child'),
+      ),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(container.textContent).toContain('Child');
@@ -32,18 +45,14 @@ describe('ToastProvider', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     const root = createRoot(container);
-    root.render(
-      React.createElement(ToastProvider, null,
-        React.createElement(TestComponent, null)
-      )
-    );
+    root.render(React.createElement(ToastProvider, null, React.createElement(TestComponent, null)));
     await new Promise((r) => setTimeout(r, 50));
     const btn = container.querySelector('[data-testid="add-success"]') as HTMLButtonElement;
     expect(btn).not.toBeNull();
     btn.click();
     await new Promise((r) => setTimeout(r, 50));
     expect(container.textContent).toContain('Hello');
-    expect(container.querySelector('[role="region"][aria-live="polite"]')).not.toBeNull();
+    expect(getByRole(container, 'region')).not.toBeNull();
     root.unmount();
     container.remove();
   });
@@ -52,11 +61,7 @@ describe('ToastProvider', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     const root = createRoot(container);
-    root.render(
-      React.createElement(ToastProvider, null,
-        React.createElement(TestComponent, null)
-      )
-    );
+    root.render(React.createElement(ToastProvider, null, React.createElement(TestComponent, null)));
     await new Promise((r) => setTimeout(r, 50));
     const btn = container.querySelector('[data-testid="add-error"]') as HTMLButtonElement;
     expect(btn).not.toBeNull();

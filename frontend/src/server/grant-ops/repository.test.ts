@@ -54,7 +54,8 @@ describe('Repository', () => {
       // Clear crawlRuns from persisted data to ensure test isolation
       // invalidateCache() only clears in-memory Map, but other test files
       // (e.g. research-service.test.ts) write crawl runs to disk
-      const { loadPersistedData, savePersistedData } = await import('../../../../shared/grant-ops-persistence');
+      const { loadPersistedData, savePersistedData } =
+        await import('../../../../shared/grant-ops-persistence');
       const data = await loadPersistedData();
       data.crawlRuns = [];
       await savePersistedData(data);

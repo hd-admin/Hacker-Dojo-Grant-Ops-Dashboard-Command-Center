@@ -81,7 +81,9 @@ describe('TaskService', () => {
       const tasks = taskService.extractRequirementsFromGrant(reviewGrant, 'finance');
 
       expect(tasks).toHaveLength(1);
-      expect(tasks[0]!.text).toBe('Verify budget and finance for Test Foundation (Test Community Grant)');
+      expect(tasks[0]!.text).toBe(
+        'Verify budget and finance for Test Foundation (Test Community Grant)',
+      );
       expect(tasks[0]!.responsibilityTag).toBe('finance');
     });
 
@@ -238,9 +240,7 @@ describe('TaskService', () => {
       expect(result.success).toBe(true);
 
       const auditEvents = await deps.repository.getAuditEvents();
-      const taskCreatedEvent = auditEvents.find(
-        (e: AuditEvent) => e.eventType === 'task_created',
-      );
+      const taskCreatedEvent = auditEvents.find((e: AuditEvent) => e.eventType === 'task_created');
       expect(taskCreatedEvent).toBeDefined();
       expect(taskCreatedEvent!.entityId).toBe(result.task!.id);
     });
@@ -494,7 +494,10 @@ describe('TaskService', () => {
         evidence: 'Form submitted',
       });
 
-      const updated = await taskService.updateEvidence(task.task!.id, 'Form submitted, confirmation: ABC-12345');
+      const updated = await taskService.updateEvidence(
+        task.task!.id,
+        'Form submitted, confirmation: ABC-12345',
+      );
       expect(updated.evidence).toBe('Form submitted, confirmation: ABC-12345');
     });
   });

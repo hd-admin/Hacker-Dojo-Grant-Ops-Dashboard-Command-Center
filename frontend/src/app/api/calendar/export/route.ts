@@ -13,7 +13,10 @@ export async function GET(request: NextRequest) {
     const scope = searchParams.get('scope') || 'all';
     const deps = getDependencies();
 
-    const calendar = ical({ name: 'Hacker Dojo Grant Ops', prodId: { company: 'Hacker Dojo', product: 'Grant Ops' } });
+    const calendar = ical({
+      name: 'Hacker Dojo Grant Ops',
+      prodId: { company: 'Hacker Dojo', product: 'Grant Ops' },
+    });
 
     if (scope === 'all' || scope === 'grants') {
       const grants = await deps.repository.getGrants();
@@ -38,9 +41,9 @@ export async function GET(request: NextRequest) {
     }
 
     if (scope === 'all' || scope === 'reports') {
-      const awards = await deps.repository.getAwards?.() ?? [];
+      const awards = (await deps.repository.getAwards?.()) ?? [];
       for (const award of awards) {
-        const reports = await deps.repository.getReportDeadlinesByAwardId?.(award.id) ?? [];
+        const reports = (await deps.repository.getReportDeadlinesByAwardId?.(award.id)) ?? [];
         for (const report of reports) {
           if (report.dueDate) {
             const dueDate = new Date(report.dueDate);
@@ -52,7 +55,11 @@ export async function GET(request: NextRequest) {
                 description: `Report deadline for ${award.funder}`,
                 id: `${report.id}@hackerdojo.org`,
                 alarms: [
-                  { type: ICalAlarmType.display, trigger: 172800, description: '48h before report due' },
+                  {
+                    type: ICalAlarmType.display,
+                    trigger: 172800,
+                    description: '48h before report due',
+                  },
                 ],
               });
             }
@@ -76,6 +83,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, 'Error exporting calendar');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to export calendar'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to export calendar'),
+      { status: 500 },
+    );
   }
 }

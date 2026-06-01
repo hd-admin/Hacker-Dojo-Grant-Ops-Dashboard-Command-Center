@@ -49,7 +49,13 @@ beforeEach(() => {
   followUpsGetAllMock.mockReset();
 
   const tasks: Task[] = [
-    { id: 'task-1', text: 'Review budget', completed: false, taskStatus: 'in-progress', justification: 'Need finance sign-off' },
+    {
+      id: 'task-1',
+      text: 'Review budget',
+      completed: false,
+      taskStatus: 'in-progress',
+      justification: 'Need finance sign-off',
+    },
     { id: 'task-2', text: 'Send follow-up email', completed: true },
   ];
   tasksGetAllMock.mockResolvedValue(tasks);
@@ -74,7 +80,9 @@ describe('TasksView behavior', () => {
     expect(container.textContent).toContain('Rationale: Need finance sign-off');
     expect(container.querySelector('[data-testid="task-override-btn"]')).not.toBeNull();
 
-    Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Override')?.click();
+    Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent === 'Override')
+      ?.click();
     await waitFor(() => container.textContent?.includes('Save override') === true);
 
     const overridePanel = container.querySelector('.task-override-panel');
@@ -84,7 +92,9 @@ describe('TasksView behavior', () => {
     select.dispatchEvent(new Event('change', { bubbles: true }));
     setTextareaValue(textarea, 'Operator reviewed and waived the task.');
 
-    Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Save override')?.click();
+    Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent === 'Save override')
+      ?.click();
     await waitFor(() => tasksOverrideMock.mock.calls.length === 1);
 
     expect(tasksOverrideMock.mock.calls[0]?.[0]).toBe('task-1');

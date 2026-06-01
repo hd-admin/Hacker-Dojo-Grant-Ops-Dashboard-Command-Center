@@ -13,7 +13,7 @@ describe('DiffViewer', () => {
       React.createElement(DiffViewer, {
         oldText: 'Line 1\nLine 2\nLine 3',
         newText: 'Line 1\nLine 2 modified\nLine 3',
-      })
+      }),
     );
     await new Promise((r) => setTimeout(r, 50));
     expect(container.querySelector('[data-testid="diff-viewer"]')).not.toBeNull();

@@ -12,27 +12,39 @@ const complianceSchema = z.object({
   notes: z.string().default(''),
 });
 
-export async function GET(request: NextRequest, { params }: { params: Promise<{ awardId: string }> }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ awardId: string }> },
+) {
   await connection();
   try {
     const { awardId } = await params;
     const deps = getDependencies();
-    const items = await deps.repository.getComplianceItemsByAwardId?.(awardId) ?? [];
+    const items = (await deps.repository.getComplianceItemsByAwardId?.(awardId)) ?? [];
     return NextResponse.json({ compliance: items });
   } catch (error) {
     logger.error({ err: error }, 'Error getting compliance');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get compliance items'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get compliance items'),
+      { status: 500 },
+    );
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: Promise<{ awardId: string }> }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ awardId: string }> },
+) {
   await connection();
   try {
     const { awardId } = await params;
     const body = await request.json().catch(() => null);
     const parsed = complianceSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid compliance payload', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid compliance payload', details: parsed.error.format() },
+        { status: 400 },
+      );
     }
     const deps = getDependencies();
     const item = {
@@ -45,6 +57,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ compliance: item });
   } catch (error) {
     logger.error({ err: error }, 'Error updating compliance');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update compliance item'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update compliance item'),
+      { status: 500 },
+    );
   }
 }

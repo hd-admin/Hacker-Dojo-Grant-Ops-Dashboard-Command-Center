@@ -74,14 +74,18 @@ describe('FunderDetail', () => {
       ein: undefined,
       sourceUrls: [],
     };
-    root.render(<FunderDetail funder={minimalFunder as unknown as typeof mockFunder} onClose={vi.fn()} />);
+    root.render(
+      <FunderDetail funder={minimalFunder as unknown as typeof mockFunder} onClose={vi.fn()} />,
+    );
     await waitFor(() => container.querySelector('[data-testid="funder-detail"]') !== null);
     expect(container.textContent).toContain('Test Foundation');
   });
 
   it('triggers pattern detection when button clicked', async () => {
     const onDetectPatterns = vi.fn().mockResolvedValue(undefined);
-    root.render(<FunderDetail funder={mockFunder} onClose={vi.fn()} onDetectPatterns={onDetectPatterns} />);
+    root.render(
+      <FunderDetail funder={mockFunder} onClose={vi.fn()} onDetectPatterns={onDetectPatterns} />,
+    );
     await waitFor(() => container.querySelector('[data-testid="funder-detail"]') !== null);
     const detectBtn = Array.from(container.querySelectorAll('button')).find((b) =>
       b.textContent?.includes('Detect Hidden Patterns'),

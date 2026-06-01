@@ -34,15 +34,24 @@ function getUrgency(dateStr: string): 'overdue' | 'urgent' | 'soon' | 'normal' {
 
 function getUrgencyColor(urgency: string): string {
   switch (urgency) {
-    case 'overdue': return 'var(--danger)';
-    case 'urgent': return 'var(--warning)';
-    case 'soon': return 'var(--warning)';
-    case 'normal': return 'var(--info)';
-    default: return 'var(--text-muted)';
+    case 'overdue':
+      return 'var(--danger)';
+    case 'urgent':
+      return 'var(--warning)';
+    case 'soon':
+      return 'var(--warning)';
+    case 'normal':
+      return 'var(--info)';
+    default:
+      return 'var(--text-muted)';
   }
 }
 
-export function CalendarView({ grants, reportDeadlines = [], taskDueDates = [] }: CalendarViewProps) {
+export function CalendarView({
+  grants,
+  reportDeadlines = [],
+  taskDueDates = [],
+}: CalendarViewProps) {
   const [viewMode, setViewMode] = useState<'month' | 'week'>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -125,21 +134,47 @@ export function CalendarView({ grants, reportDeadlines = [], taskDueDates = [] }
       </div>
 
       <div className="calendar-legend">
-        <span className="calendar-legend-item"><span className={`calendar-dot ${styles.legendDotDanger}`} /> Overdue</span>
-        <span className="calendar-legend-item"><span className={`calendar-dot ${styles.legendDotWarning}`} /> Urgent (&lt;3 days)</span>
-        <span className="calendar-legend-item"><span className={`calendar-dot ${styles.legendDotWarning}`} /> Soon (&lt;14 days)</span>
-        <span className="calendar-legend-item"><span className={`calendar-dot ${styles.legendDotInfo}`} /> Upcoming</span>
+        <span className="calendar-legend-item">
+          <span className={`calendar-dot ${styles.legendDotDanger}`} /> Overdue
+        </span>
+        <span className="calendar-legend-item">
+          <span className={`calendar-dot ${styles.legendDotWarning}`} /> Urgent (&lt;3 days)
+        </span>
+        <span className="calendar-legend-item">
+          <span className={`calendar-dot ${styles.legendDotWarning}`} /> Soon (&lt;14 days)
+        </span>
+        <span className="calendar-legend-item">
+          <span className={`calendar-dot ${styles.legendDotInfo}`} /> Upcoming
+        </span>
       </div>
 
       <div className="calendar-nav">
-        <button type="button" className="btn btn-ghost btn-sm" onClick={prevMonth} aria-label="Previous month">←</button>
-        <span className="calendar-month-label">{MONTHS[month]} {year}</span>
-        <button type="button" className="btn btn-ghost btn-sm" onClick={nextMonth} aria-label="Next month">→</button>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={prevMonth}
+          aria-label="Previous month"
+        >
+          ←
+        </button>
+        <span className="calendar-month-label">
+          {MONTHS[month]} {year}
+        </span>
+        <button
+          type="button"
+          className="btn btn-ghost btn-sm"
+          onClick={nextMonth}
+          aria-label="Next month"
+        >
+          →
+        </button>
       </div>
 
       <div className="calendar-grid" role="grid" aria-label="Monthly calendar">
         {DAYS.map((d) => (
-          <div key={d} className="calendar-day-header" role="columnheader">{d}</div>
+          <div key={d} className="calendar-day-header" role="columnheader">
+            {d}
+          </div>
         ))}
         {Array.from({ length: firstDay }).map((_, i) => (
           <div key={`empty-start-${i}`} className="calendar-day calendar-day-empty" />
@@ -157,7 +192,8 @@ export function CalendarView({ grants, reportDeadlines = [], taskDueDates = [] }
                   style={{ background: getUrgencyColor(evt.urgency) }}
                   title={`${evt.title}${evt.confidence && evt.confidence !== 'exact' ? ` (${evt.confidence})` : ''}`}
                 >
-                  {evt.type === 'grant_deadline' ? '📅' : evt.type === 'report_due' ? '📋' : '✅'} {evt.title.slice(0, 20)}
+                  {evt.type === 'grant_deadline' ? '📅' : evt.type === 'report_due' ? '📋' : '✅'}{' '}
+                  {evt.title.slice(0, 20)}
                 </div>
               ))}
             </div>
@@ -171,7 +207,11 @@ export function CalendarView({ grants, reportDeadlines = [], taskDueDates = [] }
           <div className="empty-state">No upcoming deadlines</div>
         ) : (
           upcomingEvents.map((evt, i) => (
-            <div key={i} className="calendar-upcoming-item" style={{ borderLeftColor: getUrgencyColor(evt.urgency) }}>
+            <div
+              key={i}
+              className="calendar-upcoming-item"
+              style={{ borderLeftColor: getUrgencyColor(evt.urgency) }}
+            >
               <span className="calendar-upcoming-date">{evt.date}</span>
               <span className="calendar-upcoming-title">
                 {evt.title}
@@ -186,4 +226,3 @@ export function CalendarView({ grants, reportDeadlines = [], taskDueDates = [] }
     </div>
   );
 }
-

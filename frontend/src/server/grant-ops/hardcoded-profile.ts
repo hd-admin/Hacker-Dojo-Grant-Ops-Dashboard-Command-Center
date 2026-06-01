@@ -94,6 +94,6 @@ export const HARDCODED_PROFILE: OrganizationProfile = {
     submissionPolicy: 'Human approval required — agent never submits',
     notifyEmail: 'ed@hackerdojo.com',
     voiceAndTone:
-      'Plain-spoken, evidence-led, builder-community framing. Avoid jargon. Lead with outcomes. Reference Hacker Dojo\'s 17-year track record (founded 2009), 4,200+ members, 380+ annual events, hardware labs, and impact metrics from the Impact Report.',
+      "Plain-spoken, evidence-led, builder-community framing. Avoid jargon. Lead with outcomes. Reference Hacker Dojo's 17-year track record (founded 2009), 4,200+ members, 380+ annual events, hardware labs, and impact metrics from the Impact Report.",
   },
 };

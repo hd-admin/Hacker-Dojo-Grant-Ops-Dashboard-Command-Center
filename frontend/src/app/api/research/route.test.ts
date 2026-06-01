@@ -1,7 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { CrawlRun, OrganizationProfile, OpencodeSettings } from '../../../../../shared/types';
 import { invalidateCache, withTempDataDir } from '../../../../../shared/grant-ops-persistence';
-import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
+import {
+  createDependencies,
+  resetDependencies,
+  setDependencies,
+} from '@/server/grant-ops/dependencies';
 import * as repository from '@/server/grant-ops/repository';
 import * as researchService from '@/server/grant-ops/research-service';
 import { GET, POST } from './route';
@@ -12,7 +16,8 @@ const profile: OrganizationProfile = {
   ein: '94-3359594',
   samUEI: 'ABC123DEF456',
   nonprofitStatus: '501(c)(3)',
-  yearFounded: 2009,contactInfo: {},
+  yearFounded: 2009,
+  contactInfo: {},
   geography: 'Regional',
   mission: 'Community learning and technology access',
   programAreas: ['STEM'],
@@ -20,7 +25,8 @@ const profile: OrganizationProfile = {
   fundingHistory: [],
   partnerships: [],
   complianceFacts: [],
-  boardMembers: [],docTypes: ['PDF'],
+  boardMembers: [],
+  docTypes: ['PDF'],
   searchThemes: ['EdTech'],
   agentBehavior: {
     autoDraftThreshold: 75,
@@ -70,7 +76,10 @@ const fakeAdapter = {
   isConfigured: () => true,
 };
 
-async function waitFor(predicate: () => Promise<boolean> | boolean, timeoutMs = 5000): Promise<void> {
+async function waitFor(
+  predicate: () => Promise<boolean> | boolean,
+  timeoutMs = 5000,
+): Promise<void> {
   const start = Date.now();
   while (!(await predicate())) {
     if (Date.now() - start > timeoutMs) {
@@ -106,19 +115,28 @@ describe('/api/research route', () => {
       new Request('http://localhost/api/sources', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ name: 'Candid', url: 'https://www.candid.org', type: 'website', reviewStatus: 'approved' }),
+        body: JSON.stringify({
+          name: 'Candid',
+          url: 'https://www.candid.org',
+          type: 'website',
+          reviewStatus: 'approved',
+        }),
       }) as never,
     );
     expect(createResponse.status).toBe(201);
 
-    const response = await POST(new Request('http://localhost/api/research', { method: 'POST' }) as never);
+    const response = await POST(
+      new Request('http://localhost/api/research', { method: 'POST' }) as never,
+    );
     const data = await response.json();
 
     expect(response.status).toBe(202);
     expect(data.queued).toBe(true);
     expect(data.job.status).toBe('queued');
 
-    await waitFor(async () => (await repository.getJobQueueItem(data.job.id))?.status === 'completed');
+    await waitFor(
+      async () => (await repository.getJobQueueItem(data.job.id))?.status === 'completed',
+    );
     const completedJob = await repository.getJobQueueItem(data.job.id);
     expect(completedJob?.resultSummary).toContain('Research completed');
 
@@ -132,7 +150,9 @@ describe('/api/research route', () => {
   it('rejects missing Opencode configuration', async () => {
     await repository.updateOpencodeSettings({ ...configuredSettings, isConfigured: false });
 
-    const response = await POST(new Request('http://localhost/api/research', { method: 'POST' }) as never);
+    const response = await POST(
+      new Request('http://localhost/api/research', { method: 'POST' }) as never,
+    );
     const data = await response.json();
 
     expect(response.status).toBe(400);
@@ -148,13 +168,17 @@ describe('/api/research route', () => {
         grantsMatched: 0,
       });
 
-      const response = await POST(new Request('http://localhost/api/research', { method: 'POST' }) as never);
+      const response = await POST(
+        new Request('http://localhost/api/research', { method: 'POST' }) as never,
+      );
       const data = await response.json();
 
       expect(response.status).toBe(202);
       expect(data.queued).toBe(true);
 
-      await waitFor(async () => (await repository.getJobQueueItem(data.job.id))?.status === 'failed');
+      await waitFor(
+        async () => (await repository.getJobQueueItem(data.job.id))?.status === 'failed',
+      );
       const failedJob = await repository.getJobQueueItem(data.job.id);
       expect(failedJob?.errorMessage).toMatch(/crawlRun|persisted/i);
 

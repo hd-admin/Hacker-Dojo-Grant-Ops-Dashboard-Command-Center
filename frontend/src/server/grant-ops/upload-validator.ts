@@ -18,8 +18,16 @@ import type { ApiErrorResponse } from '../../lib/api-error-handler';
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 const ALLOWED_EXTENSIONS = new Set([
-  '.pdf', '.docx', '.doc', '.xlsx', '.xls',
-  '.csv', '.txt', '.png', '.jpg', '.jpeg',
+  '.pdf',
+  '.docx',
+  '.doc',
+  '.xlsx',
+  '.xls',
+  '.csv',
+  '.txt',
+  '.png',
+  '.jpg',
+  '.jpeg',
 ]);
 
 const EXTENSION_MIME_MAP: Record<string, string[]> = {
@@ -53,14 +61,20 @@ export function validateFileExists(filePath: string): ApiErrorResponse | null {
   }
 }
 
-export function validateFileSize(filePath: string, maxSize: number = MAX_FILE_SIZE): ApiErrorResponse | null {
+export function validateFileSize(
+  filePath: string,
+  maxSize: number = MAX_FILE_SIZE,
+): ApiErrorResponse | null {
   try {
     const stats = fs.statSync(filePath);
     if (stats.size === 0) {
       return { error: 'File is empty', code: 'FILE_UNSUPPORTED_TYPE' };
     }
     if (stats.size > maxSize) {
-      return { error: `File too large: ${(stats.size / 1024 / 1024).toFixed(1)}MB (max ${maxSize / 1024 / 1024}MB)`, code: 'FILE_TOO_LARGE' };
+      return {
+        error: `File too large: ${(stats.size / 1024 / 1024).toFixed(1)}MB (max ${maxSize / 1024 / 1024}MB)`,
+        code: 'FILE_TOO_LARGE',
+      };
     }
     return null;
   } catch {
@@ -82,7 +96,11 @@ export function validateFileExtension(filePath: string): ApiErrorResponse | null
 export async function detectMimeTypeByMagic(filePath: string): Promise<string | null> {
   try {
     const fileTypeModule = await import('file-type');
-    const result = await (fileTypeModule as unknown as { fileTypeFromFile: (path: string) => Promise<{ mime: string } | undefined> }).fileTypeFromFile(filePath);
+    const result = await (
+      fileTypeModule as unknown as {
+        fileTypeFromFile: (path: string) => Promise<{ mime: string } | undefined>;
+      }
+    ).fileTypeFromFile(filePath);
     if (result) {
       return result.mime;
     }
@@ -94,7 +112,9 @@ export async function detectMimeTypeByMagic(filePath: string): Promise<string | 
     fs.closeSync(fd);
 
     const firstBytes = Array.from(buffer.slice(0, bytesRead));
-    if (firstBytes.every(b => b >= 0x20 && b <= 0x7E || b === 0x0A || b === 0x0D || b === 0x09)) {
+    if (
+      firstBytes.every((b) => (b >= 0x20 && b <= 0x7e) || b === 0x0a || b === 0x0d || b === 0x09)
+    ) {
       return 'text/plain';
     }
 
@@ -104,19 +124,29 @@ export async function detectMimeTypeByMagic(filePath: string): Promise<string | 
   }
 }
 
-export async function validateMimeType(filePath: string, originalFilename?: string): Promise<ApiErrorResponse | null> {
+export async function validateMimeType(
+  filePath: string,
+  originalFilename?: string,
+): Promise<ApiErrorResponse | null> {
   const ext = path.extname(originalFilename ?? filePath).toLowerCase();
   const expectedMimes = EXTENSION_MIME_MAP[ext];
   if (!expectedMimes) return null;
 
   const detectedMime = await detectMimeTypeByMagic(filePath);
   if (!detectedMime) {
-    return { error: 'Cannot detect file type. File may be corrupted.', code: 'FILE_UNSUPPORTED_TYPE' };
+    return {
+      error: 'Cannot detect file type. File may be corrupted.',
+      code: 'FILE_UNSUPPORTED_TYPE',
+    };
   }
 
-  const isMatch = expectedMimes.some(expected => {
+  const isMatch = expectedMimes.some((expected) => {
     if (expected === detectedMime) return true;
-    if (expected.startsWith('application/vnd.openxmlformats') && detectedMime.startsWith('application/vnd.openxmlformats')) return true;
+    if (
+      expected.startsWith('application/vnd.openxmlformats') &&
+      detectedMime.startsWith('application/vnd.openxmlformats')
+    )
+      return true;
     if (expected === 'application/msword' && detectedMime === 'application/msword') return true;
     return false;
   });
@@ -172,7 +202,11 @@ export async function atomicWrite(
     fs.renameSync(tmpPath, destPath);
     return { destPath };
   } catch (err) {
-    try { fs.unlinkSync(tmpPath); } catch { /* cleanup attempt */ }
+    try {
+      fs.unlinkSync(tmpPath);
+    } catch {
+      /* cleanup attempt */
+    }
     return {
       destPath: '',
       error: {
@@ -182,5 +216,3 @@ export async function atomicWrite(
     };
   }
 }
-
-

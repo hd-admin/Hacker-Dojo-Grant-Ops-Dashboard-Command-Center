@@ -1,36 +1,56 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import type { BackupFreshnessStatus, DocumentMetadata, FailureHistoryEntry, HealthCheckResult, OrganizationProfile, Theme, ThemesData } from '../../../shared/types';
+import type {
+  BackupFreshnessStatus,
+  DocumentMetadata,
+  FailureHistoryEntry,
+  HealthCheckResult,
+  OrganizationProfile,
+  Theme,
+  ThemesData,
+} from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
 import styles from './SettingsView.module.css';
 
 // Guidance messages keyed by opencode health status
-const opencodeStatusGuidance: Record<string, { title: string; description: string; action: string }> = {
+const opencodeStatusGuidance: Record<
+  string,
+  { title: string; description: string; action: string }
+> = {
   'not-installed': {
     title: 'Opencode is not installed',
-    description: 'The opencode binary was not found on PATH or at the configured path. Grant generation and AI-powered features cannot run without it.',
-    action: 'Install opencode from https://opencode.ai or verify the binary path below and test the connection.',
+    description:
+      'The opencode binary was not found on PATH or at the configured path. Grant generation and AI-powered features cannot run without it.',
+    action:
+      'Install opencode from https://opencode.ai or verify the binary path below and test the connection.',
   },
   'not-reachable': {
     title: 'Opencode cannot be reached',
-    description: 'The opencode binary was found but is not responding. It may be installed incorrectly or the binary may not be executable.',
-    action: 'Verify the binary path points to a working opencode installation. Check that the file is executable (chmod +x on macOS/Linux).',
+    description:
+      'The opencode binary was found but is not responding. It may be installed incorrectly or the binary may not be executable.',
+    action:
+      'Verify the binary path points to a working opencode installation. Check that the file is executable (chmod +x on macOS/Linux).',
   },
-  'incompatible': {
+  incompatible: {
     title: 'Opencode version is incompatible',
-    description: 'The installed opencode version does not meet the minimum version requirements for this application.',
-    action: 'Update opencode to the latest version. Run \'opencode --version\' to check your current version, then upgrade.',
+    description:
+      'The installed opencode version does not meet the minimum version requirements for this application.',
+    action:
+      "Update opencode to the latest version. Run 'opencode --version' to check your current version, then upgrade.",
   },
-  'ok': {
+  ok: {
     title: 'Opencode is connected and healthy',
-    description: 'Opencode is properly installed, reachable, and compatible. All AI-powered features are available.',
+    description:
+      'Opencode is properly installed, reachable, and compatible. All AI-powered features are available.',
     action: '',
   },
-  'error': {
+  error: {
     title: 'Opencode encountered an error',
-    description: 'An unexpected error occurred while checking opencode health. This may indicate a configuration issue or a problem with the opencode installation.',
-    action: 'Check the error details below. Verify your binary path and working directory, then test the connection again.',
+    description:
+      'An unexpected error occurred while checking opencode health. This may indicate a configuration issue or a problem with the opencode installation.',
+    action:
+      'Check the error details below. Verify your binary path and working directory, then test the connection again.',
   },
 };
 
@@ -44,20 +64,36 @@ function getStatusGuidanceClass(status: string): string {
 // Status class helper for dot color
 function getStatusDotStyle(status: string): React.CSSProperties {
   return {
-    background: status === 'ok' ? 'var(--success)' : status === 'incompatible' ? 'var(--warning)' : 'var(--danger)',
-    boxShadow: status === 'ok' ? '0 0 8px var(--success)' : status === 'incompatible' ? '0 0 8px var(--warning)' : '0 0 8px var(--danger)',
+    background:
+      status === 'ok'
+        ? 'var(--success)'
+        : status === 'incompatible'
+          ? 'var(--warning)'
+          : 'var(--danger)',
+    boxShadow:
+      status === 'ok'
+        ? '0 0 8px var(--success)'
+        : status === 'incompatible'
+          ? '0 0 8px var(--warning)'
+          : '0 0 8px var(--danger)',
   };
 }
 
 // Status label text
 function getStatusLabelText(status: string): string {
   switch (status) {
-    case 'ok': return 'Connected';
-    case 'incompatible': return 'Incompatible';
-    case 'not-installed': return 'Not Installed';
-    case 'not-reachable': return 'Not Reachable';
-    case 'error': return 'Error';
-    default: return 'Unknown';
+    case 'ok':
+      return 'Connected';
+    case 'incompatible':
+      return 'Incompatible';
+    case 'not-installed':
+      return 'Not Installed';
+    case 'not-reachable':
+      return 'Not Reachable';
+    case 'error':
+      return 'Error';
+    default:
+      return 'Unknown';
   }
 }
 
@@ -87,7 +123,11 @@ function LogViewer() {
       }
       const res = await fetch(url);
       if (!res.ok) throw new Error('Failed to load logs');
-      const data = (await res.json()) as { entries?: string[]; page?: number; totalEntries?: number };
+      const data = (await res.json()) as {
+        entries?: string[];
+        page?: number;
+        totalEntries?: number;
+      };
       setEntries(data.entries ?? []);
       setPage(data.page ?? 1);
       setTotalEntries(data.totalEntries ?? 0);
@@ -109,7 +149,11 @@ function LogViewer() {
 
   return (
     <div data-testid="log-viewer">
-      <div className={`filter-row ${styles.logFilterRow}`} role="tablist" aria-label="Log type tabs">
+      <div
+        className={`filter-row ${styles.logFilterRow}`}
+        role="tablist"
+        aria-label="Log type tabs"
+      >
         {(['app', 'error', 'session'] as LogTab[]).map((tab) => (
           <button
             key={tab}
@@ -126,7 +170,9 @@ function LogViewer() {
       </div>
 
       <div className={styles.logControls}>
-        <label htmlFor="log-level-filter" className={`settings-label ${styles.logLevelLabel}`}>Level:</label>
+        <label htmlFor="log-level-filter" className={`settings-label ${styles.logLevelLabel}`}>
+          Level:
+        </label>
         <select
           id="log-level-filter"
           data-testid="log-level-filter"
@@ -152,7 +198,12 @@ function LogViewer() {
             onChange={(e) => setSessionJobId(e.target.value)}
             data-testid="session-job-id-input"
           />
-          <button type="button" className="btn btn-sm" onClick={() => loadLogs(1)} data-testid="session-load-btn">
+          <button
+            type="button"
+            className="btn btn-sm"
+            onClick={() => loadLogs(1)}
+            data-testid="session-load-btn"
+          >
             Load
           </button>
         </div>
@@ -180,10 +231,7 @@ function LogViewer() {
           </div>
 
           {totalEntries > 0 && (
-            <div
-              className={`log-pagination ${styles.logPagination}`}
-              data-testid="log-pagination"
-            >
+            <div className={`log-pagination ${styles.logPagination}`} data-testid="log-pagination">
               <button
                 type="button"
                 className="btn btn-ghost btn-sm"
@@ -229,7 +277,9 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
   const [pendingRestoreFile, setPendingRestoreFile] = useState<File | null>(null);
   const [lastHandshakeAt, setLastHandshakeAt] = useState<string | null>(null);
   const [_testConnectionLoading, setTestConnectionLoading] = useState(false);
-  const [testConnectionResult, setTestConnectionResult] = useState<'success' | 'failed' | null>(null);
+  const [testConnectionResult, setTestConnectionResult] = useState<'success' | 'failed' | null>(
+    null,
+  );
   const [themesData, setThemesData] = useState<ThemesData | null>(null);
   const [matchThreshold, setMatchThreshold] = useState(70);
   const [autoDraftThreshold, setAutoDraftThreshold] = useState(85);
@@ -269,7 +319,9 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
         const [profileData, docsData, healthData, freshnessData, themesResult] = await Promise.all([
           client.profile.get().catch(() => null),
           client.documents.getAll().catch(() => []),
-          fetch('/api/health').then((response) => response.json()).catch(() => null),
+          fetch('/api/health')
+            .then((response) => response.json())
+            .catch(() => null),
           client.backup.getFreshness().catch(() => null),
           client.themes.get().catch(() => null),
         ]);
@@ -311,9 +363,10 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
     }
   }, [profile]);
 
-
   const _refreshHealth = async () => {
-    const data = await fetch('/api/health').then((response) => response.json()).catch(() => null);
+    const data = await fetch('/api/health')
+      .then((response) => response.json())
+      .catch(() => null);
     setHealth(data);
     if (data?.handshakeSuccess) {
       setLastHandshakeAt(new Date().toISOString());
@@ -324,7 +377,9 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
     setTestConnectionLoading(true);
     setTestConnectionResult(null);
     try {
-      const data = await fetch('/api/health').then((r) => r.json()).catch(() => null);
+      const data = await fetch('/api/health')
+        .then((r) => r.json())
+        .catch(() => null);
       setHealth(data);
       if (data?.handshakeSuccess) {
         setLastHandshakeAt(new Date().toISOString());
@@ -393,15 +448,45 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
     setShowRestoreWarning(false);
   };
 
-
   const handleSaveMatchingPolicy = async () => {
     setThemesSaving(true);
     try {
       const current = await client.themes.get();
       const activeTheme = current.themes.find((t) => t.isActive);
       const updatedData: ThemesData = activeTheme
-        ? { ...current, themes: current.themes.map((t) => t.isActive ? { ...t, matchingPolicy: { ...t.matchingPolicy, matchThreshold, autoDraftThreshold } } : t) }
-        : { ...current, themes: [{ id: 'theme-default', name: 'Default Theme', keywordClusters: [], regions: [], populations: [], strategicPriorities: [], matchingPolicy: { matchThreshold, autoDraftThreshold, includeRules: [], excludeRules: [] }, isActive: true, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }] };
+        ? {
+            ...current,
+            themes: current.themes.map((t) =>
+              t.isActive
+                ? {
+                    ...t,
+                    matchingPolicy: { ...t.matchingPolicy, matchThreshold, autoDraftThreshold },
+                  }
+                : t,
+            ),
+          }
+        : {
+            ...current,
+            themes: [
+              {
+                id: 'theme-default',
+                name: 'Default Theme',
+                keywordClusters: [],
+                regions: [],
+                populations: [],
+                strategicPriorities: [],
+                matchingPolicy: {
+                  matchThreshold,
+                  autoDraftThreshold,
+                  includeRules: [],
+                  excludeRules: [],
+                },
+                isActive: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+              },
+            ],
+          };
       const saved = await client.themes.update(updatedData);
       setThemesData(saved);
     } catch (_err) {
@@ -413,10 +498,29 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
 
   const handleAddKeywordCluster = async () => {
     if (!newClusterName.trim() || !newClusterKeywords.trim()) return;
-    const keywords = newClusterKeywords.split(',').map((k) => k.trim()).filter(Boolean);
-    const newCluster = { id: `kc-${Date.now()}`, name: newClusterName.trim(), keywords, weight: newClusterWeight, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    const current: ThemesData = themesData ?? { keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] };
-    const saved = await client.themes.update({ ...current, keywordClusters: [...current.keywordClusters, newCluster] });
+    const keywords = newClusterKeywords
+      .split(',')
+      .map((k) => k.trim())
+      .filter(Boolean);
+    const newCluster = {
+      id: `kc-${Date.now()}`,
+      name: newClusterName.trim(),
+      keywords,
+      weight: newClusterWeight,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    const current: ThemesData = themesData ?? {
+      keywordClusters: [],
+      themes: [],
+      regions: [],
+      populations: [],
+      strategicPriorities: [],
+    };
+    const saved = await client.themes.update({
+      ...current,
+      keywordClusters: [...current.keywordClusters, newCluster],
+    });
     setThemesData(saved);
     setNewClusterName('');
     setNewClusterKeywords('');
@@ -424,8 +528,17 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
   };
 
   const handleRemoveKeywordCluster = async (clusterId: string) => {
-    const current: ThemesData = themesData ?? { keywordClusters: [], themes: [], regions: [], populations: [], strategicPriorities: [] };
-    const saved = await client.themes.update({ ...current, keywordClusters: current.keywordClusters.filter((c) => c.id !== clusterId) });
+    const current: ThemesData = themesData ?? {
+      keywordClusters: [],
+      themes: [],
+      regions: [],
+      populations: [],
+      strategicPriorities: [],
+    };
+    const saved = await client.themes.update({
+      ...current,
+      keywordClusters: current.keywordClusters.filter((c) => c.id !== clusterId),
+    });
     setThemesData(saved);
   };
 
@@ -449,15 +562,20 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
     input.onchange = async (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
       if (!file) return;
-      const doc = await client.documents.create(file, { name: file.name, type: file.name.split('.').pop()?.toUpperCase() || 'FILE' });
+      const doc = await client.documents.create(file, {
+        name: file.name,
+        type: file.name.split('.').pop()?.toUpperCase() || 'FILE',
+      });
       setDocuments((current) => [...current, doc]);
       await onRefreshAppState?.();
     };
     input.click();
   };
 
-  const lastBackupVerification = freshness?.lastBackupVerification?.outcome ?? 'No backup verification result yet.';
-  const lastRestoreVerification = freshness?.lastRestoreVerification?.outcome ?? 'No restore verification result yet.';
+  const lastBackupVerification =
+    freshness?.lastBackupVerification?.outcome ?? 'No backup verification result yet.';
+  const lastRestoreVerification =
+    freshness?.lastRestoreVerification?.outcome ?? 'No restore verification result yet.';
 
   if (loading) {
     return (
@@ -480,78 +598,228 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
           </h1>
           <div className="header-sub">Context the agent uses for matching &amp; drafting</div>
         </div>
-
       </div>
 
       {toast && (
-        <div data-testid="settings-toast" role="status" aria-live="polite" className="settings-toast">
+        <div
+          data-testid="settings-toast"
+          role="status"
+          aria-live="polite"
+          className="settings-toast"
+        >
           {toast}
         </div>
       )}
 
       <div className="settings-grid">
         <section className="setting-card" data-testid="system-health-card">
-          <div className="setting-card-header"><div className="setting-card-title">System Health</div></div>
+          <div className="setting-card-header">
+            <div className="setting-card-title">System Health</div>
+          </div>
           <div className="setting-card-body">
-            <div>Storage: {health?.storage === 'ok' ? 'OK' : `Error: ${health?.storageError ?? 'unknown'}`}</div>
-            <div>Opencode: {health?.opencode === 'ok' ? `Connected (v${health.opencodeVersion ?? 'unknown'})` : health?.opencode === 'not-installed' ? 'Not Installed' : health?.opencode === 'not-reachable' ? 'Not Reachable' : health?.opencode === 'incompatible' ? `Incompatible version — found v${health.opencodeVersion ?? 'unknown'}` : `Error: ${health?.opencodeError ?? 'unknown'}`}</div>
+            <div>
+              Storage:{' '}
+              {health?.storage === 'ok' ? 'OK' : `Error: ${health?.storageError ?? 'unknown'}`}
+            </div>
+            <div>
+              Opencode:{' '}
+              {health?.opencode === 'ok'
+                ? `Connected (v${health.opencodeVersion ?? 'unknown'})`
+                : health?.opencode === 'not-installed'
+                  ? 'Not Installed'
+                  : health?.opencode === 'not-reachable'
+                    ? 'Not Reachable'
+                    : health?.opencode === 'incompatible'
+                      ? `Incompatible version — found v${health.opencodeVersion ?? 'unknown'}`
+                      : `Error: ${health?.opencodeError ?? 'unknown'}`}
+            </div>
             <div>Crawler: {health?.crawlerStatus}</div>
-            <div>Document indexer: {health?.documentIndexer === 'ok' ? 'OK' : health?.documentIndexer === 'degraded' ? `Degraded: ${health.documentIndexerFailedCount ?? 0} failed` : `Error: ${health?.documentIndexerError ?? 'unknown'}`}</div>
+            <div>
+              Document indexer:{' '}
+              {health?.documentIndexer === 'ok'
+                ? 'OK'
+                : health?.documentIndexer === 'degraded'
+                  ? `Degraded: ${health.documentIndexerFailedCount ?? 0} failed`
+                  : `Error: ${health?.documentIndexerError ?? 'unknown'}`}
+            </div>
             <div className="settings-diagnostics-actions">
-              <button type="button" data-testid="copy-diagnostics-btn" onClick={() => { void handleCopyDiagnostics(); }}>Copy Diagnostics</button>
-              <button type="button" data-testid="export-diagnostics-btn" onClick={() => { void handleExportDiagnostics(); }}>Export Diagnostics</button>
-              {diagnosticsText && <pre data-testid="diagnostics-export-text">{diagnosticsText}</pre>}
+              <button
+                type="button"
+                data-testid="copy-diagnostics-btn"
+                onClick={() => {
+                  void handleCopyDiagnostics();
+                }}
+              >
+                Copy Diagnostics
+              </button>
+              <button
+                type="button"
+                data-testid="export-diagnostics-btn"
+                onClick={() => {
+                  void handleExportDiagnostics();
+                }}
+              >
+                Export Diagnostics
+              </button>
+              {diagnosticsText && (
+                <pre data-testid="diagnostics-export-text">{diagnosticsText}</pre>
+              )}
             </div>
           </div>
         </section>
 
         <section className="setting-card" data-testid="org-profile-card">
-          <div className="setting-card-header"><div className="setting-card-title">Organization Profile</div></div>
+          <div className="setting-card-header">
+            <div className="setting-card-title">Organization Profile</div>
+          </div>
 
-          <div className="setting-card-header"><div className="setting-card-title">Search Themes &amp; Matching Policy</div></div>
+          <div className="setting-card-header">
+            <div className="setting-card-title">Search Themes &amp; Matching Policy</div>
+          </div>
           <div className="setting-card-body">
             <fieldset className="settings-fieldset">
               <legend className="settings-legend">Matching Thresholds</legend>
               <div className="settings-form-grid">
                 <div>
-                  <label className="setting-label" htmlFor="match-threshold">Match Threshold (0-100)</label>
-                  <input id="match-threshold" type="number" min={0} max={100} className="form-input" value={matchThreshold} onChange={(e) => setMatchThreshold(Number(e.target.value))} />
+                  <label className="setting-label" htmlFor="match-threshold">
+                    Match Threshold (0-100)
+                  </label>
+                  <input
+                    id="match-threshold"
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="form-input"
+                    value={matchThreshold}
+                    onChange={(e) => setMatchThreshold(Number(e.target.value))}
+                  />
                 </div>
                 <div>
-                  <label className="setting-label" htmlFor="autodraft-threshold">Auto-Draft Threshold (0-100)</label>
-                  <input id="autodraft-threshold" type="number" min={0} max={100} className="form-input" value={autoDraftThreshold} onChange={(e) => setAutoDraftThreshold(Number(e.target.value))} />
+                  <label className="setting-label" htmlFor="autodraft-threshold">
+                    Auto-Draft Threshold (0-100)
+                  </label>
+                  <input
+                    id="autodraft-threshold"
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="form-input"
+                    value={autoDraftThreshold}
+                    onChange={(e) => setAutoDraftThreshold(Number(e.target.value))}
+                  />
                 </div>
               </div>
               <div className="settings-form-row">
-                <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await handleSaveMatchingPolicy(); showToast('Matching policy updated'); }} disabled={themesSaving}>{themesSaving ? 'Saving...' : 'Save thresholds'}</button>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={async () => {
+                    await handleSaveMatchingPolicy();
+                    showToast('Matching policy updated');
+                  }}
+                  disabled={themesSaving}
+                >
+                  {themesSaving ? 'Saving...' : 'Save thresholds'}
+                </button>
               </div>
             </fieldset>
             <fieldset className="settings-fieldset">
               <legend className="settings-legend">Keyword Clusters</legend>
-              {(themesData?.keywordClusters ?? []).length === 0 && <div className="empty-state">No keyword clusters. Add one to enable weighted tag scoring.</div>}
+              {(themesData?.keywordClusters ?? []).length === 0 && (
+                <div className="empty-state">
+                  No keyword clusters. Add one to enable weighted tag scoring.
+                </div>
+              )}
               {(themesData?.keywordClusters ?? []).map((cluster) => (
                 <div key={cluster.id} className="setting-row">
                   <span className="setting-label">{cluster.name}</span>
-                  <span className="setting-value">{cluster.keywords.join(', ')} &middot; weight {cluster.weight}</span>
-                  <button type="button" className="btn btn-ghost btn-sm" onClick={async () => { await handleRemoveKeywordCluster(cluster.id); showToast('Keyword cluster removed'); }} aria-label={`Remove cluster ${cluster.name}`}>Remove</button>
+                  <span className="setting-value">
+                    {cluster.keywords.join(', ')} &middot; weight {cluster.weight}
+                  </span>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={async () => {
+                      await handleRemoveKeywordCluster(cluster.id);
+                      showToast('Keyword cluster removed');
+                    }}
+                    aria-label={`Remove cluster ${cluster.name}`}
+                  >
+                    Remove
+                  </button>
                 </div>
               ))}
               <div className="settings-form-grid">
-                <div><label className="setting-label" htmlFor="new-cluster-name">Cluster Name</label><input id="new-cluster-name" className="form-input" value={newClusterName} onChange={(e) => setNewClusterName(e.target.value)} placeholder="e.g., STEM Education" /></div>
-                <div><label className="setting-label" htmlFor="new-cluster-keywords">Keywords (comma-separated)</label><input id="new-cluster-keywords" className="form-input" value={newClusterKeywords} onChange={(e) => setNewClusterKeywords(e.target.value)} placeholder="STEM, science, technology" /></div>
-                <div><label className="setting-label" htmlFor="new-cluster-weight">Weight (0-100)</label><input id="new-cluster-weight" type="number" min={0} max={100} className="form-input" value={newClusterWeight} onChange={(e) => setNewClusterWeight(Number(e.target.value))} /></div>
+                <div>
+                  <label className="setting-label" htmlFor="new-cluster-name">
+                    Cluster Name
+                  </label>
+                  <input
+                    id="new-cluster-name"
+                    className="form-input"
+                    value={newClusterName}
+                    onChange={(e) => setNewClusterName(e.target.value)}
+                    placeholder="e.g., STEM Education"
+                  />
+                </div>
+                <div>
+                  <label className="setting-label" htmlFor="new-cluster-keywords">
+                    Keywords (comma-separated)
+                  </label>
+                  <input
+                    id="new-cluster-keywords"
+                    className="form-input"
+                    value={newClusterKeywords}
+                    onChange={(e) => setNewClusterKeywords(e.target.value)}
+                    placeholder="STEM, science, technology"
+                  />
+                </div>
+                <div>
+                  <label className="setting-label" htmlFor="new-cluster-weight">
+                    Weight (0-100)
+                  </label>
+                  <input
+                    id="new-cluster-weight"
+                    type="number"
+                    min={0}
+                    max={100}
+                    className="form-input"
+                    value={newClusterWeight}
+                    onChange={(e) => setNewClusterWeight(Number(e.target.value))}
+                  />
+                </div>
               </div>
-              <button type="button" className="btn btn-primary btn-sm" onClick={async () => { await handleAddKeywordCluster(); showToast('Keyword cluster added'); }} disabled={!newClusterName.trim() || !newClusterKeywords.trim()}>Add cluster</button>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={async () => {
+                  await handleAddKeywordCluster();
+                  showToast('Keyword cluster added');
+                }}
+                disabled={!newClusterName.trim() || !newClusterKeywords.trim()}
+              >
+                Add cluster
+              </button>
             </fieldset>
             <div className="settings-form-row">
-              <button type="button" className="btn" onClick={() => void handleRescore()} disabled={rescoreLoading} aria-label="Recalculate fit scores for all grants">{rescoreLoading ? 'Rescoring...' : 'Recalculate scores'}</button>
+              <button
+                type="button"
+                className="btn"
+                onClick={() => void handleRescore()}
+                disabled={rescoreLoading}
+                aria-label="Recalculate fit scores for all grants"
+              >
+                {rescoreLoading ? 'Rescoring...' : 'Recalculate scores'}
+              </button>
               {rescoreResult && <span className={styles.rescoreResult}>{rescoreResult}</span>}
             </div>
           </div>
         </section>
 
         <section className="setting-card">
-          <div className="setting-card-header"><div className="setting-card-title">Reference Documents</div></div>
+          <div className="setting-card-header">
+            <div className="setting-card-title">Reference Documents</div>
+          </div>
           <div className="setting-card-body">
             {/* Restricted document warning banner */}
             {documents.some((d) => d.classification === 'restricted') && (
@@ -560,20 +828,23 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                 data-testid="restricted-docs-warning"
                 role="alert"
               >
-                <strong>⚠️ Restricted documents exist.</strong>{' '}
-                Restricted documents are excluded from AI drafting, exports, and submission packages by default.
+                <strong>⚠️ Restricted documents exist.</strong> Restricted documents are excluded
+                from AI drafting, exports, and submission packages by default.
               </div>
             )}
-            <button type="button" className="upload-item" onClick={handleUploadDocument}>Upload document</button>
+            <button type="button" className="upload-item" onClick={handleUploadDocument}>
+              Upload document
+            </button>
             {documents.map((doc) => (
               <div key={doc.id} className="doc-item" data-testid={`doc-item-${doc.id}`}>
                 <div className={styles.docItem}>
                   <span className={styles.docName}>{doc.name}</span>
-                  {doc.type && (
-                    <span className={styles.docTypeBadge}>{doc.type}</span>
-                  )}
+                  {doc.type && <span className={styles.docTypeBadge}>{doc.type}</span>}
                   {doc.classification && (
-                    <span className={`${styles.docClassBadge} ${doc.classification === 'canonical' ? styles.docClassCanonical : doc.classification === 'draft-only' ? styles.docClassDraftOnly : doc.classification === 'archived' ? styles.docClassArchived : doc.classification === 'restricted' ? styles.docClassRestricted : ''}`} data-testid={`doc-classification-${doc.id}`}>
+                    <span
+                      className={`${styles.docClassBadge} ${doc.classification === 'canonical' ? styles.docClassCanonical : doc.classification === 'draft-only' ? styles.docClassDraftOnly : doc.classification === 'archived' ? styles.docClassArchived : doc.classification === 'restricted' ? styles.docClassRestricted : ''}`}
+                      data-testid={`doc-classification-${doc.id}`}
+                    >
                       {doc.classification}
                     </span>
                   )}
@@ -634,15 +905,13 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                     aria-expanded={expandedDocVersions[doc.id] ?? false}
                     data-testid={`doc-versions-toggle-${doc.id}`}
                   >
-                    {expandedDocVersions[doc.id] ? '▲' : '▼'} {doc.versions.length} version{doc.versions.length !== 1 ? 's' : ''}
+                    {expandedDocVersions[doc.id] ? '▲' : '▼'} {doc.versions.length} version
+                    {doc.versions.length !== 1 ? 's' : ''}
                   </button>
                 )}
                 {/* Version history panel */}
                 {expandedDocVersions[doc.id] && doc.versions && doc.versions.length > 0 && (
-                  <div
-                    className={styles.versionPanel}
-                    data-testid={`doc-versions-panel-${doc.id}`}
-                  >
+                  <div className={styles.versionPanel} data-testid={`doc-versions-panel-${doc.id}`}>
                     <div className={styles.versionTitle}>Version History</div>
                     {doc.versions.map((v) => (
                       <div
@@ -650,7 +919,9 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                         className={styles.versionItem}
                         data-testid={`doc-version-${v.id}`}
                       >
-                        <span>v{v.versionNumber} — {new Date(v.uploadedAt).toLocaleDateString()}</span>
+                        <span>
+                          v{v.versionNumber} — {new Date(v.uploadedAt).toLocaleDateString()}
+                        </span>
                         {v.notes && <span className={styles.versionNote}>{v.notes}</span>}
                       </div>
                     ))}
@@ -665,49 +936,82 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
           const now = new Date().getTime();
           const msInDay = 24 * 60 * 60 * 1000;
           const lastBackupAt = freshness?.lastBackupAt;
-          const backupStale = !lastBackupAt || (now - new Date(lastBackupAt).getTime() > msInDay);
+          const backupStale = !lastBackupAt || now - new Date(lastBackupAt).getTime() > msInDay;
           if (!backupStale) return null;
           return (
-            <div className="settings-backup-warning" data-testid="backup-stale-warning" role="alert">
+            <div
+              className="settings-backup-warning"
+              data-testid="backup-stale-warning"
+              role="alert"
+            >
               No backup in the last 24 hours. Export a backup to protect your data.
             </div>
           );
         })()}
 
         <section className="setting-card">
-          <div className="setting-card-header"><div className="setting-card-title">Backup & Restore</div></div>
+          <div className="setting-card-header">
+            <div className="setting-card-title">Backup & Restore</div>
+          </div>
           <div className="setting-card-body">
-            <div data-testid="backup-verification-result">Last backup verification: {lastBackupVerification}</div>
-            <div data-testid="restore-verification-result">Last restore verification: {lastRestoreVerification}</div>
-            <button type="button" onClick={async () => {
-              try {
-                const backup = await client.backup.exportBackup();
-                const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = `grant-ops-backup-${new Date().toISOString().slice(0, 10)}.json`;
-                a.click();
-                URL.revokeObjectURL(url);
-                showToast('Backup downloaded successfully');
-              } catch (_err) {
-                setError('Error exporting backup');
-              }
-            }}>Export backup</button>
+            <div data-testid="backup-verification-result">
+              Last backup verification: {lastBackupVerification}
+            </div>
+            <div data-testid="restore-verification-result">
+              Last restore verification: {lastRestoreVerification}
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  const backup = await client.backup.exportBackup();
+                  const blob = new Blob([JSON.stringify(backup, null, 2)], {
+                    type: 'application/json',
+                  });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement('a');
+                  a.href = url;
+                  a.download = `grant-ops-backup-${new Date().toISOString().slice(0, 10)}.json`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                  showToast('Backup downloaded successfully');
+                } catch (_err) {
+                  setError('Error exporting backup');
+                }
+              }}
+            >
+              Export backup
+            </button>
             <label>
               Restore from backup
-              <input type="file" accept="application/json,.json" onChange={(e) => { handleRequestRestore(e.target.files?.[0] ?? null); }} />
+              <input
+                type="file"
+                accept="application/json,.json"
+                onChange={(e) => {
+                  handleRequestRestore(e.target.files?.[0] ?? null);
+                }}
+              />
             </label>
             {showRestoreWarning && (
               <div data-testid="restore-warning-banner">
-                <div>Restoring will overwrite local state. Continue only if you have a verified backup.</div>
-                <button type="button" onClick={() => { void handleConfirmRestore(); }}>Confirm restore</button>
-                <button type="button" onClick={handleCancelRestore}>Cancel</button>
+                <div>
+                  Restoring will overwrite local state. Continue only if you have a verified backup.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    void handleConfirmRestore();
+                  }}
+                >
+                  Confirm restore
+                </button>
+                <button type="button" onClick={handleCancelRestore}>
+                  Cancel
+                </button>
               </div>
             )}
           </div>
         </section>
-
 
         <section className="setting-card" data-testid="opencode-status-card">
           <div className="setting-card-header">
@@ -720,19 +1024,20 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
               <span className="settings-status-label">
                 {health?.opencode ? getStatusLabelText(health.opencode) : 'Unknown'}
               </span>
-
             </div>
           </div>
           <div className="setting-card-body">
             {/* Status guidance */}
             {(() => {
-              const statusGuidance = health?.opencode ? opencodeStatusGuidance[health.opencode] : undefined;
+              const statusGuidance = health?.opencode
+                ? opencodeStatusGuidance[health.opencode]
+                : undefined;
               if (!statusGuidance || !health?.opencode) return null;
               return (
-                <div className={`settings-status-guidance ${getStatusGuidanceClass(health.opencode)}`}>
-                  <div className="settings-status-guidance-title">
-                    {statusGuidance.title}
-                  </div>
+                <div
+                  className={`settings-status-guidance ${getStatusGuidanceClass(health.opencode)}`}
+                >
+                  <div className="settings-status-guidance-title">{statusGuidance.title}</div>
                   <div
                     className="settings-status-guidance-desc"
                     style={{ marginBottom: health.opencode !== 'ok' ? '10px' : 0 }}
@@ -753,13 +1058,19 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
               <div>
                 <div className="setting-label settings-diag-label">Version</div>
                 <div className="settings-diag-value">
-                  {health?.opencodeVersion ? `v${health.opencodeVersion}` : (health?.opencode === 'not-installed' ? '—' : 'Unknown')}
+                  {health?.opencodeVersion
+                    ? `v${health.opencodeVersion}`
+                    : health?.opencode === 'not-installed'
+                      ? '—'
+                      : 'Unknown'}
                 </div>
               </div>
               <div>
                 <div className="setting-label settings-diag-label">Response Time</div>
                 <div className="settings-diag-value">
-                  {health?.handshakeResponseTimeMs != null ? `${health.handshakeResponseTimeMs}ms` : '—'}
+                  {health?.handshakeResponseTimeMs != null
+                    ? `${health.handshakeResponseTimeMs}ms`
+                    : '—'}
                 </div>
               </div>
               <div>
@@ -769,7 +1080,9 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                     <span className="settings-diag-success">✓ Success</span>
                   ) : health?.handshakeSuccess === false ? (
                     <span className="settings-diag-danger">✗ Failed</span>
-                  ) : '—'}
+                  ) : (
+                    '—'
+                  )}
                 </div>
               </div>
               <div>
@@ -797,55 +1110,53 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
             {/* Error details */}
             {health?.opencodeError && (
               <div className="settings-error-block">
-                <div className="settings-error-header">
-                  Opencode Error
-                </div>
-                <div className="settings-error-detail">
-                  {health.opencodeError}
-                </div>
+                <div className="settings-error-header">Opencode Error</div>
+                <div className="settings-error-detail">{health.opencodeError}</div>
               </div>
             )}
 
             {health?.handshakeError && !health?.handshakeSuccess && (
               <div className="settings-warning-block">
-                <div className="settings-warning-header">
-                  Handshake Error
-                </div>
-                <div className="settings-error-detail">
-                  {health.handshakeError}
-                </div>
+                <div className="settings-warning-header">Handshake Error</div>
+                <div className="settings-error-detail">{health.handshakeError}</div>
               </div>
             )}
 
             {/* Test connection result */}
-              {testConnectionResult && (
-                <div className={`settings-test-result ${testConnectionResult === 'success' ? 'settings-test-result-success' : 'settings-test-result-failed'}`}>
-                  <div className={`settings-test-result-title ${testConnectionResult === 'success' ? 'settings-test-result-title-success' : 'settings-test-result-title-failed'}`}>
-                    {testConnectionResult === 'success' ? '✓ Connection successful' : '✗ Connection failed'}
-                  </div>
-                  {testConnectionResult === 'success' && health?.handshakeResponseTimeMs != null && (
-                    <div className="settings-test-result-detail">
-                      Response time: {health.handshakeResponseTimeMs}ms
-                      {health?.opencodeVersion && ` • Version: v${health.opencodeVersion}`}
-                    </div>
-                  )}
-                  {testConnectionResult === 'failed' && health?.opencodeError && (
-                    <div className="settings-test-result-mono">
-                      {health.opencodeError}
-                    </div>
-                  )}
-                  {testConnectionResult === 'failed' && health?.handshakeError && (
-                    <div className="settings-test-result-mono settings-test-result-mono-mt">
-                      {health.handshakeError}
-                    </div>
-                  )}
+            {testConnectionResult && (
+              <div
+                className={`settings-test-result ${testConnectionResult === 'success' ? 'settings-test-result-success' : 'settings-test-result-failed'}`}
+              >
+                <div
+                  className={`settings-test-result-title ${testConnectionResult === 'success' ? 'settings-test-result-title-success' : 'settings-test-result-title-failed'}`}
+                >
+                  {testConnectionResult === 'success'
+                    ? '✓ Connection successful'
+                    : '✗ Connection failed'}
                 </div>
-              )}
+                {testConnectionResult === 'success' && health?.handshakeResponseTimeMs != null && (
+                  <div className="settings-test-result-detail">
+                    Response time: {health.handshakeResponseTimeMs}ms
+                    {health?.opencodeVersion && ` • Version: v${health.opencodeVersion}`}
+                  </div>
+                )}
+                {testConnectionResult === 'failed' && health?.opencodeError && (
+                  <div className="settings-test-result-mono">{health.opencodeError}</div>
+                )}
+                {testConnectionResult === 'failed' && health?.handshakeError && (
+                  <div className="settings-test-result-mono settings-test-result-mono-mt">
+                    {health.handshakeError}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </section>
 
         <section className="setting-card" data-testid="diagnostics-panel-card">
-          <div className="setting-card-header"><div className="setting-card-title">Diagnostics &amp; Failure History</div></div>
+          <div className="setting-card-header">
+            <div className="setting-card-title">Diagnostics &amp; Failure History</div>
+          </div>
           <div className="setting-card-body">
             <p className="settings-card-description">
               Recent opencode failures, root-cause analysis, and recommended resolution steps.
@@ -862,7 +1173,9 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                   >
                     <div className="settings-failure-entry-header">
                       <div className="settings-failure-badges">
-                        <span className={`settings-failure-badge ${entry.resolved ? 'settings-failure-badge-resolved' : 'settings-failure-badge-mode'}`}>
+                        <span
+                          className={`settings-failure-badge ${entry.resolved ? 'settings-failure-badge-resolved' : 'settings-failure-badge-mode'}`}
+                        >
                           {entry.resolved ? 'Resolved' : entry.failureMode}
                         </span>
                         {entry.rootCauseCategory && (
@@ -882,9 +1195,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                     </div>
                     {entry.resolutionSteps && entry.resolutionSteps.length > 0 && (
                       <div>
-                        <div className="settings-failure-resolution-label">
-                          Resolution steps:
-                        </div>
+                        <div className="settings-failure-resolution-label">Resolution steps:</div>
                         <ol className="settings-failure-resolution-list">
                           {entry.resolutionSteps.map((step, idx) => (
                             <li key={idx}>{step}</li>
@@ -904,22 +1215,26 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                 </div>
               </div>
             )}
-
           </div>
         </section>
 
         <section className="setting-card" data-testid="log-viewer-card">
-          <div className="setting-card-header"><div className="setting-card-title">Log Viewer</div></div>
+          <div className="setting-card-header">
+            <div className="setting-card-title">Log Viewer</div>
+          </div>
           <div className="setting-card-body">
             <LogViewer />
           </div>
         </section>
 
         <section className="setting-card">
-          <div className="setting-card-header"><div className="setting-card-title">Theme Configuration</div></div>
+          <div className="setting-card-header">
+            <div className="setting-card-title">Theme Configuration</div>
+          </div>
           <div className="setting-card-body">
             <p className="settings-card-description">
-              Configure matching themes, keyword clusters, and scoring thresholds for grant discovery.
+              Configure matching themes, keyword clusters, and scoring thresholds for grant
+              discovery.
             </p>
             <div>
               <h4>Search Themes</h4>
@@ -935,18 +1250,14 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
             </div>
             <div>
               <h4>Auto-Draft Threshold</h4>
-              <p>
-                Current threshold: {profile.agentBehavior?.autoDraftThreshold ?? 75}
-              </p>
+              <p>Current threshold: {profile.agentBehavior?.autoDraftThreshold ?? 75}</p>
               <p className="text-muted">
                 Grants with a fit score above this threshold will be automatically drafted.
               </p>
             </div>
-
           </div>
         </section>
       </div>
     </>
   );
 }
-

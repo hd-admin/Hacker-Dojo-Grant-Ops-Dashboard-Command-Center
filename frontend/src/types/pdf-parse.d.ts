@@ -8,7 +8,10 @@ declare module 'pdf-parse' {
     version: string;
   }
 
-  function PDFParse(dataBuffer: Buffer, options?: { max?: number; version?: string }): Promise<PDFParseResult>;
+  function PDFParse(
+    dataBuffer: Buffer,
+    options?: { max?: number; version?: string },
+  ): Promise<PDFParseResult>;
 
   export = PDFParse;
 }

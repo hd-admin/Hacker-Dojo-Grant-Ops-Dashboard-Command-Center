@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -14,7 +14,6 @@ const bodySchema = z.object({
   dot: z.enum(['info', 'accent', 'success', 'warning', 'danger']).optional(),
 });
 
-
 // GET: Get all notifications
 export async function GET() {
   await connection();
@@ -24,7 +23,10 @@ export async function GET() {
     return NextResponse.json(notifications);
   } catch (error) {
     logger.error({ err: error }, 'Error getting notifications');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get notifications'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get notifications'),
+      { status: 500 },
+    );
   }
 }
 
@@ -35,7 +37,9 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.json();
     const parsed = bodySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), {
+        status: 400,
+      });
     }
     const body = parsed.data;
     const deps = getDependencies();
@@ -57,7 +61,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(newNotification, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, 'Error creating notification');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create notification'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create notification'),
+      { status: 500 },
+    );
   }
 }
 
@@ -69,17 +76,23 @@ export async function PATCH(request: NextRequest) {
     const deps = getDependencies();
 
     if (!Array.isArray(body.notifications)) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Notifications array is required'), { status: 400 });
+      return NextResponse.json(
+        createErrorResponse('AGENT_INVALID_JSON', 'Notifications array is required'),
+        { status: 400 },
+      );
     }
 
-      const sanitized = (body.notifications as Notification[]).map((n) => ({
-        ...n,
-        text: sanitizeNotificationText(n.text ?? ''),
-      }));
-      await deps.repository.updateNotifications(sanitized);
+    const sanitized = (body.notifications as Notification[]).map((n) => ({
+      ...n,
+      text: sanitizeNotificationText(n.text ?? ''),
+    }));
+    await deps.repository.updateNotifications(sanitized);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, 'Error updating notifications');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update notifications'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update notifications'),
+      { status: 500 },
+    );
   }
 }

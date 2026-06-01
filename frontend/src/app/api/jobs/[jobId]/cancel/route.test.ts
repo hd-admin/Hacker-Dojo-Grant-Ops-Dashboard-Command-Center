@@ -1,7 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import {
+  invalidateCache,
+  withTempDataDir,
+} from '../../../../../../../shared/grant-ops-persistence';
 import type { JobQueueItem } from '../../../../../../../shared/types';
-import { createDependencies, resetDependencies, setDependencies } from '@/server/grant-ops/dependencies';
+import {
+  createDependencies,
+  resetDependencies,
+  setDependencies,
+} from '@/server/grant-ops/dependencies';
 import * as repository from '../../../../../server/grant-ops/repository';
 import { POST } from './route';
 
@@ -36,11 +43,14 @@ describe('/api/jobs/[jobId]/cancel route', () => {
   it('cancels a queued job and returns the updated record', async () => {
     await repository.addJobQueueItem(createJob('job-queued', 'queued'));
 
-    const response = await POST(new Request('http://localhost/api/jobs/job-queued/cancel', {
-      method: 'POST',
-    }) as never, {
-      params: Promise.resolve({ jobId: 'job-queued' }),
-    });
+    const response = await POST(
+      new Request('http://localhost/api/jobs/job-queued/cancel', {
+        method: 'POST',
+      }) as never,
+      {
+        params: Promise.resolve({ jobId: 'job-queued' }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -53,11 +63,14 @@ describe('/api/jobs/[jobId]/cancel route', () => {
   });
 
   it('returns 404 for nonexistent job', async () => {
-    const response = await POST(new Request('http://localhost/api/jobs/nonexistent/cancel', {
-      method: 'POST',
-    }) as never, {
-      params: Promise.resolve({ jobId: 'nonexistent' }),
-    });
+    const response = await POST(
+      new Request('http://localhost/api/jobs/nonexistent/cancel', {
+        method: 'POST',
+      }) as never,
+      {
+        params: Promise.resolve({ jobId: 'nonexistent' }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(404);
@@ -67,11 +80,14 @@ describe('/api/jobs/[jobId]/cancel route', () => {
   it('returns 409 for already-completed job', async () => {
     await repository.addJobQueueItem(createJob('job-done', 'completed'));
 
-    const response = await POST(new Request('http://localhost/api/jobs/job-done/cancel', {
-      method: 'POST',
-    }) as never, {
-      params: Promise.resolve({ jobId: 'job-done' }),
-    });
+    const response = await POST(
+      new Request('http://localhost/api/jobs/job-done/cancel', {
+        method: 'POST',
+      }) as never,
+      {
+        params: Promise.resolve({ jobId: 'job-done' }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(409);

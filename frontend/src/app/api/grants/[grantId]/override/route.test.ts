@@ -1,5 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { invalidateCache, withTempDataDir } from '../../../../../../../shared/grant-ops-persistence';
+import {
+  invalidateCache,
+  withTempDataDir,
+} from '../../../../../../../shared/grant-ops-persistence';
 import type { Grant, Task } from '../../../../../../../shared/types';
 import * as repository from '../../../../../server/grant-ops/repository';
 import { POST } from './route';
@@ -49,13 +52,21 @@ describe('/api/grants/[grantId]/override route', () => {
   });
 
   it('returns 404 for missing grants', async () => {
-    const response = await POST(new Request('http://localhost/api/grants/missing/override', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ field: 'fit', newValue: 85, rationale: 'Manual review', overrideType: 'score' }),
-    }) as never, {
-      params: Promise.resolve({ grantId: 'missing' }),
-    });
+    const response = await POST(
+      new Request('http://localhost/api/grants/missing/override', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          field: 'fit',
+          newValue: 85,
+          rationale: 'Manual review',
+          overrideType: 'score',
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: 'missing' }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(404);
@@ -63,37 +74,51 @@ describe('/api/grants/[grantId]/override route', () => {
   });
 
   it('returns 400 for empty rationale', async () => {
-    const response = await POST(new Request(`http://localhost/api/grants/${grant.id}/override`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ field: 'fit', newValue: 88, rationale: '', overrideType: 'score' }),
-    }) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/override`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ field: 'fit', newValue: 88, rationale: '', overrideType: 'score' }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
 
     expect(response.status).toBe(400);
   });
 
   it('returns 400 for missing rationale field', async () => {
-    const response = await POST(new Request(`http://localhost/api/grants/${grant.id}/override`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ field: 'fit', newValue: 88, overrideType: 'score' }),
-    }) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/override`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ field: 'fit', newValue: 88, overrideType: 'score' }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
 
     expect(response.status).toBe(400);
   });
 
   it('persists human overrides and records an audit event', async () => {
-    const response = await POST(new Request(`http://localhost/api/grants/${grant.id}/override`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ field: 'fit', newValue: 88, rationale: 'Board approved manual adjustment', overrideType: 'score' }),
-    }) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/override`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          field: 'fit',
+          newValue: 88,
+          rationale: 'Board approved manual adjustment',
+          overrideType: 'score',
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -113,13 +138,21 @@ describe('/api/grants/[grantId]/override route', () => {
   });
 
   it('can override status field with human override persisted', async () => {
-    const response = await POST(new Request(`http://localhost/api/grants/${grant.id}/override`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ field: 'status', newValue: 'approved', rationale: 'Executive approval confirmed', overrideType: 'status' }),
-    }) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/override`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          field: 'status',
+          newValue: 'approved',
+          rationale: 'Executive approval confirmed',
+          overrideType: 'status',
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -137,18 +170,21 @@ describe('/api/grants/[grantId]/override route', () => {
     tasks.push(task);
     await repository.updateTasks(tasks);
 
-    const response = await POST(new Request(`http://localhost/api/grants/${grant.id}/override`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        field: 'task.task-123.status',
-        newValue: 'completed',
-        rationale: 'Task manually verified by operator',
-        overrideType: 'task',
-      }),
-    }) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/override`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          field: 'task.task-123.status',
+          newValue: 'completed',
+          rationale: 'Task manually verified by operator',
+          overrideType: 'task',
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
     const data = await response.json();
 
     expect(response.status).toBe(200);
@@ -173,18 +209,21 @@ describe('/api/grants/[grantId]/override route', () => {
   });
 
   it('returns 404 when overriding a nonexistent task', async () => {
-    const response = await POST(new Request(`http://localhost/api/grants/${grant.id}/override`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        field: 'task.nonexistent-task.status',
-        newValue: 'completed',
-        rationale: 'Test rationale',
-        overrideType: 'task',
-      }),
-    }) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/override`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          field: 'task.nonexistent-task.status',
+          newValue: 'completed',
+          rationale: 'Test rationale',
+          overrideType: 'task',
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
 
     expect(response.status).toBe(404);
     const data = await response.json();
@@ -197,18 +236,21 @@ describe('/api/grants/[grantId]/override route', () => {
     tasks.push(task);
     await repository.updateTasks(tasks);
 
-    const response = await POST(new Request(`http://localhost/api/grants/${grant.id}/override`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        field: 'task.task-456.status',
-        newValue: 'invalid-status',
-        rationale: 'Test rationale',
-        overrideType: 'task',
-      }),
-    }) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/override`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          field: 'task.task-456.status',
+          newValue: 'invalid-status',
+          rationale: 'Test rationale',
+          overrideType: 'task',
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
 
     expect(response.status).toBe(400);
     const data = await response.json();
@@ -226,18 +268,21 @@ describe('/api/grants/[grantId]/override route', () => {
     await repository.updateTasks(tasks);
 
     // Attempt to override the other grant's task via this grant's override route
-    const response = await POST(new Request(`http://localhost/api/grants/${grant.id}/override`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        field: 'task.task-cross-grant.status',
-        newValue: 'completed',
-        rationale: 'Trying to override another grant\'s task',
-        overrideType: 'task',
-      }),
-    }) as never, {
-      params: Promise.resolve({ grantId: grant.id }),
-    });
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/override`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          field: 'task.task-cross-grant.status',
+          newValue: 'completed',
+          rationale: "Trying to override another grant's task",
+          overrideType: 'task',
+        }),
+      }) as never,
+      {
+        params: Promise.resolve({ grantId: grant.id }),
+      },
+    );
 
     expect(response.status).toBe(404);
     const data = await response.json();

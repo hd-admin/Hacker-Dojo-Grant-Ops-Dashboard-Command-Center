@@ -1,4 +1,4 @@
-import { NextResponse, connection } from "next/server";
+import { NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import * as profileService from '@/server/grant-ops/profile-service';
@@ -10,7 +10,9 @@ export async function GET() {
   try {
     const profile = await profileService.getProfile();
     if (!profile) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Profile not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Profile not found'), {
+        status: 404,
+      });
     }
 
     const missingFields = profileService.getMissingRequiredFields(profile);
@@ -26,7 +28,9 @@ export async function GET() {
     });
   } catch (error) {
     logger.error({ err: error }, 'Error getting profile');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get profile'), { status: 500 });
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get profile'), {
+      status: 500,
+    });
   }
 }
 

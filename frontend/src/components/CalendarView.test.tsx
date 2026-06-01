@@ -13,8 +13,9 @@ describe('CalendarView', () => {
     await new Promise((r) => setTimeout(r, 100));
     expect(container.querySelector('[data-testid="calendar-view"]')).not.toBeNull();
     expect(container.querySelectorAll('[role="columnheader"]').length).toBe(7);
-    const headers = Array.from(container.querySelectorAll('[role="columnheader"]'))
-      .map((el) => el.textContent);
+    const headers = Array.from(container.querySelectorAll('[role="columnheader"]')).map(
+      (el) => el.textContent,
+    );
     expect(headers).toEqual(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
     root.unmount();
     container.remove();

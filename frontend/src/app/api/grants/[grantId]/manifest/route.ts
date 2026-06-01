@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest, connection } from "next/server";
+import { NextResponse, type NextRequest, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -32,35 +32,50 @@ const patchBodySchema = z.object({
   submissionMethod: z.enum(['portal', 'email', 'mail', 'other']).optional(),
 });
 
-export async function GET(_request: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
+export async function GET(
+  _request: NextRequest,
+  { params }: { params: Promise<{ grantId: string }> },
+) {
   await connection();
   const { grantId } = await params;
   const deps = getDependencies();
   const grant = await deps.repository.getGrant(grantId);
   if (!grant) {
-    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
+    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+      status: 404,
+    });
   }
   const manifests = await deps.repository.getSubmissionManifests(grantId);
   const manifest = manifests[0] ?? null;
   if (!manifest) {
-    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Manifest not found'), { status: 404 });
+    return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Manifest not found'), {
+      status: 404,
+    });
   }
   return NextResponse.json(manifest);
 }
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ grantId: string }> },
+) {
   await connection();
   try {
     const { grantId } = await params;
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid manifest payload', issues: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid manifest payload', issues: parsed.error.flatten() },
+        { status: 400 },
+      );
     }
 
     const deps = getDependencies();
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
     }
     const existing = await deps.repository.getSubmissionManifests(grantId);
     const materialRefs: SubmissionManifestItem[] = parsed.data.materialRefs.map((item) => ({
@@ -79,52 +94,75 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     };
     if (parsed.data.instructions !== undefined) manifest.instructions = parsed.data.instructions;
     if (parsed.data.portalUrl !== undefined) manifest.portalUrl = parsed.data.portalUrl;
-    if (parsed.data.fileConstraints !== undefined) manifest.fileConstraints = parsed.data.fileConstraints;
+    if (parsed.data.fileConstraints !== undefined)
+      manifest.fileConstraints = parsed.data.fileConstraints;
     if (parsed.data.dueDate !== undefined) manifest.dueDate = parsed.data.dueDate;
     if (parsed.data.notes !== undefined) manifest.notes = parsed.data.notes;
-    if (parsed.data.submissionMethod !== undefined) manifest.submissionMethod = parsed.data.submissionMethod;
-    if (parsed.data.confirmationNumber !== undefined) manifest.confirmationNumber = parsed.data.confirmationNumber;
-    if (parsed.data.runbookCompleted !== undefined) manifest.runbookCompleted = parsed.data.runbookCompleted;
+    if (parsed.data.submissionMethod !== undefined)
+      manifest.submissionMethod = parsed.data.submissionMethod;
+    if (parsed.data.confirmationNumber !== undefined)
+      manifest.confirmationNumber = parsed.data.confirmationNumber;
+    if (parsed.data.runbookCompleted !== undefined)
+      manifest.runbookCompleted = parsed.data.runbookCompleted;
     await deps.repository.addSubmissionManifest(manifest);
     return NextResponse.json(manifest);
   } catch (error) {
     logger.error({ err: error }, 'Error saving manifest');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to save manifest'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to save manifest'),
+      { status: 500 },
+    );
   }
 }
 
-export async function PATCH(request: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ grantId: string }> },
+) {
   await connection();
   try {
     const { grantId } = await params;
     const parsed = patchBodySchema.safeParse(await request.json().catch(() => null));
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid payload', issues: parsed.error.flatten() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid payload', issues: parsed.error.flatten() },
+        { status: 400 },
+      );
     }
 
     const deps = getDependencies();
     const grant = await deps.repository.getGrant(grantId);
     if (!grant) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
     }
     const manifests = await deps.repository.getSubmissionManifests(grantId);
     const existing = manifests[0];
     if (!existing) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Manifest not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Manifest not found'), {
+        status: 404,
+      });
     }
 
     const updated: SubmissionManifest = {
       ...existing,
       updatedAt: new Date().toISOString(),
     };
-    if (parsed.data.confirmationNumber !== undefined) updated.confirmationNumber = parsed.data.confirmationNumber;
-    if (parsed.data.runbookCompleted !== undefined) updated.runbookCompleted = parsed.data.runbookCompleted;
-    if (parsed.data.submissionMethod !== undefined) updated.submissionMethod = parsed.data.submissionMethod;
+    if (parsed.data.confirmationNumber !== undefined)
+      updated.confirmationNumber = parsed.data.confirmationNumber;
+    if (parsed.data.runbookCompleted !== undefined)
+      updated.runbookCompleted = parsed.data.runbookCompleted;
+    if (parsed.data.submissionMethod !== undefined)
+      updated.submissionMethod = parsed.data.submissionMethod;
 
     await deps.repository.addSubmissionManifest(updated);
     return NextResponse.json(updated);
   } catch (error) {
     logger.error({ err: error }, 'Error updating manifest');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update manifest'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update manifest'),
+      { status: 500 },
+    );
   }
 }

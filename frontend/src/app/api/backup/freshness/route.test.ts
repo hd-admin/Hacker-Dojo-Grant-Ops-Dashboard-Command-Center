@@ -10,10 +10,7 @@ import {
   resetDependencies,
   setDependencies,
 } from '@/server/grant-ops/dependencies';
-import {
-  invalidateCache,
-  withTempDataDir,
-} from '../../../../../../shared/grant-ops-persistence';
+import { invalidateCache, withTempDataDir } from '../../../../../../shared/grant-ops-persistence';
 import type { BackupFreshnessStatus } from '../../../../../../shared/types';
 import { GET } from './route';
 

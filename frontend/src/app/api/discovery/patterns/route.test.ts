@@ -5,7 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/server/grant-ops/dependencies', () => ({
   getDependencies: vi.fn(),
-  setDependencies: vi.fn(), resetDependencies: vi.fn(), createDependencies: vi.fn(),
+  setDependencies: vi.fn(),
+  resetDependencies: vi.fn(),
+  createDependencies: vi.fn(),
 }));
 vi.mock('next/server', async () => {
   const actual = await vi.importActual<typeof import('next/server')>('next/server');
@@ -27,10 +29,28 @@ describe('/api/discovery/patterns route', () => {
       idGenerator: { generateId: (p: string) => `${p}-test` },
     });
   });
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns patterns from audit events', async () => {
-    const mockEvents = [{ eventType: 'pattern_detected', id: 'e1', entityId: 'e1', entityType: 'pattern', actorLabel: 'agent', timestamp: '2026-01-01', metadata: { id: 'p1', funderName: 'F1', patternType: 'deadline-cycle', confidence: 85, evidence: 'Test' } }];
+    const mockEvents = [
+      {
+        eventType: 'pattern_detected',
+        id: 'e1',
+        entityId: 'e1',
+        entityType: 'pattern',
+        actorLabel: 'agent',
+        timestamp: '2026-01-01',
+        metadata: {
+          id: 'p1',
+          funderName: 'F1',
+          patternType: 'deadline-cycle',
+          confidence: 85,
+          evidence: 'Test',
+        },
+      },
+    ];
     const deps = getDependencies();
     (deps.repository.getAuditEvents as ReturnType<typeof vi.fn>).mockResolvedValue(mockEvents);
 
@@ -43,8 +63,14 @@ describe('/api/discovery/patterns route', () => {
 
   it('creates a pattern', async () => {
     const req = new Request('http://localhost/api/discovery/patterns', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ funderName: 'F1', patternType: 'deadline-cycle', confidence: 90, evidence: '3-year pattern' }),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        funderName: 'F1',
+        patternType: 'deadline-cycle',
+        confidence: 90,
+        evidence: '3-year pattern',
+      }),
     });
     const response = await POST(req as unknown as NextRequest);
     expect(response.status).toBe(200);
@@ -54,7 +80,9 @@ describe('/api/discovery/patterns route', () => {
 
   it('returns 400 for invalid pattern data', async () => {
     const req = new Request('http://localhost/api/discovery/patterns', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
     });
     const response = await POST(req as unknown as NextRequest);
     expect(response.status).toBe(400);

@@ -51,8 +51,7 @@ function getRelativeTime(isoString: string): string {
  */
 function isCrawlStale(lastCrawledAt?: string): boolean {
   if (!lastCrawledAt) return false;
-  const diffDays =
-    (Date.now() - new Date(lastCrawledAt).getTime()) / (1000 * 60 * 60 * 24);
+  const diffDays = (Date.now() - new Date(lastCrawledAt).getTime()) / (1000 * 60 * 60 * 24);
   return diffDays > 7;
 }
 
@@ -109,8 +108,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
   const [pendingSources, setPendingSources] = useState<Source[]>([]);
   const [showDiscoverForm, setShowDiscoverForm] = useState(false);
   const [discoverPrompt, setDiscoverPrompt] = useState('');
-  const [discoverSuggestions, setDiscoverSuggestions] =
-    useState<SourceDiscoverySuggestion[]>([]);
+  const [discoverSuggestions, setDiscoverSuggestions] = useState<SourceDiscoverySuggestion[]>([]);
   const [discoverUnavailable, setDiscoverUnavailable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -121,7 +119,9 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
   const [filter, setFilter] = useState<SourceFilter>('all');
   const [retryingSourceIds, setRetryingSourceIds] = useState<Set<string>>(new Set());
   const [crawlNowIds, setCrawlNowIds] = useState<Set<string>>(new Set());
-  const [scheduleStatuses, setScheduleStatuses] = useState<Record<string, { isEnabled: boolean; loading: boolean }>>({});
+  const [scheduleStatuses, setScheduleStatuses] = useState<
+    Record<string, { isEnabled: boolean; loading: boolean }>
+  >({});
 
   // ProPublica search state
   const [propublicaQuery, setPropublicaQuery] = useState('');
@@ -138,10 +138,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
       fetch('/api/sources'),
       fetch('/api/sources?filter=pending-review'),
     ]);
-    const [all, pending] = await Promise.all([
-      allResponse.json(),
-      pendingResponse.json(),
-    ]);
+    const [all, pending] = await Promise.all([allResponse.json(), pendingResponse.json()]);
     setSources(Array.isArray(all) ? all : []);
     setPendingSources(Array.isArray(pending) ? pending : []);
     setInitialLoading(false);
@@ -165,9 +162,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         body: JSON.stringify({ prompt: discoverPrompt }),
       });
       const data = await response.json();
-      setDiscoverSuggestions(
-        Array.isArray(data.suggestions) ? data.suggestions : [],
-      );
+      setDiscoverSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
       setDiscoverUnavailable(Boolean(data.unavailable));
     } catch (_error) {
       setError('Error discovering sources');
@@ -209,9 +204,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     }
   };
 
-  const approveDiscoverySuggestion = async (
-    suggestion: SourceDiscoverySuggestion,
-  ) => {
+  const approveDiscoverySuggestion = async (suggestion: SourceDiscoverySuggestion) => {
     await fetch('/api/sources', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -226,9 +219,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         crawlAccessCategory: suggestion.suggestedCrawlAccess ?? 'crawlable',
       }),
     });
-    setDiscoverSuggestions((current) =>
-      current.filter((item) => item.id !== suggestion.id),
-    );
+    setDiscoverSuggestions((current) => current.filter((item) => item.id !== suggestion.id));
     await loadSources();
     await onRefreshAppState?.();
   };
@@ -255,10 +246,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     await onRefreshAppState?.();
   };
 
-  const categorizeSource = async (
-    sourceId: string,
-    category: SourceCategory,
-  ) => {
+  const categorizeSource = async (sourceId: string, category: SourceCategory) => {
     await fetch(`/api/sources/${encodeURIComponent(sourceId)}/review`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
@@ -299,9 +287,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     // Lazy-load crawl history if not already loaded
     if (!crawlHistories[sourceId]) {
       try {
-        const response = await fetch(
-          `/api/sources?sourceId=${encodeURIComponent(sourceId)}`,
-        );
+        const response = await fetch(`/api/sources?sourceId=${encodeURIComponent(sourceId)}`);
         const history = await response.json();
         setCrawlHistories((prev) => ({
           ...prev,
@@ -316,10 +302,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
   const retryCrawl = async (sourceId: string) => {
     setRetryingSourceIds((prev) => new Set(prev).add(sourceId));
     try {
-      await fetch(
-        `/api/sources/${encodeURIComponent(sourceId)}/retry-crawl`,
-        { method: 'POST' },
-      );
+      await fetch(`/api/sources/${encodeURIComponent(sourceId)}/retry-crawl`, { method: 'POST' });
       // Reload sources after a brief delay for the crawl to start
       setTimeout(() => {
         void loadSources();
@@ -338,10 +321,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
   const crawlNow = async (sourceId: string) => {
     setCrawlNowIds((prev) => new Set(prev).add(sourceId));
     try {
-      await fetch(
-        `/api/sources/${encodeURIComponent(sourceId)}/retry-crawl`,
-        { method: 'POST' },
-      );
+      await fetch(`/api/sources/${encodeURIComponent(sourceId)}/retry-crawl`, { method: 'POST' });
       setTimeout(() => {
         void loadSources();
       }, 1000);
@@ -358,9 +338,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
 
   const loadSchedule = async (sourceId: string) => {
     try {
-      const response = await fetch(
-        `/api/sources/${encodeURIComponent(sourceId)}/schedule`,
-      );
+      const response = await fetch(`/api/sources/${encodeURIComponent(sourceId)}/schedule`);
       if (response.ok) {
         const data = await response.json();
         setScheduleStatuses((prev) => ({
@@ -389,19 +367,13 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     }));
     try {
       if (enable) {
-        await fetch(
-          `/api/sources/${encodeURIComponent(sourceId)}/schedule`,
-          {
-            method: 'PUT',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ intervalHours: 24, isEnabled: true }),
-          },
-        );
+        await fetch(`/api/sources/${encodeURIComponent(sourceId)}/schedule`, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ intervalHours: 24, isEnabled: true }),
+        });
       } else {
-        await fetch(
-          `/api/sources/${encodeURIComponent(sourceId)}/schedule`,
-          { method: 'DELETE' },
-        );
+        await fetch(`/api/sources/${encodeURIComponent(sourceId)}/schedule`, { method: 'DELETE' });
       }
       setScheduleStatuses((prev) => ({
         ...prev,
@@ -430,9 +402,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
   }, [sources]);
 
   const markAsManual = async (sourceId: string) => {
-    const reason = window.prompt(
-      'Reason for marking as manual-only? (optional)',
-    );
+    const reason = window.prompt('Reason for marking as manual-only? (optional)');
     await fetch(`/api/sources/${encodeURIComponent(sourceId)}`, {
       method: 'PUT',
       headers: { 'content-type': 'application/json' },
@@ -488,9 +458,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         role="status"
         aria-label={`Crawl status: ${label}`}
       >
-        {state === 'running' && (
-          <span className="spinner" aria-hidden="true" />
-        )}
+        {state === 'running' && <span className="spinner" aria-hidden="true" />}
         {label}
       </span>
     );
@@ -513,11 +481,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
           data-testid={`last-crawled-${source.id}`}
         >
           {stale && (
-            <span
-              className="stale-warning-icon"
-              aria-hidden="true"
-              title="Last crawl > 7 days ago"
-            >
+            <span className="stale-warning-icon" aria-hidden="true" title="Last crawl > 7 days ago">
               ⚠️
             </span>
           )}
@@ -541,10 +505,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     const fm = getFailureMessage(source.failureCategory);
     if (source.lastFailedAt) {
       return (
-        <div
-          className="failure-info"
-          data-testid={`failure-info-${source.id}`}
-        >
+        <div className="failure-info" data-testid={`failure-info-${source.id}`}>
           <span className="failure-timestamp">
             Last failed: {getRelativeTime(source.lastFailedAt)}
           </span>
@@ -607,8 +568,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
 
   function renderRemediationActions(source: Source) {
     const state = source.sourceCrawlState;
-    const isQueuedOrRunning =
-      state === 'queued' || state === 'running';
+    const isQueuedOrRunning = state === 'queued' || state === 'running';
     const scheduleInfo = scheduleStatuses[source.id];
     const isScheduled = scheduleInfo?.isEnabled ?? false;
     const isScheduleLoading = scheduleInfo?.loading ?? false;
@@ -616,42 +576,44 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     return (
       <div className="remediation-actions" data-testid={`remediation-${source.id}`}>
         {/* Crawl Now — always available for crawlable, approved sources */}
-        {source.crawlAccessCategory === 'crawlable' &&
-          source.reviewStatus === 'approved' && (
-            <button
-              type="button"
-              className="btn-remediate btn-primary"
-              data-testid={`crawl-now-btn-${source.id}`}
-              disabled={isQueuedOrRunning || crawlNowIds.has(source.id)}
-              onClick={() => void crawlNow(source.id)}
-              aria-label={`Trigger crawl now for ${source.name}`}
-            >
-              {crawlNowIds.has(source.id)
-                ? 'Starting...'
-                : isQueuedOrRunning
-                  ? 'Crawl in progress'
-                  : '\u{1F680} Crawl Now'}
-            </button>
-          )}
+        {source.crawlAccessCategory === 'crawlable' && source.reviewStatus === 'approved' && (
+          <button
+            type="button"
+            className="btn-remediate btn-primary"
+            data-testid={`crawl-now-btn-${source.id}`}
+            disabled={isQueuedOrRunning || crawlNowIds.has(source.id)}
+            onClick={() => void crawlNow(source.id)}
+            aria-label={`Trigger crawl now for ${source.name}`}
+          >
+            {crawlNowIds.has(source.id)
+              ? 'Starting...'
+              : isQueuedOrRunning
+                ? 'Crawl in progress'
+                : '\u{1F680} Crawl Now'}
+          </button>
+        )}
 
         {/* Pause/Resume toggle — only for crawlable sources */}
-        {source.crawlAccessCategory === 'crawlable' &&
-          source.reviewStatus === 'approved' && (
-            <button
-              type="button"
-              className={`btn-remediate ${isScheduled ? 'btn-warn' : 'btn-success'}`}
-              data-testid={`toggle-schedule-btn-${source.id}`}
-              disabled={isScheduleLoading}
-              onClick={() => void toggleSchedule(source.id, !isScheduled)}
-              aria-label={isScheduled ? `Pause crawling for ${source.name}` : `Resume crawling for ${source.name}`}
-            >
-              {isScheduleLoading
-                ? '...'
-                : isScheduled
-                  ? '\u23F8\uFE0F Pause Crawling'
-                  : '\u25B6\uFE0F Resume Crawling'}
-            </button>
-          )}
+        {source.crawlAccessCategory === 'crawlable' && source.reviewStatus === 'approved' && (
+          <button
+            type="button"
+            className={`btn-remediate ${isScheduled ? 'btn-warn' : 'btn-success'}`}
+            data-testid={`toggle-schedule-btn-${source.id}`}
+            disabled={isScheduleLoading}
+            onClick={() => void toggleSchedule(source.id, !isScheduled)}
+            aria-label={
+              isScheduled
+                ? `Pause crawling for ${source.name}`
+                : `Resume crawling for ${source.name}`
+            }
+          >
+            {isScheduleLoading
+              ? '...'
+              : isScheduled
+                ? '\u23F8\uFE0F Pause Crawling'
+                : '\u25B6\uFE0F Resume Crawling'}
+          </button>
+        )}
 
         {/* Retry crawl — for failed sources */}
         {state !== 'never-crawled' &&
@@ -716,10 +678,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     const lastFailure = history.find((r) => r.status === 'failed');
 
     return (
-      <div
-        className="crawl-history-panel"
-        data-testid={`crawl-history-${sourceId}`}
-      >
+      <div className="crawl-history-panel" data-testid={`crawl-history-${sourceId}`}>
         <h4>Crawl History</h4>
 
         {/* Summary stats */}
@@ -731,7 +690,9 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
             </div>
             <div className="stat-row">
               <span className="stat-label">Success rate:</span>
-              <span className={`stat-value ${successRate >= 80 ? 'stat-good' : successRate >= 50 ? 'stat-warn' : 'stat-bad'}`}>
+              <span
+                className={`stat-value ${successRate >= 80 ? 'stat-good' : successRate >= 50 ? 'stat-warn' : 'stat-bad'}`}
+              >
                 {successRate}% ({succeededRuns}/{totalRuns})
               </span>
             </div>
@@ -750,7 +711,8 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                   {getRelativeTime(lastFailure.completedAt || lastFailure.startedAt)}
                   {lastFailure.failureCategory && (
                     <span className="failure-category-tag">
-                      {jobFailureMessages[lastFailure.failureCategory]?.title ?? lastFailure.failureCategory}
+                      {jobFailureMessages[lastFailure.failureCategory]?.title ??
+                        lastFailure.failureCategory}
                     </span>
                   )}
                 </span>
@@ -780,41 +742,30 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                 className={`history-entry history-${run.status}`}
                 data-testid={`crawl-run-${run.id}`}
               >
-                <span className="history-time">
-                  {new Date(run.startedAt).toLocaleString()}
-                </span>
-                <span className={`history-status status-${run.status}`}>
-                  {run.status}
-                </span>
+                <span className="history-time">{new Date(run.startedAt).toLocaleString()}</span>
+                <span className={`history-status status-${run.status}`}>{run.status}</span>
                 {run.completedAt && (
                   <span className="history-duration">
                     Duration:{' '}
                     {Math.round(
-                      (new Date(run.completedAt).getTime() -
-                        new Date(run.startedAt).getTime()) /
+                      (new Date(run.completedAt).getTime() - new Date(run.startedAt).getTime()) /
                         1000,
                     )}
                     s
                   </span>
                 )}
                 {run.grantsFound > 0 && (
-                  <span className="history-grants">
-                    {run.grantsFound} grants found
-                  </span>
+                  <span className="history-grants">{run.grantsFound} grants found</span>
                 )}
                 {run.errorMessage && (
-                  <span
-                    className="history-error"
-                    title={run.errorMessage}
-                  >
+                  <span className="history-error" title={run.errorMessage}>
                     Error: {run.errorMessage.substring(0, 80)}
                     {run.errorMessage.length > 80 ? '...' : ''}
                   </span>
                 )}
                 {run.failureCategory && (
                   <span className="history-failure-category">
-                    {jobFailureMessages[run.failureCategory]?.title ??
-                      run.failureCategory}
+                    {jobFailureMessages[run.failureCategory]?.title ?? run.failureCategory}
                   </span>
                 )}
               </div>
@@ -833,9 +784,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
       key: 'failing',
       label: 'Failing',
       count: sources.filter(
-        (s) =>
-          s.sourceCrawlState === 'failed' ||
-          s.sourceCrawlState === 'partially-failed',
+        (s) => s.sourceCrawlState === 'failed' || s.sourceCrawlState === 'partially-failed',
       ).length,
     },
     {
@@ -851,18 +800,14 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     {
       key: 'manual-only',
       label: 'Manual Only',
-      count: sources.filter((s) => s.crawlAccessCategory === 'manual-only')
-        .length,
+      count: sources.filter((s) => s.crawlAccessCategory === 'manual-only').length,
     },
   ];
 
   // ----- Pending sources panel (unchanged from original) -----
 
   const pendingSourcesPanel = (
-    <section
-      className="sources-section"
-      data-testid="sources-pending-review-section"
-    >
+    <section className="sources-section" data-testid="sources-pending-review-section">
       <h2>Pending review</h2>
       {pendingSources.length === 0 ? (
         <div>No sources pending review</div>
@@ -872,34 +817,29 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
             <div>
               <strong>{source.name}</strong>
               {source.crawlAccessCategory === 'unsupported' && (
-                <span className="approval-gate-badge unsupported-badge">
-                  ⚠️ Unsupported
-                </span>
+                <span className="approval-gate-badge unsupported-badge">⚠️ Unsupported</span>
               )}
               <div>{source.url}</div>
               {source.suggestionReason && (
                 <div className="source-note">{source.suggestionReason}</div>
               )}
               {source.category && (
-                <div className="source-note">
-                  Category: {categoryLabel(source.category)}
-                </div>
+                <div className="source-note">Category: {categoryLabel(source.category)}</div>
               )}
               {source.authMethodDescription && (
-                <div className="source-note">
-                  Auth: {source.authMethodDescription}
-                </div>
+                <div className="source-note">Auth: {source.authMethodDescription}</div>
               )}
               {source.crawlFrequencyRecommendation && (
-                <div className="source-note">
-                  Frequency: {source.crawlFrequencyRecommendation}
-                </div>
+                <div className="source-note">Frequency: {source.crawlFrequencyRecommendation}</div>
               )}
             </div>
             {source.crawlAccessCategory === 'unsupported' && (
-              <div className="unsupported-guidance" data-testid={`unsupported-guidance-pending-${source.id}`}>
-                <strong>⚠️ This source cannot be crawled automatically.</strong>{' '}
-                Review and consider classifying as manual-only or rejecting it.
+              <div
+                className="unsupported-guidance"
+                data-testid={`unsupported-guidance-pending-${source.id}`}
+              >
+                <strong>⚠️ This source cannot be crawled automatically.</strong> Review and consider
+                classifying as manual-only or rejecting it.
               </div>
             )}
             <div className="source-actions">
@@ -910,26 +850,18 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
               >
                 Approve
               </button>
-              <button
-                type="button"
-                onClick={() => void rejectSource(source.id)}
-              >
+              <button type="button" onClick={() => void rejectSource(source.id)}>
                 Reject
               </button>
               <div>
-                <button
-                  type="button"
-                  data-testid={`categorize-source-btn-${source.id}`}
-                >
+                <button type="button" data-testid={`categorize-source-btn-${source.id}`}>
                   Categorize
                 </button>
                 {sourceCategories.map((category) => (
                   <button
                     key={category}
                     type="button"
-                    onClick={() =>
-                      void categorizeSource(source.id, category)
-                    }
+                    onClick={() => void categorizeSource(source.id, category)}
                   >
                     {categoryLabel(category)}
                   </button>
@@ -1009,10 +941,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                   }
                   placeholder="Operator notes"
                 />
-                <button
-                  type="button"
-                  onClick={() => void saveEdit(source.id)}
-                >
+                <button type="button" onClick={() => void saveEdit(source.id)}>
                   Save
                 </button>
               </div>
@@ -1038,9 +967,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
           <h1 className="header-title">
             Sources <span className="accent">Review queue</span>
           </h1>
-          <div className="header-sub">
-            {pendingCount} sources awaiting review
-          </div>
+          <div className="header-sub">{pendingCount} sources awaiting review</div>
         </div>
         <div className="header-actions">
           <button
@@ -1084,8 +1011,8 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         <section data-testid="discovery-suggestions-section">
           <h2>Source Suggestions ({discoverSuggestions.length})</h2>
           <p className="section-note">
-            Review and approve suggestions. Sources require operator approval before
-            they can be crawled.
+            Review and approve suggestions. Sources require operator approval before they can be
+            crawled.
           </p>
           {discoverSuggestions.map((suggestion) => (
             <div
@@ -1095,7 +1022,9 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
             >
               <div className="review-card-header">
                 <strong>{suggestion.name}</strong>
-                <span className={`confidence-badge ${suggestion.confidence >= 0.7 ? 'conf-high' : suggestion.confidence >= 0.4 ? 'conf-mid' : 'conf-low'}`}>
+                <span
+                  className={`confidence-badge ${suggestion.confidence >= 0.7 ? 'conf-high' : suggestion.confidence >= 0.4 ? 'conf-mid' : 'conf-low'}`}
+                >
                   {Math.round(suggestion.confidence * 100)}% confidence
                 </span>
               </div>
@@ -1118,9 +1047,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                   </span>
                 )}
                 {suggestion.authMethodDescription && (
-                  <span className="meta-tag">
-                    Auth: {suggestion.authMethodDescription}
-                  </span>
+                  <span className="meta-tag">Auth: {suggestion.authMethodDescription}</span>
                 )}
                 {suggestion.crawlFrequencyRecommendation && (
                   <span className="meta-tag">
@@ -1135,18 +1062,21 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
 
               {/* Unsupported source guidance */}
               {suggestion.suggestedCrawlAccess === 'unsupported' && (
-                <div className="review-card-warning" data-testid={`unsupported-warning-${suggestion.id}`}>
-                  <strong>⚠️ This source is classified as unsupported.</strong>{' '}
-                  It may require authentication, be behind a paywall, or use anti-bot measures
-                  that prevent automated crawling. Consider manual review or alternative sources.
+                <div
+                  className="review-card-warning"
+                  data-testid={`unsupported-warning-${suggestion.id}`}
+                >
+                  <strong>⚠️ This source is classified as unsupported.</strong> It may require
+                  authentication, be behind a paywall, or use anti-bot measures that prevent
+                  automated crawling. Consider manual review or alternative sources.
                 </div>
               )}
 
               {/* Approval required gate */}
               <div className="review-card-notice">
                 <strong>⚠️ Approval required:</strong> This source will be added with
-                &quot;pending-review&quot; status and must be explicitly approved before it can
-                be crawled.
+                &quot;pending-review&quot; status and must be explicitly approved before it can be
+                crawled.
               </div>
 
               <div className="review-card-actions">
@@ -1155,9 +1085,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                   className="btn-approve"
                   data-testid="approve-suggestion-btn"
                   aria-label="Approve suggestion"
-                  onClick={() =>
-                    void approveDiscoverySuggestion(suggestion)
-                  }
+                  onClick={() => void approveDiscoverySuggestion(suggestion)}
                 >
                   ✓ Add to Review Queue
                 </button>
@@ -1181,9 +1109,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
       {/* ProPublica Nonprofit Explorer Search */}
       <section className="propublica-section" data-testid="propublica-search-section">
         <div className="panel-header">
-          <div className="panel-title">
-            Search ProPublica Nonprofit Explorer
-          </div>
+          <div className="panel-title">Search ProPublica Nonprofit Explorer</div>
         </div>
         <form onSubmit={handleProPublicaSearch} className="propublica-search-form">
           <input
@@ -1216,7 +1142,8 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
           <div className="empty-state-guide" data-testid="propublica-empty-results">
             <div className="empty-state-title">No results found</div>
             <div className="empty-state-description">
-              Try a different search query or check if ProPublica has data for your area of interest.
+              Try a different search query or check if ProPublica has data for your area of
+              interest.
             </div>
           </div>
         )}
@@ -1269,19 +1196,14 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
       </section>
 
       {/* No approved sources blocking message */}
-      {sources.length > 0 &&
-        sources.every((s) => s.reviewStatus !== 'approved') && (
-          <div
-            className="blocking-message"
-            data-testid="no-approved-sources-msg"
-            role="alert"
-          >
-            <strong>⚠️ No approved sources available for crawling.</strong>{' '}
-            {sources.filter((s) => s.reviewStatus === 'pending-review').length > 0
-              ? `${sources.filter((s) => s.reviewStatus === 'pending-review').length} source(s) are pending review. Approve them in the review queue above to enable crawling.`
-              : 'Add and approve sources to enable grant research and crawling.'}
-          </div>
-        )}
+      {sources.length > 0 && sources.every((s) => s.reviewStatus !== 'approved') && (
+        <div className="blocking-message" data-testid="no-approved-sources-msg" role="alert">
+          <strong>⚠️ No approved sources available for crawling.</strong>{' '}
+          {sources.filter((s) => s.reviewStatus === 'pending-review').length > 0
+            ? `${sources.filter((s) => s.reviewStatus === 'pending-review').length} source(s) are pending review. Approve them in the review queue above to enable crawling.`
+            : 'Add and approve sources to enable grant research and crawling.'}
+        </div>
+      )}
 
       {/* All sources with crawl status */}
       <section data-testid="sources-all-section">
@@ -1289,18 +1211,20 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
         {sources.length === 0 ? (
           /* Empty state: no sources at all */
           <div className="sources-empty-state" data-testid="sources-empty-state">
-            <div className="empty-state-icon" aria-hidden="true">📡</div>
+            <div className="empty-state-icon" aria-hidden="true">
+              📡
+            </div>
             <h3>No sources configured</h3>
             <p>
-              Sources are the grant databases, websites, and APIs that the system
-              searches to find new funding opportunities. Each source must be
-              explicitly added and approved before it can be crawled.
+              Sources are the grant databases, websites, and APIs that the system searches to find
+              new funding opportunities. Each source must be explicitly added and approved before it
+              can be crawled.
             </p>
             <p className="empty-state-reason">
-              <strong>Why explicit sources matter:</strong> Grant research requires
-              targeted, verified sources to produce quality matches. Generic web
-              crawling wastes resources and produces noise. Every source in your
-              configuration represents a deliberate, researched choice.
+              <strong>Why explicit sources matter:</strong> Grant research requires targeted,
+              verified sources to produce quality matches. Generic web crawling wastes resources and
+              produces noise. Every source in your configuration represents a deliberate, researched
+              choice.
             </p>
             <button
               type="button"
@@ -1359,19 +1283,13 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                   {renderFailureInfo(source)}
                   {/* Additional metadata */}
                   {source.category && (
-                    <span className="meta-tag-inline">
-                      {categoryLabel(source.category)}
-                    </span>
+                    <span className="meta-tag-inline">{categoryLabel(source.category)}</span>
                   )}
                   {source.authMethodDescription && (
-                    <span className="meta-tag-inline">
-                      Auth: {source.authMethodDescription}
-                    </span>
+                    <span className="meta-tag-inline">Auth: {source.authMethodDescription}</span>
                   )}
                   {source.crawlFrequencyRecommendation && (
-                    <span className="meta-tag-inline">
-                      {source.crawlFrequencyRecommendation}
-                    </span>
+                    <span className="meta-tag-inline">{source.crawlFrequencyRecommendation}</span>
                   )}
                   {source.lastManualReviewDate && (
                     <span className="meta-tag-inline" title="Last manual review">
@@ -1382,10 +1300,13 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
 
                 {/* Unsupported source guidance */}
                 {source.crawlAccessCategory === 'unsupported' && (
-                  <div className="unsupported-guidance" data-testid={`unsupported-guidance-${source.id}`}>
-                    <strong>⚠️ Unsupported for automated crawling.</strong>{' '}
-                    This source may require authentication, be behind a paywall, or use anti-bot
-                    measures. Consider manual review or removing this source.
+                  <div
+                    className="unsupported-guidance"
+                    data-testid={`unsupported-guidance-${source.id}`}
+                  >
+                    <strong>⚠️ Unsupported for automated crawling.</strong> This source may require
+                    authentication, be behind a paywall, or use anti-bot measures. Consider manual
+                    review or removing this source.
                   </div>
                 )}
 
@@ -1408,19 +1329,14 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                 aria-controls={`crawl-history-${source.id}`}
                 onClick={() => void toggleHistory(source.id)}
               >
-                {expandedHistory[source.id]
-                  ? '▲ Hide History'
-                  : '▼ Crawl History'}
+                {expandedHistory[source.id] ? '▲ Hide History' : '▼ Crawl History'}
               </button>
 
               {renderCrawlHistory(source.id)}
 
               {/* Inline edit panel */}
               {editingSourceId === source.id && (
-                <div
-                  className="edit-panel"
-                  data-testid={`edit-panel-${source.id}`}
-                >
+                <div className="edit-panel" data-testid={`edit-panel-${source.id}`}>
                   <label htmlFor={`edit-name-${source.id}`}>Name</label>
                   <input
                     id={`edit-name-${source.id}`}
@@ -1443,9 +1359,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                       }))
                     }
                   />
-                  <label htmlFor={`edit-category-${source.id}`}>
-                    Category
-                  </label>
+                  <label htmlFor={`edit-category-${source.id}`}>Category</label>
                   <select
                     id={`edit-category-${source.id}`}
                     value={editForm.category ?? ''}
@@ -1463,17 +1377,14 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                       </option>
                     ))}
                   </select>
-                  <label htmlFor={`edit-access-${source.id}`}>
-                    Crawl access
-                  </label>
+                  <label htmlFor={`edit-access-${source.id}`}>Crawl access</label>
                   <select
                     id={`edit-access-${source.id}`}
                     value={editForm.crawlAccessCategory ?? 'crawlable'}
                     onChange={(e) =>
                       setEditForm((prev) => ({
                         ...prev,
-                        crawlAccessCategory: e.target
-                          .value as SourceCrawlAccessCategory,
+                        crawlAccessCategory: e.target.value as SourceCrawlAccessCategory,
                       }))
                     }
                   >
@@ -1481,9 +1392,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                     <option value="manual-only">Manual Only</option>
                     <option value="unsupported">Unsupported</option>
                   </select>
-                  <label htmlFor={`edit-rationale-${source.id}`}>
-                    Category rationale
-                  </label>
+                  <label htmlFor={`edit-rationale-${source.id}`}>Category rationale</label>
                   <input
                     id={`edit-rationale-${source.id}`}
                     value={editForm.categoryRationale ?? ''}
@@ -1495,9 +1404,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                     }
                     placeholder="Category rationale"
                   />
-                  <label htmlFor={`edit-auth-${source.id}`}>
-                    Auth method
-                  </label>
+                  <label htmlFor={`edit-auth-${source.id}`}>Auth method</label>
                   <input
                     id={`edit-auth-${source.id}`}
                     value={editForm.authMethodDescription ?? ''}
@@ -1509,9 +1416,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                     }
                     placeholder="e.g. none, API key, OAuth2"
                   />
-                  <label htmlFor={`edit-freq-${source.id}`}>
-                    Crawl frequency
-                  </label>
+                  <label htmlFor={`edit-freq-${source.id}`}>Crawl frequency</label>
                   <select
                     id={`edit-freq-${source.id}`}
                     value={editForm.crawlFrequencyRecommendation ?? ''}
@@ -1527,9 +1432,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                     <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>
                   </select>
-                  <label htmlFor={`edit-notes-${source.id}`}>
-                    Operator notes
-                  </label>
+                  <label htmlFor={`edit-notes-${source.id}`}>Operator notes</label>
                   <textarea
                     id={`edit-notes-${source.id}`}
                     value={editForm.operatorNotes ?? ''}
@@ -1570,4 +1473,3 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
     </>
   );
 }
-

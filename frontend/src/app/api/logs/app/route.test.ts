@@ -31,9 +31,17 @@ describe('/api/logs/app route', () => {
     const lines = Array.from({ length: 100 }, (_, i) => `Log line ${i + 1}`);
     fs.writeFileSync(logFile, lines.join('\n'));
 
-    const request = new Request('http://localhost/api/logs/app?page=1&pageSize=10') as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      'http://localhost/api/logs/app?page=1&pageSize=10',
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request);
-    const data = await response.json() as { entries: string[]; count: number; page: number; pageSize: number; totalEntries: number };
+    const data = (await response.json()) as {
+      entries: string[];
+      count: number;
+      page: number;
+      pageSize: number;
+      totalEntries: number;
+    };
 
     expect(response.status).toBe(200);
     expect(data.entries.length).toBe(10);
@@ -49,9 +57,17 @@ describe('/api/logs/app route', () => {
     const lines = Array.from({ length: 100 }, (_, i) => `Log line ${i + 1}`);
     fs.writeFileSync(logFile, lines.join('\n'));
 
-    const request = new Request('http://localhost/api/logs/app?page=2&pageSize=10') as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      'http://localhost/api/logs/app?page=2&pageSize=10',
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request);
-    const data = await response.json() as { entries: string[]; count: number; page: number; pageSize: number; totalEntries: number };
+    const data = (await response.json()) as {
+      entries: string[];
+      count: number;
+      page: number;
+      pageSize: number;
+      totalEntries: number;
+    };
 
     expect(response.status).toBe(200);
     expect(data.entries.length).toBe(10);
@@ -64,9 +80,17 @@ describe('/api/logs/app route', () => {
     const lines = Array.from({ length: 25 }, (_, i) => `Log line ${i + 1}`);
     fs.writeFileSync(logFile, lines.join('\n'));
 
-    const request = new Request('http://localhost/api/logs/app?page=2&pageSize=20') as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      'http://localhost/api/logs/app?page=2&pageSize=20',
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request);
-    const data = await response.json() as { entries: string[]; count: number; page: number; pageSize: number; totalEntries: number };
+    const data = (await response.json()) as {
+      entries: string[];
+      count: number;
+      page: number;
+      pageSize: number;
+      totalEntries: number;
+    };
 
     expect(response.status).toBe(200);
     expect(data.entries.length).toBe(5);
@@ -78,9 +102,17 @@ describe('/api/logs/app route', () => {
     const lines = Array.from({ length: 60 }, (_, i) => `Log line ${i + 1}`);
     fs.writeFileSync(logFile, lines.join('\n'));
 
-    const request = new Request('http://localhost/api/logs/app') as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      'http://localhost/api/logs/app',
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request);
-    const data = await response.json() as { entries: string[]; count: number; page: number; pageSize: number; totalEntries: number };
+    const data = (await response.json()) as {
+      entries: string[];
+      count: number;
+      page: number;
+      pageSize: number;
+      totalEntries: number;
+    };
 
     expect(response.status).toBe(200);
     expect(data.entries.length).toBe(50);
@@ -89,13 +121,17 @@ describe('/api/logs/app route', () => {
   });
 
   it('returns 400 for invalid page parameter', async () => {
-    const request = new Request('http://localhost/api/logs/app?page=0') as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      'http://localhost/api/logs/app?page=0',
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request);
     expect(response.status).toBe(400);
   });
 
   it('returns 400 for pageSize over 200', async () => {
-    const request = new Request('http://localhost/api/logs/app?pageSize=201') as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      'http://localhost/api/logs/app?pageSize=201',
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request);
     expect(response.status).toBe(400);
   });
@@ -110,9 +146,15 @@ describe('/api/logs/app route', () => {
     ];
     fs.writeFileSync(logFile, mixedLines.join('\n'));
 
-    const request = new Request('http://localhost/api/logs/app?level=error') as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      'http://localhost/api/logs/app?level=error',
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request);
-    const data = await response.json() as { entries: string[]; count: number; totalEntries: number };
+    const data = (await response.json()) as {
+      entries: string[];
+      count: number;
+      totalEntries: number;
+    };
 
     expect(response.status).toBe(200);
     expect(data.totalEntries).toBe(2);
@@ -132,9 +174,15 @@ describe('/api/logs/app route', () => {
     ];
     fs.writeFileSync(logFile, mixedLines.join('\n'));
 
-    const request = new Request('http://localhost/api/logs/app?level=error') as unknown as import('next/server').NextRequest;
+    const request = new Request(
+      'http://localhost/api/logs/app?level=error',
+    ) as unknown as import('next/server').NextRequest;
     const response = await GET(request);
-    const data = await response.json() as { entries: string[]; count: number; totalEntries: number };
+    const data = (await response.json()) as {
+      entries: string[];
+      count: number;
+      totalEntries: number;
+    };
 
     expect(response.status).toBe(200);
     expect(data.totalEntries).toBe(1);

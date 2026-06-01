@@ -170,7 +170,9 @@ export async function addSubmissionRecord(record: SubmissionRecord): Promise<voi
 
 export async function updateSubmissionRecord(record: SubmissionRecord): Promise<void> {
   const data = await loadPersistedData();
-  const index = data.submissionRecords.findIndex((existing: SubmissionRecord) => existing.id === record.id);
+  const index = data.submissionRecords.findIndex(
+    (existing: SubmissionRecord) => existing.id === record.id,
+  );
   if (index !== -1) {
     data.submissionRecords[index] = record;
     await savePersistedData(data);
@@ -247,7 +249,10 @@ export async function addDocument(doc: DocumentMetadata): Promise<void> {
   await saveDocuments(docs);
 }
 
-export async function updateDocument(id: string, updates: Partial<DocumentMetadata>): Promise<void> {
+export async function updateDocument(
+  id: string,
+  updates: Partial<DocumentMetadata>,
+): Promise<void> {
   const docs = await loadDocuments();
   const index = docs.findIndex((d: DocumentMetadata) => d.id === id);
   if (index !== -1) {
@@ -322,7 +327,10 @@ export async function addJobQueueItem(item: JobQueueItem): Promise<void> {
   await saveJobQueueItemPersistence(item);
 }
 
-export async function updateJobQueueItem(id: string, updates: Partial<JobQueueItem>): Promise<void> {
+export async function updateJobQueueItem(
+  id: string,
+  updates: Partial<JobQueueItem>,
+): Promise<void> {
   await updateJobQueueItemPersistence(id, updates);
 }
 
@@ -335,7 +343,10 @@ export async function addDuplicateCandidate(item: DuplicateCandidate): Promise<v
   await saveDuplicateCandidatePersistence(item);
 }
 
-export async function updateDuplicateCandidate(id: string, updates: Partial<DuplicateCandidate>): Promise<void> {
+export async function updateDuplicateCandidate(
+  id: string,
+  updates: Partial<DuplicateCandidate>,
+): Promise<void> {
   await updateDuplicateCandidatePersistence(id, updates);
 }
 
@@ -347,7 +358,10 @@ export async function addConflictRecord(item: ConflictRecord): Promise<void> {
   await saveConflictRecordPersistence(item);
 }
 
-export async function updateConflictRecord(id: string, updates: Partial<ConflictRecord>): Promise<void> {
+export async function updateConflictRecord(
+  id: string,
+  updates: Partial<ConflictRecord>,
+): Promise<void> {
   await updateConflictRecordPersistence(id, updates);
 }
 
@@ -360,7 +374,10 @@ export async function addSubmissionManifest(item: SubmissionManifest): Promise<v
   await saveSubmissionManifestPersistence(item);
 }
 
-export async function updateSubmissionManifest(id: string, updates: Partial<SubmissionManifest>): Promise<void> {
+export async function updateSubmissionManifest(
+  id: string,
+  updates: Partial<SubmissionManifest>,
+): Promise<void> {
   const manifests = await getSubmissionManifests();
   const index = manifests.findIndex((manifest) => manifest.id === id);
   if (index !== -1) {
@@ -451,7 +468,9 @@ export async function updateAward(id: string, updates: Partial<Award>): Promise<
   }
 }
 
-export async function getBudgetCategoriesByAwardId(awardId: string): Promise<AwardBudgetCategory[]> {
+export async function getBudgetCategoriesByAwardId(
+  awardId: string,
+): Promise<AwardBudgetCategory[]> {
   const { readAwardBudgetCategories } = await import('../../../../shared/grant-ops-sqlite');
   return readAwardBudgetCategories(getSqliteState()).filter((c) => c.awardId === awardId);
 }
@@ -515,7 +534,18 @@ export async function getOutreachRecords(): Promise<unknown[]> {
 }
 
 export async function createOutreachRecord(record: unknown): Promise<void> {
-  const r = record as { id: string; grantId: string; funderId?: string | null; contactName?: string; contactEmail?: string; method?: string; notes?: string; outcome?: string; followUpDate?: string; createdAt: string };
+  const r = record as {
+    id: string;
+    grantId: string;
+    funderId?: string | null;
+    contactName?: string;
+    contactEmail?: string;
+    method?: string;
+    notes?: string;
+    outcome?: string;
+    followUpDate?: string;
+    createdAt: string;
+  };
   await saveOutreachRecord(r);
 }
 
@@ -535,7 +565,13 @@ export async function getFormTemplates(): Promise<unknown[]> {
 }
 
 export async function createFormTemplate(template: unknown): Promise<void> {
-  const t = template as { id: string; name: string; funderId?: string | null; fields?: unknown[]; createdAt: string };
+  const t = template as {
+    id: string;
+    name: string;
+    funderId?: string | null;
+    fields?: unknown[];
+    createdAt: string;
+  };
   await saveFormTemplate(t);
 }
 
@@ -549,7 +585,9 @@ export async function createFunderProfile(profile: FunderProfile): Promise<void>
   await saveFunderProfiles(profiles);
 }
 
-export async function getPipelineTransitionsByGrantId(grantId: string): Promise<PipelineTransition[]> {
+export async function getPipelineTransitionsByGrantId(
+  grantId: string,
+): Promise<PipelineTransition[]> {
   return loadPipelineTransitions(grantId);
 }
 

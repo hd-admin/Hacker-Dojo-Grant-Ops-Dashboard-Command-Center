@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse, connection } from "next/server";
-import { createErrorResponse } from "@/lib/api-error-handler";
+import { NextRequest, NextResponse, connection } from 'next/server';
+import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { z } from 'zod';
@@ -16,12 +16,17 @@ export async function POST(request: NextRequest) {
     const rawBody = await request.json().catch(() => ({}));
     const parsed = bodySchema.safeParse(rawBody);
     if (!parsed.success) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), {
+        status: 400,
+      });
     }
     const body = parsed.data;
     const deps = getDependencies();
     const jobId = deps.idGenerator.generateId('crawl');
-    return NextResponse.json({ jobId, sourceId: body.sourceId, message: 'Crawl job queued' }, { status: 202 });
+    return NextResponse.json(
+      { jobId, sourceId: body.sourceId, message: 'Crawl job queued' },
+      { status: 202 },
+    );
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Failed to start crawl';
     logger.error({ err: error }, 'Error starting crawl');

@@ -20,11 +20,13 @@ export async function GET(_request: NextRequest) {
   await connection();
   try {
     const deps = getDependencies();
-    const awards = await deps.repository.getAwards?.() ?? [];
+    const awards = (await deps.repository.getAwards?.()) ?? [];
     return NextResponse.json({ awards });
   } catch (error) {
     logger.error({ err: error }, 'Error getting awards');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get awards'), { status: 500 });
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get awards'), {
+      status: 500,
+    });
   }
 }
 
@@ -34,7 +36,10 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const parsed = awardSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: 'Invalid award payload', details: parsed.error.format() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid award payload', details: parsed.error.format() },
+        { status: 400 },
+      );
     }
     const deps = getDependencies();
     const award = {
@@ -46,6 +51,8 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ award }, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, 'Error creating award');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create award'), { status: 500 });
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to create award'), {
+      status: 500,
+    });
   }
 }

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import path from 'node:path';
@@ -8,7 +8,12 @@ import { getDataDir } from '../../../../../shared/grant-ops-persistence';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { analyzeStoredDocument } from '@/server/grant-ops/document-text-extractor';
 import * as documentService from '@/server/grant-ops/document-service';
-import { validateFileSize, validateFileExtension, validateMimeType, atomicWrite } from '@/server/grant-ops/upload-validator';
+import {
+  validateFileSize,
+  validateFileExtension,
+  validateMimeType,
+  atomicWrite,
+} from '@/server/grant-ops/upload-validator';
 import type { DocumentMetadata } from '../../../../../shared/types';
 
 export const dynamic = 'force-dynamic';
@@ -39,7 +44,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(documents);
   } catch (error) {
     logger.error({ err: error }, 'Error getting documents');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get documents'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get documents'),
+      { status: 500 },
+    );
   }
 }
 
@@ -52,16 +60,20 @@ export async function POST(request: NextRequest) {
     const fileEntry = formData.get('file');
 
     if (!(fileEntry instanceof File)) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'File is required'), { status: 400 });
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'File is required'), {
+        status: 400,
+      });
     }
 
     const id = deps.idGenerator.generateId('doc');
-    const name = typeof formData.get('name') === 'string' && formData.get('name')
-      ? String(formData.get('name'))
-      : fileEntry.name;
-    const type = typeof formData.get('type') === 'string' && formData.get('type')
-      ? String(formData.get('type'))
-      : path.extname(fileEntry.name).replace(/^[.]/, '').toUpperCase() || 'FILE';
+    const name =
+      typeof formData.get('name') === 'string' && formData.get('name')
+        ? String(formData.get('name'))
+        : fileEntry.name;
+    const type =
+      typeof formData.get('type') === 'string' && formData.get('type')
+        ? String(formData.get('type'))
+        : path.extname(fileEntry.name).replace(/^[.]/, '').toUpperCase() || 'FILE';
     const nowIso = deps.clock.now().toISOString();
     const storageDir = path.join(getDataDir(), 'documents');
     await fs.mkdir(storageDir, { recursive: true });
@@ -97,20 +109,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(writeError, { status: 500 });
     }
 
-    const extraction = await analyzeStoredDocument(storagePath, fileEntry.type || 'application/octet-stream');
+    const extraction = await analyzeStoredDocument(
+      storagePath,
+      fileEntry.type || 'application/octet-stream',
+    );
 
     const doc: DocumentMetadata = {
       id,
       name,
       type,
-      lastUsed: typeof formData.get('lastUsed') === 'string' ? String(formData.get('lastUsed')) : nowIso,
+      lastUsed:
+        typeof formData.get('lastUsed') === 'string' ? String(formData.get('lastUsed')) : nowIso,
       audited: parseBoolean(formData.get('audited')) ?? false,
       uploadedAt: nowIso,
       storagePath,
       sha256,
     };
 
-    const version = typeof formData.get('version') === 'string' ? String(formData.get('version')) : null;
+    const version =
+      typeof formData.get('version') === 'string' ? String(formData.get('version')) : null;
     if (version) {
       doc.version = version;
     }
@@ -138,7 +155,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(doc, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, 'Error adding document');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to add document'), { status: 500 });
+    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to add document'), {
+      status: 500,
+    });
   }
 }
 
@@ -150,7 +169,10 @@ export async function PATCH(request: NextRequest) {
     const deps = getDependencies();
 
     if (!body || !body.id) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Document ID is required'), { status: 400 });
+      return NextResponse.json(
+        createErrorResponse('AGENT_INVALID_JSON', 'Document ID is required'),
+        { status: 400 },
+      );
     }
 
     const updates: Partial<DocumentMetadata> = {};
@@ -162,14 +184,20 @@ export async function PATCH(request: NextRequest) {
     if (body.classification !== undefined) updates.classification = body.classification;
 
     if (Object.keys(updates).length === 0) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'At least one document field is required'), { status: 400 });
+      return NextResponse.json(
+        createErrorResponse('AGENT_INVALID_JSON', 'At least one document field is required'),
+        { status: 400 },
+      );
     }
 
     await deps.repository.updateDocument(body.id, updates);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, 'Error updating document');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update document'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to update document'),
+      { status: 500 },
+    );
   }
 }
 
@@ -180,17 +208,25 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json().catch(() => null);
 
     if (!body || !body.id) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Document ID is required'), { status: 400 });
+      return NextResponse.json(
+        createErrorResponse('AGENT_INVALID_JSON', 'Document ID is required'),
+        { status: 400 },
+      );
     }
 
     const success = await documentService.deleteDocument(body.id);
     if (!success) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Document not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Document not found'), {
+        status: 404,
+      });
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, 'Error deleting document');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to delete document'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to delete document'),
+      { status: 500 },
+    );
   }
 }

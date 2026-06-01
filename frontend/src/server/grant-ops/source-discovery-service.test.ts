@@ -39,7 +39,9 @@ describe('source-discovery-service', () => {
 
   it('returns unavailable when opencode is not configured', async () => {
     // When opencode is not on PATH, the PATH fallback throws ENOENT
-    execFileSyncMock.mockImplementation(() => { throw Object.assign(new Error('ENOENT: which not found'), { code: 'ENOENT' }); });
+    execFileSyncMock.mockImplementation(() => {
+      throw Object.assign(new Error('ENOENT: which not found'), { code: 'ENOENT' });
+    });
 
     const result = await discoverSourcesFromPrompt('Find education grants');
 
@@ -54,22 +56,24 @@ describe('source-discovery-service', () => {
       isConfigured: true,
     });
 
-    execFileSyncMock.mockReturnValueOnce(JSON.stringify([
-      {
-        name: 'State Arts Grants Database',
-        url: 'https://www.arts.gov/grants',
-        type: 'database',
-        rationale: 'Contains active arts and culture funding opportunities.',
-        confidence: 0.91,
-      },
-      {
-        name: 'Community Foundation Grants',
-        url: 'https://www.candid.org/community-foundation-grants',
-        type: 'website',
-        rationale: 'Tracks locally relevant grant programs for nonprofits.',
-        confidence: 0.83,
-      },
-    ]));
+    execFileSyncMock.mockReturnValueOnce(
+      JSON.stringify([
+        {
+          name: 'State Arts Grants Database',
+          url: 'https://www.arts.gov/grants',
+          type: 'database',
+          rationale: 'Contains active arts and culture funding opportunities.',
+          confidence: 0.91,
+        },
+        {
+          name: 'Community Foundation Grants',
+          url: 'https://www.candid.org/community-foundation-grants',
+          type: 'website',
+          rationale: 'Tracks locally relevant grant programs for nonprofits.',
+          confidence: 0.83,
+        },
+      ]),
+    );
 
     const result = await discoverSourcesFromPrompt('Find arts and community grants');
 

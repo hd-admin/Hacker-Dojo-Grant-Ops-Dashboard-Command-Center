@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
-import { NextResponse, connection } from "next/server";
+import { NextResponse, connection } from 'next/server';
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { enqueueJob } from '@/server/grant-ops/job-queue-service';
@@ -31,7 +31,8 @@ export async function POST(_request: NextRequest) {
       return NextResponse.json(
         {
           error: 'OPENCODE_NOT_CONFIGURED',
-          message: 'Opencode is not configured. Please set up Opencode settings in the application before running research.',
+          message:
+            'Opencode is not configured. Please set up Opencode settings in the application before running research.',
         },
         { status: 400 },
       );
@@ -49,24 +50,30 @@ export async function POST(_request: NextRequest) {
       },
     );
 
-    return NextResponse.json({
-      queued: true,
-      job,
-    }, { status: 202 });
+    return NextResponse.json(
+      {
+        queued: true,
+        job,
+      },
+      { status: 202 },
+    );
   } catch (error) {
     logger.error({ err: error }, 'Error running research');
 
     if (error instanceof NoSourcesConfiguredError) {
-      return NextResponse.json(
-        { error: error.code, message: error.message },
-        { status: 409 },
-      );
+      return NextResponse.json({ error: error.code, message: error.message }, { status: 409 });
     }
 
     const errorMessage = error instanceof Error ? error.message : 'Failed to run research';
     const failureMode = classifyOpencodeError(errorMessage);
     const guidance = opencodeFailureMessages[failureMode];
-    const retryable = ['rate-limit', 'malformed-output', 'model-unavailable', 'timeout', 'unknown'].includes(failureMode);
+    const retryable = [
+      'rate-limit',
+      'malformed-output',
+      'model-unavailable',
+      'timeout',
+      'unknown',
+    ].includes(failureMode);
 
     return NextResponse.json(
       {
@@ -92,6 +99,9 @@ export async function GET(_request: NextRequest) {
     });
   } catch (error) {
     logger.error({ err: error }, 'Error getting crawl runs');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get crawl runs'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to get crawl runs'),
+      { status: 500 },
+    );
   }
 }

@@ -5,7 +5,12 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
-import { createDependencies, getDependencies, resetDependencies, setDependencies } from './dependencies';
+import {
+  createDependencies,
+  getDependencies,
+  resetDependencies,
+  setDependencies,
+} from './dependencies';
 import type { OpencodeSettings } from '../../../../shared/types';
 
 describe('dependencies', () => {
@@ -40,7 +45,9 @@ describe('dependencies', () => {
   });
 
   it('createDependencies createOpencodeAdapter can be overridden', () => {
-    const mockAdapter = { run: vi.fn() } as unknown as ReturnType<typeof deps.createOpencodeAdapter>;
+    const mockAdapter = { run: vi.fn() } as unknown as ReturnType<
+      typeof deps.createOpencodeAdapter
+    >;
     let deps = createDependencies();
     const mockCreateAdapter = vi.fn(() => mockAdapter);
 

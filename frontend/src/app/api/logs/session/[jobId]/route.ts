@@ -4,13 +4,21 @@ import { getSessionLogPath } from '@/lib/logger';
 import fs from 'node:fs';
 import { z } from 'zod';
 
-const querySchema = z.object({
-  page: z.preprocess((val) => (val === null || val === undefined ? undefined : Number(val)), z.number().int().min(1).optional()),
-  pageSize: z.preprocess((val) => (val === null || val === undefined ? undefined : Number(val)), z.number().int().min(1).max(200).optional()),
-}).transform((data) => ({
-  page: data.page ?? 1,
-  pageSize: data.pageSize ?? 50,
-}));
+const querySchema = z
+  .object({
+    page: z.preprocess(
+      (val) => (val === null || val === undefined ? undefined : Number(val)),
+      z.number().int().min(1).optional(),
+    ),
+    pageSize: z.preprocess(
+      (val) => (val === null || val === undefined ? undefined : Number(val)),
+      z.number().int().min(1).max(200).optional(),
+    ),
+  })
+  .transform((data) => ({
+    page: data.page ?? 1,
+    pageSize: data.pageSize ?? 50,
+  }));
 
 export async function GET(
   request: NextRequest,
@@ -26,7 +34,10 @@ export async function GET(
     });
 
     if (!query.success) {
-      return NextResponse.json(createErrorResponse('VALIDATION_ERROR', 'Invalid pagination parameters'), { status: 400 });
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Invalid pagination parameters'),
+        { status: 400 },
+      );
     }
 
     const { page, pageSize } = query.data;
@@ -34,7 +45,14 @@ export async function GET(
     const logPath = getSessionLogPath(jobId);
     if (!fs.existsSync(logPath)) {
       return NextResponse.json(
-        { entries: [], count: 0, page, pageSize, totalEntries: 0, note: 'No session log found for this job' },
+        {
+          entries: [],
+          count: 0,
+          page,
+          pageSize,
+          totalEntries: 0,
+          note: 'No session log found for this job',
+        },
         { status: 200 },
       );
     }
@@ -51,6 +69,9 @@ export async function GET(
   } catch (error) {
     const { logger } = await import('@/lib/logger');
     logger.error({ err: error }, 'Error reading session log');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to read session log'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to read session log'),
+      { status: 500 },
+    );
   }
 }

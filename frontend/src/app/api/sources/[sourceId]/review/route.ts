@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse, connection } from "next/server";
+import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -13,19 +13,27 @@ const bodySchema = z.object({
   categoryRationale: z.string().optional(),
 });
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ sourceId: string }> }) {
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ sourceId: string }> },
+) {
   await connection();
   try {
     const { sourceId } = await params;
     const body = bodySchema.safeParse(await request.json().catch(() => null));
     if (!body.success) {
-      return NextResponse.json({ error: 'Invalid review payload', issues: body.error.flatten() }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Invalid review payload', issues: body.error.flatten() },
+        { status: 400 },
+      );
     }
 
     const deps = getDependencies();
     const source = (await deps.repository.getSources()).find((item) => item.id === sourceId);
     if (!source) {
-      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Source not found'), { status: 404 });
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Source not found'), {
+        status: 404,
+      });
     }
 
     const now = new Date().toISOString();
@@ -59,12 +67,19 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       entityType: 'source',
       actorLabel: 'operator',
       timestamp: now,
-      metadata: { action: body.data.action, reason: body.data.reason, category: body.data.category },
+      metadata: {
+        action: body.data.action,
+        reason: body.data.reason,
+        category: body.data.category,
+      },
     });
 
     return NextResponse.json(updated);
   } catch (error) {
     logger.error({ err: error }, 'Error reviewing source');
-    return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to review source'), { status: 500 });
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to review source'),
+      { status: 500 },
+    );
   }
 }

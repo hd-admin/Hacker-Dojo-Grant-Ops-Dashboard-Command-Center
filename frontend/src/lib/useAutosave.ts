@@ -1,6 +1,6 @@
-"use client";
+'use client';
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 export interface AutosaveState {
   /** Whether the current value differs from the last saved state */
@@ -102,8 +102,8 @@ export function useAutosave<T>(
       }
     };
 
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
   }, [isDirty, performSave]);
 
   const saveNow = useCallback(async (): Promise<void> => {

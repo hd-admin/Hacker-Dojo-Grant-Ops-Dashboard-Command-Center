@@ -15,7 +15,9 @@ vi.mock('next/server', async () => {
   return {
     ...actual,
     connection: async () => {},
-    NextRequest: class { url = 'http://localhost:3000/api/calendar/deadlines'; },
+    NextRequest: class {
+      url = 'http://localhost:3000/api/calendar/deadlines';
+    },
   };
 });
 
@@ -28,7 +30,9 @@ describe('/api/calendar/deadlines route', () => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
 
   it('returns deadlines excluding Rolling entries', async () => {
     const mockGrants = [

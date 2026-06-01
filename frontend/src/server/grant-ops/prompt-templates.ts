@@ -18,10 +18,10 @@ EIN: ${p.ein}
 Nonprofit Status: ${p.nonprofitStatus}
 Geography: ${p.geography}
 Mission: ${p.mission}
-Program Areas:\n${p.programAreas.map(a => `  - ${a}`).join('\n')}
-Populations Served:\n${p.populationsServed.map(p => `  - ${p}`).join('\n')}
-Partnerships:\n${p.partnerships.map(p => `  - ${p}`).join('\n')}
-Search Themes:\n${p.searchThemes.map(t => `  - ${t}`).join('\n')}
+Program Areas:\n${p.programAreas.map((a) => `  - ${a}`).join('\n')}
+Populations Served:\n${p.populationsServed.map((p) => `  - ${p}`).join('\n')}
+Partnerships:\n${p.partnerships.map((p) => `  - ${p}`).join('\n')}
+Search Themes:\n${p.searchThemes.map((t) => `  - ${t}`).join('\n')}
 Voice and Tone: ${p.agentBehavior.voiceAndTone}`;
 }
 
@@ -124,9 +124,17 @@ Search for grant opportunities matching Hacker Dojo's profile. For each grant fo
 
 If you cannot find grants or access sources, explain why in the errors array.`;
 
-  const qualityReq = 'Must find at least 1 grant OR include errors explaining why none were found. Grants must have non-empty title and funder. At least one grant should have award, deadline, or eligibility info.';
+  const qualityReq =
+    'Must find at least 1 grant OR include errors explaining why none were found. Grants must have non-empty title and funder. At least one grant should have award, deadline, or eligibility info.';
 
-  return buildPromptHeader('research', artifactPath, RESEARCH_SCHEMA_JSON, extraContext, qualityReq, retryFeedback);
+  return buildPromptHeader(
+    'research',
+    artifactPath,
+    RESEARCH_SCHEMA_JSON,
+    extraContext,
+    qualityReq,
+    retryFeedback,
+  );
 }
 
 function buildDraftPrompt(
@@ -155,9 +163,17 @@ Generate a complete grant proposal draft for this opportunity. The draft must:
 - Use the organization's voice and tone
 - Ground each section in specific Hacker Dojo facts and documents`;
 
-  const qualityReq = 'Must be at least 500 words across all sections. Each section must cite grounding sources. Content must reference Hacker Dojo by name and specific programs (not generic "your organization" language).';
+  const qualityReq =
+    'Must be at least 500 words across all sections. Each section must cite grounding sources. Content must reference Hacker Dojo by name and specific programs (not generic "your organization" language).';
 
-  return buildPromptHeader('draft', artifactPath, DRAFT_SCHEMA_JSON, extraContext, qualityReq, retryFeedback);
+  return buildPromptHeader(
+    'draft',
+    artifactPath,
+    DRAFT_SCHEMA_JSON,
+    extraContext,
+    qualityReq,
+    retryFeedback,
+  );
 }
 
 function buildCrawlPrompt(
@@ -179,9 +195,17 @@ Crawl this funding source for grant opportunities matching Hacker Dojo's profile
 - URL, raw text excerpt
 Report any pages that fail to load. If no grants are found, explain in the errors array.`;
 
-  const qualityReq = 'Must report pagesCrawled and grantsFound accurately. At least 1 grant OR errors explaining source issues.';
+  const qualityReq =
+    'Must report pagesCrawled and grantsFound accurately. At least 1 grant OR errors explaining source issues.';
 
-  return buildPromptHeader('crawl', artifactPath, CRAWL_SCHEMA_JSON, extraContext, qualityReq, retryFeedback);
+  return buildPromptHeader(
+    'crawl',
+    artifactPath,
+    CRAWL_SCHEMA_JSON,
+    extraContext,
+    qualityReq,
+    retryFeedback,
+  );
 }
 
 function buildMatchPrompt(
@@ -206,9 +230,17 @@ Score each grant against Hacker Dojo's profile using 5 dimensions (0-100 each):
 
 Provide a rationale for each score referencing specific Hacker Dojo attributes.`;
 
-  const qualityReq = 'Scores must vary between grants — not all identical. Each dimension must have a non-zero score with justification.';
+  const qualityReq =
+    'Scores must vary between grants — not all identical. Each dimension must have a non-zero score with justification.';
 
-  return buildPromptHeader('match', artifactPath, MATCH_SCHEMA_JSON, extraContext, qualityReq, retryFeedback);
+  return buildPromptHeader(
+    'match',
+    artifactPath,
+    MATCH_SCHEMA_JSON,
+    extraContext,
+    qualityReq,
+    retryFeedback,
+  );
 }
 
 function buildExtractPrompt(
@@ -234,9 +266,17 @@ Extract structured data from the award letter/document:
 
 If data cannot be extracted (scanned image, bad OCR), explain in the errors array.`;
 
-  const qualityReq = 'Must include amount OR explain in errors why it could not be extracted. Include at least one reporting deadline or budget category.';
+  const qualityReq =
+    'Must include amount OR explain in errors why it could not be extracted. Include at least one reporting deadline or budget category.';
 
-  return buildPromptHeader('extract', artifactPath, EXTRACT_SCHEMA_JSON, extraContext, qualityReq, retryFeedback);
+  return buildPromptHeader(
+    'extract',
+    artifactPath,
+    EXTRACT_SCHEMA_JSON,
+    extraContext,
+    qualityReq,
+    retryFeedback,
+  );
 }
 
 function buildPeerDiscoveryPrompt(
@@ -253,9 +293,17 @@ Analyze similar makerspaces, hackerspaces, and community innovation hubs to iden
 
 Organizations to consider: Noisebridge, NYC Resistor, Artisan's Asylum, Dallas Makerspace, Pumping Station: One, and similar community spaces.`;
 
-  const qualityReq = 'Must find at least 1 relevant funder OR explain in errors why none were found. Each result must cite a specific source organization.';
+  const qualityReq =
+    'Must find at least 1 relevant funder OR explain in errors why none were found. Each result must cite a specific source organization.';
 
-  return buildPromptHeader('peer-discovery', artifactPath, PEER_DISCOVERY_SCHEMA_JSON, extraContext, qualityReq, retryFeedback);
+  return buildPromptHeader(
+    'peer-discovery',
+    artifactPath,
+    PEER_DISCOVERY_SCHEMA_JSON,
+    extraContext,
+    qualityReq,
+    retryFeedback,
+  );
 }
 
 function buildFunderInsightsPrompt(
@@ -280,9 +328,17 @@ Analyze this funder's giving patterns to detect:
 
 For each pattern detected, provide confidence level and suggested action.`;
 
-  const qualityReq = 'Must detect at least 1 pattern OR explain in errors why analysis was inconclusive. Giving trend data must be year-by-year.';
+  const qualityReq =
+    'Must detect at least 1 pattern OR explain in errors why analysis was inconclusive. Giving trend data must be year-by-year.';
 
-  return buildPromptHeader('funder-insights', artifactPath, FUNDER_INSIGHTS_SCHEMA_JSON, extraContext, qualityReq, retryFeedback);
+  return buildPromptHeader(
+    'funder-insights',
+    artifactPath,
+    FUNDER_INSIGHTS_SCHEMA_JSON,
+    extraContext,
+    qualityReq,
+    retryFeedback,
+  );
 }
 
 function buildEligibilityVettingPrompt(
@@ -306,9 +362,17 @@ Check Hacker Dojo's eligibility for this grant against the requirements:
 
 For each check, state whether it is met and provide detail. Classify overall status as meets-all, requires, or ineligible.`;
 
-  const qualityReq = 'Must evaluate all applicable requirements. Each check must have a met boolean and detail explanation.';
+  const qualityReq =
+    'Must evaluate all applicable requirements. Each check must have a met boolean and detail explanation.';
 
-  return buildPromptHeader('eligibility-vetting', artifactPath, ELIGIBILITY_VETTING_SCHEMA_JSON, extraContext, qualityReq, retryFeedback);
+  return buildPromptHeader(
+    'eligibility-vetting',
+    artifactPath,
+    ELIGIBILITY_VETTING_SCHEMA_JSON,
+    extraContext,
+    qualityReq,
+    retryFeedback,
+  );
 }
 
 function buildBudgetImportPrompt(
@@ -332,9 +396,17 @@ Extract budget categories and amounts from the uploaded budget document. For eac
 
 If no categories can be extracted, explain why in the errors array.`;
 
-  const qualityReq = 'Must extract at least 1 budget category OR explain in errors why extraction failed. Each category must have a name and amount.';
+  const qualityReq =
+    'Must extract at least 1 budget category OR explain in errors why extraction failed. Each category must have a name and amount.';
 
-  return buildPromptHeader('budget-import', artifactPath, BUDGET_IMPORT_SCHEMA_JSON, extraContext, qualityReq, retryFeedback);
+  return buildPromptHeader(
+    'budget-import',
+    artifactPath,
+    BUDGET_IMPORT_SCHEMA_JSON,
+    extraContext,
+    qualityReq,
+    retryFeedback,
+  );
 }
 
 const RESEARCH_SCHEMA_JSON = `{

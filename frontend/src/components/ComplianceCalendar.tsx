@@ -39,9 +39,16 @@ export function ComplianceCalendar({ awardId }: ComplianceCalendarProps) {
     void loadItems();
   }, [awardId]);
 
-  if (loading) return <div className="compliance-calendar" data-testid="compliance-calendar-loading">Loading...</div>;
+  if (loading)
+    return (
+      <div className="compliance-calendar" data-testid="compliance-calendar-loading">
+        Loading...
+      </div>
+    );
 
-  const sorted = [...items].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+  const sorted = [...items].sort(
+    (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+  );
 
   return (
     <div className="compliance-calendar" data-testid="compliance-calendar">
@@ -51,10 +58,16 @@ export function ComplianceCalendar({ awardId }: ComplianceCalendarProps) {
           const isOverdue = new Date(item.dueDate) < new Date() && item.status !== 'submitted';
           const statusClass = isOverdue ? 'overdue' : item.status;
           return (
-            <div key={item.id} className={`calendar-item ${statusClass}`} data-testid={`compliance-item-${item.id}`}>
+            <div
+              key={item.id}
+              className={`calendar-item ${statusClass}`}
+              data-testid={`compliance-item-${item.id}`}
+            >
               <div className="calendar-date">{new Date(item.dueDate).toLocaleDateString()}</div>
               <div className="calendar-title">{item.title}</div>
-              <div className={`calendar-status ${statusClass}`}>{isOverdue ? 'overdue' : item.status}</div>
+              <div className={`calendar-status ${statusClass}`}>
+                {isOverdue ? 'overdue' : item.status}
+              </div>
             </div>
           );
         })}
@@ -62,4 +75,3 @@ export function ComplianceCalendar({ awardId }: ComplianceCalendarProps) {
     </div>
   );
 }
-
