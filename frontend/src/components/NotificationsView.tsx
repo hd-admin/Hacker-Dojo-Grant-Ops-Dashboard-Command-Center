@@ -102,7 +102,7 @@ export function NotificationsView({ notifications: notificationsProp }: Notifica
           </button>
         ))}
       </div>
-      <div className="notifications-list">
+      <div className="notifications-list" aria-live="polite" aria-label="Notifications list">
         {filteredNotifications.map((notification) => (
           <div key={notification.id} className="notification-item">
             <div className={getUrgencyDotClass(notification.urgency, notification.dot)} />

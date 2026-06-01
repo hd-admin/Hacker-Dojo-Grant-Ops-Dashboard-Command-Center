@@ -23,7 +23,10 @@ export default defineConfig({
           cookies: [],
           origins: [{
             origin: 'http://127.0.0.1:3000',
-            localStorage: [{ name: 'grantops.setupCompleted', value: 'true' }],
+            localStorage: [
+              { name: 'grantops.setupCompleted', value: 'true' },
+              { name: 'grantops.operatorName', value: 'E2E Test Operator' },
+            ],
           }],
         },
       },

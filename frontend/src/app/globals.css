@@ -138,7 +138,7 @@ textarea:focus-visible {
 .app {
   display: grid;
   grid-template-columns: 220px 1fr;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 /* === SIDEBAR === */
@@ -149,7 +149,7 @@ textarea:focus-visible {
   position: sticky;
   top: 0;
   z-index: 60;
-  height: 100vh;
+  height: 100dvh;
   display: flex;
   flex-direction: column;
 }
@@ -905,7 +905,7 @@ textarea:focus-visible {
   top: 0;
   right: 0;
   width: min(540px, 100vw);
-  height: 100vh;
+  height: 100dvh;
   background: var(--bg-2);
   border-left: 1px solid var(--border);
   box-shadow: -20px 0 48px rgba(0, 0, 0, 0.35);
@@ -2133,7 +2133,7 @@ textarea:focus-visible {
   justify-content: center;
   padding: 2rem;
   color: var(--text-muted);
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .app-loading::after {
@@ -3132,7 +3132,7 @@ body {
   font-family: var(--sans);
   font-size: 14px;
   line-height: 1.55;
-  min-height: 100vh;
+  min-height: 100dvh;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
