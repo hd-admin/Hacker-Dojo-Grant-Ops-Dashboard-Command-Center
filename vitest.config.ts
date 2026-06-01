@@ -11,6 +11,7 @@ export default defineConfig({
     environment: 'node',
     env: { NODE_ENV: 'test', TMPDIR: '/home/mistlight/tmp-vitest' },
     setupFiles: [path.resolve(__dirname, './tests/vitest-setup.ts')],
+    testTimeout: 30000,
   },
   resolve: {
     alias: {

@@ -48,5 +48,6 @@ This specification defines the next evolution of Hacker Dojo Grant Ops — a loc
 ## Relationship to Existing Docs
 
 - `PROMPT.md` — still authoritative for implementation scope
-- `docs/grant-ops-expanded-acceptance-criteria.md` — still authoritative for acceptance criteria
+- `docs/product-spec-v2/10-technical-acceptance-criteria.md` — authoritative for technical acceptance criteria (169 ACs)
+- `docs/product-spec-v2/AC_INVENTORY.md` — execution-proven verification map with specific file/test references
 - This spec defines the *what and why*; acceptance criteria define the *verification*
