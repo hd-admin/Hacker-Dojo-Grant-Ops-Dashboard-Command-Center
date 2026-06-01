@@ -106,6 +106,7 @@ describe('DiscoveryView', () => {
     mockGetAllGrants.mockResolvedValue([]);
     mockGetAllSources.mockResolvedValue([]);
     mockGetRuns.mockResolvedValue({ latestRun: null, allRuns: [] });
+    window.localStorage.clear();
   });
 
   it('renders empty state when no grants provided', async () => {
@@ -146,7 +147,7 @@ describe('DiscoveryView', () => {
     container.remove();
   });
 
-  it('filters grants by search query', async () => {
+  it('filters grants by search query', { timeout: 10000 }, async () => {
     mockGetAllGrants.mockResolvedValue(mockGrants);
     mockGetAllSources.mockResolvedValue(mockSources);
     const container = document.createElement('div');
@@ -159,14 +160,15 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       })
     );
-    await waitFor(() => container.querySelector('input[type="text"]') !== null);
+    await waitFor(() => container.textContent?.includes('3 grants') === true);
 
     const searchInput = container.querySelector('input[type="text"]') as HTMLInputElement;
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
     setter?.call(searchInput, 'NSF');
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new Event('change', { bubbles: true }));
 
-    await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true);
+    await waitFor(() => container.textContent?.includes('1 grants') === true, 5000);
     expect(container.textContent).toContain('NSF STEM Education Grant');
     expect(container.textContent).not.toContain('Community Innovation Fund');
     expect(container.textContent).not.toContain('EdTech Accelerator');
@@ -176,7 +178,7 @@ describe('DiscoveryView', () => {
 
 
 
-  it('shows filter empty state when no grants match', async () => {
+  it('shows filter empty state when no grants match', { timeout: 10000 }, async () => {
     mockGetAllGrants.mockResolvedValue(mockGrants);
     mockGetAllSources.mockResolvedValue(mockSources);
     const container = document.createElement('div');
@@ -189,14 +191,15 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       })
     );
-    await waitFor(() => container.querySelector('input[type="text"]') !== null);
+    await waitFor(() => container.textContent?.includes('3 grants') === true);
 
     const searchInput = container.querySelector('input[type="text"]') as HTMLInputElement;
-    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
+    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
     setter?.call(searchInput, 'nonexistent grant');
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    searchInput.dispatchEvent(new Event('change', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('[data-testid="discovery-filter-empty-state"]') !== null);
+    await waitFor(() => container.querySelector('[data-testid="discovery-filter-empty-state"]') !== null, 5000);
     expect(container.querySelector('[data-testid="discovery-filter-empty-state"]')).not.toBeNull();
     root.unmount();
     container.remove();

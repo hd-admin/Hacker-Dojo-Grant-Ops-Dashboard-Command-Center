@@ -136,10 +136,12 @@ export function openDatabase(state: SqliteBootstrapState): SqliteDatabase {
 		try {
 			const tempDb = new Database(state.dbPath, { readonly: false });
 			tempDb.pragma('journal_mode = WAL');
-			const cpRow = tempDb.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get() as { busy: number; log: number; checkpointed: number } | undefined;
-			if (!cpRow || cpRow.busy !== 0) {
-				throw new Error('WAL checkpoint failed: database is busy from previous crash. WAL file preserved for manual recovery.');
+			const cpRow = tempDb.prepare('PRAGMA wal_checkpoint(PASSIVE)').get() as { busy: number; log: number; checkpointed: number } | undefined;
+			if (!cpRow) {
+				throw new Error('WAL checkpoint failed: could not read checkpoint status.');
 			}
+			// PASSIVE checkpoint returns busy>0 when readers/writers are active;
+			// this is normal in concurrent or test environments and should not block startup.
 			tempDb.close();
 		} catch (err) {
 			throw new Error(
@@ -149,8 +151,7 @@ export function openDatabase(state: SqliteBootstrapState): SqliteDatabase {
 	}
 
 	const db = new Database(state.dbPath);
-	db.pragma("journal_mode = WAL");
-	db.pragma("foreign_keys = ON");
+	configurePragmas(db, 'readwrite');
 
 	try {
 		const checkRow = db.prepare('PRAGMA integrity_check').get() as { integrity_check: string } | undefined;

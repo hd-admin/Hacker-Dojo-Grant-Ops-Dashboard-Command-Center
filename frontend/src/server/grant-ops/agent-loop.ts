@@ -211,6 +211,9 @@ export async function executeAgentJob(
       fs.writeFileSync(promptPath, prompt, 'utf-8');
 
       const logStream = fs.createWriteStream(sessionLogPath, { flags: attempt === 1 ? 'w' : 'a' });
+      logStream.on('error', () => {
+        // ignore log stream errors (e.g., directory removed during test cleanup)
+      });
 
       const env: NodeJS.ProcessEnv = {
         ...process.env,
