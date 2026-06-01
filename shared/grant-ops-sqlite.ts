@@ -1097,6 +1097,7 @@ function bootstrapFromLegacy(
 
 function ensureBootstrapped(state: SqliteBootstrapState): SqliteDatabase {
 	const db = openDatabase(state);
+	(globalThis as unknown as { __grantOpsDb?: SqliteDatabase }).__grantOpsDb = db;
 	ensureSchema(db);
 	runMigrations(state);
 

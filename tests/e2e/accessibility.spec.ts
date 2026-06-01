@@ -16,6 +16,7 @@ test.describe('Accessibility', () => {
 
   test('skip link is first focusable element', async ({ page }) => {
     await page.goto('/');
+    await page.waitForSelector('.app', { timeout: 10000 });
     await page.keyboard.press('Tab');
     const focused = await page.evaluate(() => document.activeElement?.getAttribute('data-testid'));
     expect(focused).toBe('skip-link');
@@ -23,6 +24,7 @@ test.describe('Accessibility', () => {
 
   test('Tab navigates through all interactive elements', async ({ page }) => {
     await page.goto('/');
+    await page.waitForSelector('.app', { timeout: 10000 });
     const interactiveSelectors = [
       '[data-testid="skip-link"]',
       '[data-testid="nav-discovery"]',
@@ -54,6 +56,7 @@ test.describe('Accessibility', () => {
     }
 
     await page.goto('/');
+    await page.waitForSelector('.app', { timeout: 10000 });
     await page.click('[data-testid="nav-discovery"]');
     await expect(page.locator('[data-testid="discovery-view"]')).toBeVisible({ timeout: 5000 });
 

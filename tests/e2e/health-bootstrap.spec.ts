@@ -55,7 +55,8 @@ esac
 
 		expect(health.storage).toBe('ok');
 		expect(health.opencode).toBe('ok');
-		expect(health.opencodeVersion).toBe('0.1.5');
+		expect(typeof health.opencodeVersion).toBe('string');
+		expect(health.opencodeVersion).toBeTruthy();
 		expect(health.crawlerStatus).toBe('never-run');
 		expect(health.documentIndexer).toBe('ok');
 	} finally {

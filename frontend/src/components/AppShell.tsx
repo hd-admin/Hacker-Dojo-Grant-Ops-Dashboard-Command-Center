@@ -509,6 +509,7 @@ export function AppShell() {
       <button
         type="button"
         className="skip-to-content"
+        data-testid="skip-link"
         onClick={handleSkipToContent}
         onKeyDown={handleSkipToContent}
       >

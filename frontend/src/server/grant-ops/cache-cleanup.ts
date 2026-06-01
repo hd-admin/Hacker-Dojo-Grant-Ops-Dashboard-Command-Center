@@ -118,7 +118,7 @@ function deleteOldFiles(
   return stats;
 }
 
-function enforceCacheSizeLimit(cacheDir: string, maxBytes: number): CleanupStats {
+export function enforceCacheSizeLimit(cacheDir: string, maxBytes: number): CleanupStats {
   const stats: CleanupStats = { deletedFiles: 0, freedBytes: 0, errors: [] };
 
   try {
@@ -191,7 +191,7 @@ export function cleanupTmpDir(dataDir: string): CleanupStats {
 
 let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
-function _startPeriodicCleanup(dataDir: string): void {
+export function _startPeriodicCleanup(dataDir: string): void {
   if (cleanupTimer) return;
   cleanupTimer = setInterval(() => {
     cleanupTmpDir(dataDir);
@@ -199,7 +199,7 @@ function _startPeriodicCleanup(dataDir: string): void {
   cleanupTimer.unref();
 }
 
-function _stopPeriodicCleanup(): void {
+export function _stopPeriodicCleanup(): void {
   if (cleanupTimer) {
     clearInterval(cleanupTimer);
     cleanupTimer = null;

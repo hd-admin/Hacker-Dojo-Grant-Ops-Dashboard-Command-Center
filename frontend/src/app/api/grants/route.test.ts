@@ -166,8 +166,8 @@ describe("Grants API Route", () => {
 			expect(getDependencies).toHaveBeenCalled();
 
 			// Verify the grants are returned
-			expect(data.grants).toBeDefined();
-			expect(data.grants.length).toBe(4);
+			expect(data).toBeDefined();
+			expect(data.length).toBe(4);
 		});
 
 		it("returns grants with required fields from route", async () => {
@@ -179,11 +179,11 @@ describe("Grants API Route", () => {
 			const response = await GET(mockRequest);
 			const data = await (response as NextResponse).json();
 
-			expect(data.grants).toBeDefined();
-			expect(data.grants.length).toBe(4);
+			expect(data).toBeDefined();
+			expect(data.length).toBe(4);
 
 			// Verify each grant has required fields
-			for (const grant of data.grants) {
+			for (const grant of data) {
 				expect(grant).toHaveProperty("id");
 				expect(grant).toHaveProperty("title");
 				expect(grant).toHaveProperty("funder");
@@ -213,11 +213,11 @@ describe("Grants API Route", () => {
 				"google-cs",
 				"dell-equality",
 			];
-			const actualOrder = data.grants.map((g: { id: string }) => g.id);
+			const actualOrder = data.map((g: { id: string }) => g.id);
 			expect(actualOrder).toEqual(expectedOrder);
 
 			// Also verify fit scores are in descending order
-			const fitScores = data.grants.map((g: { fit: number }) => g.fit);
+			const fitScores = data.map((g: { fit: number }) => g.fit);
 			expect(fitScores).toEqual([88, 82, 79, 76]);
 		});
 
@@ -237,7 +237,7 @@ describe("Grants API Route", () => {
 				"dell-equality",
 				"svcf-community",
 			];
-			const actualOrder = data.grants.map((g: { id: string }) => g.id);
+			const actualOrder = data.map((g: { id: string }) => g.id);
 			expect(actualOrder).toEqual(expectedOrder);
 
 			// Verify Rolling is last
@@ -261,11 +261,11 @@ describe("Grants API Route", () => {
 				"google-cs",
 				"svcf-community",
 			];
-			const actualOrder = data.grants.map((g: { id: string }) => g.id);
+			const actualOrder = data.map((g: { id: string }) => g.id);
 			expect(actualOrder).toEqual(expectedOrder);
 
 			// Verify award amounts are in descending order
-			const awardAmounts = data.grants.map((g: { awardSort: number }) => g.awardSort);
+			const awardAmounts = data.map((g: { awardSort: number }) => g.awardSort);
 			expect(awardAmounts).toEqual([350000, 150000, 100000, 75000]);
 		});
 	});

@@ -23,25 +23,9 @@ function snippetFromText(text: string): string {
 }
 
 async function extractPdfText(buffer: Buffer): Promise<string> {
-  try {
-    const { getDocument } = await import('pdfjs-dist');
-    const data = new Uint8Array(buffer);
-    const pdf = await getDocument({ data }).promise;
-    let fullText = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      const pageText = content.items
-        .map((item) => ('str' in item ? (item as { str: string }).str : ''))
-        .join(' ');
-      fullText += pageText + '\n';
-    }
-    return normalizeWhitespace(fullText);
-  } catch {
-    const { default: pdfParse } = await import('pdf-parse');
-    const parsed = await pdfParse(buffer);
-    return normalizeWhitespace(parsed.text || '');
-  }
+  const { default: pdfParse } = await import('pdf-parse');
+  const parsed = await pdfParse(buffer);
+  return normalizeWhitespace(parsed.text || '');
 }
 
 async function extractDocxText(buffer: Buffer): Promise<string> {

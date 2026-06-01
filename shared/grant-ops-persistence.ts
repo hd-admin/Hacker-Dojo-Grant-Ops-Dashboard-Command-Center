@@ -10,6 +10,7 @@ import os from 'node:os';
 import path from 'node:path';
 import {
   clearDatabase,
+  getBootstrappedDatabase,
   getSqliteState,
   readAuditEvents as readAuditEventsFromSqlite,
   readConflictRecords as readConflictRecordsFromSqlite,
@@ -331,6 +332,8 @@ export async function resetPersistentStateForTests(): Promise<void> {
     opencodeSettings: defaultOpencodeSettings,
     lastSync: new Date().toISOString(),
   });
+  const db = await getBootstrappedDatabase(state);
+  db.prepare("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)").run("operator.name", "Test Operator");
 }
 
 export async function loadAuditEvents(limit?: number): Promise<AuditEvent[]> {

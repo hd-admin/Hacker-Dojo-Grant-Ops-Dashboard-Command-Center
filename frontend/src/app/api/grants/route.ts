@@ -117,7 +117,7 @@ export async function GET(request: NextRequest) {
 			}
 		});
 
-		return NextResponse.json({ grants: sortedGrants });
+		return NextResponse.json(sortedGrants);
 	} catch (error) {
 		logger.error({ err: error }, 'Error getting grants');
 		return NextResponse.json(
