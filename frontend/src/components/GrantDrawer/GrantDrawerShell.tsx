@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef } from "react";
-import styles from "./GrantDrawer.module.css";
+import styles from "./GrantDrawerShell.module.css";
 
 interface GrantDrawerShellProps {
 	grantId: string | null;

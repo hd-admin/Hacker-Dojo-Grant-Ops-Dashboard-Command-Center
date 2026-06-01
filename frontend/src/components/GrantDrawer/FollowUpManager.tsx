@@ -4,7 +4,7 @@ import React from "react";
 import { AlertTriangle } from "lucide-react";
 import type { FollowUp } from "../../../../shared/types";
 import { formatDate } from "./utilities";
-import styles from "./GrantDrawer.module.css";
+import styles from "./FollowUpManager.module.css";
 
 interface FollowUpManagerProps {
 	followUps: FollowUp[];

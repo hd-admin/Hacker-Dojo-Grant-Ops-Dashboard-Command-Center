@@ -1,0 +1,107 @@
+/* FollowUpManager CSS Module */
+
+.followUpsHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.followUpsTitle {
+  margin-bottom: 0;
+}
+
+.followUpForm {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.formField {
+  margin-bottom: 8px;
+}
+
+.actionRow {
+  display: flex;
+  gap: 8px;
+}
+
+.outcomeForm {
+  background: rgba(212, 169, 67, 0.06);
+  border: 1px solid var(--accent-dim);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.outcomeLabel {
+  margin-bottom: 8px;
+  color: var(--accent);
+}
+
+.followUpContent {
+  flex: 1;
+}
+
+.followUpHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.followUpStatusDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.followUpMetaGroup {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.followUpDescription {
+  margin-top: 4px;
+}
+
+.followUpCompletedBadge {
+  color: var(--success);
+}
+
+.followUpTypeBadge {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.followUpActions {
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+.followUpDeleteBtn {
+  color: var(--text-muted);
+}
+
+.followUpStatusBadge {
+  font-family: var(--mono);
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-weight: 600;
+}
+
+.alertTriangle {
+  color: var(--warning);
+  margin-right: 4px;
+  flex-shrink: 0;
+}

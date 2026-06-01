@@ -2,7 +2,7 @@
 
 import React from "react";
 import type { FitScoreBreakdown as FitScoreBreakdownType } from "../../../../shared/types";
-import styles from "./GrantDrawer.module.css";
+import styles from "./FitScoreBreakdown.module.css";
 
 interface FitScoreBreakdownProps {
 	fitBreakdown: FitScoreBreakdownType;

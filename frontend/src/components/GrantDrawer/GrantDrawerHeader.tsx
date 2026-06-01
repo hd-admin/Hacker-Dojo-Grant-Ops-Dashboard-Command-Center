@@ -3,7 +3,7 @@
 import React from "react";
 import type { GrantDetailResponse } from "../../../../shared/types";
 import { formatDate } from "./utilities";
-import styles from "./GrantDrawer.module.css";
+import styles from "./GrantDrawerHeader.module.css";
 
 interface GrantDrawerHeaderProps {
 	grant: GrantDetailResponse["grant"];

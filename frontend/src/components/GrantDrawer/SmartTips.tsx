@@ -4,7 +4,7 @@ import React from "react";
 import type { GrantDetailResponse, SubmissionManifest } from "../../../../shared/types";
 import { SubmissionReadiness } from "../SubmissionReadiness";
 import { formatDate } from "./utilities";
-import styles from "./GrantDrawer.module.css";
+import styles from "./SmartTips.module.css";
 import type { GrantDrawerViewModel } from "./utilities";
 import type { DocumentMetadata } from "../../../../shared/types";
 

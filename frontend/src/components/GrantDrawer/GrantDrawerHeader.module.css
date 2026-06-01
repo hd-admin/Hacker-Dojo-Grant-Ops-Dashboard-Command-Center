@@ -1,0 +1,16 @@
+/* GrantDrawerHeader CSS Module */
+
+.deadlineConfidenceBadge {
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.deadlineConfidenceBadgeEstimated {
+  composes: deadlineConfidenceBadge;
+  color: var(--text-muted);
+}
+
+.deadlineConfidenceBadgeUnknown {
+  composes: deadlineConfidenceBadge;
+  color: var(--warning);
+}

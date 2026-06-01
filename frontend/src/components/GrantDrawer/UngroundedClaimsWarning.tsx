@@ -3,7 +3,7 @@
 import React from "react";
 import { AlertTriangle } from "lucide-react";
 import type { DraftArtifact } from "../../../../shared/types";
-import styles from "./GrantDrawer.module.css";
+import styles from "./UngroundedClaimsWarning.module.css";
 
 interface UngroundedClaimsWarningProps {
 	showGroundingWarning: boolean;

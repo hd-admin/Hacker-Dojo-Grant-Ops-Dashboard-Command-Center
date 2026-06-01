@@ -2,7 +2,7 @@
 
 import React from "react";
 import type { AuditEvent, GrantDetailResponse, GrantStatus } from "../../../../shared/types";
-import styles from "./GrantDrawer.module.css";
+import styles from "./OutcomeTracker.module.css";
 
 interface OutcomeTrackerProps {
 	detail: GrantDetailResponse;

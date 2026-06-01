@@ -1,0 +1,39 @@
+/* DraftEditor CSS Module */
+
+.sectionHeaderFlex {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.draftDirtyIndicator {
+  color: var(--warning);
+  font-size: 11px;
+}
+
+.draftSavingIndicator {
+  color: var(--text-dim);
+  font-size: 11px;
+}
+
+.draftSavedTimestamp {
+  color: var(--success);
+  font-size: 11px;
+}
+
+.draftEditTextarea {
+  font-family: var(--mono);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.actionRow {
+  display: flex;
+  gap: 8px;
+}
+
+.actionRowWithMarginBottom {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}

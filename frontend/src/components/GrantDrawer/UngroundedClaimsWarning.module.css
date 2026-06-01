@@ -1,0 +1,32 @@
+/* UngroundedClaimsWarning CSS Module */
+
+.groundedWarningTitle {
+  color: var(--warning);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.groundedWarningSection {
+  margin-bottom: 12px;
+}
+
+.groundedWarningList {
+  margin: 8px 0 0 0;
+  padding-left: 20px;
+  color: var(--text-dim);
+}
+
+.groundedCheckboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.actionRowEnd {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}

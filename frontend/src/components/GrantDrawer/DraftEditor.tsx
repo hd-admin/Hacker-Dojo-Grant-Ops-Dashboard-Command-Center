@@ -3,7 +3,7 @@
 import React from "react";
 import type { GrantDetailResponse } from "../../../../shared/types";
 import { previewText } from "./utilities";
-import styles from "./GrantDrawer.module.css";
+import styles from "./DraftEditor.module.css";
 import { GroundingReview } from "../GroundingReview";
 import type { GrantDrawerViewModel } from "./utilities";
 
