@@ -85,8 +85,10 @@ export function MiniProgressBar({
     height: '100%',
     background: fillColor,
     borderRadius: 2,
-    width: isActive ? `${Math.max(progress, 5)}%` : '100%',
-    transition: 'width 300ms ease-out',
+    width: '100%',
+    transform: isActive ? `scaleX(${Math.max(progress, 5) / 100})` : 'scaleX(1)',
+    transformOrigin: 'left',
+    transition: 'transform 300ms ease-out',
   };
 
   return (

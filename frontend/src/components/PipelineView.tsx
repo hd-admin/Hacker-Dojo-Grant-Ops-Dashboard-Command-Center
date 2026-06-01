@@ -366,7 +366,20 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
                     colGrants.map((grant) => (
                       <div key={grant.id} className="board-card">
                         <div className="board-card-funder">{grant.funderShort}</div>
-                        <div className={`board-card-title ${styles.clickableTitle}`} onClick={() => onGrantSelect(grant.id)}>{grant.title}</div>
+                        <div
+                          className={`board-card-title ${styles.clickableTitle}`}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => onGrantSelect(grant.id)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault();
+                              onGrantSelect(grant.id);
+                            }
+                          }}
+                        >
+                          {grant.title}
+                        </div>
                         <div className="board-card-foot">
                           <span>{renderDeadlineCell(grant)}</span>
                           <span className="amount">{grant.award}</span>

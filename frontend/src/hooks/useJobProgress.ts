@@ -3,6 +3,17 @@
 import type { JobQueueItem } from '../../../shared/types';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+export type FetchFn = (url: string, init?: RequestInit) => Promise<Response>;
+
+export interface UseJobProgressOptions {
+  onComplete?: () => void;
+  onCancel?: () => void;
+  onRetry?: () => void;
+  pollIntervalMs?: number;
+  maxRetries?: number;
+  fetchFn?: FetchFn;
+}
+
 export interface UseJobProgressResult {
   job: JobQueueItem | null;
   pollFailures: number;
@@ -15,15 +26,9 @@ export interface UseJobProgressResult {
 
 export function useJobProgress(
   jobId: string,
-  options?: {
-    onComplete?: () => void;
-    onCancel?: () => void;
-    onRetry?: () => void;
-    pollIntervalMs?: number;
-    maxRetries?: number;
-  },
+  options?: UseJobProgressOptions,
 ): UseJobProgressResult {
-  const { onComplete, onCancel, onRetry, pollIntervalMs = 2000 } = options ?? {};
+  const { onComplete, onCancel, onRetry, pollIntervalMs = 2000, fetchFn = fetch } = options ?? {};
   const [job, setJob] = useState<JobQueueItem | null>(null);
   const [pollFailures, setPollFailures] = useState(0);
   const [dismissed, setDismissed] = useState(false);
@@ -32,7 +37,7 @@ export function useJobProgress(
 
   const fetchJob = useCallback(async () => {
     try {
-      const res = await fetch(`/api/jobs/${jobId}`);
+      const res = await fetchFn(`/api/jobs/${jobId}`);
       if (!res.ok) {
         setPollFailures((prev) => prev + 1);
         return;
@@ -57,7 +62,7 @@ export function useJobProgress(
     } catch {
       setPollFailures((prev) => prev + 1);
     }
-  }, [jobId, onComplete, onCancel, onRetry]);
+  }, [jobId, onComplete, onCancel, onRetry, fetchFn]);
 
   const retryNow = useCallback(() => {
     setIsRetrying(true);

@@ -4,6 +4,7 @@ import type { JobQueueItem, JobStatus } from '../../../shared/types';
 import { X, RefreshCw } from 'lucide-react';
 import React, { useEffect, useState, useCallback } from 'react';
 import styles from './JobProgress.module.css';
+import type { FetchFn } from '../hooks/useJobProgress';
 
 interface JobProgressProps {
   jobId: string;
@@ -12,6 +13,7 @@ interface JobProgressProps {
   onCancel?: () => void;
   onRetry?: () => void;
   mini?: boolean;
+  fetchFn?: FetchFn;
 }
 
 function getStatusColor(status: JobStatus): string {
@@ -33,6 +35,7 @@ export function JobProgress({
   onCancel,
   onRetry,
   mini,
+  fetchFn = fetch,
 }: JobProgressProps) {
   const [job, setJob] = useState<JobQueueItem | null>(null);
   const [pollFailures, setPollFailures] = useState(0);
@@ -40,7 +43,7 @@ export function JobProgress({
 
   const fetchJob = useCallback(async () => {
     try {
-      const res = await fetch(`/api/jobs/${jobId}`);
+      const res = await fetchFn(`/api/jobs/${jobId}`);
       if (!res.ok) {
         setPollFailures(prev => prev + 1);
         return;
@@ -58,7 +61,7 @@ export function JobProgress({
     } catch {
       setPollFailures(prev => prev + 1);
     }
-  }, [jobId, onComplete]);
+  }, [jobId, onComplete, fetchFn]);
 
   useEffect(() => {
     void fetchJob();

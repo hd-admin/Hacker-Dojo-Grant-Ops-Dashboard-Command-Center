@@ -232,7 +232,19 @@ export function PostAwardView({ onRefreshAppState: _onRefreshAppState, initialAw
           <div className="post-award-list">
             {awards.map((award) => (
               <div key={award.id} className="setting-card" data-testid={`award-card-${award.id}`}>
-                <div className={`setting-card-header ${styles.clickableHeader}`} onClick={() => setExpandedAward(expandedAward === award.id ? null : award.id)}>
+                <div
+                  className={`setting-card-header ${styles.clickableHeader}`}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={expandedAward === award.id}
+                  onClick={() => setExpandedAward(expandedAward === award.id ? null : award.id)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setExpandedAward(expandedAward === award.id ? null : award.id);
+                    }
+                  }}
+                >
                   <div className="setting-card-title">
                     {expandedAward === award.id ? '▼' : '▶'} Award — Grant {award.grantId}
                   </div>
