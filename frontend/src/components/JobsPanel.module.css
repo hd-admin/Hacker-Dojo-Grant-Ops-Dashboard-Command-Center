@@ -1,0 +1,21 @@
+/* JobsPanel CSS Module — extracted inline styles */
+
+.errorText {
+  color: var(--danger);
+}
+
+.activeCountBadge {
+  margin-left: 8px;
+}
+
+.countBadge {
+  margin-left: 4px;
+}
+
+.typeFilterRow {
+  margin-top: 8px;
+}
+
+.partialOutput {
+  white-space: pre-wrap;
+}

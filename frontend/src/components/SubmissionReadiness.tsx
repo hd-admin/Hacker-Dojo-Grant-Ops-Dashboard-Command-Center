@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
+import styles from "./SubmissionReadiness.module.css";
 import type {
 	ApprovalRecord,
 	DocumentMetadata,
@@ -280,7 +281,7 @@ export function SubmissionReadiness({
 							<div className="drawer-note">No materials in manifest.</div>
 						)}
 						{manifest.instructions && (
-							<div className="drawer-note" style={{ marginTop: "8px" }}>
+							<div className={`drawer-note ${styles.noteTopMargin}`}>
 								<strong>Instructions:</strong> {manifest.instructions}
 							</div>
 						)}

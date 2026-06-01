@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
+import styles from './SourcesView.module.css';
 import type {
   CrawlRun,
   Grant,
@@ -481,7 +482,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
 
     return (
       <span
-        className="crawl-status-badge"
+        className={`crawl-status-badge ${styles.badge}`}
         data-testid={`crawl-status-${source.id}`}
         style={{ color, borderColor: color }}
         role="status"

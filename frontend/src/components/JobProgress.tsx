@@ -3,6 +3,7 @@
 import type { JobQueueItem, JobStatus } from '../../../shared/types';
 import { X, RefreshCw } from 'lucide-react';
 import React, { useEffect, useState, useCallback } from 'react';
+import styles from './JobProgress.module.css';
 
 interface JobProgressProps {
   jobId: string;
@@ -171,7 +172,7 @@ export function JobProgress({
         )}
         {isFailed && onRetry && (
           <button type="button" className="btn btn-primary btn-sm" onClick={onRetry}>
-            <RefreshCw size={14} style={{ marginRight: '4px' }} />
+            <RefreshCw size={14} className={styles.refreshIcon} />
             Retry
           </button>
         )}

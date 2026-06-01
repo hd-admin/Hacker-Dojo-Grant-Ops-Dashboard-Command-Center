@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { Grant, GrantStatus } from '../../../shared/types';
+import styles from './PipelineBoard.module.css';
 
 const PIPELINE_COLUMNS: { status: GrantStatus; label: string }[] = [
   { status: 'matched', label: 'Matched' },
@@ -141,8 +142,8 @@ export function PipelineBoard({ grants, onSelectGrant, onStatusChange: _onStatus
                     {grant.fit > 0 && (
                       <div className="pipeline-card-fit" title={`Fit: ${grant.fit}%`}>
                         <div
-                          className="pipeline-card-fit-bar"
-                          style={{ transform: `scaleX(${grant.fit / 100})`, transformOrigin: 'left' }}
+                          className={`pipeline-card-fit-bar ${styles.fitBarFill}`}
+                          style={{ transform: `scaleX(${grant.fit / 100})` }}
                         />
                       </div>
                     )}

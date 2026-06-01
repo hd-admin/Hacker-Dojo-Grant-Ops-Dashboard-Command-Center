@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from 'react';
 import type { Grant } from '../../../shared/types';
+import styles from './CalendarView.module.css';
 
 interface CalendarEvent {
   date: string;
@@ -124,10 +125,10 @@ export function CalendarView({ grants, reportDeadlines = [], taskDueDates = [] }
       </div>
 
       <div className="calendar-legend">
-        <span className="calendar-legend-item"><span className="calendar-dot" style={{ background: 'var(--danger)' }} /> Overdue</span>
-        <span className="calendar-legend-item"><span className="calendar-dot" style={{ background: 'var(--warning)' }} /> Urgent (&lt;3 days)</span>
-        <span className="calendar-legend-item"><span className="calendar-dot" style={{ background: 'var(--warning)' }} /> Soon (&lt;14 days)</span>
-        <span className="calendar-legend-item"><span className="calendar-dot" style={{ background: 'var(--info)' }} /> Upcoming</span>
+        <span className="calendar-legend-item"><span className={`calendar-dot ${styles.legendDotDanger}`} /> Overdue</span>
+        <span className="calendar-legend-item"><span className={`calendar-dot ${styles.legendDotWarning}`} /> Urgent (&lt;3 days)</span>
+        <span className="calendar-legend-item"><span className={`calendar-dot ${styles.legendDotWarning}`} /> Soon (&lt;14 days)</span>
+        <span className="calendar-legend-item"><span className={`calendar-dot ${styles.legendDotInfo}`} /> Upcoming</span>
       </div>
 
       <div className="calendar-nav">

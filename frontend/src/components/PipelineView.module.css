@@ -1,0 +1,9 @@
+/* PipelineView CSS Module — extracted inline styles */
+
+.clickableTitle {
+  cursor: pointer;
+}
+
+.modalContent {
+  max-width: 500px;
+}

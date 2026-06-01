@@ -1,0 +1,70 @@
+/* SettingsView CSS Module — extracted inline styles */
+
+.logFilterRow {
+  margin-bottom: 12px;
+}
+
+.logControls {
+  margin-bottom: 12px;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.logLevelLabel {
+  margin-bottom: 0;
+}
+
+.logLevelSelect {
+  max-width: 150px;
+}
+
+.logSearchRow {
+  margin-bottom: 12px;
+}
+
+.logSearchInput {
+  max-width: 300px;
+  margin-right: 8px;
+}
+
+.logErrorDetail {
+  white-space: pre-wrap;
+  word-break: break-all;
+  padding: 2px 0;
+}
+
+.rescoreResult {
+  color: var(--success);
+  font-size: 12px;
+  margin-left: 8px;
+}
+
+.docItem {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.docName {
+  font-weight: 600;
+}
+
+.versionTitle {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.versionNote {
+  color: var(--text-muted);
+}
+
+.docLastUsed {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.opencodeStatus {
+  margin-bottom: 10px;
+}

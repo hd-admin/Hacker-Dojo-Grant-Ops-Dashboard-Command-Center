@@ -1,0 +1,26 @@
+/* FormTemplateView CSS Module — extracted inline styles */
+
+.createFormRow {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.sectionSpacer {
+  margin-bottom: 12px;
+}
+
+.fieldBlock {
+  margin-bottom: 12px;
+}
+
+.suggestedAnswer {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

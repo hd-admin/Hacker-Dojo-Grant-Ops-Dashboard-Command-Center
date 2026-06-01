@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import styles from './FormTemplateView.module.css';
 
 interface FormField {
   id: string;
@@ -148,7 +149,7 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
           + Create template
         </button>
         {showCreateForm && (
-          <form onSubmit={handleCreateTemplate} data-testid="template-create-form" style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+          <form onSubmit={handleCreateTemplate} data-testid="template-create-form" className={styles.createFormRow}>
             <input
               type="text"
               placeholder="Template name"
@@ -171,7 +172,7 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
   return (
     <div className="form-template-view" data-testid="form-template-view">
       {templates.length > 1 && (
-        <div style={{ marginBottom: '12px' }}>
+        <div className={styles.sectionSpacer}>
           <select
             value={selectedTemplate?.id || ''}
             onChange={(e) => {
@@ -194,12 +195,12 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
           <h3>{selectedTemplate.name}</h3>
           <div className="form-fields">
             {selectedTemplate.fields.map((field) => (
-              <div key={field.id} className="form-field" style={{ marginBottom: '12px' }}>
+              <div key={field.id} className={`form-field ${styles.fieldBlock}`}>
                 <label className="form-label" htmlFor={`field-${field.id}`}>
                   {field.label}{field.required ? ' *' : ''}
                 </label>
                 {field.suggestedAnswer && (
-                  <div className="suggested-answer" style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                  <div className={`suggested-answer ${styles.suggestedAnswer}`}>
                     Suggested: {field.suggestedAnswer}
                   </div>
                 )}
@@ -215,7 +216,7 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
             ))}
           </div>
 
-          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <div className={styles.formActions}>
             {onSave && (
               <button type="button" className="btn btn-primary" onClick={handleSaveAnswers}>
                 Save Answers
@@ -247,7 +248,7 @@ export function FormTemplateView({ template, funderId, onSave, onInsertDraft }: 
           </div>
 
           {showCreateForm && (
-            <form onSubmit={handleCreateTemplate} data-testid="template-create-form" style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+            <form onSubmit={handleCreateTemplate} data-testid="template-create-form" className={styles.createFormRow}>
               <input
                 type="text"
                 placeholder="Template name"

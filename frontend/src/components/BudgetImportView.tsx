@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
+import styles from './BudgetImportView.module.css';
 
 interface ParsedBudgetRow {
   raw: Record<string, unknown>;
@@ -124,7 +125,7 @@ export function BudgetImportView({ awardId, onUpload, onConfirm }: BudgetImportV
           type="file"
           accept=".csv,.xlsx,.xls"
           onChange={handleInputChange}
-          style={{ display: 'none' }}
+          className={styles.hiddenInput}
           aria-label="Select budget file"
         />
       </div>

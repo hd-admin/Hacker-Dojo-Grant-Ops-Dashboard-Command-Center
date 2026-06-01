@@ -3,6 +3,7 @@
 import React from 'react';
 import { useEffect, useState } from 'react';
 import type { FollowUp, Task, TaskStatus, ResponsibilityTag } from '../../../shared/types';
+import styles from './TasksView.module.css';
 import { tasksApi, followUpsApi, grantsApi } from '../lib/grant-ops-client';
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'sources' | 'settings' | 'notifications' | 'tasks';
@@ -266,7 +267,7 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
                 onChange={(e) => setNewTaskDueDate(e.target.value)}
                 disabled={isAddingTask}
               />
-              <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <label className={styles.inlineLabel}>
                 <input
                   type="checkbox"
                   checked={newTaskBlockSubmission}

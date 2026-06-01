@@ -1009,8 +1009,8 @@ textarea:focus-visible {
 
 .funder-detail-tags .tag {
   padding: 2px 8px;
-  background: var(--gold-alpha-6);
-  color: var(--gold);
+  background: rgba(212, 169, 67, 0.06);
+  color: var(--accent);
   border-radius: var(--radius-sm);
   font-size: var(--text-xs);
 }
@@ -1121,8 +1121,8 @@ textarea:focus-visible {
 }
 
 .saved-search-badge.has-results {
-  background: var(--gold-alpha-6);
-  color: var(--gold);
+  background: rgba(212, 169, 67, 0.06);
+  color: var(--accent);
 }
 
 .saved-search-card-actions {

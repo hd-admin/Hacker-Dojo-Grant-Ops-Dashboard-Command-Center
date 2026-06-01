@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import styles from './AuditView.module.css';
 import type { AuditEvent } from '../../../shared/types';
 
 interface AuditViewProps {
@@ -55,7 +56,7 @@ export function AuditView({ entityId, entityType }: AuditViewProps) {
                   <strong>{event.eventType}</strong> · {event.entityType} {event.entityId}
                 </div>
                 <div className="activity-time">{new Date(event.timestamp).toLocaleString()}</div>
-                {event.metadata && <pre style={{ whiteSpace: 'pre-wrap' }}>{JSON.stringify(event.metadata, null, 2)}</pre>}
+                {event.metadata && <pre className={styles.preWrap}>{JSON.stringify(event.metadata, null, 2)}</pre>}
               </div>
             </div>
           ))}

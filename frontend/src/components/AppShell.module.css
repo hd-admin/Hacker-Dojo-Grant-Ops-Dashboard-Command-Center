@@ -1,0 +1,5 @@
+/* AppShell CSS Module — extracted inline styles */
+
+.mutedText {
+  color: var(--text-dim);
+}

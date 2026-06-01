@@ -1,0 +1,9 @@
+/* PostAwardView CSS Module — extracted inline styles */
+
+.loadReportBtn {
+  margin-bottom: 8px;
+}
+
+.clickableHeader {
+  cursor: pointer;
+}

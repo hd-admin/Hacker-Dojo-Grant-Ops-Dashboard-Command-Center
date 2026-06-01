@@ -1,0 +1,5 @@
+/* BudgetVsActualReport CSS Module — extracted inline styles */
+
+.progressBarFill {
+  transform-origin: left;
+}

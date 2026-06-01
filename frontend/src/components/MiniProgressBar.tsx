@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import styles from './MiniProgressBar.module.css';
 
 interface MiniProgressBarProps {
   jobType: string;
@@ -99,8 +100,8 @@ export function MiniProgressBar({
       aria-live="polite"
       data-testid="mini-progress-bar"
     >
-      <span style={{ fontSize: 14 }}>{icon}</span>
-      <span style={{ flex: '0 0 auto', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+      <span className={styles.icon}>{icon}</span>
+      <span className={styles.label}>
         {isFailed ? `Failed: ${errorMessage ?? 'Unknown error'}` : stage}
       </span>
       <div style={trackStyle}>

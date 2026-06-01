@@ -1,0 +1,13 @@
+/* MiniProgressBar CSS Module — extracted inline styles */
+
+.icon {
+  font-size: 14px;
+}
+
+.label {
+  flex: 0 0 auto;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

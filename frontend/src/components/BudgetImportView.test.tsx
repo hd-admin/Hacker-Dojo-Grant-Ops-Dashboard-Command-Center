@@ -31,7 +31,7 @@ describe('BudgetImportView', () => {
     await new Promise((r) => setTimeout(r, 50));
     const input = container.querySelector('input[type="file"]') as HTMLInputElement | null;
     expect(input).not.toBeNull();
-    expect(input?.style.display).toBe('none');
+    expect(input?.className).toContain('hidden');
     root.unmount();
     container.remove();
   });

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import styles from './SnippetsBrowser.module.css';
 
 interface Snippet {
   id: string;
@@ -108,15 +109,14 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
 
   return (
     <div className="snippets-browser" data-testid="snippets-browser">
-      <div className="snippets-header" style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+      <div className={`snippets-header ${styles.searchRow}`}>
         <input
           type="text"
           placeholder="Search snippets..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="form-input"
+          className={`form-input ${styles.searchInput}`}
           aria-label="Search snippets"
-          style={{ flex: 1 }}
         />
         <button
           type="button"
@@ -130,7 +130,7 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
       </div>
 
       {showCreateForm && (
-        <form className="snippet-create-form" onSubmit={handleCreate} data-testid="snippet-create-form" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', padding: '12px', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+        <form className={`snippet-create-form ${styles.createForm}`} onSubmit={handleCreate} data-testid="snippet-create-form">
           <input
             type="text"
             placeholder="Snippet title"
@@ -158,7 +158,7 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
             aria-label="Snippet category"
             className="form-input"
           />
-          <div style={{ display: 'flex', gap: '8px' }}>
+          <div className={styles.formActions}>
             <button type="submit" className="btn btn-sm btn-primary" disabled={saving || !newTitle.trim()}>
               {saving ? 'Saving...' : 'Save'}
             </button>
@@ -174,17 +174,17 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
           <div className="empty-state">No snippets found.</div>
         )}
         {filtered.map((snippet) => (
-          <div key={snippet.id} className="snippet-card" data-testid="snippet-card" style={{ padding: '10px 14px', background: 'var(--surface)', borderRadius: 'var(--radius)', marginBottom: '8px', border: '1px solid var(--border)' }}>
-            <div className="snippet-title" style={{ fontWeight: 600, marginBottom: '4px' }}>{snippet.title}</div>
-            <div className="snippet-meta" style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+          <div key={snippet.id} className={`snippet-card ${styles.cardBody}`} data-testid="snippet-card">
+            <div className={`snippet-title ${styles.cardTitle}`}>{snippet.title}</div>
+            <div className={`snippet-meta ${styles.cardMeta}`}>
               {snippet.funder} · Used {snippet.usageCount} times
             </div>
-            <div className="snippet-tags" style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
+            <div className={`snippet-tags ${styles.cardTags}`}>
               {snippet.topicTags.map((tag) => (
-                <span key={tag} className="tag" style={{ padding: '1px 6px', background: 'var(--gold-alpha-6)', color: 'var(--gold)', borderRadius: '3px', fontSize: '11px' }}>{tag}</span>
+                <span key={tag} className="tag" style={{ padding: '1px 6px', background: 'rgba(212, 169, 67, 0.06)', color: 'var(--accent)', borderRadius: '3px', fontSize: '11px' }}>{tag}</span>
               ))}
             </div>
-            <div className="snippet-actions" style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+            <div className={`snippet-actions ${styles.cardActions}`}>
               {onInsert && (
                 <button
                   type="button"

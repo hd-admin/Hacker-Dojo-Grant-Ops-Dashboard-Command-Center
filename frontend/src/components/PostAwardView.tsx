@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
+import styles from './PostAwardView.module.css';
 import type {
   Award,
   AwardBudgetCategory,
@@ -177,7 +178,7 @@ export function PostAwardView({ onRefreshAppState: _onRefreshAppState, initialAw
           {awards.map((award) => (
             <div key={award.id} className="post-award-section">
               <div className="post-award-award-title">{award.title || `Award ${award.grantId}`}</div>
-              <button type="button" className="btn btn-sm" style={{ marginBottom: '8px' }} onClick={() => loadBudgetVsActual(award.id)}>Load Report</button>
+              <button type="button" className={`btn btn-sm ${styles.loadReportBtn}`} onClick={() => loadBudgetVsActual(award.id)}>Load Report</button>
               {(budgetVsActual[award.id] || []).map((row) => (
                 <div key={row.category} className={`post-award-item post-award-item-${row.status}`}>
                   <div>{row.category}</div>
@@ -231,7 +232,7 @@ export function PostAwardView({ onRefreshAppState: _onRefreshAppState, initialAw
           <div className="post-award-list">
             {awards.map((award) => (
               <div key={award.id} className="setting-card" data-testid={`award-card-${award.id}`}>
-                <div className="setting-card-header" onClick={() => setExpandedAward(expandedAward === award.id ? null : award.id)} style={{ cursor: 'pointer' }}>
+                <div className={`setting-card-header ${styles.clickableHeader}`} onClick={() => setExpandedAward(expandedAward === award.id ? null : award.id)}>
                   <div className="setting-card-title">
                     {expandedAward === award.id ? '▼' : '▶'} Award — Grant {award.grantId}
                   </div>

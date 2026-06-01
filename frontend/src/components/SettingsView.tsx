@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import type { BackupFreshnessStatus, DocumentMetadata, FailureHistoryEntry, HealthCheckResult, OrganizationProfile, Theme, ThemesData } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
+import styles from './SettingsView.module.css';
 
 // Guidance messages keyed by opencode health status
 const opencodeStatusGuidance: Record<string, { title: string; description: string; action: string }> = {
@@ -108,7 +109,7 @@ function LogViewer() {
 
   return (
     <div data-testid="log-viewer">
-      <div className="filter-row" role="tablist" aria-label="Log type tabs" style={{ marginBottom: '12px' }}>
+      <div className={`filter-row ${styles.logFilterRow}`} role="tablist" aria-label="Log type tabs">
         {(['app', 'error', 'session'] as LogTab[]).map((tab) => (
           <button
             key={tab}
@@ -124,15 +125,14 @@ function LogViewer() {
         ))}
       </div>
 
-      <div style={{ marginBottom: '12px', display: 'flex', gap: '12px', alignItems: 'center' }}>
-        <label htmlFor="log-level-filter" className="settings-label" style={{ marginBottom: 0 }}>Level:</label>
+      <div className={styles.logControls}>
+        <label htmlFor="log-level-filter" className={`settings-label ${styles.logLevelLabel}`}>Level:</label>
         <select
           id="log-level-filter"
           data-testid="log-level-filter"
-          className="form-select"
+          className={`form-select ${styles.logLevelSelect}`}
           value={levelFilter}
           onChange={(e) => setLevelFilter(e.target.value as LogLevel)}
-          style={{ maxWidth: '150px' }}
         >
           <option value="all">All</option>
           <option value="debug">Debug</option>
@@ -143,14 +143,13 @@ function LogViewer() {
       </div>
 
       {activeTab === 'session' && (
-        <div style={{ marginBottom: '12px' }}>
+        <div className={styles.logSearchRow}>
           <input
             type="text"
-            className="form-input"
+            className={`form-input ${styles.logSearchInput}`}
             placeholder="Enter job ID"
             value={sessionJobId}
             onChange={(e) => setSessionJobId(e.target.value)}
-            style={{ maxWidth: '300px', marginRight: '8px' }}
             data-testid="session-job-id-input"
           />
           <button type="button" className="btn btn-sm" onClick={() => loadLogs(1)} data-testid="session-load-btn">
@@ -185,7 +184,7 @@ function LogViewer() {
               <div className="empty-state">No logs found.</div>
             ) : (
               entries.map((entry, idx) => (
-                <div key={idx} style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all', padding: '2px 0' }}>
+                <div key={idx} className={styles.logErrorDetail}>
                   {entry}
                 </div>
               ))
@@ -565,7 +564,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
             </fieldset>
             <div className="settings-form-row">
               <button type="button" className="btn" onClick={() => void handleRescore()} disabled={rescoreLoading} aria-label="Recalculate fit scores for all grants">{rescoreLoading ? 'Rescoring...' : 'Recalculate scores'}</button>
-              {rescoreResult && <span style={{ color: 'var(--success)', fontSize: '12px', marginLeft: '8px' }}>{rescoreResult}</span>}
+              {rescoreResult && <span className={styles.rescoreResult}>{rescoreResult}</span>}
             </div>
           </div>
         </section>
@@ -595,8 +594,8 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
             <button type="button" className="upload-item" onClick={handleUploadDocument}>Upload document</button>
             {documents.map((doc) => (
               <div key={doc.id} className="doc-item" data-testid={`doc-item-${doc.id}`}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1 }}>
-                  <span style={{ fontWeight: 600 }}>{doc.name}</span>
+                <div className={styles.docItem}>
+                  <span className={styles.docName}>{doc.name}</span>
                   {doc.type && (
                     <span style={{
                       fontSize: '10px',
@@ -625,7 +624,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                     </span>
                   )}
                   {doc.lastUsed && (
-                    <span style={{ fontSize: '10px', color: 'var(--text-muted)' }} data-testid={`doc-lastused-${doc.id}`}>
+                    <span className={styles.docLastUsed} data-testid={`doc-lastused-${doc.id}`}>
                       Last used: {getRelativeTime(doc.lastUsed)}
                     </span>
                   )}
@@ -710,7 +709,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                     }}
                     data-testid={`doc-versions-panel-${doc.id}`}
                   >
-                    <div style={{ fontWeight: 600, marginBottom: '4px' }}>Version History</div>
+                    <div className={styles.versionTitle}>Version History</div>
                     {doc.versions.map((v) => (
                       <div
                         key={v.id}
@@ -723,7 +722,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                         data-testid={`doc-version-${v.id}`}
                       >
                         <span>v{v.versionNumber} — {new Date(v.uploadedAt).toLocaleDateString()}</span>
-                        {v.notes && <span style={{ color: 'var(--text-muted)' }}>{v.notes}</span>}
+                        {v.notes && <span className={styles.versionNote}>{v.notes}</span>}
                       </div>
                     ))}
                   </div>

@@ -1,0 +1,57 @@
+/* SnippetsBrowser CSS Module — extracted inline styles */
+
+.searchRow {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.searchInput {
+  flex: 1;
+}
+
+.createForm {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 12px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+
+.formActions {
+  display: flex;
+  gap: 8px;
+}
+
+.cardBody {
+  padding: 10px 14px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+}
+
+.cardTitle {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.cardMeta {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.cardTags {
+  display: flex;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.cardActions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+}

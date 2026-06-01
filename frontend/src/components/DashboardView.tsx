@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { ClipboardList, MessageCircle, Search } from 'lucide-react';
+import styles from './DashboardView.module.css';
 import type { CrawlRun, FollowUp, Grant, OrganizationProfile, ActivityEvent, Notification, JobQueueItem, Source } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
 import { jobFailureMessages } from '../lib/failure-messages';
@@ -434,7 +435,7 @@ export function DashboardView({ onGrantSelect, onNavigate, onRefreshAppState, gr
                 : `Last crawl: ${formatAge(ageMs!)}`}
           </div>
           {(isCrawlFailed || neverCrawled || isCrawlPartial) && (
-            <div className="kpi-meta" style={{ marginTop: '8px' }}>
+            <div className={`kpi-meta ${styles.metaTopMargin}`}>
               <button
                 type="button"
                 className="btn btn-sm btn-primary"

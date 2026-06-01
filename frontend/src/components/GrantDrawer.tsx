@@ -15,6 +15,14 @@ import { useAutosave } from "../lib/useAutosave";
 import { AlertTriangle } from "lucide-react";
 import { GroundingReview } from "./GroundingReview";
 import { SubmissionReadiness } from "./SubmissionReadiness";
+import styles from "./GrantDrawer/GrantDrawer.module.css";
+import {
+	buildGrantDrawerViewModel,
+	formatDate,
+	previewText,
+	saveWorkingContextField,
+	waitForJobCompletion,
+} from "./GrantDrawer/utilities";
 
 interface GrantDrawerProps {
 	grantId: string | null;
@@ -22,123 +30,7 @@ interface GrantDrawerProps {
 	onRefreshAppState?: () => Promise<void> | void;
 }
 
-export interface GrantDrawerViewModel {
-	grant: GrantDetailResponse["grant"] | null;
-	latestDraftVersionLabel: string;
-	latestDraftPreview: string;
-	showGenerateDraft: boolean;
-	showRequestRevision: boolean;
-	showApprove: boolean;
-	showSubmit: boolean;
-	submitDisabledReason: string | null;
-}
-
-function buildGrantDrawerViewModel(
-	detail: GrantDetailResponse | null,
-): GrantDrawerViewModel {
-	if (!detail) {
-		return {
-			grant: null,
-			latestDraftVersionLabel: "No draft yet",
-			latestDraftPreview: "",
-			showGenerateDraft: false,
-			showRequestRevision: false,
-			showApprove: false,
-			showSubmit: false,
-			submitDisabledReason: null,
-		};
-	}
-
-	const latestDraftVersionLabel = detail.latestDraft
-		? `Version ${detail.latestDraft.version}`
-		: detail.grant.latestDraftVersion
-			? `Version ${detail.grant.latestDraftVersion}`
-			: "No draft yet";
-
-	const latestDraftPreview =
-		detail.latestDraft?.content || detail.grant.draftContent || "";
-
-	return {
-		grant: detail.grant,
-		latestDraftVersionLabel,
-		latestDraftPreview,
-		showGenerateDraft:
-			detail.workflow.canGenerateDraft &&
-			!detail.latestDraft &&
-			!detail.grant.draftContent,
-		showRequestRevision: detail.workflow.canRequestRevision,
-		showApprove: detail.workflow.canApprove,
-		showSubmit: detail.workflow.canSubmit,
-		submitDisabledReason: detail.workflow.canSubmit
-			? null
-			: detail.workflow.blockingReason,
-	};
-}
-
-function formatDate(dateStr: string): string {
-	if (dateStr === "Rolling") return "Rolling";
-	const parts = dateStr.split("-");
-	const year = parts[0] ?? "";
-	const month = parts[1] ?? "";
-	const day = parts[2] ?? "";
-	const months = [
-		"Jan",
-		"Feb",
-		"Mar",
-		"Apr",
-		"May",
-		"Jun",
-		"Jul",
-		"Aug",
-		"Sep",
-		"Oct",
-		"Nov",
-		"Dec",
-	];
-	return `${months[parseInt(month, 10) - 1] ?? ""} ${parseInt(day, 10)}, ${year}`;
-}
-
-function previewText(text: string, limit = 280): string {
-	if (!text) return "No draft has been generated yet.";
-	if (text.length <= limit) return text;
-	return `${text.slice(0, limit).trimEnd()}…`;
-}
-
-const WORKING_CONTEXT_KEY = "grantops.workingContext";
-
-function getWorkingContextStorage(): Storage | null {
-	if (typeof window === "undefined") return null;
-	return window.localStorage;
-}
-
-function readWorkingContext(): Record<string, unknown> {
-	const storage = getWorkingContextStorage();
-	if (!storage || typeof storage.getItem !== "function") return {};
-	try {
-		return JSON.parse(storage.getItem(WORKING_CONTEXT_KEY) || "{}");
-	} catch {
-		return {};
-	}
-}
-
-function saveWorkingContextField(field: string, value: unknown): void {
-	const storage = getWorkingContextStorage();
-	if (!storage || typeof storage.getItem !== "function" || typeof storage.setItem !== "function") return;
-	const next = { ...readWorkingContext(), [field]: value };
-	storage.setItem(WORKING_CONTEXT_KEY, JSON.stringify(next));
-}
-
-async function waitForJobCompletion(jobId: string): Promise<void> {
-	for (let attempt = 0; attempt < 30; attempt += 1) {
-		const job = await client.jobs.get(jobId);
-		if (job.status === 'completed') return;
-		if (job.status === 'failed') {
-			throw new Error(job.errorMessage || 'Draft job failed');
-		}
-		await new Promise<void>((resolve) => setTimeout(resolve, 100));
-	}
-	throw new Error('Timed out waiting for draft job');
-}
+export type { GrantDrawerViewModel } from "./GrantDrawer/utilities";
 
 export function GrantDrawer({
 	grantId,
@@ -738,7 +630,7 @@ export function GrantDrawer({
 			<aside className="drawer open">
 				{loading ? (
 					<div className="drawer-header">
-						<div className="spinner-overlay" style={{ padding: '24px 0' }} role="status" aria-busy="true" aria-label="Loading grant details">
+						<div className={`spinner-overlay ${styles.spinnerOverlay}`} role="status" aria-busy="true" aria-label="Loading grant details">
 							<div className="spinner" />
 						</div>
 					</div>
@@ -762,10 +654,10 @@ export function GrantDrawer({
 											? "Rolling"
 											: formatDate(detail.grant.deadline)}
 										{detail.grant.deadlineConfidence === 'estimated' && (
-											<span data-testid="deadline-confidence-badge" style={{ fontSize: '11px', color: 'var(--text-muted)', marginLeft: '4px' }}>(estimated)</span>
+											<span data-testid="deadline-confidence-badge" className={styles.deadlineConfidenceBadgeEstimated}>(estimated)</span>
 										)}
 										{detail.grant.deadlineConfidence === 'unknown' && (
-											<span data-testid="deadline-confidence-badge" style={{ fontSize: '11px', color: 'var(--warning)', marginLeft: '4px' }}>(date uncertain)</span>
+											<span data-testid="deadline-confidence-badge" className={styles.deadlineConfidenceBadgeUnknown}>(date uncertain)</span>
 										)}
 									</div>
 								</div>
@@ -833,7 +725,7 @@ export function GrantDrawer({
 											<div className="fit-row" key={label}>
 												<div className="fit-row-label">{label}</div>
 												<div className="fit-row-bar">
-													<div style={{ transform: `scaleX(${score / 100})`, transformOrigin: 'left' }} />
+													<div className={styles.fitRowBar} style={{ transform: `scaleX(${score / 100})` }} />
 												</div>
 												<div className="fit-row-val">{score}</div>
 											</div>
@@ -870,16 +762,16 @@ export function GrantDrawer({
 							</div>
 
 							<div className="drawer-section">
-								<h3 style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+								<h3 className={styles.sectionHeaderFlex}>
 									Drafted Letter of Intent — preview
 									{draftIsDirty && (
-										<span data-testid="draft-dirty-indicator" style={{ color: 'var(--warning)', fontSize: '11px' }}>Unsaved</span>
+										<span data-testid="draft-dirty-indicator" className={styles.draftDirtyIndicator}>Unsaved</span>
 									)}
 									{draftIsSaving && (
-										<span data-testid="draft-saving-indicator" style={{ color: 'var(--text-dim)', fontSize: '11px' }}>Saving...</span>
+										<span data-testid="draft-saving-indicator" className={styles.draftSavingIndicator}>Saving...</span>
 									)}
 									{draftLastSaved && !draftIsDirty && (
-										<span data-testid="draft-saved-timestamp" style={{ color: 'var(--success)', fontSize: '11px' }}>
+										<span data-testid="draft-saved-timestamp" className={styles.draftSavedTimestamp}>
 											Saved at {new Date(draftLastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
 										</span>
 									)}
@@ -903,15 +795,14 @@ export function GrantDrawer({
 								{draftEditMode ? (
 									<>
 										<textarea
-											className="form-input"
+											className={`form-input ${styles.draftEditTextarea}`}
 											rows={10}
 											value={draftEditContent}
 											onChange={(e) => setDraftEditContent(e.target.value)}
 											aria-label="Edit draft content"
 											data-testid="draft-edit-textarea"
-											style={{ fontFamily: 'var(--mono)', fontSize: '12px', marginBottom: '8px' }}
 										/>
-										<div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+										<div className={styles.actionRowWithMarginBottom}>
 											<button
 												type="button"
 												className="btn btn-primary btn-sm"
@@ -1023,29 +914,20 @@ export function GrantDrawer({
 								<div className="drawer-section" data-testid="submission-runbook-section">
 									<button
 										type="button"
-										className="drawer-section-toggle"
+										className={`drawer-section-toggle ${styles.runbookToggleBtn}`}
 										aria-expanded={runbookExpanded}
 										aria-controls="submission-runbook-content"
 										onClick={() => setRunbookExpanded(!runbookExpanded)}
 										data-testid="runbook-toggle-btn"
-										style={{
-											width: '100%',
-											textAlign: 'left',
-											background: 'none',
-											border: 'none',
-											cursor: 'pointer',
-											color: 'var(--text)',
-											font: 'inherit',
-										}}
 									>
-										<h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: 0 }}>
+										<h3 className={styles.sectionHeaderWithMargin}>
 											Submission Runbook
 											{manifest?.runbookCompleted && (
-												<span style={{ color: 'var(--success)', fontSize: '11px' }} data-testid="runbook-completed-badge">
+												<span className={styles.runbookCompletedBadge} data-testid="runbook-completed-badge">
 													✓ Completed
 												</span>
 											)}
-											<span style={{ fontSize: '12px', color: 'var(--text-muted)', marginLeft: 'auto' }}>
+											<span className={styles.runbookExpandIcon}>
 												{runbookExpanded ? '▲' : '▼'}
 											</span>
 										</h3>
@@ -1054,21 +936,10 @@ export function GrantDrawer({
 										<div id="submission-runbook-content" data-testid="runbook-content">
 											{/* Submission method badge */}
 											{manifest?.submissionMethod && (
-												<div style={{ marginBottom: '12px' }}>
+												<div className={styles.runbookSection}>
 													<span
 														data-testid="runbook-method-badge"
-														style={{
-															display: 'inline-block',
-															padding: '4px 8px',
-															borderRadius: '4px',
-															fontSize: '11px',
-															fontWeight: 600,
-															textTransform: 'uppercase',
-															letterSpacing: '0.05em',
-															background: 'var(--surface-2)',
-															border: '1px solid var(--border)',
-															color: 'var(--text)',
-														}}
+														className={styles.runbookMethodBadge}
 													>
 														{manifest.submissionMethod === 'portal' && '🌐 Portal'}
 														{manifest.submissionMethod === 'email' && '✉️ Email'}
@@ -1079,15 +950,9 @@ export function GrantDrawer({
 											)}
 
 											{/* Step-by-step guidance per method */}
-											<div style={{ marginBottom: '16px' }}>
-												<strong style={{ fontSize: '13px' }}>Step-by-step guidance:</strong>
-												<ol style={{
-													margin: '8px 0 0 0',
-													paddingLeft: '20px',
-													fontSize: '12px',
-													color: 'var(--text-dim)',
-													lineHeight: '1.7',
-												}}
+											<div className={styles.runbookSection}>
+												<strong className={styles.runbookGuidanceTitle}>Step-by-step guidance:</strong>
+												<ol className={styles.runbookSteps}
 													data-testid="runbook-steps"
 												>
 													{(!manifest?.submissionMethod || manifest.submissionMethod === 'portal') && (
@@ -1125,10 +990,10 @@ export function GrantDrawer({
 											</div>
 
 											{/* Confirmation number input */}
-											<div style={{ marginBottom: '12px' }}>
+											<div className={styles.runbookSection}>
 												<label
 													htmlFor="runbook-confirmation-number"
-													style={{ display: 'block', fontSize: '12px', marginBottom: '4px', color: 'var(--text-dim)' }}
+													className={styles.runbookLabel}
 												>
 													Confirmation number / tracking info:
 												</label>
@@ -1145,9 +1010,9 @@ export function GrantDrawer({
 											</div>
 
 											{/* I have completed checkbox */}
-											<div style={{ marginBottom: '12px' }}>
+											<div className={styles.runbookSection}>
 												<label
-													style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px' }}
+													className={styles.runbookCheckboxLabel}
 												>
 													<input
 														type="checkbox"
@@ -1291,7 +1156,7 @@ export function GrantDrawer({
 											<input type="text" className="form-input" value={overrideValue} onChange={(e) => setOverrideValue(e.target.value)} />
 										)}
 										<textarea className="form-input" rows={3} placeholder="Rationale" value={overrideRationale} onChange={(e) => setOverrideRationale(e.target.value)} />
-										<div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+										<div className={styles.actionRowWithMargin}>
 											<button type="button" onClick={() => void handleSubmitOverride()}>Save override</button>
 											<button type="button" onClick={() => { setOverrideField(null); setOverrideValue(''); setOverrideRationale(''); }}>Cancel</button>
 										</div>
@@ -1323,7 +1188,7 @@ export function GrantDrawer({
 										onChange={(e) => setRevisionNote(e.target.value)}
 									/>
 									<div
-										style={{ display: "flex", gap: "8px", marginTop: "12px" }}
+										className={styles.actionRowWithMargin}
 									>
 										<button
 											type="button"
@@ -1383,7 +1248,7 @@ export function GrantDrawer({
 										onChange={(e) => setSubmitNotes(e.target.value)}
 									/>
 									<div
-										style={{ display: "flex", gap: "8px", marginTop: "12px" }}
+										className={styles.actionRowWithMargin}
 									>
 										<button
 											type="button"
@@ -1405,8 +1270,8 @@ export function GrantDrawer({
 
 							{/* Follow-ups Section */}
 							<div className="drawer-section" data-testid="grant-drawer-follow-ups">
-								<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-									<h3 style={{ marginBottom: 0 }}>Follow-ups</h3>
+								<div className={styles.followUpsHeader}>
+									<h3 className={styles.followUpsTitle}>Follow-ups</h3>
 									<button
 										type="button"
 										className="btn btn-sm"
@@ -1420,12 +1285,11 @@ export function GrantDrawer({
 
 								{/* Create follow-up form */}
 								{showFollowUpForm && (
-									<div style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '12px', marginBottom: '12px' }} data-testid="follow-up-create-form">
+									<div className={styles.followUpForm} data-testid="follow-up-create-form">
 										<select
-											className="form-input"
+											className={`form-input ${styles.formField}`}
 											value={newFollowUpType}
 											onChange={(e) => setNewFollowUpType(e.target.value as FollowUp['type'])}
-											style={{ marginBottom: '8px' }}
 											aria-label="Follow-up type"
 										>
 											<option value="progress_check">Progress Check</option>
@@ -1436,31 +1300,28 @@ export function GrantDrawer({
 										</select>
 										<input
 											type="text"
-											className="form-input"
+											className={`form-input ${styles.formField}`}
 											placeholder="Title"
 											value={newFollowUpTitle}
 											onChange={(e) => setNewFollowUpTitle(e.target.value)}
-											style={{ marginBottom: '8px' }}
 											aria-label="Follow-up title"
 										/>
 										<textarea
-											className="form-input"
+											className={`form-input ${styles.formField}`}
 											rows={2}
 											placeholder="Description (optional)"
 											value={newFollowUpDescription}
 											onChange={(e) => setNewFollowUpDescription(e.target.value)}
-											style={{ marginBottom: '8px' }}
 											aria-label="Follow-up description"
 										/>
 										<input
 											type="date"
-											className="form-input"
+											className={`form-input ${styles.formField}`}
 											value={newFollowUpDueDate}
 											onChange={(e) => setNewFollowUpDueDate(e.target.value)}
-											style={{ marginBottom: '8px' }}
 											aria-label="Due date"
 										/>
-										<div style={{ display: 'flex', gap: '8px' }}>
+										<div className={styles.actionRow}>
 											<button
 												type="button"
 												className="btn btn-primary btn-sm"
@@ -1476,20 +1337,19 @@ export function GrantDrawer({
 
 								{/* Outcome tracking for terminal statuses */}
 								{showOutcomeForm && (
-									<div style={{ background: 'rgba(212, 169, 67, 0.06)', border: '1px solid var(--accent-dim)', borderRadius: 'var(--radius)', padding: '12px', marginBottom: '12px' }} data-testid="outcome-tracking-form">
-										<div className="drawer-note" style={{ marginBottom: '8px', color: 'var(--accent)' }}>
+									<div className={styles.outcomeForm} data-testid="outcome-tracking-form">
+										<div className={`drawer-note ${styles.outcomeLabel}`}>
 											Grant is now <strong>{detail.grant.statusLabel}</strong>. Record outcome notes:
 										</div>
 										<textarea
-											className="form-input"
+											className={`form-input ${styles.formField}`}
 											rows={3}
 											placeholder="What happened? Capture lessons learned, next steps, or closure notes..."
 											value={outcomeNotes}
 											onChange={(e) => setOutcomeNotes(e.target.value)}
-											style={{ marginBottom: '8px' }}
 											aria-label="Outcome notes"
 										/>
-										<div style={{ display: 'flex', gap: '8px' }}>
+										<div className={styles.actionRow}>
 											<button
 												type="button"
 												className="btn btn-primary btn-sm"
@@ -1538,8 +1398,8 @@ export function GrantDrawer({
 													data-testid={`follow-up-item-${followUp.id}`}
 													style={overdue ? { borderColor: 'var(--danger)', borderWidth: '1.5px' } : undefined}
 												>
-													<div style={{ flex: 1 }}>
-														<div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+													<div className={styles.followUpContent}>
+														<div className={styles.followUpHeader}>
 															<span style={{
 																fontFamily: 'var(--mono)',
 																fontSize: '9px',
@@ -1553,12 +1413,7 @@ export function GrantDrawer({
 															}}>
 																{overdue ? 'OVERDUE' : followUp.status}
 															</span>
-															<span style={{
-																fontFamily: 'var(--mono)',
-																fontSize: '9px',
-																textTransform: 'uppercase',
-																color: 'var(--text-muted)',
-															}}>
+															<span className={styles.followUpTypeBadge}>
 																{followUp.type.replace(/_/g, ' ')}
 															</span>
 														</div>
@@ -1567,7 +1422,7 @@ export function GrantDrawer({
 															{followUp.title}
 														</div>
 														{followUp.description && (
-															<div className="drawer-note" style={{ marginTop: '4px' }}>{followUp.description}</div>
+															<div className={`drawer-note ${styles.followUpDescription}`}>{followUp.description}</div>
 														)}
 														<div className="drawer-note">
 															{followUp.dueDate && (
@@ -1576,7 +1431,7 @@ export function GrantDrawer({
 																</span>
 															)}
 															{followUp.completedAt && (
-																<span style={{ color: 'var(--success)' }}>
+																<span className={styles.followUpCompletedBadge}>
 																	{' '}· Completed {new Date(followUp.completedAt).toLocaleString()}
 																</span>
 															)}
@@ -1585,7 +1440,7 @@ export function GrantDrawer({
 															)}
 														</div>
 													</div>
-													<div style={{ display: 'flex', gap: '6px', alignItems: 'flex-start', flexShrink: 0 }}>
+													<div className={styles.followUpActions}>
 														{followUp.status !== 'completed' && (
 															<button
 																type="button"
@@ -1600,12 +1455,11 @@ export function GrantDrawer({
 														)}
 														<button
 															type="button"
-															className="btn btn-sm btn-ghost"
+															className={`btn btn-sm btn-ghost ${styles.followUpDeleteBtn}`}
 															onClick={() => handleDeleteFollowUp(followUp.id)}
 															data-testid={`delete-follow-up-btn-${followUp.id}`}
 															aria-label={`Delete \"${followUp.title}\"`}
 															title="Delete"
-															style={{ color: 'var(--text-muted)' }}
 														>
 															🗑
 														</button>
@@ -1621,7 +1475,7 @@ export function GrantDrawer({
 								<div className="drawer-section" data-testid="grant-drawer-unsaved-warning">
 									<h3>Discard unsaved notes?</h3>
 									<p>Your revision note or submission notes will be lost if you close the drawer now.</p>
-									<div style={{ display: 'flex', gap: '8px' }}>
+									<div className={styles.confirmDialogActions}>
 										<button type="button" onClick={handleDiscardUnsavedNotes}>Discard</button>
 										<button type="button" onClick={() => setCloseWarningOpen(false)}>Keep editing</button>
 									</div>
@@ -1631,14 +1485,14 @@ export function GrantDrawer({
 							{/* Grounding warning dialog */}
 							{showGroundingWarning && detail?.latestDraft && (
 								<div className="drawer-section" data-testid="grounding-warning-dialog" role="alert">
-									<h3 style={{ color: 'var(--warning)', display: 'flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={18} /> Ungrounded Claims Detected</h3>
+									<h3 className={styles.groundedWarningTitle}><AlertTriangle size={18} /> Ungrounded Claims Detected</h3>
 									<p>
 										This draft contains sections with unsupported claims that lack evidence from your sources.
 										Approving a draft with ungrounded claims may result in a weaker submission.
 									</p>
-									<div style={{ marginBottom: '12px' }}>
+									<div className={styles.groundedWarningSection}>
 										<strong>Ungrounded sections:</strong>
-										<ul style={{ margin: '8px 0 0 0', paddingLeft: '20px', color: 'var(--text-dim)' }}>
+										<ul className={styles.groundedWarningList}>
 											{detail.latestDraft.groundingSections
 												?.filter((s) => !s.isGrounded)
 												.map((s) => (
@@ -1648,8 +1502,8 @@ export function GrantDrawer({
 												))}
 										</ul>
 									</div>
-									<div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
-										<label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', cursor: 'pointer' }}>
+									<div className={styles.actionRowEnd}>
+										<label className={styles.groundedCheckboxLabel}>
 											<input
 												type="checkbox"
 												checked={groundingOverrideConfirmed}
@@ -1659,7 +1513,7 @@ export function GrantDrawer({
 											I understand the risk and want to approve anyway
 										</label>
 									</div>
-									<div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+									<div className={styles.actionRowWithMargin}>
 										<button
 											type="button"
 											className="btn btn-primary"
@@ -1688,7 +1542,7 @@ export function GrantDrawer({
 								<div className="drawer-section" data-testid="locked-draft-overwrite-confirm">
 									<h3>Overwrite locked draft?</h3>
 									<p>This grant has an approved, locked draft. Generating a new draft will unlock it and require re-approval. Continue?</p>
-									<div style={{ display: 'flex', gap: '8px' }}>
+									<div className={styles.confirmDialogActions}>
 										<button type="button" className="btn btn-primary" onClick={handleConfirmLockedDraftOverwrite}>Yes, generate new draft</button>
 										<button type="button" onClick={() => setShowLockedDraftConfirm(false)}>Cancel</button>
 									</div>

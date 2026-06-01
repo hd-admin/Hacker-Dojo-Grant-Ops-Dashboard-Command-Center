@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { DuplicateCandidate, Grant } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
+import styles from './DuplicatesView.module.css';
 
 interface DuplicatesViewProps {
   onGrantSelect?: (grantId: string) => void;
@@ -129,7 +130,7 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
 
       {error && (
         <div className="panel" data-testid="duplicates-error-banner">
-          <div className="drawer-note" style={{ color: 'var(--text-error)' }}>
+          <div className={`drawer-note ${styles.errorText}`}>
             {error}
           </div>
         </div>
@@ -173,34 +174,32 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                     opacity: isPending ? 1 : 0.7,
                   }}
                 >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
+                  <div className={styles.cardHeader}>
                     <div>
-                      <div style={{ fontSize: '14px', fontWeight: 600, marginBottom: '4px' }}>
+                      <div className={styles.cardTitle}>
                         <button
                           type="button"
-                          className="link-btn"
+                          className={`link-btn ${styles.grantLinkBtn}`}
                           data-testid={`duplicate-grant-link-1-${candidate.id}`}
                           onClick={() => onGrantSelect?.(candidate.grantId1)}
-                          style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontWeight: 600, padding: 0, textDecoration: 'underline' }}
                         >
                           {getGrantTitle(candidate.grantId1)}
                         </button>
                         {' vs '}
                         <button
                           type="button"
-                          className="link-btn"
+                          className={`link-btn ${styles.grantLinkBtn}`}
                           data-testid={`duplicate-grant-link-2-${candidate.id}`}
                           onClick={() => onGrantSelect?.(candidate.grantId2)}
-                          style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontWeight: 600, padding: 0, textDecoration: 'underline' }}
                         >
                           {getGrantTitle(candidate.grantId2)}
                         </button>
                       </div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
+                      <div className={styles.funderInfo}>
                         {getGrantFunder(candidate.grantId1) || 'Unknown funder'} · {getGrantFunder(candidate.grantId2) || 'Unknown funder'}
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div className={styles.statusBadgeGroup}>
                       <span
                         className="status-badge"
                         data-testid={`duplicate-status-${candidate.id}`}
@@ -221,10 +220,10 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                   </div>
 
                   {/* Confidence bar */}
-                  <div style={{ marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Duplicate confidence</span>
-                      <span style={{ fontSize: '12px', fontWeight: 600, color: confidenceColor }} data-testid={`confidence-pct-${candidate.id}`}>
+                  <div className={styles.confidenceSection}>
+                    <div className={styles.confidenceHeader}>
+                      <span className={styles.confidenceLabel}>Duplicate confidence</span>
+                      <span className={styles.confidencePct} style={{ color: confidenceColor }} data-testid={`confidence-pct-${candidate.id}`}>
                         {confidencePct}%
                       </span>
                     </div>
@@ -246,11 +245,11 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
 
                   {/* Conflicting fields */}
                   {candidate.conflictingFields.length > 0 && (
-                    <div style={{ marginBottom: '12px' }}>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>
+                    <div className={styles.conflictingSection}>
+                      <div className={styles.conflictingLabel}>
                         Conflicting fields:
                       </div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                      <div className={styles.conflictingFieldsWrap}>
                         {candidate.conflictingFields.map((field) => (
                           <span
                             key={field}
@@ -273,7 +272,7 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                   )}
 
                   {/* Detected at */}
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '12px' }}>
+                  <div className={styles.detectedInfo}>
                     Detected: {new Date(candidate.detectedAt).toLocaleString()}
                     {candidate.resolvedAt && (
                       <span> · Resolved: {new Date(candidate.resolvedAt).toLocaleString()}</span>
@@ -285,7 +284,7 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
 
                   {/* Action buttons */}
                   {isPending && (
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                    <div className={styles.actionButtons}>
                       <button
                         type="button"
                         className="btn btn-primary btn-sm"

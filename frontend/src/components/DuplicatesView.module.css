@@ -1,0 +1,86 @@
+/* DuplicatesView CSS Module — extracted inline styles */
+
+.errorText {
+  color: var(--danger);
+}
+
+.cardHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.cardTitle {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.grantLinkBtn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.funderInfo {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.statusBadgeGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.confidenceSection {
+  margin-bottom: 12px;
+}
+
+.confidenceHeader {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.confidenceLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.confidencePct {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.conflictingSection {
+  margin-bottom: 12px;
+}
+
+.conflictingLabel {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.conflictingFieldsWrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.detectedInfo {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}

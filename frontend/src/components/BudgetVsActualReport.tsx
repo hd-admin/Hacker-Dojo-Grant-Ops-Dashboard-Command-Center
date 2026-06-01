@@ -6,6 +6,7 @@
 // - Event handler: onClick for CSV export
 
 import React, { useMemo } from 'react';
+import styles from './BudgetVsActualReport.module.css';
 import type { Award, AwardBudgetCategory, AwardExpense } from '../../../shared/types';
 
 interface BudgetVsActualReportProps {
@@ -127,8 +128,8 @@ export function BudgetVsActualReport({
               <td>
                 <div className="budget-vs-actual-bar-container">
                   <div
-                    className="budget-vs-actual-bar"
-                    style={{ transform: `scaleX(${row.spentPercent / 100})`, transformOrigin: 'left', background: row.color }}
+                    className={`budget-vs-actual-bar ${styles.progressBarFill}`}
+                    style={{ transform: `scaleX(${row.spentPercent / 100})`, background: row.color }}
                   />
                   <span>{row.spentPercent}%</span>
                 </div>

@@ -1,0 +1,18 @@
+/* CalendarView CSS Module — extracted inline styles */
+
+.legendDotDanger {
+  background: var(--danger);
+}
+
+.legendDotWarning {
+  background: var(--warning);
+}
+
+.legendDotInfo {
+  background: var(--info);
+}
+
+.upcomingItem {
+  border-left-width: 4px;
+  border-left-style: solid;
+}

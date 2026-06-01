@@ -1,0 +1,7 @@
+/* TasksView CSS Module — extracted inline styles */
+
+.inlineLabel {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

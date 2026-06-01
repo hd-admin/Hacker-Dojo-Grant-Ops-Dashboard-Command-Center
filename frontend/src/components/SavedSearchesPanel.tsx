@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { SavedSearch } from '../../../shared/types';
+import styles from './SavedSearchesPanel.module.css';
 
 interface SavedSearchesPanelProps {
   currentSearchQuery: string;
@@ -130,7 +131,7 @@ export function SavedSearchesPanel({ currentSearchQuery, onRunSearch }: SavedSea
           <span>Saved Searches ({searches.length})</span>
           <span aria-hidden="true">{collapsed ? '\u25B6' : '\u25BC'}</span>
         </button>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className={styles.flexRow}>
           {showSaveInput ? (
             <form
               className="saved-search-edit-form"

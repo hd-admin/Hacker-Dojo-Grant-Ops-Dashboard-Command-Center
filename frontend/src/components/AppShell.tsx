@@ -33,6 +33,7 @@ import { useToast } from './ToastProvider';
 import { DashboardView } from "./DashboardView";
 import { DiscoveryView } from "./DiscoveryView";
 import { GrantDrawer } from "./GrantDrawer";
+import styles from "./AppShell.module.css";
 import { NotificationsView } from "./NotificationsView";
 import { PipelineView } from "./PipelineView";
 import { SettingsView } from "./SettingsView";
@@ -597,7 +598,7 @@ export function AppShell() {
           <br />
           {operatorName ? `Logged in as ${operatorName}` : 'Not logged in'}
           <br />
-          <strong style={{ color: 'var(--text-dim)' }}>
+          <strong className={styles.mutedText}>
             {profile?.agentBehavior?.notifyEmail || 'ed@hackerdojo.com'}
           </strong>
         </div>

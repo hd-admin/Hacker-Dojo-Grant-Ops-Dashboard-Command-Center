@@ -204,13 +204,15 @@ let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 let fetchMock: ReturnType<typeof vi.fn>;
 
-async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<void> {
+const DEFAULT_WAIT_TIMEOUT = 1500;
+
+async function waitFor(predicate: () => boolean, timeoutMs = DEFAULT_WAIT_TIMEOUT): Promise<void> {
   const start = Date.now();
   while (!predicate()) {
     if (Date.now() - start > timeoutMs) {
       throw new Error('Timed out waiting for condition');
     }
-    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    await new Promise<void>((resolve) => setTimeout(resolve, 10));
   }
 }
 
@@ -281,7 +283,61 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-describe('AppShell', () => {
+describe('AppShell rendering', () => {
+  it('passes backend notifications to DashboardView after refreshAppState resolves', async () => {
+    root.render(React.createElement(AppShell));
+    await waitFor(() => capturedDashboardNotifications !== undefined && capturedDashboardNotifications.length > 0);
+    expect(capturedDashboardNotifications).toEqual(notifications);
+  });
+
+  it('preserves recentDraftId in the stored working context', async () => {
+    window.localStorage.setItem('grantops.workingContext', JSON.stringify({
+      activeView: 'dashboard',
+      selectedGrantId: null,
+      recentGrantIds: [],
+      recentDraftId: 'draft-99',
+    }));
+
+    root.render(React.createElement(AppShell));
+    await waitFor(() => window.localStorage.getItem('grantops.workingContext') !== null);
+
+    const context = JSON.parse(window.localStorage.getItem('grantops.workingContext') ?? '{}') as { recentDraftId?: string };
+    expect(context.recentDraftId).toBe('draft-99');
+  });
+
+  it('renders duplicates nav item in the sidebar', async () => {
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"]') !== null);
+
+    const duplicatesNav = container.querySelector('.nav-item[data-view="duplicates"]');
+    expect(duplicatesNav).not.toBeNull();
+    expect(duplicatesNav?.textContent).toContain('Duplicates');
+  });
+
+  it('shows pending duplicates count badge when duplicates exist', async () => {
+    duplicatesGetAll.mockResolvedValue([
+      { id: 'dup-1', grantId1: 'grant-1', grantId2: 'grant-2', confidenceScore: 0.9, status: 'pending', detectedAt: new Date().toISOString(), conflictingFields: ['title'] },
+    ]);
+
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"] .nav-count') !== null);
+
+    const badge = container.querySelector('.nav-item[data-view="duplicates"] .nav-count');
+    expect(badge?.textContent).toBe('1');
+  });
+
+  it('renders v2 Calendar and Post-Award nav items in the workspace section', async () => {
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('.nav-item[data-view="calendar"]') !== null);
+
+    const calendarNav = container.querySelector('.nav-item[data-view="calendar"]');
+    const postAwardNav = container.querySelector('.nav-item[data-view="post-award"]');
+    expect(calendarNav).not.toBeNull();
+    expect(calendarNav?.textContent).toContain('Calendar');
+    expect(postAwardNav).not.toBeNull();
+    expect(postAwardNav?.textContent).toContain('Post-Award');
+  });
+
   it('refreshes shell-owned badges and footer state when child views mutate state', async () => {
     root.render(React.createElement(AppShell));
     await waitFor(() => container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent === '1');
@@ -314,6 +370,46 @@ describe('AppShell', () => {
     expect(container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent).toBe('2');
   });
 
+  it('shows a toast when a job transitions to completed', async () => {
+    let jobStatus = 'running';
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/health') {
+        return new Response(JSON.stringify({
+          storage: 'ok',
+          opencode: 'ok',
+          opencodeVersion: '1.0.0',
+          crawlerStatus: 'ok',
+          documentIndexer: 'ok',
+        }), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url === '/api/crawl/scheduled?trigger=true') {
+        return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
+      }
+      if (url === '/api/jobs') {
+        return new Response(JSON.stringify([
+          { id: 'job-1', jobType: 'research', status: jobStatus, progress: jobStatus === 'completed' ? 100 : 50, stage: jobStatus === 'completed' ? 'completed' : 'analyzing', createdAt: new Date().toISOString() },
+        ]), { headers: { 'content-type': 'application/json' } });
+      }
+      return new Response(JSON.stringify({}), { headers: { 'content-type': 'application/json' } });
+    });
+
+    root.render(React.createElement(AppShell));
+    await waitFor(() => container.querySelector('.nav-item[data-view="jobs"]') !== null);
+
+    // Trigger a refresh that will re-fetch jobs with completed status
+    jobStatus = 'completed';
+    const refreshBtn = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('refresh dashboard'),
+    );
+    refreshBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    await waitFor(() => mockAddToast.mock.calls.length > 0);
+    expect(mockAddToast).toHaveBeenCalledWith('\u2705 research completed', 'success');
+  });
+});
+
+describe('AppShell error states', () => {
   it('shows a storage-blocked screen and hides navigation when storage health fails', async () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
@@ -357,12 +453,6 @@ describe('AppShell', () => {
     expect(container.querySelector('[data-testid="opencode-degraded-banner"]')).not.toBeNull();
   });
 
-  it('passes backend notifications to DashboardView after refreshAppState resolves', async () => {
-    root.render(React.createElement(AppShell));
-    await waitFor(() => capturedDashboardNotifications !== undefined && capturedDashboardNotifications.length > 0);
-    expect(capturedDashboardNotifications).toEqual(notifications);
-  });
-
   it('Discovery and Sources nav items are not disabled in degraded mode', async () => {
     fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
       const url = typeof input === 'string' ? input : input.toString();
@@ -391,43 +481,9 @@ describe('AppShell', () => {
     const refreshBtn = Array.from(container.querySelectorAll('button')).find(b => b.textContent?.includes('refresh discovery'));
     expect(refreshBtn).not.toBeNull();
   });
+});
 
-  it('preserves recentDraftId in the stored working context', async () => {
-    window.localStorage.setItem('grantops.workingContext', JSON.stringify({
-      activeView: 'dashboard',
-      selectedGrantId: null,
-      recentGrantIds: [],
-      recentDraftId: 'draft-99',
-    }));
-
-    root.render(React.createElement(AppShell));
-    await waitFor(() => window.localStorage.getItem('grantops.workingContext') !== null);
-
-    const context = JSON.parse(window.localStorage.getItem('grantops.workingContext') ?? '{}') as { recentDraftId?: string };
-    expect(context.recentDraftId).toBe('draft-99');
-  });
-
-  it('renders duplicates nav item in the sidebar', async () => {
-    root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"]') !== null);
-
-    const duplicatesNav = container.querySelector('.nav-item[data-view="duplicates"]');
-    expect(duplicatesNav).not.toBeNull();
-    expect(duplicatesNav?.textContent).toContain('Duplicates');
-  });
-
-  it('shows pending duplicates count badge when duplicates exist', async () => {
-    duplicatesGetAll.mockResolvedValue([
-      { id: 'dup-1', grantId1: 'grant-1', grantId2: 'grant-2', confidenceScore: 0.9, status: 'pending', detectedAt: new Date().toISOString(), conflictingFields: ['title'] },
-    ]);
-
-    root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"] .nav-count') !== null);
-
-    const badge = container.querySelector('.nav-item[data-view="duplicates"] .nav-count');
-    expect(badge?.textContent).toBe('1');
-  });
-
+describe('AppShell navigation', () => {
   it('navigates to duplicates view on click', async () => {
     root.render(React.createElement(AppShell));
     await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"]') !== null);
@@ -437,55 +493,5 @@ describe('AppShell', () => {
 
     await waitFor(() => container.querySelector('#view-duplicates')?.classList.contains('active') === true);
     expect(container.querySelector('#view-duplicates.active')).not.toBeNull();
-  });
-
-  it('renders v2 Calendar and Post-Award nav items in the workspace section', async () => {
-    root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('.nav-item[data-view="calendar"]') !== null);
-
-    const calendarNav = container.querySelector('.nav-item[data-view="calendar"]');
-    const postAwardNav = container.querySelector('.nav-item[data-view="post-award"]');
-    expect(calendarNav).not.toBeNull();
-    expect(calendarNav?.textContent).toContain('Calendar');
-    expect(postAwardNav).not.toBeNull();
-    expect(postAwardNav?.textContent).toContain('Post-Award');
-  });
-
-  it('shows a toast when a job transitions to completed', async () => {
-    let jobStatus = 'running';
-    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
-      const url = typeof input === 'string' ? input : input.toString();
-      if (url === '/api/health') {
-        return new Response(JSON.stringify({
-          storage: 'ok',
-          opencode: 'ok',
-          opencodeVersion: '1.0.0',
-          crawlerStatus: 'ok',
-          documentIndexer: 'ok',
-        }), { headers: { 'content-type': 'application/json' } });
-      }
-      if (url === '/api/crawl/scheduled?trigger=true') {
-        return new Response(JSON.stringify({ triggered: 0 }), { headers: { 'content-type': 'application/json' } });
-      }
-      if (url === '/api/jobs') {
-        return new Response(JSON.stringify([
-          { id: 'job-1', jobType: 'research', status: jobStatus, progress: jobStatus === 'completed' ? 100 : 50, stage: jobStatus === 'completed' ? 'completed' : 'analyzing', createdAt: new Date().toISOString() },
-        ]), { headers: { 'content-type': 'application/json' } });
-      }
-      return new Response(JSON.stringify({}), { headers: { 'content-type': 'application/json' } });
-    });
-
-    root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('.nav-item[data-view="jobs"]') !== null, 3000);
-
-    // Trigger a refresh that will re-fetch jobs with completed status
-    jobStatus = 'completed';
-    const refreshBtn = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('refresh dashboard'),
-    );
-    refreshBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-
-    await waitFor(() => mockAddToast.mock.calls.length > 0, 3000);
-    expect(mockAddToast).toHaveBeenCalledWith('\u2705 research completed', 'success');
   });
 });

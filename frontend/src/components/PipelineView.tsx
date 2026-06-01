@@ -4,6 +4,7 @@ import React from "react";
 import { useEffect, useMemo, useState } from "react";
 import type { Grant, GrantStatus, PipelineViewMode, ResponsibilityTag } from "../../../shared/types";
 import { client } from "../lib/grant-ops-client";
+import styles from "./PipelineView.module.css";
 
 type ViewType = 'dashboard' | 'discovery' | 'pipeline' | 'sources' | 'settings' | 'notifications' | 'tasks';
 
@@ -365,7 +366,7 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
                     colGrants.map((grant) => (
                       <div key={grant.id} className="board-card">
                         <div className="board-card-funder">{grant.funderShort}</div>
-                        <div className="board-card-title" onClick={() => onGrantSelect(grant.id)} style={{ cursor: 'pointer' }}>{grant.title}</div>
+                        <div className={`board-card-title ${styles.clickableTitle}`} onClick={() => onGrantSelect(grant.id)}>{grant.title}</div>
                         <div className="board-card-foot">
                           <span>{renderDeadlineCell(grant)}</span>
                           <span className="amount">{grant.award}</span>
@@ -409,7 +410,7 @@ export function PipelineView({ onGrantSelect, onNavigate, grants: initialGrants 
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="decline-modal-title"
           onClick={(e) => { if (e.target === e.currentTarget) { setDeclineModalOpen(false); setDeclineGrantId(null); } }}
         >
-          <div className="modal-content" style={{ maxWidth: '500px' }}>
+          <div className={`modal-content ${styles.modalContent}`}>
             <h2 id="decline-modal-title" className="modal-title">Mark as Declined</h2>
             <p className="modal-description">Optionally add a lessons learned note for future reference.</p>
             <textarea

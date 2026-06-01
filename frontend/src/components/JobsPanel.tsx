@@ -3,6 +3,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import type { JobQueueItem } from '../../../shared/types';
 import { jobFailureMessages } from '../lib/failure-messages';
+import styles from './JobsPanel.module.css';
 
 type JobStatus = JobQueueItem['status'] | 'all';
 type JobTypeFilter = JobQueueItem['jobType'] | 'all';
@@ -253,7 +254,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
           <div className="header-sub">
             {jobs.length} total jobs
             {activeCount > 0 && (
-              <span className="nav-count" style={{ marginLeft: '8px' }}>
+              <span className={`nav-count ${styles.activeCountBadge}`}>
                 {activeCount} active
               </span>
             )}
@@ -273,7 +274,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
 
       {error && (
         <div className="panel" data-testid="jobs-error-banner">
-          <div className="drawer-note" style={{ color: 'var(--text-error)' }}>
+          <div className={`drawer-note ${styles.errorText}`}>
             {error}
           </div>
         </div>
@@ -295,14 +296,14 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
             >
               {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
               {statusCounts[status] > 0 && (
-                <span className="nav-count" style={{ marginLeft: '4px' }}>
+                <span className={`nav-count ${styles.countBadge}`}>
                   {statusCounts[status]}
                 </span>
               )}
             </button>
           ))}
         </div>
-        <div className="filter-row" data-testid="jobs-type-filter" role="tablist" aria-label="Filter by job type" style={{ marginTop: '8px' }}>
+        <div className={`filter-row ${styles.typeFilterRow}`} data-testid="jobs-type-filter" role="tablist" aria-label="Filter by job type">
           {(['all', 'research', 'draft', 'crawl', 'match', 'extract', 'peer-discovery', 'funder-insights', 'eligibility-vetting', 'budget-import'] as JobTypeFilter[]).map((type) => (
             <button
               key={type}
@@ -316,7 +317,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
             >
               {type === 'all' ? 'All' : type.charAt(0).toUpperCase() + type.slice(1)}
               {typeCounts[type] > 0 && (
-                <span className="nav-count" style={{ marginLeft: '4px' }}>
+                <span className={`nav-count ${styles.countBadge}`}>
                   {typeCounts[type]}
                 </span>
               )}
@@ -506,9 +507,8 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
                     )}
                     {job.partialOutput && (
                       <div
-                        className="drawer-note"
+                        className={`drawer-note ${styles.partialOutput}`}
                         data-testid={`job-partial-output-${job.id}`}
-                        style={{ whiteSpace: 'pre-wrap' }}
                       >
                         <strong>Partial output:</strong>{' '}
                         {job.partialOutput.length > 500

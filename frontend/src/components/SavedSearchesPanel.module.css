@@ -1,0 +1,6 @@
+/* SavedSearchesPanel CSS Module — extracted inline styles */
+
+.flexRow {
+  display: flex;
+  gap: 6px;
+}
