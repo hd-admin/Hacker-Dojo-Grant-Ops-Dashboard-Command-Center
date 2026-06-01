@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 interface Snippet {
   id: string;
@@ -13,12 +13,84 @@ interface Snippet {
 }
 
 interface SnippetsBrowserProps {
-  snippets: Snippet[];
+  snippets?: Snippet[];
   onInsert?: (content: string) => void;
+  grantId?: string;
 }
 
-export function SnippetsBrowser({ snippets, onInsert }: SnippetsBrowserProps) {
+export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: SnippetsBrowserProps) {
   const [search, setSearch] = useState('');
+  const [snippets, setSnippets] = useState<Snippet[]>(propSnippets || []);
+  const [loading, setLoading] = useState(!propSnippets);
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const loadSnippets = useCallback(async () => {
+    try {
+      const params = grantId ? `?grantId=${encodeURIComponent(grantId)}` : '';
+      const res = await fetch(`/api/snippets${params}`);
+      if (res.ok) {
+        const data = (await res.json()) as { snippets: Snippet[] };
+        setSnippets(data.snippets || []);
+      }
+    } catch (_err) {
+      // silently fail, keep existing snippets
+    } finally {
+      setLoading(false);
+    }
+  }, [grantId]);
+
+  useEffect(() => {
+    if (propSnippets) {
+      setSnippets(propSnippets);
+      setLoading(false);
+    }
+  }, [propSnippets]);
+
+  useEffect(() => {
+    if (!propSnippets) {
+      void loadSnippets();
+    }
+  }, [propSnippets, loadSnippets]);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTitle.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/snippets', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: newTitle.trim(), content: newContent, category: newCategory || 'general', grantId: grantId || null }),
+      });
+      if (res.ok) {
+        const data = (await res.json()) as { snippet: Snippet };
+        setSnippets((prev) => [...prev, data.snippet]);
+        setNewTitle('');
+        setNewContent('');
+        setNewCategory('');
+        setShowCreateForm(false);
+      }
+    } catch (_err) {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    try {
+      const res = await fetch(`/api/snippets?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      if (res.ok) {
+        setSnippets((prev) => prev.filter((s) => s.id !== id));
+      }
+    } catch (_err) {
+      // silently fail
+    }
+  };
 
   const filtered = snippets.filter((s) =>
     s.title.toLowerCase().includes(search.toLowerCase()) ||
@@ -26,42 +98,116 @@ export function SnippetsBrowser({ snippets, onInsert }: SnippetsBrowserProps) {
     s.topicTags.some((t) => t.toLowerCase().includes(search.toLowerCase()))
   );
 
+  if (loading) {
+    return (
+      <div className="snippets-browser" data-testid="snippets-browser">
+        <div role="status" aria-busy="true" aria-label="Loading snippets">Loading snippets...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="snippets-browser" data-testid="snippets-browser">
-      <input
-        type="text"
-        placeholder="Search snippets..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="form-input"
-        aria-label="Search snippets"
-      />
+      <div className="snippets-header" style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+        <input
+          type="text"
+          placeholder="Search snippets..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="form-input"
+          aria-label="Search snippets"
+          style={{ flex: 1 }}
+        />
+        <button
+          type="button"
+          className="btn btn-sm btn-primary"
+          onClick={() => setShowCreateForm((v) => !v)}
+          aria-label="Create new snippet"
+          data-testid="create-snippet-btn"
+        >
+          + New
+        </button>
+      </div>
+
+      {showCreateForm && (
+        <form className="snippet-create-form" onSubmit={handleCreate} data-testid="snippet-create-form" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '12px', padding: '12px', background: 'var(--surface)', borderRadius: 'var(--radius)', border: '1px solid var(--border)' }}>
+          <input
+            type="text"
+            placeholder="Snippet title"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            aria-label="Snippet title"
+            data-testid="snippet-create-title"
+            className="form-input"
+            required
+          />
+          <textarea
+            placeholder="Snippet content"
+            value={newContent}
+            onChange={(e) => setNewContent(e.target.value)}
+            aria-label="Snippet content"
+            data-testid="snippet-create-content"
+            className="form-input"
+            rows={3}
+          />
+          <input
+            type="text"
+            placeholder="Category (optional)"
+            value={newCategory}
+            onChange={(e) => setNewCategory(e.target.value)}
+            aria-label="Snippet category"
+            className="form-input"
+          />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button type="submit" className="btn btn-sm btn-primary" disabled={saving || !newTitle.trim()}>
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+            <button type="button" className="btn btn-sm btn-ghost" onClick={() => setShowCreateForm(false)}>
+              Cancel
+            </button>
+          </div>
+        </form>
+      )}
+
       <div className="snippets-list">
+        {filtered.length === 0 && (
+          <div className="empty-state">No snippets found.</div>
+        )}
         {filtered.map((snippet) => (
-          <div key={snippet.id} className="snippet-card">
-            <div className="snippet-title">{snippet.title}</div>
-            <div className="snippet-meta">
+          <div key={snippet.id} className="snippet-card" data-testid="snippet-card" style={{ padding: '10px 14px', background: 'var(--surface)', borderRadius: 'var(--radius)', marginBottom: '8px', border: '1px solid var(--border)' }}>
+            <div className="snippet-title" style={{ fontWeight: 600, marginBottom: '4px' }}>{snippet.title}</div>
+            <div className="snippet-meta" style={{ fontSize: '12px', color: 'var(--text-dim)' }}>
               {snippet.funder} · Used {snippet.usageCount} times
             </div>
-            <div className="snippet-tags">
+            <div className="snippet-tags" style={{ display: 'flex', gap: '4px', marginTop: '4px' }}>
               {snippet.topicTags.map((tag) => (
-                <span key={tag} className="tag">{tag}</span>
+                <span key={tag} className="tag" style={{ padding: '1px 6px', background: 'var(--gold-alpha-6)', color: 'var(--gold)', borderRadius: '3px', fontSize: '11px' }}>{tag}</span>
               ))}
             </div>
-            {onInsert && (
+            <div className="snippet-actions" style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+              {onInsert && (
+                <button
+                  type="button"
+                  className="btn btn-sm btn-primary"
+                  onClick={() => onInsert(snippet.content)}
+                  aria-label={`Insert ${snippet.title}`}
+                >
+                  Insert
+                </button>
+              )}
               <button
                 type="button"
-                className="btn btn-sm btn-primary"
-                onClick={() => onInsert(snippet.content)}
-                aria-label={`Insert ${snippet.title}`}
+                className="btn btn-sm btn-ghost"
+                onClick={() => { if (window.confirm(`Delete snippet "${snippet.title}"?`)) { void handleDelete(snippet.id); } }}
+                aria-label={`Delete snippet ${snippet.title}`}
+                data-testid={`delete-snippet-${snippet.id}`}
               >
-                Insert
+                Delete
               </button>
-            )}
+            </div>
           </div>
         ))}
       </div>
     </div>
   );
 }
-

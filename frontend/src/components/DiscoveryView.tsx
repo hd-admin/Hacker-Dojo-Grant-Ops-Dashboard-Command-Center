@@ -4,6 +4,9 @@ import React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import type { Grant, Source } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
+import { FunderDetail } from './FunderDetail';
+import { SavedSearchesPanel } from './SavedSearchesPanel';
+import type { FunderProfile } from '../../../shared/types';
 
 interface DiscoveryViewProps {
   onGrantSelect: (grantId: string) => void;
@@ -49,6 +52,27 @@ function formatDate(dateStr: string): string {
   return `${months[parseInt(month, 10) - 1] ?? ''} ${parseInt(day, 10)}`;
 }
 
+function buildFunderProfileFromGrant(grant: Grant): FunderProfile {
+  const funderType = grant.tags.some((t) => t === 'Federal') ? 'government' :
+    grant.tags.some((t) => t === 'Foundation') ? 'foundation' :
+    grant.tags.some((t) => t === 'Corporate') ? 'corporate' :
+    grant.tags.some((t) => t === 'Community') ? 'community' : 'other';
+
+  return {
+    id: `funder-${grant.funderShort || grant.funder.replace(/\s+/g, '-').toLowerCase()}`,
+    name: grant.funder,
+    type: funderType,
+    focusAreas: grant.tags.filter((t) => !['Federal', 'Foundation', 'Corporate', 'Community'].includes(t)),
+    geographicFocus: ['National'],
+    typicalAwardRange: { min: Math.max(0, grant.awardSort - 50000), max: grant.awardSort },
+    givingHistory: [],
+    applicationProcess: grant.funderSummary || 'See funder website for application details.',
+    deadlines: grant.deadline,
+    sourceUrls: grant.externalUrl ? [grant.externalUrl] : [],
+    lastUpdated: grant.matchedAt || new Date().toISOString(),
+  };
+}
+
 function renderDeadlineCell(grant: Grant): React.ReactNode {
   const confidence = grant.deadlineConfidence;
   if (confidence === 'unknown') {
@@ -86,6 +110,7 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
   const [newSourceUrl, setNewSourceUrl] = useState('');
   const [isAddingSource, setIsAddingSource] = useState(false);
   const [exactDeadlinesOnly, setExactDeadlinesOnly] = useState(false);
+  const [selectedFunder, setSelectedFunder] = useState<FunderProfile | null>(null);
   const [_error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -426,6 +451,8 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
         ))}
       </div>
 
+      <SavedSearchesPanel currentSearchQuery={search} onRunSearch={(query) => setSearch(query)} />
+
       {filtered.length === 0 && grants.length > 0 && (
         <div className="empty-state-guide" data-testid="discovery-filter-empty-state">
           <div className="empty-state-icon" aria-hidden="true">{String.fromCodePoint(0x1F50D)}</div>
@@ -454,7 +481,18 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
                 <span data-testid="human-confirmed-chip" className="ai-badge">Human-confirmed</span>
               )}
             </div>
-            <div className="grant-funder">{grant.funderShort}</div>
+            <div className="grant-funder">
+              <span
+                role="button"
+                tabIndex={0}
+                className="btn btn-ghost btn-funder-link"
+                aria-label={`View funder details for ${grant.funder}`}
+                onClick={(e) => { e.stopPropagation(); setSelectedFunder(buildFunderProfileFromGrant(grant)); }}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); e.preventDefault(); setSelectedFunder(buildFunderProfileFromGrant(grant)); } }}
+              >
+                {grant.funderShort}
+              </span>
+            </div>
             <div className="award">{grant.award}</div>
             <div className="days">{renderDeadlineCell(grant)}</div>
             <div className="fit-num">{grant.fit}</div>
@@ -477,6 +515,27 @@ export function DiscoveryView({ onGrantSelect, onRefreshAppState, grants: initia
           </div>
         ))}
       </div>
+
+      {selectedFunder && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Funder details for ${selectedFunder.name}`}
+          data-testid="funder-detail-overlay"
+          onKeyDown={(e) => { if (e.key === 'Escape') { setSelectedFunder(null); } }}
+        >
+          <button
+            type="button"
+            className="funder-detail-overlay open"
+            onClick={() => setSelectedFunder(null)}
+            aria-label="Close funder detail"
+          />
+          <FunderDetail
+            funder={selectedFunder}
+            onClose={() => setSelectedFunder(null)}
+          />
+        </div>
+      )}
     </>
   );
 }

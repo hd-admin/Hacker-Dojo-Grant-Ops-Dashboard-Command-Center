@@ -13,6 +13,7 @@ describe('FormTemplateView', () => {
       React.createElement(FormTemplateView, {
         template: {
           id: 't1',
+          name: 'Test Funder',
           funderName: 'Test Funder',
           fields: [
             { id: 'f1', label: 'Mission Statement', type: 'textarea', suggestedAnswer: 'We help...' },

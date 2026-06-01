@@ -204,4 +204,59 @@ describe('DiscoveryView', () => {
     root.unmount();
     container.remove();
   });
+
+  it('opens FunderDetail dialog when funder name is clicked', async () => {
+    mockGetAllGrants.mockResolvedValue(mockGrants);
+    mockGetAllSources.mockResolvedValue(mockSources);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    root.render(
+      React.createElement(DiscoveryView, {
+        onGrantSelect: () => {},
+        grants: mockGrants,
+        sources: mockSources,
+      })
+    );
+    await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true);
+
+    const funderLink = container.querySelector('[aria-label="View funder details for National Science Foundation"]');
+    expect(funderLink).not.toBeNull();
+    funderLink?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    await waitFor(() => container.querySelector('[data-testid="funder-detail-overlay"]') !== null);
+    expect(container.querySelector('[data-testid="funder-detail-overlay"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="funder-detail"]')).not.toBeNull();
+    root.unmount();
+    container.remove();
+  });
+
+  it('closes FunderDetail dialog when overlay backdrop is clicked', async () => {
+    mockGetAllGrants.mockResolvedValue(mockGrants);
+    mockGetAllSources.mockResolvedValue(mockSources);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    root.render(
+      React.createElement(DiscoveryView, {
+        onGrantSelect: () => {},
+        grants: mockGrants,
+        sources: mockSources,
+      })
+    );
+    await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true);
+
+    const funderLink = container.querySelector('[aria-label="View funder details for National Science Foundation"]');
+    funderLink?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await waitFor(() => container.querySelector('[data-testid="funder-detail-overlay"]') !== null);
+
+    const closeBtn = container.querySelector('button[aria-label="Close funder detail"]');
+    expect(closeBtn).not.toBeNull();
+    closeBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    await waitFor(() => container.querySelector('[data-testid="funder-detail-overlay"]') === null);
+    expect(container.querySelector('[data-testid="funder-detail-overlay"]')).toBeNull();
+    root.unmount();
+    container.remove();
+  });
 });
