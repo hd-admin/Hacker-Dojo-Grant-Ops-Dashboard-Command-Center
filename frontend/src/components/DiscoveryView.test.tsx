@@ -104,6 +104,13 @@ describe('DiscoveryView', () => {
     mockGetAllSources.mockResolvedValue([]);
     mockGetRuns.mockResolvedValue({ latestRun: null, allRuns: [] });
     window.localStorage.clear();
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => [],
+      }),
+    );
   });
 
   it('renders empty state when no grants provided', async () => {
