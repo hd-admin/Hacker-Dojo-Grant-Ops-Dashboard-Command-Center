@@ -84,3 +84,28 @@
   display: flex;
   gap: 8px;
 }
+
+.duplicateCard {
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.statusBadge {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+.conflictingFieldTag {
+  font-family: var(--mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  background: rgba(123, 163, 184, 0.12);
+  color: var(--info);
+  border-radius: 10px;
+  border: 1px solid rgba(123, 163, 184, 0.2);
+}

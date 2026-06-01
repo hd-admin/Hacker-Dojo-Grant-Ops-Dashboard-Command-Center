@@ -181,7 +181,7 @@ export function SnippetsBrowser({ snippets: propSnippets, onInsert, grantId }: S
             </div>
             <div className={`snippet-tags ${styles.cardTags}`}>
               {snippet.topicTags.map((tag) => (
-                <span key={tag} className="tag" style={{ padding: '1px 6px', background: 'rgba(212, 169, 67, 0.06)', color: 'var(--accent)', borderRadius: '3px', fontSize: '11px' }}>{tag}</span>
+                <span key={tag} className={`tag ${styles.tag}`}>{tag}</span>
               ))}
             </div>
             <div className={`snippet-actions ${styles.cardActions}`}>

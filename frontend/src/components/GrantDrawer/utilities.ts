@@ -77,12 +77,12 @@ export function previewText(text: string, limit = 280): string {
 
 const WORKING_CONTEXT_KEY = "grantops.workingContext";
 
-export function getWorkingContextStorage(): Storage | null {
+function getWorkingContextStorage(): Storage | null {
   if (typeof window === "undefined") return null;
   return window.localStorage;
 }
 
-export function readWorkingContext(): Record<string, unknown> {
+function readWorkingContext(): Record<string, unknown> {
   const storage = getWorkingContextStorage();
   if (!storage || typeof storage.getItem !== "function") return {};
   try {

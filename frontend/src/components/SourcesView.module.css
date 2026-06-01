@@ -9,3 +9,18 @@
   font-size: 11px;
   font-weight: 500;
 }
+
+.authWarningBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--warning);
+  font-size: 14px;
+}
+
+.authBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+}

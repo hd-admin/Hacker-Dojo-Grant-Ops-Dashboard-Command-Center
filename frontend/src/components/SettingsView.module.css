@@ -68,3 +68,106 @@
 .opencodeStatus {
   margin-bottom: 10px;
 }
+
+.logContainer {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  max-height: 400px;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+
+.logPagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+  gap: 12px;
+}
+
+.restrictedDocsWarning {
+  background: var(--surface-2);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 16px;
+  color: var(--danger);
+  font-size: 13px;
+}
+
+.docTypeBadge {
+  font-size: 10px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 1px 6px;
+  background: var(--surface-2);
+  border-radius: 3px;
+}
+
+.docClassBadge {
+  font-size: 10px;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.docClassCanonical {
+  background: color-mix(in srgb, var(--success) 13%, transparent);
+  color: var(--success);
+}
+
+.docClassDraftOnly {
+  background: var(--surface-2);
+  color: var(--text-muted);
+}
+
+.docClassArchived {
+  background: color-mix(in srgb, var(--warning) 13%, transparent);
+  color: var(--warning);
+}
+
+.docClassRestricted {
+  background: color-mix(in srgb, var(--danger) 13%, transparent);
+  color: var(--danger);
+}
+
+.docClassSelect {
+  font-size: 11px;
+  padding: 2px 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--text);
+}
+
+.versionToggleBtn {
+  font-size: 11px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+}
+
+.versionPanel {
+  margin-top: 8px;
+  padding: 8px;
+  background: var(--surface-2);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.versionItem {
+  display: flex;
+  justify-content: space-between;
+  padding: 2px 0;
+  border-bottom: 1px solid var(--border);
+}

@@ -165,19 +165,7 @@ function LogViewer() {
       ) : (
         <>
           <div
-            className="settings-log-container"
-            style={{
-              background: 'var(--bg)',
-              border: '1px solid var(--border)',
-              borderRadius: 'var(--radius)',
-              padding: '12px',
-              maxHeight: '400px',
-              overflow: 'auto',
-              fontFamily: 'var(--mono)',
-              fontSize: '12px',
-              lineHeight: 1.5,
-              color: 'var(--text-dim)',
-            }}
+            className={`settings-log-container ${styles.logContainer}`}
             data-testid="log-entries-container"
           >
             {entries.length === 0 ? (
@@ -193,14 +181,7 @@ function LogViewer() {
 
           {totalEntries > 0 && (
             <div
-              className="log-pagination"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                marginTop: '12px',
-                gap: '12px',
-              }}
+              className={`log-pagination ${styles.logPagination}`}
               data-testid="log-pagination"
             >
               <button
@@ -575,15 +556,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
             {/* Restricted document warning banner */}
             {documents.some((d) => d.classification === 'restricted') && (
               <div
-                style={{
-                  background: 'var(--surface-2)',
-                  border: '1px solid var(--danger)',
-                  borderRadius: 'var(--radius)',
-                  padding: '10px 14px',
-                  marginBottom: '16px',
-                  color: 'var(--danger)',
-                  fontSize: '13px',
-                }}
+                className={styles.restrictedDocsWarning}
                 data-testid="restricted-docs-warning"
                 role="alert"
               >
@@ -597,29 +570,10 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                 <div className={styles.docItem}>
                   <span className={styles.docName}>{doc.name}</span>
                   {doc.type && (
-                    <span style={{
-                      fontSize: '10px',
-                      fontFamily: 'var(--mono)',
-                      textTransform: 'uppercase',
-                      color: 'var(--text-muted)',
-                      padding: '1px 6px',
-                      background: 'var(--surface-2)',
-                      borderRadius: '3px',
-                    }}>{doc.type}</span>
+                    <span className={styles.docTypeBadge}>{doc.type}</span>
                   )}
                   {doc.classification && (
-                    <span style={{
-                      fontSize: '10px',
-                      fontFamily: 'var(--mono)',
-                      textTransform: 'uppercase',
-                      fontWeight: 600,
-                      padding: '1px 6px',
-                      borderRadius: '3px',
-                      ...(doc.classification === 'canonical' ? { background: 'color-mix(in srgb, var(--success) 13%, transparent)', color: 'var(--success)' } : {}),
-                      ...(doc.classification === 'draft-only' ? { background: 'var(--surface-2)', color: 'var(--text-muted)' } : {}),
-                      ...(doc.classification === 'archived' ? { background: 'color-mix(in srgb, var(--warning) 13%, transparent)', color: 'var(--warning)' } : {}),
-                      ...(doc.classification === 'restricted' ? { background: 'color-mix(in srgb, var(--danger) 13%, transparent)', color: 'var(--danger)' } : {}),
-                    }} data-testid={`doc-classification-${doc.id}`}>
+                    <span className={`${styles.docClassBadge} ${doc.classification === 'canonical' ? styles.docClassCanonical : doc.classification === 'draft-only' ? styles.docClassDraftOnly : doc.classification === 'archived' ? styles.docClassArchived : doc.classification === 'restricted' ? styles.docClassRestricted : ''}`} data-testid={`doc-classification-${doc.id}`}>
                       {doc.classification}
                     </span>
                   )}
@@ -656,14 +610,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                       setError('Error updating classification');
                     }
                   }}
-                  style={{
-                    fontSize: '11px',
-                    padding: '2px 6px',
-                    background: 'var(--surface-2)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '3px',
-                    color: 'var(--text)',
-                  }}
+                  className={styles.docClassSelect}
                   data-testid={`doc-classification-select-${doc.id}`}
                   aria-label={`Classification for ${doc.name}`}
                 >
@@ -683,13 +630,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                         [doc.id]: !prev[doc.id],
                       }))
                     }
-                    style={{
-                      fontSize: '11px',
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      color: 'var(--text-muted)',
-                    }}
+                    className={styles.versionToggleBtn}
                     aria-expanded={expandedDocVersions[doc.id] ?? false}
                     data-testid={`doc-versions-toggle-${doc.id}`}
                   >
@@ -699,26 +640,14 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                 {/* Version history panel */}
                 {expandedDocVersions[doc.id] && doc.versions && doc.versions.length > 0 && (
                   <div
-                    style={{
-                      marginTop: '8px',
-                      padding: '8px',
-                      background: 'var(--surface-2)',
-                      borderRadius: '4px',
-                      fontSize: '11px',
-                      color: 'var(--text-dim)',
-                    }}
+                    className={styles.versionPanel}
                     data-testid={`doc-versions-panel-${doc.id}`}
                   >
                     <div className={styles.versionTitle}>Version History</div>
                     {doc.versions.map((v) => (
                       <div
                         key={v.id}
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          padding: '2px 0',
-                          borderBottom: '1px solid var(--border)',
-                        }}
+                        className={styles.versionItem}
                         data-testid={`doc-version-${v.id}`}
                       >
                         <span>v{v.versionNumber} — {new Date(v.uploadedAt).toLocaleDateString()}</span>

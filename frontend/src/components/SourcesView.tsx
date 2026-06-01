@@ -578,16 +578,9 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
       if (source.crawlAccessCategory === 'crawlable-with-auth') {
         return (
           <span
-            className="auth-badge auth-warning"
+            className={`auth-badge auth-warning ${styles.authWarningBadge}`}
             data-testid={`auth-warning-${source.id}`}
             title="This source may require credentials to crawl. Configure auth details."
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '2px',
-              color: 'var(--warning)',
-              fontSize: '14px',
-            }}
             aria-label="Auth configuration warning"
           >
             ⚠️
@@ -603,15 +596,9 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
 
     return (
       <span
-        className="auth-badge"
+        className={`auth-badge ${styles.authBadge}`}
         data-testid={`auth-badge-${source.id}`}
         title={`Auth: ${source.authMethodDescription}`}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '2px',
-          fontSize: '12px',
-        }}
       >
         {isApiKey ? '🔑' : isOauth ? '🔒' : '⚙️'}
       </span>

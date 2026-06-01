@@ -163,13 +163,10 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
               return (
                 <div
                   key={candidate.id}
-                  className={`duplicate-card ${candidate.status}`}
+                  className={`duplicate-card ${candidate.status} ${styles.duplicateCard}`}
                   data-testid={`duplicate-card-${candidate.id}`}
                   style={{
                     border: `1px solid ${isPending ? 'var(--border)' : 'var(--border-dim)'}`,
-                    borderRadius: 'var(--radius)',
-                    padding: '16px',
-                    marginBottom: '12px',
                     background: isPending ? 'var(--surface-1)' : 'var(--surface-2)',
                     opacity: isPending ? 1 : 0.7,
                   }}
@@ -201,15 +198,9 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                     </div>
                     <div className={styles.statusBadgeGroup}>
                       <span
-                        className="status-badge"
+                        className={`status-badge ${styles.statusBadge}`}
                         data-testid={`duplicate-status-${candidate.id}`}
                         style={{
-                          fontFamily: 'var(--mono)',
-                          fontSize: '10px',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.1em',
-                          padding: '3px 8px',
-                          borderRadius: '4px',
                           background: isPending ? 'rgba(224, 137, 74, 0.12)' : 'rgba(138, 171, 111, 0.12)',
                           color: isPending ? 'var(--warning)' : 'var(--success)',
                         }}
@@ -254,15 +245,7 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                           <span
                             key={field}
                             data-testid={`conflicting-field-${candidate.id}-${field}`}
-                            style={{
-                              fontFamily: 'var(--mono)',
-                              fontSize: '10px',
-                              padding: '2px 8px',
-                              background: 'rgba(123, 163, 184, 0.12)',
-                              color: 'var(--info)',
-                              borderRadius: '10px',
-                              border: '1px solid rgba(123, 163, 184, 0.2)',
-                            }}
+                            className={styles.conflictingFieldTag}
                           >
                             {field}
                           </span>
