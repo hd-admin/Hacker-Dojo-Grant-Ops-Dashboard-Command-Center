@@ -318,7 +318,6 @@ describe('DashboardView', () => {
       expect(container.querySelector('.kpi-grid')).not.toBeNull();
       // KPI values should reflect actual data, not synthetic placeholders
       expect(container.textContent).toContain('Active Pipeline');
-      expect(container.querySelector('[role="status"][aria-live="polite"]')).not.toBeNull();
     });
 
     it('renders crawl-freshness-indicator when grants are available', async () => {

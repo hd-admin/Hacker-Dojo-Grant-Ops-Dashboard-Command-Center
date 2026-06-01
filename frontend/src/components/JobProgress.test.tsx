@@ -83,6 +83,22 @@ describe('JobProgress', () => {
       expect(retryBtn).not.toBeNull();
 
       const beforeClick = callCount;
+
+      fetchMock.mockImplementation(async () => {
+        callCount += 1;
+        return new Response(
+          JSON.stringify({
+            id: 'job-1',
+            jobType: 'research',
+            status: 'running',
+            progress: 50,
+            stage: 'analyzing',
+            createdAt: new Date().toISOString(),
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      });
+
       retryBtn?.click();
       await new Promise((r) => setTimeout(r, 100));
 
