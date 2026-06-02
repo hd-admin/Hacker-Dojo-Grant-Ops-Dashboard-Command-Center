@@ -45,11 +45,20 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || `API error: ${response.status}`);
+    let errorBody: { error?: string };
+    try {
+      errorBody = await response.json();
+    } catch {
+      errorBody = { error: 'Unknown error' };
+    }
+    throw new Error(errorBody.error || `API error: ${response.status}`);
   }
 
-  return response.json();
+  try {
+    return await response.json();
+  } catch (err) {
+    throw new Error(`Malformed response body: ${err instanceof Error ? err.message : 'JSON parse error'}`);
+  }
 }
 
 async function apiFetchOptional<T>(endpoint: string, options?: RequestInit): Promise<T | null> {
@@ -70,11 +79,20 @@ async function apiFetchOptional<T>(endpoint: string, options?: RequestInit): Pro
   }
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: 'Unknown error' }));
-    throw new Error(error.error || `API error: ${response.status}`);
+    let errorBody: { error?: string };
+    try {
+      errorBody = await response.json();
+    } catch {
+      errorBody = { error: 'Unknown error' };
+    }
+    throw new Error(errorBody.error || `API error: ${response.status}`);
   }
 
-  return response.json();
+  try {
+    return await response.json();
+  } catch (err) {
+    throw new Error(`Malformed response body: ${err instanceof Error ? err.message : 'JSON parse error'}`);
+  }
 }
 
 // ============ Sources API ============

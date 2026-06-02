@@ -160,5 +160,13 @@ describe('grant-ops-client', () => {
 
       await expect(client.grants.getAll()).rejects.toThrow('Network failure');
     });
+
+    it('handles malformed JSON on 2xx response with graceful error message', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response('not valid json {{{', { status: 200, headers: { 'Content-Type': 'application/json' } }),
+      );
+
+      await expect(client.grants.getAll()).rejects.toThrow('Malformed response body');
+    });
   });
 });

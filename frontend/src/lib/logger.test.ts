@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { logger, getSessionLogPath } from './logger';
+import { logger, getSessionLogPath } from '@/lib/logger';
 
 describe('logger', () => {
   describe('exports', () => {
-    it('exports the logger as a callable object', () => {
+    it('exports the logger as a callable function (pino instance)', () => {
       expect(logger).toBeDefined();
-      expect(typeof logger).toBe('object');
+      expect(typeof logger.info).toBe('function');
+      expect(typeof logger.warn).toBe('function');
+      expect(typeof logger.error).toBe('function');
+      expect(typeof logger.debug).toBe('function');
     });
 
     it('exports getSessionLogPath as a function', () => {
