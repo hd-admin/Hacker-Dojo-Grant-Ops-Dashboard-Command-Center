@@ -23,7 +23,7 @@ describe('/api/profile route', () => {
     invalidateCache();
   });
 
-  it('GET returns persisted profile', async () => {
+  it('GET returns persisted profile with _meta fields', async () => {
     const response = await GET();
     const data = await response.json();
 
@@ -33,5 +33,12 @@ describe('/api/profile route', () => {
     expect(data.mission).toBe(defaultProfile.mission);
     expect(data.agentBehavior).toBeDefined();
     expect(data.agentBehavior.notifyEmail).toBe(defaultProfile.agentBehavior.notifyEmail);
+    expect(data._meta).toBeDefined();
+    expect(typeof data._meta.submissionReady).toBe('boolean');
+    expect(Array.isArray(data._meta.missingRequiredFields)).toBe(true);
+    if (!data._meta.submissionReady) {
+      expect(typeof data._meta.blockingReason).toBe('string');
+      expect(data._meta.blockingReason.length).toBeGreaterThan(0);
+    }
   });
 });

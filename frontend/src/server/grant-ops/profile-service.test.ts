@@ -115,15 +115,22 @@ describe('ProfileService', () => {
       const profile = makeFullProfile({
         legalName: '',
         ein: '',
-        samUEI: '',
         mission: '',
       });
 
       const missing = profileService.getMissingRequiredFields(profile);
       expect(missing).toContain('legalName');
       expect(missing).toContain('ein');
-      expect(missing).toContain('samUEI');
       expect(missing).toContain('mission');
+    });
+
+    it('does not flag samUEI as a required field', async () => {
+      const profile = makeFullProfile({
+        samUEI: '',
+      });
+
+      const missing = profileService.getMissingRequiredFields(profile);
+      expect(missing).not.toContain('samUEI');
     });
 
     it('detects empty nonprofitStatus', async () => {

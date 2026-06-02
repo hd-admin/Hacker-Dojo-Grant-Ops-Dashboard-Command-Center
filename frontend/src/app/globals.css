@@ -1016,7 +1016,7 @@ textarea:focus-visible {
 }
 
 .funder-detail-value.mono {
-  font-family: var(--font-mono);
+  font-family: var(--mono);
   font-size: var(--text-xs);
 }
 

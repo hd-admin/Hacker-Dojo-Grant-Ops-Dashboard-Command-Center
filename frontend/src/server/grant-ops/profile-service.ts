@@ -19,7 +19,6 @@ import { HARDCODED_PROFILE } from './hardcoded-profile';
 const REQUIRED_PROFILE_FIELDS = [
   'legalName',
   'ein',
-  'samUEI',
   'nonprofitStatus',
   'contactInfo.address',
   'contactInfo.email',

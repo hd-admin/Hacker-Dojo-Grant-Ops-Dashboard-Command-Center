@@ -27,8 +27,12 @@ test.describe('Accessibility', () => {
     await page.waitForSelector('.app', { timeout: 10000 });
     const interactiveSelectors = [
       '[data-testid="skip-link"]',
+      '[data-testid="nav-dashboard"]',
       '[data-testid="nav-discovery"]',
       '[data-testid="nav-pipeline"]',
+      '[data-testid="nav-sources"]',
+      '[data-testid="nav-calendar"]',
+      '[data-testid="nav-post-award"]',
       '[data-testid="nav-tasks"]',
       '[data-testid="nav-settings"]',
     ];
