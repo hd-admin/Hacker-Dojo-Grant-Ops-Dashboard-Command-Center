@@ -9,7 +9,6 @@
  */
 
 import type { OrganizationProfile, DocumentMetadata } from '../../../../shared/types';
-import { getDependencies } from './dependencies';
 import { HARDCODED_PROFILE } from './hardcoded-profile';
 
 /**
@@ -48,13 +47,10 @@ const RESTRICTED_PATTERNS = [
 
 /**
  * Get the current organization profile.
- * Returns default profile if none exists.
+ * The Hacker Dojo profile is hardcoded and is the authoritative source.
  */
 export async function getProfile(): Promise<OrganizationProfile> {
-  const deps = getDependencies();
-  const profile = await deps.repository.getOrgProfile();
-  if (!profile) return { ...HARDCODED_PROFILE };
-  return profile;
+  return { ...HARDCODED_PROFILE };
 }
 
 /**

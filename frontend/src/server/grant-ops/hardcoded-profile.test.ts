@@ -15,7 +15,7 @@ describe('HARDCODED_PROFILE', () => {
   });
 
   it('should have required Hacker Dojo fields', () => {
-    expect(HARDCODED_PROFILE.legalName).toBe('Hacker Dojo, a California nonprofit corporation');
+    expect(HARDCODED_PROFILE.legalName).toBe('Hacker Dojo');
     expect(HARDCODED_PROFILE.ein).toBe('26-4812213');
     expect(HARDCODED_PROFILE.nonprofitStatus).toBe('501(c)(3)');
     expect(HARDCODED_PROFILE.yearFounded).toBe(2009);

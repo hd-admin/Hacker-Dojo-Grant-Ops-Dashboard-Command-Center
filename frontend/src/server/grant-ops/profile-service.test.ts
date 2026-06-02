@@ -65,27 +65,23 @@ describe('ProfileService', () => {
   });
 
   describe('getProfile', () => {
-    it('returns the persisted profile', async () => {
-      const profile = makeFullProfile();
-      await repository.updateOrgProfile(profile);
-
+    it('returns the hardcoded Hacker Dojo profile', async () => {
       const result = await profileService.getProfile();
 
       expect(result).toBeDefined();
       expect(result?.legalName).toBe('Hacker Dojo');
       expect(result?.nonprofitStatus).toBe('501(c)(3)');
-      expect(result?.programAreas).toEqual([
-        'STEM Education',
-        'Workforce Development',
-        'Community Building',
-      ]);
+      expect(result?.mission).toContain('Hacker Dojo is a collaborative hackerspace');
     });
 
-    it('returns default profile when none exists', async () => {
+    it('returns the same hardcoded profile even when a persisted one exists', async () => {
+      const persistedProfile = makeFullProfile();
+      await repository.updateOrgProfile(persistedProfile);
+
       const result = await profileService.getProfile();
 
       expect(result).toBeDefined();
-      expect(result?.legalName).toBe('Hacker Dojo, a California nonprofit corporation');
+      expect(result?.legalName).toBe('Hacker Dojo');
       expect(result?.mission).toContain('Hacker Dojo is a collaborative hackerspace');
     });
   });
