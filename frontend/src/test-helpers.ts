@@ -84,7 +84,11 @@ function buildRoleSelector(role: string): string {
   return `${explicit}, ${tagSelectors}`;
 }
 
-export function getByRole(container: Element, role: string, options: ByRoleOptions = {}): Element {
+export function getByRole(
+  container: Element,
+  role: string,
+  options: ByRoleOptions = {},
+): HTMLElement {
   const selector = buildRoleSelector(role);
   const elements = Array.from(container.querySelectorAll(selector)).filter((el) => {
     if (options.hidden === false) {
@@ -101,14 +105,14 @@ export function getByRole(container: Element, role: string, options: ByRoleOptio
       container,
     );
   }
-  return elements[0] as Element;
+  return elements[0] as HTMLElement;
 }
 
 export function queryByRole(
   container: Element,
   role: string,
   options: ByRoleOptions = {},
-): Element | null {
+): HTMLElement | null {
   const selector = buildRoleSelector(role);
   const elements = Array.from(container.querySelectorAll(selector)).filter((el) => {
     if (options.hidden === false) {
@@ -117,14 +121,14 @@ export function queryByRole(
     }
     return matchesName(el, options.name);
   });
-  return elements.length > 0 ? (elements[0] as Element) : null;
+  return elements.length > 0 ? (elements[0] as HTMLElement) : null;
 }
 
 export function getAllByRole(
   container: Element,
   role: string,
   options: ByRoleOptions = {},
-): Element[] {
+): HTMLElement[] {
   const selector = buildRoleSelector(role);
   return Array.from(container.querySelectorAll(selector)).filter((el) => {
     if (options.hidden === false) {
@@ -132,7 +136,7 @@ export function getAllByRole(
       if (ariaHidden === 'true') return false;
     }
     return matchesName(el, options.name);
-  });
+  }) as HTMLElement[];
 }
 
 export function getByLabelText(container: Element, labelText: string | RegExp): Element {

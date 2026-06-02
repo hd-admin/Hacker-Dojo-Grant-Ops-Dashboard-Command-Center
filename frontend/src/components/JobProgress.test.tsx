@@ -2,6 +2,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import React from 'react';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { getByRole, getByText } from '../test-helpers';
 import { JobProgress } from './JobProgress';
 
 let container: HTMLDivElement;
@@ -54,8 +55,8 @@ describe('JobProgress', () => {
       await waitFor(() => callCount >= 3, 8000);
       await new Promise((r) => setTimeout(r, 100));
 
-      expect(container.textContent).toContain('Connection lost');
-      expect(container.textContent).toContain('Retry now');
+      expect(getByText(container, 'Connection lost')).not.toBeNull();
+      expect(getByRole(container, 'button', { name: 'Retry now' })).not.toBeNull();
     });
 
     it('clicking Retry resets counter and re-fetches', async () => {
@@ -73,9 +74,7 @@ describe('JobProgress', () => {
       await waitFor(() => callCount >= 3, 8000);
       await new Promise((r) => setTimeout(r, 100));
 
-      const retryBtn = Array.from(container.querySelectorAll('button')).find((b) =>
-        b.textContent?.includes('Retry now'),
-      );
+      const retryBtn = getByRole(container, 'button', { name: 'Retry now' });
       expect(retryBtn).not.toBeNull();
 
       const beforeClick = callCount;
@@ -95,12 +94,12 @@ describe('JobProgress', () => {
         );
       });
 
-      retryBtn?.click();
+      retryBtn.click();
       await new Promise((r) => setTimeout(r, 100));
 
       expect(callCount).toBeGreaterThan(beforeClick);
 
-      const progressbar = container.querySelector('[role="progressbar"]');
+      const progressbar = getByRole(container, 'progressbar');
       expect(progressbar).not.toBeNull();
     });
 
@@ -131,13 +130,13 @@ describe('JobProgress', () => {
 
       await waitFor(() => callCount >= 3, 8000);
       await new Promise((r) => setTimeout(r, 100));
-      expect(container.textContent).toContain('Connection lost');
+      expect(getByText(container, 'Connection lost')).not.toBeNull();
 
       await waitFor(() => callCount >= 4, 8000);
       await new Promise((r) => setTimeout(r, 100));
 
       expect(container.textContent).not.toContain('Connection lost');
-      expect(container.textContent).toContain('analyzing');
+      expect(getByText(container, 'analyzing')).not.toBeNull();
     }, 15000);
   });
 

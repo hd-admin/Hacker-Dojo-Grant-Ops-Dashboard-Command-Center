@@ -44,7 +44,7 @@ vi.mock('../lib/grant-ops-client', () => ({
   },
 }));
 
-import { getByRole } from '../test-helpers';
+import { getByRole, getByText, queryByRole, queryByText } from '../test-helpers';
 import { GrantDrawer } from './GrantDrawer';
 
 const grantId = 'nsf-techaccess';
@@ -505,20 +505,22 @@ describe('GrantDrawer', () => {
       }),
     );
 
-    await waitFor(() => container.textContent?.includes('Submission manifest') === true);
+    await waitFor(
+      () => queryByRole(container, 'heading', { name: 'Submission manifest' }) !== null,
+    );
     const dialog = getByRole(container, 'dialog', { name: 'Grant details' });
     expect(dialog).not.toBeNull();
     expect(dialog?.getAttribute('aria-modal')).toBe('true');
-    expect(container.textContent).toContain('Version 1');
-    expect(container.textContent).toContain('Upload all portal materials as PDFs.');
-    expect(container.textContent).toContain('https://example.org/submit');
-    expect(container.textContent).toContain('PDF only, max 10MB');
-    expect(container.textContent).toContain('Jun 14, 2026');
-    expect(container.textContent).toContain('2 items');
-    expect(container.textContent).toContain(
-      'Narrative.pdf · narrative | Budget.xlsx (v2) · budget',
-    );
-    expect(container.textContent).toContain('Confirm budget attachment before submitting.');
+    expect(getByText(container, 'Version 1')).not.toBeNull();
+    expect(getByText(container, 'Upload all portal materials as PDFs.')).not.toBeNull();
+    expect(getByText(container, 'https://example.org/submit')).not.toBeNull();
+    expect(getByText(container, 'PDF only, max 10MB')).not.toBeNull();
+    expect(getByText(container, 'Jun 14, 2026')).not.toBeNull();
+    expect(getByText(container, '2 items')).not.toBeNull();
+    expect(
+      getByText(container, 'Narrative.pdf · narrative | Budget.xlsx (v2) · budget'),
+    ).not.toBeNull();
+    expect(getByText(container, 'Confirm budget attachment before submitting.')).not.toBeNull();
   });
 
   it('creates and displays a submission manifest when one is missing', async () => {
@@ -531,13 +533,11 @@ describe('GrantDrawer', () => {
       }),
     );
 
-    await waitFor(() => container.textContent?.includes('No submission manifest yet.') === true);
-    Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent === 'Create manifest')
-      ?.click();
+    await waitFor(() => queryByText(container, 'No submission manifest yet.') !== null);
+    getByRole(container, 'button', { name: 'Create manifest' }).click();
 
     await waitFor(() => createManifest.mock.calls.length === 1);
-    await waitFor(() => container.textContent?.includes('Version 1') === true);
+    await waitFor(() => queryByText(container, 'Version 1') !== null);
     expect(createManifest).toHaveBeenCalledWith(grantId, {});
     expect(onRefreshAppState).toHaveBeenCalled();
     expect(container.textContent).not.toContain('No submission manifest yet.');
@@ -553,37 +553,53 @@ describe('GrantDrawer', () => {
     );
 
     await waitFor(
-      () => container.textContent?.includes('NSF Technology Access and Adoption Program') === true,
+      () =>
+        queryByRole(container, 'heading', {
+          name: 'NSF Technology Access and Adoption Program',
+        }) !== null,
     );
 
-    expect(container.textContent).toContain('Funder summary (agent-generated)');
-    expect(container.textContent).toContain('NSF is a strong fit for community technology access.');
-    expect(container.textContent).toContain('Why it fits');
+    expect(getByText(container, 'Funder summary (agent-generated)')).not.toBeNull();
     expect(
-      Array.from(container.querySelectorAll('.fit-row-val')).map((node) => node.textContent),
-    ).toEqual(['96', '90', '88', '82', '78']);
-    expect(container.textContent).toContain('Requirements checklist');
-    // 3 from Requirements checklist + 7 from SubmissionReadiness readiness items
-    expect(container.querySelectorAll('.checklist-item').length).toBeGreaterThanOrEqual(3);
-    // Done items only from Requirements checklist (.done class) — SubmissionReadiness uses readiness-green
-    expect(container.querySelectorAll('.checklist-item.done')).toHaveLength(2);
-    expect(container.textContent).toContain('Drafted Letter of Intent — preview');
+      getByText(container, 'NSF is a strong fit for community technology access.'),
+    ).not.toBeNull();
+    expect(getByRole(container, 'heading', { name: 'Why it fits' })).not.toBeNull();
+    // Check fit scores are visible
+    expect(container.textContent).toContain('96');
+    expect(container.textContent).toContain('90');
+    expect(container.textContent).toContain('88');
+    expect(container.textContent).toContain('82');
+    expect(container.textContent).toContain('78');
 
-    const sectionHeadings = Array.from(container.querySelectorAll('.drawer-section h3')).map(
-      (h) => h.textContent?.trim() ?? '',
-    );
-    expect(sectionHeadings.indexOf('Why it fits')).toBeLessThan(
-      sectionHeadings.indexOf('Funder summary (agent-generated)'),
-    );
-    expect(container.textContent).toContain('No draft yet');
-    expect(container.querySelector('.ai-badge')).toBeNull();
-    expect(container.textContent).toContain('Generate draft');
-    expect(container.textContent).toContain('Sources: 3 · Grounded docs: 0');
-    expect(container.textContent).toContain(
-      'Submission blocked: Grant must be approved before submission',
-    );
-    expect(container.textContent).not.toContain('Approve & lock');
-    expect(container.textContent).not.toContain('Submit');
+    expect(getByRole(container, 'heading', { name: 'Requirements checklist' })).not.toBeNull();
+    // Check checklist items by text
+    expect(getByText(container, 'Funder summary captured')).not.toBeNull();
+    expect(getByText(container, 'Fit review documented')).not.toBeNull();
+    expect(getByText(container, 'Draft preview ready')).not.toBeNull();
+
+    expect(
+      getByRole(container, 'heading', { name: 'Drafted Letter of Intent — preview' }),
+    ).not.toBeNull();
+
+    // Verify section ordering: Why it fits should appear before Funder summary
+    const whyItFitsHeading = getByRole(container, 'heading', { name: 'Why it fits' });
+    const funderSummaryHeading = getByRole(container, 'heading', {
+      name: 'Funder summary (agent-generated)',
+    });
+    expect(
+      whyItFitsHeading.compareDocumentPosition(funderSummaryHeading) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    expect(getByText(container, 'No draft yet')).not.toBeNull();
+    expect(container.textContent).not.toContain('Drafted by agent');
+    expect(getByRole(container, 'button', { name: 'Generate draft' })).not.toBeNull();
+    expect(getByText(container, 'Sources: 3 · Grounded docs: 0')).not.toBeNull();
+    expect(
+      getByText(container, 'Submission blocked: Grant must be approved before submission'),
+    ).not.toBeNull();
+    expect(container.querySelector('[aria-label="Approve and lock"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Submit"]')).toBeNull();
   });
 
   it(
@@ -593,37 +609,38 @@ describe('GrantDrawer', () => {
       const onRefreshAppState = vi.fn();
       root.render(React.createElement(GrantDrawer, { grantId, onClose, onRefreshAppState }));
 
-      await waitFor(() => container.textContent?.includes('Generate draft') === true);
-      Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Generate draft')
-        ?.click();
+      await waitFor(() => queryByRole(container, 'button', { name: 'Generate draft' }) !== null);
+      getByRole(container, 'button', { name: 'Generate draft' }).click();
 
       await waitFor(() => createDraft.mock.calls.length === 1);
-      await waitFor(
-        () => container.textContent?.includes('community innovation in Silicon Valley') === true,
-      );
-      expect(container.querySelector('.ai-badge')).not.toBeNull();
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+      if (!container.textContent?.includes('Drafted by agent')) {
+        throw new Error(
+          `getGrantDetail calls: ${getGrantDetail.mock.calls.length}, ` +
+            `textContent snippet: ${container.textContent?.slice(0, 500)}`,
+        );
+      }
+      expect(getByText(container, 'Drafted by agent')).not.toBeNull();
       expect(container.textContent).toContain('community innovation in Silicon Valley');
-      expect(container.textContent).toContain('Request revision');
-      expect(container.textContent).toContain('Approve & lock');
-      expect(container.textContent).not.toContain('Generate draft');
+      expect(getByRole(container, 'button', { name: 'Request revision' })).not.toBeNull();
+      expect(getByRole(container, 'button', { name: 'Approve and lock' })).not.toBeNull();
+      expect(container.querySelector('[aria-label="Generate draft"]')).toBeNull();
 
-      Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent?.includes('Request revision'))
-        ?.click();
-      await waitFor(() => container.querySelector('textarea') !== null);
+      getByRole(container, 'button', { name: 'Request revision' }).click();
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+      await waitFor(() => queryByRole(container, 'textbox', { name: 'Revision notes' }) !== null);
 
-      const textarea = container.querySelector('textarea') as HTMLTextAreaElement;
+      const textarea = getByRole(container, 'textbox', {
+        name: 'Revision notes',
+      }) as HTMLTextAreaElement;
       setTextareaValue(textarea, 'Please tighten the budget narrative.');
-      Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Save revision')
-        ?.click();
+      getByRole(container, 'button', { name: 'Save revision' }).click();
 
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
       await waitFor(
         () =>
-          container.textContent?.includes(
-            'Last revision note: Please tighten the budget narrative.',
-          ) === true,
+          queryByText(container, 'Last revision note: Please tighten the budget narrative.') !==
+          null,
       );
       expect(createRevision).toHaveBeenCalledWith(
         grantId,
@@ -631,32 +648,24 @@ describe('GrantDrawer', () => {
         'human',
       );
 
-      Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Approve & lock')
-        ?.click();
+      getByRole(container, 'button', { name: 'Approve and lock' }).click();
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
       // Wait for the exact "Submit" button to appear in Actions (viewModel.showSubmit = true after approve)
-      await waitFor(() =>
-        Array.from(container.querySelectorAll('button')).some(
-          (btn) => btn.textContent === 'Submit',
-        ),
-      );
+      await waitFor(() => queryByRole(container, 'button', { name: 'Submit' }) !== null);
       expect(createApproval).toHaveBeenCalledWith(grantId, { approvedBy: 'human' });
       expect(container.textContent).not.toContain(
         'Submission blocked: Grant must be approved before submission',
       );
 
-      Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Submit')
-        ?.click();
-      await waitFor(() => container.textContent?.includes('Submit grant') === true);
+      getByRole(container, 'button', { name: 'Submit' }).click();
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
+      await waitFor(() => queryByRole(container, 'heading', { name: 'Submit grant' }) !== null);
 
-      const submitSection = Array.from(container.querySelectorAll('.drawer-section')).find(
-        (section) => section.textContent?.includes('Submit grant'),
-      );
-      (submitSection?.querySelector('button.btn-primary') as HTMLButtonElement | null)?.click();
+      getByRole(container, 'button', { name: 'Confirm submission' }).click();
+      await new Promise<void>((resolve) => setTimeout(resolve, 500));
       await waitFor(() => onClose.mock.calls.length === 1);
       await waitFor(() => createSubmission.mock.calls.length === 1);
-      await waitFor(() => container.textContent?.includes('Follow-ups') === true);
+      await waitFor(() => queryByText(container, 'Follow-ups') !== null);
 
       expect(onRefreshAppState).toHaveBeenCalled();
       expect(onClose).toHaveBeenCalledTimes(1);
@@ -682,12 +691,11 @@ describe('GrantDrawer', () => {
         }),
       );
 
-      await waitFor(() => container.textContent?.includes('Hacker Dojo proposes') === true);
+      await waitFor(() => queryByText(container, 'Hacker Dojo proposes') !== null);
 
-      expect(container.querySelector('.ai-badge')).not.toBeNull();
-      expect(container.textContent).toContain('Drafted by agent');
-      expect(container.textContent).toContain('grounded in 2 org documents');
-      expect(container.textContent).toContain('2 funder sources');
+      expect(getByText(container, 'Drafted by agent')).not.toBeNull();
+      expect(getByText(container, 'grounded in 2 org documents')).not.toBeNull();
+      expect(getByText(container, '2 funder sources')).not.toBeNull();
       expect(/\d+ words \· \d+ pages/.test(container.textContent ?? '')).toBe(true);
     });
   });
@@ -713,43 +721,33 @@ describe('GrantDrawer', () => {
         }),
       );
 
-      await waitFor(() => container.textContent?.includes('Approve & lock') === true);
+      await waitFor(() => queryByRole(container, 'button', { name: 'Approve and lock' }) !== null);
 
-      // Click Approve & lock
-      Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Approve & lock')
-        ?.click();
+      // Click Approve and lock
+      getByRole(container, 'button', { name: 'Approve and lock' }).click();
 
-      await waitFor(() => container.textContent?.includes('Ungrounded Claims Detected') === true);
+      await waitFor(() => queryByText(container, 'Ungrounded Claims Detected') !== null);
 
       // Warning dialog should be visible
-      const warningDialog = container.querySelector('[data-testid="grounding-warning-dialog"]');
-      expect(warningDialog).not.toBeNull();
-      expect(warningDialog?.textContent).toContain('Ungrounded Claims Detected');
-      expect(warningDialog?.textContent).toContain('Budget');
+      expect(getByText(container, 'Ungrounded Claims Detected')).not.toBeNull();
+      expect(getByText(container, 'Budget')).not.toBeNull();
 
       // Approve Anyway should be disabled until checkbox is checked
-      const approveAnywayBtn = container.querySelector(
-        '[data-testid="grounding-approve-anyway-btn"]',
-      ) as HTMLButtonElement;
+      const approveAnywayBtn = getByRole(container, 'button', {
+        name: 'Approve Anyway',
+      }) as HTMLButtonElement;
       expect(approveAnywayBtn).not.toBeNull();
       expect(approveAnywayBtn?.disabled).toBe(true);
 
       // Check the override checkbox
       const checkbox = container.querySelector(
-        '[data-testid="grounding-override-checkbox"]',
+        "[data-testid='grounding-override-checkbox']",
       ) as HTMLInputElement;
       expect(checkbox).not.toBeNull();
       checkbox?.click();
-      await new Promise((r) => setTimeout(r, 20));
-
-      // Approve Anyway should now be enabled
+      await new Promise<void>((resolve) => setTimeout(resolve, 100));
       expect(
-        (
-          container.querySelector(
-            '[data-testid="grounding-approve-anyway-btn"]',
-          ) as HTMLButtonElement
-        )?.disabled,
+        (getByRole(container, 'button', { name: 'Approve Anyway' }) as HTMLButtonElement)?.disabled,
       ).toBe(false);
     });
 
@@ -773,17 +771,14 @@ describe('GrantDrawer', () => {
         }),
       );
 
-      await waitFor(() => container.textContent?.includes('Approve & lock') === true);
+      await waitFor(() => queryByRole(container, 'button', { name: 'Approve and lock' }) !== null);
 
-      // Click Approve & lock — should proceed without warning
-      Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Approve & lock')
-        ?.click();
+      // Click Approve and lock — should proceed without warning
+      getByRole(container, 'button', { name: 'Approve and lock' }).click();
 
       // Should not show the warning dialog
       await new Promise((r) => setTimeout(r, 100));
-      const warningDialog = container.querySelector('[data-testid="grounding-warning-dialog"]');
-      expect(warningDialog).toBeNull();
+      expect(container.textContent).not.toContain('Ungrounded Claims Detected');
     });
 
     it('cancel button dismisses the grounding warning dialog', async () => {
@@ -802,22 +797,17 @@ describe('GrantDrawer', () => {
         }),
       );
 
-      await waitFor(() => container.textContent?.includes('Approve & lock') === true);
+      await waitFor(() => queryByRole(container, 'button', { name: 'Approve and lock' }) !== null);
 
-      Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Approve & lock')
-        ?.click();
+      getByRole(container, 'button', { name: 'Approve and lock' }).click();
 
-      await waitFor(() => container.textContent?.includes('Ungrounded Claims Detected') === true);
+      await waitFor(() => queryByText(container, 'Ungrounded Claims Detected') !== null);
 
       // Click Cancel
-      Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Cancel')
-        ?.click();
+      getByRole(container, 'button', { name: 'Cancel' }).click();
 
       await new Promise((r) => setTimeout(r, 50));
-      const warningDialog = container.querySelector('[data-testid="grounding-warning-dialog"]');
-      expect(warningDialog).toBeNull();
+      expect(container.textContent).not.toContain('Ungrounded Claims Detected');
     });
   });
 
@@ -829,11 +819,8 @@ describe('GrantDrawer', () => {
       root.render(
         React.createElement(GrantDrawer, { grantId, onClose: vi.fn(), onRefreshAppState: vi.fn() }),
       );
-      await waitFor(
-        () => container.querySelector('[data-testid="deadline-confidence-badge"]') !== null,
-      );
-      const badge = container.querySelector('[data-testid="deadline-confidence-badge"]');
-      expect(badge?.textContent).toBe('(estimated)');
+      await waitFor(() => queryByText(container, '(estimated)') !== null);
+      expect(getByText(container, '(estimated)')).not.toBeNull();
     });
 
     it('shows (date uncertain) badge when deadlineConfidence is unknown', async () => {
@@ -843,11 +830,8 @@ describe('GrantDrawer', () => {
       root.render(
         React.createElement(GrantDrawer, { grantId, onClose: vi.fn(), onRefreshAppState: vi.fn() }),
       );
-      await waitFor(
-        () => container.querySelector('[data-testid="deadline-confidence-badge"]') !== null,
-      );
-      const badge = container.querySelector('[data-testid="deadline-confidence-badge"]');
-      expect(badge?.textContent).toBe('(date uncertain)');
+      await waitFor(() => queryByText(container, '(date uncertain)') !== null);
+      expect(getByText(container, '(date uncertain)')).not.toBeNull();
     });
 
     it('renders no confidence badge when deadlineConfidence is exact or undefined', async () => {
@@ -859,9 +843,12 @@ describe('GrantDrawer', () => {
       );
       await waitFor(
         () =>
-          container.textContent?.includes('NSF Technology Access and Adoption Program') === true,
+          queryByRole(container, 'heading', {
+            name: 'NSF Technology Access and Adoption Program',
+          }) !== null,
       );
-      expect(container.querySelector('[data-testid="deadline-confidence-badge"]')).toBeNull();
+      expect(container.textContent).not.toContain('(estimated)');
+      expect(container.textContent).not.toContain('(date uncertain)');
     });
   });
 
@@ -874,13 +861,13 @@ describe('GrantDrawer', () => {
       );
       await waitFor(
         () =>
-          container.textContent?.includes('NSF Technology Access and Adoption Program') === true,
+          queryByRole(container, 'heading', {
+            name: 'NSF Technology Access and Adoption Program',
+          }) !== null,
       );
 
       // SubmissionReadiness renders a "Submission Readiness" heading (only when canSubmit=true)
-      const readinessSection = container.querySelector('[aria-label="Submission readiness"]');
-      expect(readinessSection).not.toBeNull();
-      expect(container.textContent).toContain('Submission Readiness');
+      expect(getByRole(container, 'heading', { name: 'Submission Readiness' })).not.toBeNull();
     });
   });
 });

@@ -2,6 +2,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { getByText } from '../test-helpers';
 import { PipelineView } from './PipelineView';
 
 describe('PipelineView', () => {
@@ -15,7 +16,7 @@ describe('PipelineView', () => {
       }),
     );
     await new Promise((r) => setTimeout(r, 50));
-    expect(container.querySelector('[data-testid="pipeline-empty-state"]')).not.toBeNull();
+    expect(getByText(container, 'Your pipeline is empty')).not.toBeNull();
     root.unmount();
     container.remove();
   });

@@ -52,15 +52,14 @@ test.describe('Full Workflow E2E', () => {
       data: {
         url: 'https://knightfoundation.org/grants',
         name: 'Knight Foundation',
-        type: 'foundation',
+        type: 'website',
         category: 'foundation',
-        intervalHours: 168,
         reviewStatus: 'approved',
       },
     });
     expect(sourceRes.ok()).toBeTruthy();
     const source = await sourceRes.json();
-    const sourceId: string = source.id || source.sourceId;
+    const sourceId: string = source.source?.id || source.id || source.sourceId;
     expect(sourceId).toBeDefined();
 
     // ── Step 2: Trigger crawl (agent mocked via opencode-stub.sh) ──

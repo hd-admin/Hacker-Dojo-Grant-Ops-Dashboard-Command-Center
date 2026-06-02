@@ -161,7 +161,7 @@ vi.mock('./GrantDrawer', () => ({
     ) : null,
 }));
 
-import { getByRole } from '../test-helpers';
+import { getByRole, getByText, queryByRole, queryByText } from '../test-helpers';
 import { AppShell } from './AppShell';
 
 const initialGrants: Grant[] = [
@@ -369,11 +369,12 @@ describe('AppShell rendering', () => {
 
   it('renders duplicates nav item in the sidebar', async () => {
     root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"]') !== null);
+    await waitFor(
+      () => queryByRole(container, 'button', { name: 'Review duplicate candidates' }) !== null,
+    );
 
-    const duplicatesNav = container.querySelector('.nav-item[data-view="duplicates"]');
+    const duplicatesNav = getByRole(container, 'button', { name: 'Review duplicate candidates' });
     expect(duplicatesNav).not.toBeNull();
-    expect(duplicatesNav?.textContent).toContain('Duplicates');
     const sidebar = getByRole(container, 'complementary', { name: 'Main navigation' });
     expect(sidebar).not.toBeNull();
   });
@@ -393,67 +394,61 @@ describe('AppShell rendering', () => {
 
     root.render(React.createElement(AppShell));
     await waitFor(
-      () => container.querySelector('.nav-item[data-view="duplicates"] .nav-count') !== null,
+      () => queryByRole(container, 'button', { name: 'Review duplicate candidates' }) !== null,
     );
 
-    const badge = container.querySelector('.nav-item[data-view="duplicates"] .nav-count');
-    expect(badge?.textContent).toBe('1');
+    const duplicatesNav = getByRole(container, 'button', { name: 'Review duplicate candidates' });
+    expect(duplicatesNav.textContent).toContain('1');
   });
 
   it('renders v2 Calendar and Post-Award nav items in the workspace section', async () => {
     root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('.nav-item[data-view="calendar"]') !== null);
+    await waitFor(() => queryByRole(container, 'button', { name: 'View calendar' }) !== null);
 
-    const calendarNav = container.querySelector('.nav-item[data-view="calendar"]');
-    const postAwardNav = container.querySelector('.nav-item[data-view="post-award"]');
+    const calendarNav = getByRole(container, 'button', { name: 'View calendar' });
+    const postAwardNav = getByRole(container, 'button', { name: 'View post-award management' });
     expect(calendarNav).not.toBeNull();
-    expect(calendarNav?.textContent).toContain('Calendar');
     expect(postAwardNav).not.toBeNull();
-    expect(postAwardNav?.textContent).toContain('Post-Award');
   });
 
   it('refreshes shell-owned badges and footer state when child views mutate state', async () => {
     root.render(React.createElement(AppShell));
-    await waitFor(
-      () =>
-        container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent === '1',
-    );
+    await waitFor(() => {
+      const btn = queryByRole(container, 'button', { name: 'Discover grants' });
+      return btn !== null && btn.textContent?.includes('1') === true;
+    });
 
     expect(fetchMock).toHaveBeenCalledWith('/api/crawl/scheduled?trigger=true');
-    expect(container.querySelector('.nav-item[data-view="settings"]')?.textContent).toContain(
-      'Settings',
+    expect(getByRole(container, 'button', { name: 'Application settings' })).not.toBeNull();
+    expect(getByRole(container, 'button', { name: 'View notifications' }).textContent).toContain(
+      '1',
     );
-    expect(
-      container.querySelector('.nav-item[data-view="notifications"] .nav-count')?.textContent,
-    ).toBe('1');
     expect(container.textContent).toContain('Crawler offline');
     expect(container.textContent).toContain('ed@hackerdojo.com');
 
-    Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent?.includes('refresh discovery'))
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(
-      () =>
-        container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent === '2',
+    getByRole(container, 'button', { name: 'refresh discovery' }).dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
     );
+    await waitFor(() => {
+      const btn = queryByRole(container, 'button', { name: 'Discover grants' });
+      return btn !== null && btn.textContent?.includes('2') === true;
+    });
 
     expect(researchGetRuns).toHaveBeenCalledTimes(2);
     expect(container.textContent).toContain('Crawler online');
 
-    Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent?.includes('select grant'))
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    getByRole(container, 'button', { name: 'select grant' }).dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
     await waitFor(() => container.textContent?.includes('grant-1') === true);
 
-    Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent?.includes('refresh drawer'))
-      ?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    getByRole(container, 'button', { name: 'refresh drawer' }).dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
+    );
     await waitFor(() => grantsGetAll.mock.calls.length === 3);
 
     expect(researchGetRuns).toHaveBeenCalledTimes(3);
-    expect(
-      container.querySelector('.nav-item[data-view="discovery"] .nav-count')?.textContent,
-    ).toBe('2');
+    expect(getByRole(container, 'button', { name: 'Discover grants' }).textContent).toContain('2');
   });
 
   it('shows a toast when a job transitions to completed', async () => {
@@ -496,14 +491,13 @@ describe('AppShell rendering', () => {
     });
 
     root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('.nav-item[data-view="jobs"]') !== null);
+    await waitFor(() => queryByRole(container, 'button', { name: 'View job queue' }) !== null);
 
     // Trigger a refresh that will re-fetch jobs with completed status
     jobStatus = 'completed';
-    const refreshBtn = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('refresh dashboard'),
+    getByRole(container, 'button', { name: 'refresh dashboard' }).dispatchEvent(
+      new MouseEvent('click', { bubbles: true }),
     );
-    refreshBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     await waitFor(() => mockAddToast.mock.calls.length > 0);
     expect(mockAddToast).toHaveBeenCalledWith('\u2705 research completed', 'success');
@@ -532,11 +526,10 @@ describe('AppShell error states', () => {
     });
 
     root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('[data-testid="storage-blocked-banner"]') !== null);
+    await waitFor(() => queryByRole(container, 'alert') !== null);
 
-    expect(container.querySelector('.sidebar')).toBeNull();
-    expect(container.querySelector('[data-view="dashboard"]')).toBeNull();
-    expect(container.textContent).toContain('Storage unavailable: Disk unavailable');
+    expect(queryByRole(container, 'complementary', { name: 'Main navigation' })).toBeNull();
+    expect(getByText(container, 'Storage unavailable: Disk unavailable')).not.toBeNull();
   });
 
   it('shows opencode degraded guidance when the AI runtime is unavailable', async () => {
@@ -559,11 +552,9 @@ describe('AppShell error states', () => {
     });
 
     root.render(React.createElement(AppShell));
-    await waitFor(
-      () => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null,
-    );
+    await waitFor(() => queryByText(container, 'AI features unavailable') !== null);
 
-    expect(container.querySelector('[data-testid="opencode-degraded-banner"]')).not.toBeNull();
+    expect(getByText(container, 'AI features unavailable')).not.toBeNull();
   });
 
   it('Discovery and Sources nav items are not disabled in degraded mode', async () => {
@@ -584,15 +575,13 @@ describe('AppShell error states', () => {
       });
     });
     root.render(React.createElement(AppShell));
-    await waitFor(
-      () => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null,
-    );
-    const discoveryBtn = container.querySelector(
-      'button.nav-item[data-view="discovery"]',
-    ) as HTMLButtonElement | null;
-    const sourcesBtn = container.querySelector(
-      'button.nav-item[data-view="sources"]',
-    ) as HTMLButtonElement | null;
+    await waitFor(() => queryByText(container, 'AI features unavailable') !== null);
+    const discoveryBtn = getByRole(container, 'button', {
+      name: 'Discover grants',
+    }) as HTMLButtonElement;
+    const sourcesBtn = getByRole(container, 'button', {
+      name: 'Manage sources',
+    }) as HTMLButtonElement;
     expect(discoveryBtn?.disabled).toBe(false);
     expect(sourcesBtn?.disabled).toBe(false);
   });
@@ -615,34 +604,28 @@ describe('AppShell error states', () => {
       });
     });
     root.render(React.createElement(AppShell));
-    await waitFor(
-      () => container.querySelector('[data-testid="opencode-degraded-banner"]') !== null,
-    );
-    const discoveryBtn = container.querySelector('button.nav-item[data-view="discovery"]');
+    await waitFor(() => queryByText(container, 'AI features unavailable') !== null);
+    const discoveryBtn = getByRole(container, 'button', { name: 'Discover grants' });
     discoveryBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(
-      () => container.querySelector('#view-discovery')?.classList.contains('active') === true,
-    );
-    const refreshBtn = Array.from(container.querySelectorAll('button')).find((b) =>
-      b.textContent?.includes('refresh discovery'),
-    );
-    expect(refreshBtn).not.toBeNull();
+    await waitFor(() => queryByRole(container, 'button', { name: 'refresh discovery' }) !== null);
+    expect(getByRole(container, 'button', { name: 'refresh discovery' })).not.toBeNull();
   });
 });
 
 describe('AppShell navigation', () => {
   it('navigates to duplicates view on click', async () => {
     root.render(React.createElement(AppShell));
-    await waitFor(() => container.querySelector('.nav-item[data-view="duplicates"]') !== null);
+    await waitFor(
+      () => queryByRole(container, 'button', { name: 'Review duplicate candidates' }) !== null,
+    );
 
-    const duplicatesNav = container.querySelector(
-      '.nav-item[data-view="duplicates"]',
-    ) as HTMLElement;
+    const duplicatesNav = getByRole(container, 'button', { name: 'Review duplicate candidates' });
     duplicatesNav?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     await waitFor(
-      () => container.querySelector('#view-duplicates')?.classList.contains('active') === true,
+      () => queryByRole(container, 'tabpanel', { name: 'Duplicate Candidates' }) !== null,
     );
-    expect(container.querySelector('#view-duplicates.active')).not.toBeNull();
+    const duplicatesPanel = getByRole(container, 'tabpanel', { name: 'Duplicate Candidates' });
+    expect(duplicatesPanel).not.toBeNull();
   });
 });

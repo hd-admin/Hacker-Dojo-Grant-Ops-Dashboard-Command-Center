@@ -581,6 +581,7 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
                   rows={4}
                   value={revisionNote}
                   onChange={(e) => setRevisionNote(e.target.value)}
+                  aria-label="Revision notes"
                 />
                 <div>
                   <button type="button" className="btn btn-primary" onClick={handleConfirmRevision}>
@@ -629,7 +630,12 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
                   onChange={(e) => setSubmitNotes(e.target.value)}
                 />
                 <div>
-                  <button type="button" className="btn btn-primary" onClick={handleSubmit}>
+                  <button
+                    type="button"
+                    className="btn btn-primary"
+                    onClick={handleSubmit}
+                    aria-label="Confirm submission"
+                  >
                     Submit
                   </button>
                   <button type="button" className="btn" onClick={() => setShowSubmitForm(false)}>

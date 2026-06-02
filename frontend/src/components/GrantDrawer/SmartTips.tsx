@@ -274,6 +274,7 @@ export function SmartTips({
               type="button"
               className="btn btn-primary"
               title="Generate an AI-powered grant draft"
+              aria-label="Generate draft"
               onClick={handleGenerateDraft}
             >
               Generate draft
@@ -284,6 +285,7 @@ export function SmartTips({
               type="button"
               className="btn btn-primary"
               title="Approve the draft and lock it from further edits"
+              aria-label="Approve and lock"
               onClick={handleApproveAndLock}
             >
               Approve &amp; lock
@@ -294,6 +296,7 @@ export function SmartTips({
               type="button"
               className="btn"
               title="Send the draft back for revision"
+              aria-label="Request revision"
               onClick={handleRequestRevision}
             >
               Request revision
@@ -304,6 +307,7 @@ export function SmartTips({
               type="button"
               className="btn"
               title="Submit the approved grant application"
+              aria-label="Submit"
               onClick={() => setShowSubmitForm(true)}
             >
               Submit

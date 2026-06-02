@@ -847,14 +847,23 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                 type="button"
                 data-testid={`approve-source-btn-${source.id}`}
                 onClick={() => void approveSource(source.id)}
+                aria-label={`Approve ${source.name}`}
               >
                 Approve
               </button>
-              <button type="button" onClick={() => void rejectSource(source.id)}>
+              <button
+                type="button"
+                onClick={() => void rejectSource(source.id)}
+                aria-label={`Reject ${source.name}`}
+              >
                 Reject
               </button>
               <div>
-                <button type="button" data-testid={`categorize-source-btn-${source.id}`}>
+                <button
+                  type="button"
+                  data-testid={`categorize-source-btn-${source.id}`}
+                  aria-label={`Categorize ${source.name}`}
+                >
                   Categorize
                 </button>
                 {sourceCategories.map((category) => (
@@ -862,6 +871,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                     key={category}
                     type="button"
                     onClick={() => void categorizeSource(source.id, category)}
+                    aria-label={`Set category to ${categoryLabel(category)} for ${source.name}`}
                   >
                     {categoryLabel(category)}
                   </button>
@@ -871,6 +881,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
                 type="button"
                 data-testid={`edit-source-btn-${source.id}`}
                 onClick={() => startEdit(source)}
+                aria-label={`Edit ${source.name}`}
               >
                 Edit
               </button>

@@ -2,6 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { getByRole, getByText } from '../test-helpers';
 
 describe('OperatorNamePrompt', () => {
   let container: HTMLDivElement;
@@ -40,33 +41,27 @@ describe('OperatorNamePrompt', () => {
 
   it('renders the prompt heading', async () => {
     const el = await render();
-    const heading = el.querySelector('h1');
+    const heading = getByRole(el, 'heading', { name: 'Hacker Dojo Grant Ops is ready.' });
     expect(heading).not.toBeNull();
-    expect(heading?.textContent).toBe('Hacker Dojo Grant Ops is ready.');
   });
 
   it('renders the subtitle', async () => {
     const el = await render();
-    const subtitle = el.querySelector('p');
-    expect(subtitle?.textContent).toBe(
-      "What's your name? This will be used when drafting emails and recording submissions.",
-    );
+    expect(getByText(el, "What's your name?")).not.toBeNull();
   });
 
   it('renders input field with accessible label', async () => {
     const el = await render();
-    const input = el.querySelector('input');
+    const input = getByRole(el, 'textbox', { name: 'Your name' });
     expect(input).not.toBeNull();
-    expect(input?.getAttribute('aria-label')).toBe('Your name');
-    expect(input?.getAttribute('placeholder')).toBe('Your name');
+    expect(input.getAttribute('placeholder')).toBe('Your name');
   });
 
   it('renders Get Started button with accessible name', async () => {
     const el = await render();
-    const btn = el.querySelector('button');
+    const btn = getByRole(el, 'button', { name: 'Get started' });
     expect(btn).not.toBeNull();
-    expect(btn?.getAttribute('aria-label')).toBe('Get started');
-    expect(btn?.textContent).toBe('Get Started');
+    expect(btn.textContent).toBe('Get Started');
   });
 
   it('shows error message via alert role when fetch fails', async () => {
@@ -78,8 +73,8 @@ describe('OperatorNamePrompt', () => {
         .mockRejectedValueOnce(new Error('Network error')), // save call
     );
     const el = await render();
-    const input = el.querySelector('input')!;
-    const btn = el.querySelector('button')!;
+    const input = getByRole(el, 'textbox', { name: 'Your name' }) as HTMLInputElement;
+    const btn = getByRole(el, 'button', { name: 'Get started' });
 
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
@@ -91,17 +86,17 @@ describe('OperatorNamePrompt', () => {
     btn.click();
     await new Promise((r) => setTimeout(r, 50));
 
-    const alert = el.querySelector('[role="alert"]');
+    const alert = getByRole(el, 'alert');
     expect(alert).not.toBeNull();
-    expect(alert?.textContent).toContain('Failed to save name');
+    expect(alert.textContent).toContain('Failed to save name');
   });
 
   it('has proper ARIA dialog attributes', async () => {
     const el = await render();
-    const dialog = el.querySelector('[role="dialog"]');
+    const dialog = getByRole(el, 'dialog');
     expect(dialog).not.toBeNull();
-    expect(dialog?.getAttribute('aria-modal')).toBe('true');
-    expect(dialog?.getAttribute('aria-labelledby')).toBe('operator-prompt-title');
+    expect(dialog.getAttribute('aria-modal')).toBe('true');
+    expect(dialog.getAttribute('aria-labelledby')).toBe('operator-prompt-title');
   });
 
   it('calls onComplete when button clicked after save', async () => {
@@ -115,8 +110,8 @@ describe('OperatorNamePrompt', () => {
     );
 
     const el = await render({ onComplete });
-    const input = el.querySelector('input')!;
-    const btn = el.querySelector('button')!;
+    const input = getByRole(el, 'textbox', { name: 'Your name' }) as HTMLInputElement;
+    const btn = getByRole(el, 'button', { name: 'Get started' });
 
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
@@ -139,7 +134,7 @@ describe('OperatorNamePrompt', () => {
     );
 
     const el = await render({ onComplete });
-    const btn = el.querySelector('button')!;
+    const btn = getByRole(el, 'button', { name: 'Get started' });
 
     btn.click();
     await new Promise((r) => setTimeout(r, 50));

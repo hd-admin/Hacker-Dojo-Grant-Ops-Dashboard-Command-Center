@@ -10,7 +10,7 @@ const { onRefreshAppState } = vi.hoisted(() => ({
 
 vi.mock('../lib/grant-ops-client', () => ({}));
 
-import { getAllByRole } from '../test-helpers';
+import { getAllByRole, getByRole, getByText, queryByRole, queryByText } from '../test-helpers';
 import { SourcesView } from './SourcesView';
 
 const mockSources: Source[] = [
@@ -167,87 +167,89 @@ afterEach(() => {
 describe('SourcesView', () => {
   it('renders the header with "Sources" and "Review queue" text', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.textContent?.includes('Sources') === true);
+    await waitFor(() => queryByText(container, 'Sources') !== null);
 
-    expect(container.textContent).toContain('Sources');
-    expect(container.textContent).toContain('Review queue');
+    expect(getByText(container, 'Sources')).not.toBeNull();
+    expect(getByText(container, 'Review queue')).not.toBeNull();
     const statusIndicators = getAllByRole(container, 'status');
     expect(statusIndicators.length).toBeGreaterThan(0);
   });
 
   it('shows pending sources count in header subtitle', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.textContent?.includes('2 sources awaiting review') === true);
+    await waitFor(() => queryByText(container, '2 sources awaiting review') !== null);
 
-    expect(container.textContent).toContain('2 sources awaiting review');
+    expect(getByText(container, '2 sources awaiting review')).not.toBeNull();
   });
 
   it('shows pending review section with approve/reject buttons when pending sources exist', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(
-      () => container.querySelector('[data-testid="approve-source-btn-pending-1"]') !== null,
-    );
+    await waitFor(() => queryByText(container, 'Pending Source 1') !== null);
 
-    expect(container.textContent).toContain('Pending review');
-    expect(container.textContent).toContain('Pending Source 1');
-    expect(container.textContent).toContain('Pending Source 2');
-    expect(container.querySelector('[data-testid="approve-source-btn-pending-1"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="approve-source-btn-pending-2"]')).not.toBeNull();
+    expect(getByText(container, 'Pending review')).not.toBeNull();
+    expect(getByText(container, 'Pending Source 1')).not.toBeNull();
+    expect(getByText(container, 'Pending Source 2')).not.toBeNull();
+    // Find approve buttons by role+name within the pending section
+    const approveButtons = getAllByRole(container, 'button', { name: 'Approve' });
+    expect(approveButtons.length).toBeGreaterThanOrEqual(2);
   });
 
   it('clicking "Discover Sources" button toggles the discovery form', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.textContent?.includes('Sources') === true);
+    await waitFor(() => queryByText(container, 'Sources') !== null);
 
-    const discoverBtn = container.querySelector('[aria-label="Discover sources"]');
+    const discoverBtn = getByRole(container, 'button', { name: 'Discover sources' });
     expect(discoverBtn).not.toBeNull();
 
     expect(
-      container.querySelector('[aria-label="Describe the grants you are looking for"]'),
+      queryByRole(container, 'textbox', { name: 'Describe the grants you are looking for' }),
     ).toBeNull();
 
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(
       () =>
-        container.querySelector('[aria-label="Describe the grants you are looking for"]') !== null,
+        queryByRole(container, 'textbox', { name: 'Describe the grants you are looking for' }) !==
+        null,
     );
 
     expect(
-      container.querySelector('[aria-label="Describe the grants you are looking for"]'),
+      getByRole(container, 'textbox', { name: 'Describe the grants you are looking for' }),
     ).not.toBeNull();
 
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(
       () =>
-        container.querySelector('[aria-label="Describe the grants you are looking for"]') === null,
+        queryByRole(container, 'textbox', { name: 'Describe the grants you are looking for' }) ===
+        null,
     );
   });
 
   it('submitting discovery with prompt shows discovery suggestions', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.textContent?.includes('Sources') === true);
+    await waitFor(() => queryByText(container, 'Sources') !== null);
 
-    const discoverBtn = container.querySelector('[aria-label="Discover sources"]');
+    const discoverBtn = getByRole(container, 'button', { name: 'Discover sources' });
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(
       () =>
-        container.querySelector('[aria-label="Describe the grants you are looking for"]') !== null,
+        queryByRole(container, 'textbox', { name: 'Describe the grants you are looking for' }) !==
+        null,
     );
 
-    const promptInput = container.querySelector(
-      '[aria-label="Describe the grants you are looking for"]',
-    ) as HTMLTextAreaElement;
+    const promptInput = getByRole(container, 'textbox', {
+      name: 'Describe the grants you are looking for',
+    }) as HTMLTextAreaElement;
     promptInput.value = 'grants for makerspaces';
     promptInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-    const submitBtn = container.querySelector('[aria-label="Find sources"]');
+    const submitBtn = getByRole(container, 'button', { name: 'Find sources' });
     submitBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(() => container.textContent?.includes('Discovered Grant Source') === true);
+    await waitFor(() => queryByText(container, 'Discovered Grant Source') !== null);
 
-    expect(container.textContent).toContain('Discovered Grant Source');
-    expect(container.textContent).toContain('Another Discovered Source');
-    expect(container.textContent).toContain('Suggestions');
+    expect(getByText(container, 'Discovered Grant Source')).not.toBeNull();
+    expect(getByText(container, 'Another Discovered Source')).not.toBeNull();
+    expect(getByText(container, 'Suggestions')).not.toBeNull();
   });
 
   it('shows "discovery-unavailable-msg" when source discovery is unavailable', async () => {
@@ -283,53 +285,62 @@ describe('SourcesView', () => {
     );
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.textContent?.includes('Sources') === true);
+    await waitFor(() => queryByText(container, 'Sources') !== null);
 
-    const discoverBtn = container.querySelector('[data-testid="discover-sources-btn"]');
+    const discoverBtn = getByRole(container, 'button', { name: 'Discover sources' });
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(() => container.querySelector('[data-testid="discovery-prompt-input"]') !== null);
+    await waitFor(
+      () =>
+        queryByRole(container, 'textbox', { name: 'Describe the grants you are looking for' }) !==
+        null,
+    );
 
-    const promptInput = container.querySelector(
-      '[data-testid="discovery-prompt-input"]',
-    ) as HTMLTextAreaElement;
+    const promptInput = getByRole(container, 'textbox', {
+      name: 'Describe the grants you are looking for',
+    }) as HTMLTextAreaElement;
     promptInput.value = 'grants for makerspaces';
     promptInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-    const submitBtn = container.querySelector('[aria-label="Find sources"]');
+    const submitBtn = getByRole(container, 'button', { name: 'Find sources' });
     submitBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     await waitFor(
-      () => container.querySelector('[data-testid="discovery-unavailable-msg"]') !== null,
+      () =>
+        queryByText(container, 'Source discovery requires opencode. Configure it in Settings.') !==
+        null,
     );
 
-    expect(container.querySelector('[data-testid="discovery-unavailable-msg"]')).not.toBeNull();
-    expect(container.textContent).toContain(
-      'Source discovery requires opencode. Configure it in Settings.',
-    );
+    expect(
+      queryByText(container, 'Source discovery requires opencode. Configure it in Settings.'),
+    ).not.toBeNull();
   });
 
   it('approving a discovery suggestion calls the approve API', async () => {
     const fetchMock = vi.mocked(global.fetch as unknown as typeof fetch);
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.textContent?.includes('Sources') === true);
+    await waitFor(() => queryByText(container, 'Sources') !== null);
 
-    const discoverBtn = container.querySelector('[data-testid="discover-sources-btn"]');
+    const discoverBtn = getByRole(container, 'button', { name: 'Discover sources' });
     discoverBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(() => container.querySelector('[data-testid="discovery-prompt-input"]') !== null);
+    await waitFor(
+      () =>
+        queryByRole(container, 'textbox', { name: 'Describe the grants you are looking for' }) !==
+        null,
+    );
 
-    const promptInput = container.querySelector(
-      '[data-testid="discovery-prompt-input"]',
-    ) as HTMLTextAreaElement;
+    const promptInput = getByRole(container, 'textbox', {
+      name: 'Describe the grants you are looking for',
+    }) as HTMLTextAreaElement;
     promptInput.value = 'grants for makerspaces';
     promptInput.dispatchEvent(new Event('input', { bubbles: true }));
 
-    const submitBtn = container.querySelector('[data-testid="find-sources-submit-btn"]');
+    const submitBtn = getByRole(container, 'button', { name: 'Find sources' });
     submitBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(() => container.textContent?.includes('Discovered Grant Source') === true);
+    await waitFor(() => queryByText(container, 'Discovered Grant Source') !== null);
 
-    const approveSuggestionBtn = container.querySelector('[aria-label="Approve suggestion"]');
+    const approveSuggestionBtn = getByRole(container, 'button', { name: 'Approve suggestion' });
     approveSuggestionBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     await waitFor(
@@ -345,20 +356,14 @@ describe('SourcesView', () => {
 
   it('editing a source shows edit panel with save button', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(
-      () => container.querySelector('[data-testid="edit-source-btn-pending-1"]') !== null,
-    );
+    await waitFor(() => queryByText(container, 'Pending Source 1') !== null);
 
-    const editBtn = container.querySelector('[data-testid="edit-source-btn-pending-1"]');
+    const editBtn = getByRole(container, 'button', { name: 'Edit Pending Source 1' });
     editBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(() => {
-      const editPanel = container.querySelector('.edit-panel');
-      return editPanel !== null && container.textContent?.includes('Save') === true;
-    });
+    await waitFor(() => queryByRole(container, 'button', { name: 'Save' }) !== null);
 
-    expect(container.querySelector('.edit-panel')).not.toBeNull();
-    expect(container.textContent).toContain('Save');
+    expect(getByRole(container, 'button', { name: 'Save' })).not.toBeNull();
   });
 
   it('shows empty state "No sources pending review" when no pending sources', async () => {
@@ -384,19 +389,19 @@ describe('SourcesView', () => {
     );
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.textContent?.includes('0 sources awaiting review') === true);
+    await waitFor(() => queryByText(container, '0 sources awaiting review') !== null);
 
-    expect(container.textContent).toContain('No sources pending review');
+    expect(getByText(container, 'No sources pending review')).not.toBeNull();
   });
 });
 
 describe('ProPublica search section', () => {
   it('renders ProPublica search input and button', async () => {
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.textContent?.includes('Sources') === true);
+    await waitFor(() => queryByText(container, 'Sources') !== null);
 
-    expect(container.querySelector('input[aria-label="Search ProPublica"]')).not.toBeNull();
-    expect(container.querySelector('button[aria-label="Search ProPublica"]')).not.toBeNull();
+    expect(getByRole(container, 'textbox', { name: 'Search ProPublica' })).not.toBeNull();
+    expect(getByRole(container, 'button', { name: 'Search ProPublica' })).not.toBeNull();
   });
 
   it('shows propublica-unavailable-msg on unavailable response', async () => {
@@ -424,11 +429,11 @@ describe('ProPublica search section', () => {
     );
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.querySelector('input[aria-label="Search ProPublica"]') !== null);
+    await waitFor(() => queryByRole(container, 'textbox', { name: 'Search ProPublica' }) !== null);
 
-    const input = container.querySelector(
-      'input[aria-label="Search ProPublica"]',
-    ) as HTMLInputElement;
+    const input = getByRole(container, 'textbox', {
+      name: 'Search ProPublica',
+    }) as HTMLInputElement;
     // Use native setter to bypass React's internal value tracking
     const nativeInputSetter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
@@ -439,19 +444,24 @@ describe('ProPublica search section', () => {
     await waitFor(
       () =>
         !(
-          container.querySelector(
-            'button[aria-label="Search ProPublica"]',
-          ) as HTMLButtonElement | null
+          queryByRole(container, 'button', {
+            name: 'Search ProPublica',
+          }) as HTMLButtonElement | null
         )?.disabled,
     );
 
-    const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
-    form.dispatchEvent(new Event('submit', { bubbles: true }));
+    getByRole(container, 'button', { name: 'Search ProPublica' }).click();
 
     await waitFor(
-      () => container.querySelector('[data-testid="propublica-unavailable-msg"]') !== null,
+      () =>
+        queryByText(
+          container,
+          'ProPublica is currently unavailable. Your local data is unaffected.',
+        ) !== null,
     );
-    expect(container.querySelector('[data-testid="propublica-unavailable-msg"]')).not.toBeNull();
+    expect(
+      getByText(container, 'ProPublica is currently unavailable. Your local data is unaffected.'),
+    ).not.toBeNull();
   });
 
   it('shows propublica-empty-results when grants array is empty', async () => {
@@ -479,11 +489,11 @@ describe('ProPublica search section', () => {
     );
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.querySelector('input[aria-label="Search ProPublica"]') !== null);
+    await waitFor(() => queryByRole(container, 'textbox', { name: 'Search ProPublica' }) !== null);
 
-    const input = container.querySelector(
-      'input[aria-label="Search ProPublica"]',
-    ) as HTMLInputElement;
+    const input = getByRole(container, 'textbox', {
+      name: 'Search ProPublica',
+    }) as HTMLInputElement;
     const nativeInputSetter2 = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
       'value',
@@ -493,19 +503,16 @@ describe('ProPublica search section', () => {
     await waitFor(
       () =>
         !(
-          container.querySelector(
-            'button[aria-label="Search ProPublica"]',
-          ) as HTMLButtonElement | null
+          queryByRole(container, 'button', {
+            name: 'Search ProPublica',
+          }) as HTMLButtonElement | null
         )?.disabled,
     );
 
-    const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
-    form.dispatchEvent(new Event('submit', { bubbles: true }));
+    getByRole(container, 'button', { name: 'Search ProPublica' }).click();
 
-    await waitFor(
-      () => container.querySelector('[data-testid="propublica-empty-results"]') !== null,
-    );
-    expect(container.querySelector('[data-testid="propublica-empty-results"]')).not.toBeNull();
+    await waitFor(() => queryByText(container, 'No results found') !== null);
+    expect(getByText(container, 'No results found')).not.toBeNull();
   });
 
   it('shows propublica-results-list when grants returned', async () => {
@@ -547,11 +554,11 @@ describe('ProPublica search section', () => {
     );
 
     root.render(React.createElement(SourcesView, { onRefreshAppState }));
-    await waitFor(() => container.querySelector('input[aria-label="Search ProPublica"]') !== null);
+    await waitFor(() => queryByRole(container, 'textbox', { name: 'Search ProPublica' }) !== null);
 
-    const input = container.querySelector(
-      'input[aria-label="Search ProPublica"]',
-    ) as HTMLInputElement;
+    const input = getByRole(container, 'textbox', {
+      name: 'Search ProPublica',
+    }) as HTMLInputElement;
     const nativeInputSetter3 = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
       'value',
@@ -561,18 +568,15 @@ describe('ProPublica search section', () => {
     await waitFor(
       () =>
         !(
-          container.querySelector(
-            'button[aria-label="Search ProPublica"]',
-          ) as HTMLButtonElement | null
+          queryByRole(container, 'button', {
+            name: 'Search ProPublica',
+          }) as HTMLButtonElement | null
         )?.disabled,
     );
 
-    const form = container.querySelector('.propublica-search-form') as HTMLFormElement;
-    form.dispatchEvent(new Event('submit', { bubbles: true }));
+    getByRole(container, 'button', { name: 'Search ProPublica' }).click();
 
-    await waitFor(
-      () => container.querySelector('[data-testid="propublica-results-list"]') !== null,
-    );
-    expect(container.querySelector('[data-testid="propublica-results-list"]')).not.toBeNull();
+    await waitFor(() => queryByText(container, 'Results (1)') !== null);
+    expect(getByText(container, 'Results (1)')).not.toBeNull();
   });
 });

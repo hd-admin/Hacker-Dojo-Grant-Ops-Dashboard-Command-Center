@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import { getByText } from '../test-helpers';
+import { getByText, queryByText } from '../test-helpers';
 import { AgentActivityWidget } from './AgentActivityWidget';
 
 vi.mock('lucide-react', () => ({
@@ -38,8 +38,7 @@ describe('AgentActivityWidget', () => {
   it('renders loading state initially', async () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
     root.render(<AgentActivityWidget />);
-    await waitFor(() => container.querySelector('[data-testid="agent-activity-loading"]') !== null);
-    expect(getByText(container, 'Loading activity')).not.toBeNull();
+    await waitFor(() => queryByText(container, 'Loading activity...') !== null);
     vi.unstubAllGlobals();
   });
 
@@ -53,8 +52,7 @@ describe('AgentActivityWidget', () => {
       ),
     );
     root.render(<AgentActivityWidget />);
-    await waitFor(() => container.querySelector('[data-testid="agent-activity-empty"]') !== null);
-    expect(container.textContent).toContain('No recent agent activity');
+    await waitFor(() => queryByText(container, 'No recent agent activity') !== null);
     vi.unstubAllGlobals();
   });
 
@@ -82,19 +80,16 @@ describe('AgentActivityWidget', () => {
       ),
     );
     root.render(<AgentActivityWidget />);
-    await waitFor(() => container.querySelector('[data-testid="agent-activity-widget"]') !== null);
-    expect(container.querySelector('[data-testid="activity-evt-1"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="activity-evt-2"]')).not.toBeNull();
-    expect(container.textContent).toContain('Crawl completed');
-    expect(container.textContent).toContain('Draft completed');
+    await waitFor(() => queryByText(container, 'Recent Agent Activity') !== null);
+    expect(getByText(container, 'Crawl completed')).not.toBeNull();
+    expect(getByText(container, 'Draft completed')).not.toBeNull();
     vi.unstubAllGlobals();
   });
 
   it('handles fetch error gracefully', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
     root.render(<AgentActivityWidget />);
-    await waitFor(() => container.querySelector('[data-testid="agent-activity-empty"]') !== null);
-    expect(container.textContent).toContain('No recent agent activity');
+    await waitFor(() => queryByText(container, 'No recent agent activity') !== null);
     vi.unstubAllGlobals();
   });
 });
