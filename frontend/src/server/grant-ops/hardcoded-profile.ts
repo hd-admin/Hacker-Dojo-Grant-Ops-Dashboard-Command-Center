@@ -1,7 +1,7 @@
 import type { OrganizationProfile } from '../../../../shared/types';
 
 export const HARDCODED_PROFILE: OrganizationProfile = {
-  legalName: 'Hacker Dojo',
+  legalName: 'Hacker Dojo, a California nonprofit corporation',
   ein: '26-4812213',
   samUEI: '',
   nonprofitStatus: '501(c)(3)',
@@ -87,6 +87,8 @@ export const HARDCODED_PROFILE: OrganizationProfile = {
     'Equipment and capital investment',
     'Capacity building for nonprofits',
     'Youth STEM education and summer camps',
+    'Startup accelerators and entrepreneurship',
+    'Veteran career transition programs',
   ],
   agentBehavior: {
     autoDraftThreshold: 75,

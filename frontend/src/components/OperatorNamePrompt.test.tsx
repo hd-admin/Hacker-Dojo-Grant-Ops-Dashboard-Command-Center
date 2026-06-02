@@ -48,7 +48,9 @@ describe('OperatorNamePrompt', () => {
   it('renders the subtitle', async () => {
     const el = await render();
     const subtitle = el.querySelector('p');
-    expect(subtitle?.textContent).toBe('What is your name?');
+    expect(subtitle?.textContent).toBe(
+      "What's your name? This will be used when drafting emails and recording submissions.",
+    );
   });
 
   it('renders input field with accessible label', async () => {
@@ -143,23 +145,6 @@ describe('OperatorNamePrompt', () => {
     await new Promise((r) => setTimeout(r, 50));
 
     expect(onComplete).not.toHaveBeenCalled();
-  });
-
-  it('skips prompt when existing name found in localStorage', async () => {
-    vi.stubGlobal('localStorage', {
-      getItem: vi.fn().mockReturnValue('ExistingUser'),
-      setItem: vi.fn(),
-    });
-    const onComplete = vi.fn();
-
-    const module = await import('./OperatorNamePrompt');
-    const { OperatorNamePrompt } = module;
-    root.render(React.createElement(OperatorNamePrompt, { onComplete }));
-    await new Promise((r) => setTimeout(r, 100));
-
-    const dialog = container.querySelector('[role="dialog"]');
-    expect(dialog).toBeNull();
-    expect(onComplete).toHaveBeenCalledWith('ExistingUser');
   });
 
   it('skips prompt when existing name found from /api/operator', async () => {

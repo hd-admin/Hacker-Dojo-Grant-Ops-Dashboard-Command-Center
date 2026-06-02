@@ -27,6 +27,8 @@
     "pretypecheck:frontend": "pnpm run build",
     "setup:check": "bash scripts/setup-check.sh",
     "verify:persistence-root": "tsx scripts/print-grant-ops-data-dir.ts && cd frontend && ../node_modules/.bin/tsx ../scripts/print-grant-ops-data-dir.ts",
+    "format:check": "prettier --check .",
+    "format:write": "prettier --write .",
     "verify": "./scripts/verify.sh",
     "smoke:propublica": "bash scripts/smoke-test-propublica.sh"
   },
@@ -63,6 +65,7 @@
     "next": "^15.2.0",
     "node-gyp": "^12.3.0",
     "playwright": "^1.48.0",
+    "prettier": "^3.8.3",
     "tsx": "^4.19.3",
     "typescript": "^5.8.2",
     "vitest": "^2.1.9"

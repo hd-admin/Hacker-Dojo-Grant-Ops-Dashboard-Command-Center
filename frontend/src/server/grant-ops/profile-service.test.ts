@@ -69,7 +69,7 @@ describe('ProfileService', () => {
       const result = await profileService.getProfile();
 
       expect(result).toBeDefined();
-      expect(result?.legalName).toBe('Hacker Dojo');
+      expect(result?.legalName).toBe('Hacker Dojo, a California nonprofit corporation');
       expect(result?.nonprofitStatus).toBe('501(c)(3)');
       expect(result?.mission).toContain('Hacker Dojo is a collaborative hackerspace');
     });
@@ -81,7 +81,7 @@ describe('ProfileService', () => {
       const result = await profileService.getProfile();
 
       expect(result).toBeDefined();
-      expect(result?.legalName).toBe('Hacker Dojo');
+      expect(result?.legalName).toBe('Hacker Dojo, a California nonprofit corporation');
       expect(result?.mission).toContain('Hacker Dojo is a collaborative hackerspace');
     });
   });

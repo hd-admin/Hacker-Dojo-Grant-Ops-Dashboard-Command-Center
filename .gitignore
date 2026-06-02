@@ -62,3 +62,5 @@ Thumbs.db
 wt-*/
 .build-output*.logresults.json
 .build-output*.log
+
+tmp_*

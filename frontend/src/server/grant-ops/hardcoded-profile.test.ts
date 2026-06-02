@@ -15,7 +15,7 @@ describe('HARDCODED_PROFILE', () => {
   });
 
   it('should have required Hacker Dojo fields', () => {
-    expect(HARDCODED_PROFILE.legalName).toBe('Hacker Dojo');
+    expect(HARDCODED_PROFILE.legalName).toBe('Hacker Dojo, a California nonprofit corporation');
     expect(HARDCODED_PROFILE.ein).toBe('26-4812213');
     expect(HARDCODED_PROFILE.nonprofitStatus).toBe('501(c)(3)');
     expect(HARDCODED_PROFILE.yearFounded).toBe(2009);
@@ -42,5 +42,14 @@ describe('HARDCODED_PROFILE', () => {
     expect(HARDCODED_PROFILE.agentBehavior.submissionPolicy).toContain('Human approval required');
     expect(HARDCODED_PROFILE.agentBehavior.notifyEmail).toBe('ed@hackerdojo.com');
     expect(HARDCODED_PROFILE.agentBehavior.voiceAndTone).toContain('Plain-spoken');
+  });
+
+  it('should have all search themes from spec-01', () => {
+    expect(HARDCODED_PROFILE.searchThemes).toContain('Makerspaces and hackerspaces');
+    expect(HARDCODED_PROFILE.searchThemes).toContain('AI literacy and trustworthy AI');
+    expect(HARDCODED_PROFILE.searchThemes).toContain('Youth STEM education and summer camps');
+    expect(HARDCODED_PROFILE.searchThemes).toContain('Startup accelerators and entrepreneurship');
+    expect(HARDCODED_PROFILE.searchThemes).toContain('Veteran career transition programs');
+    expect(HARDCODED_PROFILE.searchThemes.length).toBe(12);
   });
 });
