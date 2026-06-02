@@ -27,6 +27,22 @@
   --radius: 6px;
   --radius-lg: 10px;
   --radius-xl: 14px;
+
+  --accent-bg-dim: rgba(212, 169, 67, 0.06);
+  --accent-bg: rgba(212, 169, 67, 0.12);
+  --accent-bg-strong: rgba(212, 169, 67, 0.15);
+  --info-bg: rgba(123, 163, 184, 0.12);
+  --info-border: rgba(123, 163, 184, 0.2);
+  --success-bg: rgba(138, 171, 111, 0.12);
+  --success-bg-strong: rgba(138, 171, 111, 0.15);
+  --warning-bg: rgba(224, 137, 74, 0.12);
+  --warning-bg-strong: rgba(224, 137, 74, 0.15);
+  --danger-bg: rgba(198, 107, 90, 0.12);
+  --danger-bg-strong: rgba(198, 107, 90, 0.15);
+  --info-bg-strong: rgba(123, 163, 184, 0.15);
+  --deadline-rolling-bg: rgba(205, 156, 101, 0.12);
+  --overlay-bg: rgba(12, 10, 8, 0.6);
+  --draft-preview-bg: rgba(0, 0, 0, 0.12);
 }
 
 * {
@@ -251,7 +267,7 @@ textarea:focus-visible {
 }
 
 .nav-item.active .nav-count {
-  background: rgba(212, 169, 67, 0.15);
+  background: var(--accent-bg-strong);
   color: var(--accent);
 }
 
@@ -629,22 +645,22 @@ textarea:focus-visible {
 }
 
 .deadline-status.urgent {
-  background: rgba(198, 107, 90, 0.15);
+  background: var(--danger-bg-strong);
   color: var(--danger);
 }
 
 .deadline-status.draft {
-  background: rgba(123, 163, 184, 0.15);
+  background: var(--info-bg-strong);
   color: var(--info);
 }
 
 .deadline-status.review {
-  background: rgba(224, 137, 74, 0.15);
+  background: var(--warning-bg-strong);
   color: var(--warning);
 }
 
 .deadline-status.submitted {
-  background: rgba(138, 171, 111, 0.15);
+  background: var(--success-bg-strong);
   color: var(--success);
 }
 
@@ -742,7 +758,7 @@ textarea:focus-visible {
 }
 
 .filter-pill.active {
-  background: rgba(212, 169, 67, 0.12);
+  background: var(--accent-bg);
   color: var(--accent);
   border-color: var(--accent-dim);
 }
@@ -891,7 +907,7 @@ textarea:focus-visible {
   text-transform: uppercase;
   letter-spacing: 0.1em;
   color: var(--accent);
-  background: rgba(205, 156, 101, 0.12);
+  background: var(--deadline-rolling-bg);
   padding: 2px 6px;
   border-radius: 4px;
 }
@@ -906,7 +922,7 @@ textarea:focus-visible {
 .drawer-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(12, 10, 8, 0.6);
+  background: var(--overlay-bg);
   backdrop-filter: blur(2px);
   opacity: 0;
   pointer-events: none;
@@ -1754,7 +1770,7 @@ textarea:focus-visible {
   padding: 12px;
   border-radius: var(--radius);
   border: 1px solid var(--border);
-  background: rgba(0, 0, 0, 0.12);
+  background: var(--draft-preview-bg);
   white-space: pre-wrap;
   color: var(--text-dim);
 }

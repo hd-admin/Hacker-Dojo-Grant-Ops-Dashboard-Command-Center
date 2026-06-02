@@ -11,23 +11,29 @@ describe('OperatorNamePrompt', () => {
     container = document.createElement('div');
     document.body.appendChild(container);
     root = createRoot(container);
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ name: '' }),
+    }));
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn().mockReturnValue(null),
+      setItem: vi.fn(),
+    });
   });
 
   afterEach(() => {
     root.unmount();
     container.remove();
+    vi.unstubAllGlobals();
   });
 
   async function render(props: Record<string, unknown> = {}) {
     const module = await import('./OperatorNamePrompt');
     const { OperatorNamePrompt } = module;
     root.render(
-      React.createElement(OperatorNamePrompt, {
-        onSubmit: vi.fn(),
-        ...props,
-      }),
+      React.createElement(OperatorNamePrompt, props),
     );
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 100));
     return container;
   }
 
@@ -60,30 +66,12 @@ describe('OperatorNamePrompt', () => {
     expect(btn?.textContent).toBe('Get Started');
   });
 
-  it('shows error message via alert role', async () => {
-    const el = await render({ error: 'Name already exists' });
-    const alert = el.querySelector('[role="alert"]');
-    expect(alert).not.toBeNull();
-    expect(alert?.textContent).toBe('Name already exists');
-  });
-
-  it('shows Saving... when submitting', async () => {
-    const el = await render({ isSubmitting: true });
-    const btn = el.querySelector('button');
-    expect(btn?.textContent).toBe('Saving...');
-  });
-
-  it('has proper ARIA dialog attributes', async () => {
+  it('shows error message via alert role when fetch fails', async () => {
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ name: '' }) }) // initial check
+      .mockRejectedValueOnce(new Error('Network error')) // save call
+    );
     const el = await render();
-    const dialog = el.querySelector('[role="dialog"]');
-    expect(dialog).not.toBeNull();
-    expect(dialog?.getAttribute('aria-modal')).toBe('true');
-    expect(dialog?.getAttribute('aria-labelledby')).toBe('operator-prompt-title');
-  });
-
-  it('calls onSubmit when button clicked', async () => {
-    const onSubmit = vi.fn().mockResolvedValue(undefined);
-    const el = await render({ onSubmit });
     const input = el.querySelector('input')!;
     const btn = el.querySelector('button')!;
 
@@ -95,6 +83,98 @@ describe('OperatorNamePrompt', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
     btn.click();
-    expect(onSubmit).toHaveBeenCalledWith('Alice');
+    await new Promise((r) => setTimeout(r, 50));
+
+    const alert = el.querySelector('[role="alert"]');
+    expect(alert).not.toBeNull();
+    expect(alert?.textContent).toContain('Failed to save name');
+  });
+
+  it('has proper ARIA dialog attributes', async () => {
+    const el = await render();
+    const dialog = el.querySelector('[role="dialog"]');
+    expect(dialog).not.toBeNull();
+    expect(dialog?.getAttribute('aria-modal')).toBe('true');
+    expect(dialog?.getAttribute('aria-labelledby')).toBe('operator-prompt-title');
+  });
+
+  it('calls onComplete when button clicked after save', async () => {
+    const onComplete = vi.fn();
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ name: '' }) }) // initial check
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ name: 'Alice' }) }) // save call
+    );
+
+    const el = await render({ onComplete });
+    const input = el.querySelector('input')!;
+    const btn = el.querySelector('button')!;
+
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set;
+    nativeInputValueSetter?.call(input, 'Alice');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    btn.click();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(onComplete).toHaveBeenCalledWith('Alice');
+  });
+
+  it('does not submit with empty name', async () => {
+    const onComplete = vi.fn();
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ name: '' }) }) // initial check
+    );
+
+    const el = await render({ onComplete });
+    const btn = el.querySelector('button')!;
+
+    btn.click();
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(onComplete).not.toHaveBeenCalled();
+  });
+
+  it('skips prompt when existing name found in localStorage', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn().mockReturnValue('ExistingUser'),
+      setItem: vi.fn(),
+    });
+    const onComplete = vi.fn();
+
+    const module = await import('./OperatorNamePrompt');
+    const { OperatorNamePrompt } = module;
+    root.render(
+      React.createElement(OperatorNamePrompt, { onComplete }),
+    );
+    await new Promise((r) => setTimeout(r, 100));
+
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog).toBeNull();
+    expect(onComplete).toHaveBeenCalledWith('ExistingUser');
+  });
+
+  it('skips prompt when existing name found from /api/operator', async () => {
+    vi.stubGlobal('localStorage', {
+      getItem: vi.fn().mockReturnValue(null),
+      setItem: vi.fn(),
+    });
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({ json: () => Promise.resolve({ name: 'ServerUser' }) })
+    );
+    const onComplete = vi.fn();
+
+    const module = await import('./OperatorNamePrompt');
+    const { OperatorNamePrompt } = module;
+    root.render(
+      React.createElement(OperatorNamePrompt, { onComplete }),
+    );
+    await new Promise((r) => setTimeout(r, 100));
+
+    const dialog = container.querySelector('[role="dialog"]');
+    expect(dialog).toBeNull();
+    expect(onComplete).toHaveBeenCalledWith('ServerUser');
   });
 });

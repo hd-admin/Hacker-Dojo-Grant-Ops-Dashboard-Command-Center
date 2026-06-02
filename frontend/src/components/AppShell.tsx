@@ -123,7 +123,6 @@ const activityNav: NavItem[] = [
 ];
 
 const WORKING_CONTEXT_KEY = 'grantops.workingContext';
-const OPERATOR_NAME_KEY = 'grantops.operatorName';
 
 function getWorkingContextStorage(): Storage | null {
   if (typeof window === 'undefined') return null;
@@ -171,7 +170,6 @@ export function AppShell() {
 
   // Operator name prompt state
   const [operatorName, setOperatorName] = useState<string>('');
-  const [showOperatorPrompt, setShowOperatorPrompt] = useState(false);
 
   // Safe quit state
   const [showSafeQuit, setShowSafeQuit] = useState(false);
@@ -341,26 +339,6 @@ export function AppShell() {
       setRecentGrantIds(context.recentGrantIds.slice(0, 5));
     if (context.recentDraftId !== undefined) setRecentDraftId(context.recentDraftId);
 
-    // Check if operator name has been set
-    const storage = getWorkingContextStorage();
-    const savedName = storage?.getItem(OPERATOR_NAME_KEY);
-    if (savedName) {
-      setOperatorName(savedName);
-    } else {
-      // Try server-side storage
-      fetch('/api/operator')
-        .then((r) => r.json().catch(() => ({ name: '' })))
-        .then((data: { name: string }) => {
-          if (data.name) {
-            setOperatorName(data.name);
-            if (storage) storage.setItem(OPERATOR_NAME_KEY, data.name);
-          } else {
-            setShowOperatorPrompt(true);
-          }
-        })
-        .catch(() => setShowOperatorPrompt(true));
-    }
-
     void Promise.all([refreshAppState(), refreshHealth(), loadActiveJobs()]).catch((_error) => {
       setError('Error loading app state');
     });
@@ -510,31 +488,9 @@ export function AppShell() {
 
   // ============ Operator Name Prompt ============
 
-  const [operatorSaving, setOperatorSaving] = useState(false);
-
-  const handleOperatorNameSave = (name: string): Promise<void> => {
-    const trimmed = name.trim();
-    if (!trimmed) return Promise.resolve();
-    setOperatorSaving(true);
-    const storage = getWorkingContextStorage();
-    if (storage) {
-      storage.setItem(OPERATOR_NAME_KEY, trimmed);
-    }
-    return fetch('/api/operator', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ name: trimmed }),
-    })
-      .then(() => {
-        setOperatorName(trimmed);
-        setShowOperatorPrompt(false);
-      })
-      .catch(() => {
-        setOperatorName(trimmed);
-        setShowOperatorPrompt(false);
-      })
-      .finally(() => setOperatorSaving(false));
-  };
+  const handleOperatorComplete = useCallback((name: string) => {
+    setOperatorName(name);
+  }, []);
 
   // ============ Compute derived state ============
 
@@ -977,9 +933,7 @@ export function AppShell() {
       )}
 
       {/* Operator Name Prompt */}
-      {showOperatorPrompt && (
-        <OperatorNamePrompt onSave={handleOperatorNameSave} saving={operatorSaving} />
-      )}
+      <OperatorNamePrompt onComplete={handleOperatorComplete} />
 
       {/* Grant Drawer */}
       <GrantDrawer

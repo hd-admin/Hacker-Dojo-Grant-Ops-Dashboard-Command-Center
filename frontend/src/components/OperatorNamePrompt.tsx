@@ -1,144 +1,146 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
+import styles from './OperatorNamePrompt.module.css';
 
 interface OperatorNamePromptProps {
-  onSubmit?: (name: string) => Promise<void>;
-  onSave?: (name: string) => Promise<void>;
-  isSubmitting?: boolean;
-  saving?: boolean;
-  error?: string;
+  onComplete?: (name: string) => void;
 }
 
-const overlayStyle: React.CSSProperties = {
-  position: 'fixed',
-  inset: 0,
-  display: 'flex',
-  alignItems: 'center',
-  justifyContent: 'center',
-  background: 'var(--bg)',
-  zIndex: 1000,
-};
+const OPERATOR_NAME_KEY = 'grantops.operatorName';
 
-const cardStyle: React.CSSProperties = {
-  textAlign: 'center',
-  maxWidth: 420,
-  padding: '48px 32px',
-};
+function getLocalStorage(): Storage | null {
+  if (typeof window === 'undefined') return null;
+  const storage = window.localStorage;
+  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function'
+    ? storage
+    : null;
+}
 
-const headingStyle: React.CSSProperties = {
-  fontFamily: 'var(--serif), Georgia, serif',
-  fontSize: 38,
-  fontWeight: 600,
-  color: 'var(--text)',
-  lineHeight: 1.2,
-  marginBottom: 8,
-};
+async function fetchOperatorName(): Promise<string> {
+  try {
+    const response = await fetch('/api/operator');
+    const data = (await response.json()) as { name: string };
+    return data.name || '';
+  } catch {
+    return '';
+  }
+}
 
-const subtitleStyle: React.CSSProperties = {
-  fontFamily: 'var(--sans), sans-serif',
-  fontSize: 17,
-  color: 'var(--text-dim)',
-  marginBottom: 32,
-};
+async function saveOperatorName(name: string): Promise<void> {
+  const storage = getLocalStorage();
+  if (storage) {
+    storage.setItem(OPERATOR_NAME_KEY, name);
+  }
+  await fetch('/api/operator', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+}
 
-const inputGroupStyle: React.CSSProperties = {
-  display: 'flex',
-  flexDirection: 'column',
-  gap: 12,
-  alignItems: 'center',
-};
-
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '12px 16px',
-  background: 'var(--surface)',
-  border: '1px solid var(--border)',
-  borderRadius: 'var(--radius)',
-  color: 'var(--text)',
-  fontFamily: 'var(--sans), sans-serif',
-  fontSize: 16,
-  outline: 'none',
-  transition: 'border-color 0.15s ease',
-};
-
-const buttonStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '12px 24px',
-  background: 'var(--accent)',
-  color: 'var(--bg)',
-  border: 'none',
-  borderRadius: 'var(--radius)',
-  fontFamily: 'var(--sans), sans-serif',
-  fontSize: 16,
-  fontWeight: 600,
-  cursor: 'pointer',
-};
-
-const errorStyle: React.CSSProperties = {
-  color: 'var(--danger)',
-  fontFamily: 'var(--sans), sans-serif',
-  fontSize: 13,
-};
-
-export function OperatorNamePrompt({
-  onSubmit,
-  onSave,
-  isSubmitting = false,
-  saving = false,
-  error,
-}: OperatorNamePromptProps) {
+export function OperatorNamePrompt({ onComplete }: OperatorNamePromptProps) {
   const [name, setName] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [initialized, setInitialized] = useState(false);
+  const [existingName, setExistingName] = useState<string | null>(null);
 
-  const handleSubmit = async () => {
+  useEffect(() => {
+    let cancelled = false;
+    async function checkExisting() {
+      const storage = getLocalStorage();
+      const localName = storage?.getItem(OPERATOR_NAME_KEY);
+      if (localName) {
+        if (!cancelled) {
+          setExistingName(localName);
+          setInitialized(true);
+          onComplete?.(localName);
+        }
+        return;
+      }
+      const serverName = await fetchOperatorName();
+      if (!cancelled) {
+        if (serverName) {
+          setExistingName(serverName);
+          if (storage) storage.setItem(OPERATOR_NAME_KEY, serverName);
+          onComplete?.(serverName);
+        }
+        setInitialized(true);
+      }
+    }
+    void checkExisting();
+    return () => { cancelled = true; };
+  }, [onComplete]);
+
+  const handleSubmit = useCallback(async () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const handler = onSave ?? onSubmit;
-    if (handler) await handler(trimmed);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmit();
+    setSaving(true);
+    setError('');
+    try {
+      await saveOperatorName(trimmed);
+      onComplete?.(trimmed);
+    } catch {
+      setError('Failed to save name. Please try again.');
+    } finally {
+      setSaving(false);
     }
-  };
+  }, [name, onComplete]);
 
-  const disabled = isSubmitting || saving || !name.trim();
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        void handleSubmit();
+      }
+    },
+    [handleSubmit],
+  );
+
+  if (!initialized) {
+    return null;
+  }
+
+  if (existingName) {
+    return null;
+  }
+
+  const disabled = saving || !name.trim();
 
   return (
     <div
-      style={overlayStyle}
+      className={styles.overlay}
       role="dialog"
       aria-modal="true"
       aria-labelledby="operator-prompt-title"
       data-testid="operator-name-prompt"
     >
-      <div style={cardStyle}>
-        <h1 id="operator-prompt-title" style={headingStyle}>
+      <div className={styles.card}>
+        <h1 id="operator-prompt-title" className={styles.heading}>
           Hacker Dojo Grant Ops is ready.
         </h1>
-        <p style={subtitleStyle}>What is your name?</p>
-        <div style={inputGroupStyle}>
+        <p className={styles.subtitle}>What is your name?</p>
+        <div className={styles.inputGroup}>
           <input
             type="text"
-            style={inputStyle}
+            className={styles.input}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Your name"
             autoFocus
-            disabled={isSubmitting || saving}
+            disabled={saving}
             aria-label="Your name"
             aria-describedby={error ? 'prompt-error' : undefined}
           />
           {error && (
-            <p id="prompt-error" style={errorStyle} role="alert">
+            <p id="prompt-error" className={styles.errorText} role="alert">
               {error}
             </p>
           )}
           <button
+            className={styles.button}
             style={{
-              ...buttonStyle,
               opacity: disabled ? 0.4 : 1,
               cursor: disabled ? 'not-allowed' : 'pointer',
             }}
@@ -146,7 +148,7 @@ export function OperatorNamePrompt({
             disabled={disabled}
             aria-label="Get started"
           >
-            {isSubmitting || saving ? 'Saving...' : 'Get Started'}
+            {saving ? 'Saving...' : 'Get Started'}
           </button>
         </div>
       </div>

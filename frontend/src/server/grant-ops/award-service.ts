@@ -231,7 +231,8 @@ async function _getSpendDownAlerts(): Promise<
     if (award.status !== 'active') continue;
 
     const awardCats = categories.filter((c) => c.awardId === award.id);
-    const now = new Date();
+    const deps = getDependencies();
+  const now = deps.clock.now();
     const start = new Date(award.startDate);
     const end = new Date(award.endDate);
     const periodProgress = Math.min(
@@ -272,7 +273,8 @@ export async function computeBudgetVsActual(awardId: string): Promise<BudgetVsAc
   const award = await getAward(awardId);
   if (!award) return [];
 
-  const now = new Date();
+  const deps = getDependencies();
+  const now = deps.clock.now();
   const start = new Date(award.startDate);
   const end = new Date(award.endDate);
   const periodProgress = Math.min(
@@ -328,7 +330,8 @@ export async function getComplianceCalendar(): Promise<ComplianceCalendarEvent[]
   const awards = await loadAwards();
   const deadlines = await loadAwardReportDeadlines();
   const items = await loadAwardComplianceItems();
-  const now = new Date();
+  const deps = getDependencies();
+  const now = deps.clock.now();
   const fourteenDays = 14 * 24 * 60 * 60 * 1000;
 
   const events: ComplianceCalendarEvent[] = [];

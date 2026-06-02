@@ -120,7 +120,7 @@
 }
 
 .docClassCanonical {
-  background: color-mix(in srgb, var(--success) 13%, transparent);
+  background: var(--success-bg);
   color: var(--success);
 }
 
@@ -130,12 +130,12 @@
 }
 
 .docClassArchived {
-  background: color-mix(in srgb, var(--warning) 13%, transparent);
+  background: var(--warning-bg);
   color: var(--warning);
 }
 
 .docClassRestricted {
-  background: color-mix(in srgb, var(--danger) 13%, transparent);
+  background: var(--danger-bg);
   color: var(--danger);
 }
 

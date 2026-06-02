@@ -29,7 +29,7 @@
 }
 
 .outcomeForm {
-  background: rgba(212, 169, 67, 0.06);
+  background: var(--accent-bg-dim);
   border: 1px solid var(--accent-dim);
   border-radius: var(--radius);
   padding: 12px;
@@ -116,17 +116,17 @@
 }
 
 .statusBadgeCompleted {
-  background: color-mix(in srgb, var(--success) 13%, transparent);
+  background: var(--success-bg);
   color: var(--success);
 }
 
 .statusBadgeOverdue {
-  background: color-mix(in srgb, var(--danger) 13%, transparent);
+  background: var(--danger-bg);
   color: var(--danger);
 }
 
 .statusBadgePending {
-  background: color-mix(in srgb, var(--warning) 13%, transparent);
+  background: var(--warning-bg);
   color: var(--warning);
 }
 
