@@ -74,6 +74,14 @@ echo "✓ port 3000 cleared"
 bash ./scripts/verify-opencode-backend.sh >/dev/null 2>&1
 echo "✓ real backend proof passed"
 
+# Banned-font check — only design-token fonts allowed (Fraunces, Funnel Sans, JetBrains Mono)
+BANNED_FONTS='\bInter\b|\bRoboto\b|\bArial\b|Space Grotesk'
+if grep -rnE "$BANNED_FONTS" --include='*.css' frontend/src/ 2>/dev/null | grep -v 'node_modules' >/dev/null 2>&1; then
+  echo "Banned font (Inter, Roboto, Arial, Space Grotesk) found in stylesheets" >&2
+  exit 1
+fi
+echo "✓ banned-font audit passed"
+
 AUDIT_NAME="$(printf '%s%s' ele ctron)"
 AUDIT_PATTERN="(^|[^[:alnum:]])${AUDIT_NAME}([^[:alnum:]]|$)"
 if rg -n --hidden -i -P "$AUDIT_PATTERN" package.json frontend/package.json eslint.config.mjs frontend/next.config.ts playwright.config.ts scripts frontend/src tests -g '!**/node_modules/**' -g '!**/.next/**' -g '!**/playwright-report/**' -g '!**/test-results/**' -g '!**/.git/**' >/dev/null 2>&1; then
