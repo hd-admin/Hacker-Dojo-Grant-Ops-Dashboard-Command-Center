@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import { getByRole, getByText } from '../test-helpers';
+import { getByRole, getByText, queryByRole } from '../test-helpers';
 
 describe('OperatorNamePrompt', () => {
   let container: HTMLDivElement;
@@ -158,7 +158,7 @@ describe('OperatorNamePrompt', () => {
     root.render(React.createElement(OperatorNamePrompt, { onComplete }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const dialog = container.querySelector('[role="dialog"]');
+    const dialog = queryByRole(container, 'dialog');
     expect(dialog).toBeNull();
     expect(onComplete).toHaveBeenCalledWith('ServerUser');
   });

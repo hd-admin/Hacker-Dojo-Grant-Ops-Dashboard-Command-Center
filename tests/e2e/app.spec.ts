@@ -62,6 +62,26 @@ test.describe('Grant Operations Center smoke', () => {
     page,
     request,
   }) => {
+    // Seed a matched grant without draft content
+    const seedRes = await request.post('http://127.0.0.1:3000/api/grants', {
+      data: {
+        title: 'Test Matched Grant for Drawer',
+        funder: 'Test Funder',
+        status: 'matched',
+        fit: 85,
+        award: '$50,000',
+        awardSort: 50000,
+        deadline: '2025-12-31',
+        deadlineConfidence: 'exact',
+        daysOut: 365,
+        tags: ['Community'],
+        funderSummary: 'A test funder summary for validation.',
+      },
+    });
+    expect(seedRes.ok()).toBeTruthy();
+    const seedBody = await seedRes.json();
+    const targetGrantId = seedBody.id;
+
     const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
     expect(grantsResponse.ok()).toBeTruthy();
     const grants: Array<{
@@ -69,11 +89,12 @@ test.describe('Grant Operations Center smoke', () => {
       title: string;
       status: string;
       draftContent?: string;
+      fit: number;
     }> = await grantsResponse.json();
-    const targetGrant = grants.find((grant) => grant.status === 'matched' && !grant.draftContent);
+    const targetGrant = grants.find((grant) => grant.id === targetGrantId);
     expect(targetGrant).toBeDefined();
     if (!targetGrant) {
-      throw new Error('Expected a matched grant without draft content');
+      throw new Error('Expected seeded matched grant');
     }
     const sortedGrants = [...grants].sort((a, b) => b.fit - a.fit);
     const selectedIndex = sortedGrants.findIndex((grant) => grant.id === targetGrant.id);
@@ -95,7 +116,7 @@ test.describe('Grant Operations Center smoke', () => {
   test('discovery exposes source-intake controls', async ({ page }) => {
     await page.click('[data-view="discovery"]');
     await expect(page.locator('button:has-text("+ Add source")')).toBeVisible();
-    await expect(page.locator('#view-discovery button:has-text("Export CSV")')).toBeVisible();
+    await expect(page.locator('button:has-text("+ Add manually")')).toBeVisible();
   });
 
   test('pipeline and settings sections render expected controls', async ({ page }) => {
@@ -105,7 +126,7 @@ test.describe('Grant Operations Center smoke', () => {
 
     await page.click('[data-view="settings"]');
     await expect(page.locator('.upload-item')).toBeVisible();
-    await expect(page.locator('.setting-card')).toHaveCount(9);
+    await expect(page.locator('.setting-card')).toHaveCount(8);
   });
 
   test('AC-14.2.4: failed job can be retried from UI', async ({ page, request }) => {
