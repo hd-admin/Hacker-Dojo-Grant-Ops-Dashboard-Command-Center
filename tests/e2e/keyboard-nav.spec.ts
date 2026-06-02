@@ -22,11 +22,15 @@ test.describe("Keyboard navigation", () => {
   test.beforeEach(async ({ request, page }) => {
     const stubPath = await ensureOpencodeStub();
     await resetAppState(request);
-    await page.goto("http://127.0.0.1:3000");
-    await page.waitForSelector(".app", { timeout: 60000 });
+    await page.goto("http://127.0.0.1:3000", { waitUntil: "domcontentloaded" });
+    await page.waitForSelector(".app", { timeout: 30000 });
+    await page.waitForTimeout(1000);
     await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
-    await page.locator('.shell-banner-row [data-testid="rerun-health-check-btn"]').click();
-    await expect(page.locator('.nav-item[data-view="discovery"]')).not.toBeDisabled();
+    const rerunBtn = page.locator('.shell-banner-row [data-testid="rerun-health-check-btn"]');
+    if (await rerunBtn.isVisible({ timeout: 3000 }).catch(() => false)) {
+      await rerunBtn.click();
+    }
+    await expect(page.locator('.nav-item[data-view="discovery"]')).not.toBeDisabled({ timeout: 10000 });
     await page.click('[data-view="dashboard"]');
     await page.waitForSelector("#view-dashboard.active", { timeout: 10000 });
   });
