@@ -5,6 +5,18 @@
   margin-left: 4px;
 }
 
+.fitScoreHigh {
+  color: var(--success);
+}
+
+.fitScoreMedium {
+  color: var(--accent);
+}
+
+.fitScoreLow {
+  color: var(--text);
+}
+
 .deadlineConfidenceBadgeEstimated {
   composes: deadlineConfidenceBadge;
   color: var(--text-muted);

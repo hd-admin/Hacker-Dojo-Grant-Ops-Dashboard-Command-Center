@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import { getByText } from '../test-helpers';
+import { getAllByRole, getByText, queryByRole } from '../test-helpers';
 import { ComplianceCalendar } from './ComplianceCalendar';
 
 let container: HTMLDivElement;
@@ -35,7 +35,7 @@ describe('ComplianceCalendar', () => {
     vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})));
     root.render(<ComplianceCalendar />);
     await waitFor(
-      () => container.querySelector('[data-testid="compliance-calendar-loading"]') !== null,
+      () => queryByRole(container, 'status', { name: 'Loading compliance calendar' }) !== null,
     );
     expect(getByText(container, 'Loading')).not.toBeNull();
     vi.unstubAllGlobals();
@@ -67,11 +67,9 @@ describe('ComplianceCalendar', () => {
       ),
     );
     root.render(<ComplianceCalendar awardId="award-1" />);
-    await waitFor(() => container.querySelector('[data-testid="compliance-calendar"]') !== null);
-    expect(container.querySelector('[data-testid="compliance-item-item-1"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="compliance-item-item-2"]')).not.toBeNull();
-    expect(container.textContent).toContain('Quarterly Update');
-    expect(container.textContent).toContain('Annual Report');
+    await waitFor(() => getAllByRole(container, 'listitem').length === 2);
+    expect(getByText(container, 'Quarterly Update')).not.toBeNull();
+    expect(getByText(container, 'Annual Report')).not.toBeNull();
     vi.unstubAllGlobals();
   });
 
@@ -94,7 +92,7 @@ describe('ComplianceCalendar', () => {
       ),
     );
     root.render(<ComplianceCalendar />);
-    await waitFor(() => container.querySelector('[data-testid="compliance-calendar"]') !== null);
+    await waitFor(() => getAllByRole(container, 'listitem').length === 1);
     expect(container.textContent).toContain('overdue');
     vi.unstubAllGlobals();
   });
@@ -102,7 +100,7 @@ describe('ComplianceCalendar', () => {
   it('handles fetch error gracefully', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
     root.render(<ComplianceCalendar />);
-    await waitFor(() => container.querySelector('[data-testid="compliance-calendar"]') !== null);
+    await waitFor(() => queryByRole(container, 'region', { name: 'Compliance Calendar' }) !== null);
     expect(container.textContent).toContain('Compliance Calendar');
     vi.unstubAllGlobals();
   });

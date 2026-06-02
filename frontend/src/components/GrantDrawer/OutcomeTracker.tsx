@@ -65,7 +65,7 @@ export function OutcomeTracker({
           </button>
         </div>
         {overrideField && (
-          <div className="override-panel">
+          <div className="override-panel" role="group" aria-label="Override panel">
             <div className="drawer-note">Provide a rationale before saving.</div>
             {overrideField === 'fit' ? (
               <input
@@ -134,9 +134,9 @@ export function OutcomeTracker({
 
       <div className="drawer-section">
         <h3>Audit Trail</h3>
-        <div className="activity-list">
+        <div className="activity-list" role="list">
           {auditEvents.slice(0, 10).map((event) => (
-            <div key={event.id} className="activity-item">
+            <div key={event.id} className="activity-item" role="listitem">
               <div>
                 <div className="activity-text">
                   <strong>{event.eventType}</strong> · {event.actorLabel}

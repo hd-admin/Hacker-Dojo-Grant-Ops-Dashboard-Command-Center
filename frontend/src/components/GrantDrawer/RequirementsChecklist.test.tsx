@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { ChecklistItem } from '../../../../shared/types';
 import { RequirementsChecklist } from './RequirementsChecklist';
+import { getByRole, getAllByRole, queryByRole } from '../../test-helpers';
 
 async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
   const start = Date.now();
@@ -39,7 +40,7 @@ describe('RequirementsChecklist', () => {
   it('renders all checklist items with labels and sources', async () => {
     const checklist = makeChecklist();
     root.render(React.createElement(RequirementsChecklist, { checklist }));
-    await waitFor(() => container.querySelectorAll('.checklist-item').length === 3);
+    await waitFor(() => getAllByRole(container, 'checkbox').length === 3);
 
     expect(container.textContent).toContain('Funder summary captured');
     expect(container.textContent).toContain('Research');
@@ -52,38 +53,40 @@ describe('RequirementsChecklist', () => {
   it('renders the section heading with accessible text', async () => {
     const checklist = makeChecklist();
     root.render(React.createElement(RequirementsChecklist, { checklist }));
-    await waitFor(() => container.querySelector('h3') !== null);
-    expect(container.querySelector('h3')?.textContent).toBe('Requirements checklist');
+    await waitFor(() => queryByRole(container, 'heading') !== null);
+    expect(getByRole(container, 'heading').textContent).toBe('Requirements checklist');
   });
 
-  it("marks done items with the 'done' class", async () => {
+  it('marks done items as checked', async () => {
     const checklist = makeChecklist();
     root.render(React.createElement(RequirementsChecklist, { checklist }));
-    await waitFor(() => container.querySelectorAll('.checklist-item').length === 3);
-    expect(container.querySelectorAll('.checklist-item.done').length).toBe(2);
+    await waitFor(() => getAllByRole(container, 'checkbox').length === 3);
+    const items = getAllByRole(container, 'checkbox');
+    expect(items[0]?.getAttribute('aria-checked')).toBe('true');
+    expect(items[1]?.getAttribute('aria-checked')).toBe('true');
   });
 
-  it('does not mark incomplete items as done', async () => {
+  it('does not mark incomplete items as checked', async () => {
     const checklist = makeChecklist();
     root.render(React.createElement(RequirementsChecklist, { checklist }));
-    await waitFor(() => container.querySelectorAll('.checklist-item').length === 3);
-    const items = container.querySelectorAll('.checklist-item:not(.done)');
-    expect(items.length).toBe(1);
-    expect(items[0]?.textContent).toContain('Draft preview ready');
+    await waitFor(() => getAllByRole(container, 'checkbox').length === 3);
+    const items = getAllByRole(container, 'checkbox');
+    expect(items[2]?.getAttribute('aria-checked')).toBe('false');
+    expect(items[2]?.getAttribute('aria-label')).toBe('Draft preview ready');
   });
 
   it('renders empty checklist without errors', async () => {
     root.render(React.createElement(RequirementsChecklist, { checklist: [] }));
-    await waitFor(() => container.querySelector('.checklist-list') !== null);
+    await waitFor(() => queryByRole(container, 'heading') !== null);
     expect(container.textContent).toContain('Requirements checklist');
-    expect(container.querySelectorAll('.checklist-item').length).toBe(0);
+    expect(getAllByRole(container, 'checkbox').length).toBe(0);
   });
 
   it('shows checkmark character for done items and circle for pending', async () => {
     const checklist = makeChecklist();
     root.render(React.createElement(RequirementsChecklist, { checklist }));
-    await waitFor(() => container.querySelectorAll('.checklist-item').length === 3);
-    const items = container.querySelectorAll('.checklist-item');
+    await waitFor(() => getAllByRole(container, 'checkbox').length === 3);
+    const items = getAllByRole(container, 'checkbox');
     expect(items[0]?.textContent).toContain('\u2713');
     expect(items[1]?.textContent).toContain('\u2713');
     expect(items[2]?.textContent).toContain('\u25CB');

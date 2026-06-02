@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { AuditEvent, GrantDetailResponse } from '../../../../shared/types';
 import { OutcomeTracker } from './OutcomeTracker';
+import { getByRole, getAllByRole, getByText, queryByRole, queryByText } from '../../test-helpers';
 
 async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
   const start = Date.now();
@@ -109,22 +110,19 @@ describe('OutcomeTracker', () => {
 
   it('renders human overrides section with accessible heading', async () => {
     root.render(React.createElement(OutcomeTracker, defaultProps()));
-    await waitFor(() => container.querySelector('h3') !== null);
-    expect(container.textContent).toContain('Human overrides');
+    await waitFor(() => getAllByRole(container, 'heading').length >= 2);
+    expect(queryByText(container, 'Human overrides')).not.toBeNull();
   });
 
   it('shows override buttons', async () => {
     root.render(React.createElement(OutcomeTracker, defaultProps()));
-    await waitFor(() => container.querySelector("[data-testid='override-fit-score-btn']") !== null);
-    const buttonTexts = Array.from(container.querySelectorAll('.drawer-actions button')).map(
-      (b) => b.textContent,
-    );
-    expect(buttonTexts).toContain('Override fit score');
-    expect(buttonTexts).toContain('Override category');
-    expect(buttonTexts).toContain('Override status');
+    await waitFor(() => queryByRole(container, 'button', { name: 'Override fit score' }) !== null);
+    expect(getByRole(container, 'button', { name: 'Override fit score' })).not.toBeNull();
+    expect(getByRole(container, 'button', { name: 'Override category' })).not.toBeNull();
+    expect(getByRole(container, 'button', { name: 'Override status' })).not.toBeNull();
   });
 
-  it('opens override panel when override-fit-score-btn is clicked', async () => {
+  it('opens override panel when override fit score button is clicked', async () => {
     const setOverrideField = vi.fn();
     const setOverrideValue = vi.fn();
     const setOverrideRationale = vi.fn();
@@ -136,10 +134,8 @@ describe('OutcomeTracker', () => {
         setOverrideRationale,
       }),
     );
-    await waitFor(() => container.querySelector("[data-testid='override-fit-score-btn']") !== null);
-    (
-      container.querySelector("[data-testid='override-fit-score-btn']") as HTMLButtonElement
-    )?.click();
+    await waitFor(() => queryByRole(container, 'button', { name: 'Override fit score' }) !== null);
+    getByRole(container, 'button', { name: 'Override fit score' }).click();
     expect(setOverrideField).toHaveBeenCalledWith('fit');
     expect(setOverrideValue).toHaveBeenCalledWith('88');
     expect(setOverrideRationale).toHaveBeenCalledWith('');
@@ -157,12 +153,8 @@ describe('OutcomeTracker', () => {
         setOverrideRationale: vi.fn(),
       }),
     );
-    await waitFor(() => container.textContent?.includes('Override category') === true);
-    (
-      Array.from(container.querySelectorAll('.drawer-actions button')).find(
-        (btn) => btn.textContent === 'Override category',
-      ) as HTMLButtonElement
-    )?.click();
+    await waitFor(() => queryByText(container, 'Override category') !== null);
+    getByRole(container, 'button', { name: 'Override category' }).click();
     expect(setOverrideField).toHaveBeenCalledWith('category');
   });
 
@@ -178,12 +170,8 @@ describe('OutcomeTracker', () => {
         setOverrideRationale: vi.fn(),
       }),
     );
-    await waitFor(() => container.textContent?.includes('Override status') === true);
-    (
-      Array.from(container.querySelectorAll('.drawer-actions button')).find(
-        (btn) => btn.textContent === 'Override status',
-      ) as HTMLButtonElement
-    )?.click();
+    await waitFor(() => queryByText(container, 'Override status') !== null);
+    getByRole(container, 'button', { name: 'Override status' }).click();
     expect(setOverrideField).toHaveBeenCalledWith('status');
   });
 
@@ -196,10 +184,8 @@ describe('OutcomeTracker', () => {
         overrideRationale: 'Adjusted',
       }),
     );
-    await waitFor(() => container.querySelector('.override-panel') !== null);
-    expect(container.querySelector('.override-panel')?.textContent).toContain(
-      'Provide a rationale before saving.',
-    );
+    await waitFor(() => queryByRole(container, 'group', { name: 'Override panel' }) !== null);
+    expect(getByText(container, 'Provide a rationale before saving.')).not.toBeNull();
   });
 
   it('shows Cancel and Save override buttons in the panel', async () => {
@@ -211,12 +197,9 @@ describe('OutcomeTracker', () => {
         overrideRationale: 'Test',
       }),
     );
-    await waitFor(() => container.querySelector('.override-panel') !== null);
-    const buttonTexts = Array.from(container.querySelectorAll('.override-panel button')).map(
-      (b) => b.textContent,
-    );
-    expect(buttonTexts).toContain('Save override');
-    expect(buttonTexts).toContain('Cancel');
+    await waitFor(() => queryByRole(container, 'group', { name: 'Override panel' }) !== null);
+    expect(getByRole(container, 'button', { name: 'Save override' })).not.toBeNull();
+    expect(getByRole(container, 'button', { name: 'Cancel' })).not.toBeNull();
   });
 
   it('calls handleSubmitOverride when Save override is clicked', async () => {
@@ -230,12 +213,8 @@ describe('OutcomeTracker', () => {
         handleSubmitOverride,
       }),
     );
-    await waitFor(() => container.textContent?.includes('Save override') === true);
-    (
-      Array.from(container.querySelectorAll('.override-panel button')).find(
-        (btn) => btn.textContent === 'Save override',
-      ) as HTMLButtonElement
-    )?.click();
+    await waitFor(() => queryByRole(container, 'button', { name: 'Save override' }) !== null);
+    getByRole(container, 'button', { name: 'Save override' }).click();
     expect(handleSubmitOverride).toHaveBeenCalled();
   });
 
@@ -254,12 +233,8 @@ describe('OutcomeTracker', () => {
         setOverrideRationale,
       }),
     );
-    await waitFor(() => container.textContent?.includes('Cancel') === true);
-    (
-      Array.from(container.querySelectorAll('.override-panel button')).find(
-        (btn) => btn.textContent === 'Cancel',
-      ) as HTMLButtonElement
-    )?.click();
+    await waitFor(() => queryByRole(container, 'button', { name: 'Cancel' }) !== null);
+    getByRole(container, 'button', { name: 'Cancel' }).click();
     expect(setOverrideField).toHaveBeenCalledWith(null);
     expect(setOverrideValue).toHaveBeenCalledWith('');
     expect(setOverrideRationale).toHaveBeenCalledWith('');
@@ -267,7 +242,7 @@ describe('OutcomeTracker', () => {
 
   it('renders audit trail section with events', async () => {
     root.render(React.createElement(OutcomeTracker, defaultProps()));
-    await waitFor(() => container.textContent?.includes('Audit Trail') === true);
+    await waitFor(() => queryByText(container, 'Audit Trail') !== null);
     expect(container.textContent).toContain('fit-override');
     expect(container.textContent).toContain('Operator');
   });
@@ -284,12 +259,12 @@ describe('OutcomeTracker', () => {
     root.render(
       React.createElement(OutcomeTracker, { ...defaultProps(), auditEvents: manyEvents }),
     );
-    await waitFor(() => container.querySelectorAll('.activity-item').length === 10);
+    await waitFor(() => getAllByRole(container, 'listitem').length === 10);
   });
 
   it('renders empty audit trail without errors', async () => {
     root.render(React.createElement(OutcomeTracker, { ...defaultProps(), auditEvents: [] }));
-    await waitFor(() => container.textContent?.includes('Audit Trail') === true);
-    expect(container.querySelectorAll('.activity-item').length).toBe(0);
+    await waitFor(() => queryByText(container, 'Audit Trail') !== null);
+    expect(getAllByRole(container, 'listitem').length).toBe(0);
   });
 });

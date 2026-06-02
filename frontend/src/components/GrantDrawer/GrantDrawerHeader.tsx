@@ -48,15 +48,7 @@ export function GrantDrawerHeader({ grant, onClose }: GrantDrawerHeaderProps) {
         <div className="meta-item">
           <div className="meta-label">Fit Score</div>
           <div
-            className="meta-value"
-            style={{
-              color:
-                grant.fit >= 85
-                  ? 'var(--success)'
-                  : grant.fit >= 70
-                    ? 'var(--accent)'
-                    : 'var(--text)',
-            }}
+            className={`meta-value ${grant.fit >= 85 ? styles.fitScoreHigh : grant.fit >= 70 ? styles.fitScoreMedium : styles.fitScoreLow}`}
           >
             {grant.fit}
             {grant.humanOverrides?.some((override) => override.field === 'fit') && (

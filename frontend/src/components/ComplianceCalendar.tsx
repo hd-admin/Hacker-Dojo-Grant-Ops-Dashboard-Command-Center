@@ -41,7 +41,7 @@ export function ComplianceCalendar({ awardId }: ComplianceCalendarProps) {
 
   if (loading)
     return (
-      <div className="compliance-calendar" data-testid="compliance-calendar-loading">
+      <div className="compliance-calendar" role="status" aria-label="Loading compliance calendar">
         Loading...
       </div>
     );
@@ -51,18 +51,14 @@ export function ComplianceCalendar({ awardId }: ComplianceCalendarProps) {
   );
 
   return (
-    <div className="compliance-calendar" data-testid="compliance-calendar">
+    <div className="compliance-calendar" role="region" aria-label="Compliance Calendar">
       <div className="calendar-header">Compliance Calendar</div>
-      <div className="calendar-list">
+      <div className="calendar-list" role="list">
         {sorted.map((item) => {
           const isOverdue = new Date(item.dueDate) < new Date() && item.status !== 'submitted';
           const statusClass = isOverdue ? 'overdue' : item.status;
           return (
-            <div
-              key={item.id}
-              className={`calendar-item ${statusClass}`}
-              data-testid={`compliance-item-${item.id}`}
-            >
+            <div key={item.id} className={`calendar-item ${statusClass}`} role="listitem">
               <div className="calendar-date">{new Date(item.dueDate).toLocaleDateString()}</div>
               <div className="calendar-title">{item.title}</div>
               <div className={`calendar-status ${statusClass}`}>

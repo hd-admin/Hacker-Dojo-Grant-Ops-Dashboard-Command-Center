@@ -103,8 +103,8 @@ describe('JobsPanel', () => {
 
     const statusFilter = getByRole(container, 'tablist', { name: 'Filter by job status' });
     expect(statusFilter).not.toBeNull();
-    const buttons = statusFilter.querySelectorAll('button');
-    expect(buttons.length).toBe(6); // All, Queued, Running, Completed, Failed, Cancelled
+    const tabs = getAllByRole(statusFilter, 'tab');
+    expect(tabs.length).toBe(6); // All, Queued, Running, Completed, Failed, Cancelled
   });
 
   it('renders type filter tabs', async () => {
@@ -113,8 +113,8 @@ describe('JobsPanel', () => {
 
     const typeFilter = getByRole(container, 'tablist', { name: 'Filter by job type' });
     expect(typeFilter).not.toBeNull();
-    const buttons = typeFilter.querySelectorAll('button');
-    expect(buttons.length).toBe(10); // All + 9 job types
+    const tabs = getAllByRole(typeFilter, 'tab');
+    expect(tabs.length).toBe(10); // All + 9 job types
   });
 
   it('renders job items with progress bars', async () => {
@@ -130,9 +130,9 @@ describe('JobsPanel', () => {
     await new Promise((r) => setTimeout(r, 100));
 
     // Expand the failed job card to see failure guidance
-    const toggleBtn = container.querySelector(
-      'button[aria-label="Toggle details for research job job-3"]',
-    ) as HTMLButtonElement | null;
+    const toggleBtn = getByRole(container, 'button', {
+      name: /Toggle details for research job job-3/,
+    });
     toggleBtn?.click();
     await new Promise((r) => setTimeout(r, 100));
     // Failure guidance should include the category and description
@@ -145,7 +145,8 @@ describe('JobsPanel', () => {
 
     // Click "Failed" filter
     const statusFilter = getByRole(container, 'tablist', { name: 'Filter by job status' });
-    const failedBtn = Array.from(statusFilter.querySelectorAll('button')).find((b) =>
+    const tabs = getAllByRole(statusFilter, 'tab');
+    const failedBtn = tabs.find((b) =>
       b.textContent?.toLowerCase().includes('failed'),
     ) as HTMLButtonElement | null;
     expect(failedBtn).not.toBeNull();
@@ -163,7 +164,8 @@ describe('JobsPanel', () => {
 
     // Click "Draft" type filter
     const typeFilter = getByRole(container, 'tablist', { name: 'Filter by job type' });
-    const draftBtn = Array.from(typeFilter.querySelectorAll('button')).find((b) =>
+    const tabs = getAllByRole(typeFilter, 'tab');
+    const draftBtn = tabs.find((b) =>
       b.textContent?.toLowerCase().includes('draft'),
     ) as HTMLButtonElement | null;
     expect(draftBtn).not.toBeNull();

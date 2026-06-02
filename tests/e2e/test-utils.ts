@@ -35,14 +35,22 @@ export async function saveProfileThroughSettingsView(_page: Page, _mission: stri
   // Profile is hardcoded — no-op
 }
 
-// DEPRECATED: /api/opencode-settings removed in v2.
-// Use opencode-stub.sh in PATH instead (via playwright-start.sh).
+// Configures opencode settings via testing API for E2E tests.
+// The /api/opencode-settings UI endpoint was removed in v2, so we use
+// a testing-only endpoint to set the required configuration.
 export async function configureOpencodeThroughSettingsView(
-  _page: Page,
-  _binaryPath: string,
-  _workingDirectory: string,
+  page: Page,
+  binaryPath: string,
+  workingDirectory: string,
 ): Promise<void> {
-  // OpenCode is auto-detected or uses stub — no-op
+  const response = await page.request.fetch(`${BASE_URL}/api/testing/configure-opencode`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: { binaryPath, workingDirectory },
+  });
+  if (!response.ok()) {
+    throw new Error(`Failed to configure opencode: ${response.status()}`);
+  }
 }
 
 export async function markScheduleDue(request: APIRequestContext, sourceId: string): Promise<void> {
