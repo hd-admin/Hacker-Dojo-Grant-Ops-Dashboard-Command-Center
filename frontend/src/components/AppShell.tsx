@@ -248,7 +248,7 @@ export function AppShell() {
     }
   }, []);
 
-  const loadActiveJobs = useCallback(async (): Promise<void> => {
+  const loadActiveJobs = useCallback(async (): Promise<JobQueueItem[]> => {
     try {
       const response = await fetch('/api/jobs');
       const data = (await response.json()) as JobQueueItem[];
@@ -279,8 +279,10 @@ export function AppShell() {
         nextStatuses[job.id] = job.status;
       }
       previousJobStatuses.current = nextStatuses;
+      return active;
     } catch {
       setActiveJobs([]);
+      return [];
     }
   }, [addToast]);
 
@@ -405,24 +407,15 @@ export function AppShell() {
   // Safe quit: beforeunload handler
   useEffect(() => {
     const handler = async (e: BeforeUnloadEvent) => {
-      await loadActiveJobs();
-      // Check if there are active jobs after load
-      const currentActiveJobs = activeJobs.filter(
-        (job) =>
-          job.status === 'queued' ||
-          job.status === 'running' ||
-          job.status === 'verifying' ||
-          job.status === 'retrying',
-      );
-      if (currentActiveJobs.length > 0) {
+      const freshlyLoadedJobs = await loadActiveJobs();
+      if (freshlyLoadedJobs.length > 0) {
         e.preventDefault();
         e.returnValue = '';
-        // Mark interrupted jobs as incomplete
         try {
           await fetch('/api/jobs/interrupt', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ jobIds: currentActiveJobs.map((j) => j.id) }),
+            body: JSON.stringify({ jobIds: freshlyLoadedJobs.map((j) => j.id) }),
           });
         } catch {
           // Best effort
@@ -432,7 +425,7 @@ export function AppShell() {
 
     window.addEventListener('beforeunload', handler);
     return () => window.removeEventListener('beforeunload', handler);
-  }, [activeJobs, loadActiveJobs]);
+  }, [loadActiveJobs]);
 
   // Keyboard navigation: Escape to close drawer
   useEffect(() => {
