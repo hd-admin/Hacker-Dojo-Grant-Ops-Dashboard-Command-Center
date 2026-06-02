@@ -1,3 +1,4 @@
+import { connection } from 'next/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { invalidateCache, withTempDataDir } from '../../../../../shared/grant-ops-persistence';
@@ -115,5 +116,29 @@ describe('/api/health route', () => {
     expect(response.status).toBe(200);
     expect(data.storage).toBe('ok');
     expect(data.opencode).toBe('ok');
+  });
+
+  it('returns JSON error response when connection fails', async () => {
+    vi.mocked(connection).mockRejectedValueOnce(new Error('connection unavailable'));
+
+    const response = await GET();
+
+    expect(vi.mocked(connection)).toHaveBeenCalled();
+    expect(response.status).toBe(500);
+    const data = (await response.json()) as { error: string; code: string };
+    expect(data.error).toBe('Failed to get health status');
+    expect(data.code).toBe('STORAGE_UNAVAILABLE');
+    expect(getHealthMock).not.toHaveBeenCalled();
+  });
+
+  it('returns JSON error response when getHealth throws', async () => {
+    getHealthMock.mockRejectedValue(new Error('health service failure'));
+
+    const response = await GET();
+
+    expect(response.status).toBe(500);
+    const data = (await response.json()) as { error: string; code: string };
+    expect(data.error).toBe('Failed to get health status');
+    expect(data.code).toBe('STORAGE_UNAVAILABLE');
   });
 });

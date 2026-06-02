@@ -39,7 +39,7 @@ vi.mock('next/server', async () => {
   const actual = await vi.importActual('next/server');
   return {
     ...(actual as object),
-    connection: async () => {},
+    connection: vi.fn(async () => {}),
   };
 });
 

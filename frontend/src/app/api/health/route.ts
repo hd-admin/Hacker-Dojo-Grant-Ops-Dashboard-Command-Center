@@ -8,8 +8,8 @@ import { ensureProPublicaSourceRegistered } from '@/server/grant-ops/propublica-
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  await connection();
   try {
+    await connection();
     const deps = getDependencies();
     const result = await getHealth(deps);
     try {

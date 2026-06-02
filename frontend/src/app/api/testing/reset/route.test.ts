@@ -4,7 +4,8 @@
  * Tests the /api/testing/reset POST route for resetting persistent state.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { connection } from 'next/server';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   createDependencies,
   resetDependencies,
@@ -128,5 +129,17 @@ describe('/api/testing/reset route', () => {
 
     const jobsAfter = await repository.getJobQueue();
     expect(jobsAfter.length).toBe(0);
+  });
+
+  it('returns JSON error response when connection fails', async () => {
+    vi.mocked(connection).mockRejectedValueOnce(new Error('connection unavailable'));
+
+    const response = await POST();
+
+    expect(vi.mocked(connection)).toHaveBeenCalled();
+    expect(response.status).toBe(500);
+    const data = (await response.json()) as { error: string; code: string };
+    expect(data.error).toBe('Failed to reset persistent state');
+    expect(data.code).toBe('RESET_FAILED');
   });
 });

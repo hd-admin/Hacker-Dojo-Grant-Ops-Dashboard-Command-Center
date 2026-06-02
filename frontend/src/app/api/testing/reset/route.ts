@@ -1,11 +1,21 @@
 import { NextResponse, connection } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import { createErrorResponse } from '@/lib/api-error-handler';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST() {
-  await connection();
-  const deps = getDependencies();
-  await deps.resetPersistentStateForTests();
-  return NextResponse.json({ success: true });
+  try {
+    await connection();
+    const deps = getDependencies();
+    await deps.resetPersistentStateForTests();
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    logger.error({ err: error }, 'Error resetting persistent state');
+    return NextResponse.json(
+      createErrorResponse('RESET_FAILED', 'Failed to reset persistent state'),
+      { status: 500 },
+    );
+  }
 }
