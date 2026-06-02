@@ -3,14 +3,21 @@ import { logger, getSessionLogPath } from '@/lib/logger';
 
 describe('logger', () => {
   describe('exports', () => {
-    it('exports the logger as a pino instance with callable log-level methods', () => {
+    it('exports the logger as a callable function with log-level methods', () => {
       expect(logger).toBeDefined();
+      expect(typeof logger).toBe('function');
       expect(typeof logger.info).toBe('function');
       expect(typeof logger.warn).toBe('function');
       expect(typeof logger.error).toBe('function');
       expect(typeof logger.debug).toBe('function');
       expect(typeof logger.fatal).toBe('function');
       expect(typeof logger.trace).toBe('function');
+    });
+
+    it('is callable as a function (plan Step 5 requirement)', () => {
+      expect(() => logger('hello from callable logger')).not.toThrow();
+      expect(() => logger({ key: 'value' }, 'with context')).not.toThrow();
+      expect(() => logger({ key: 'value' })).not.toThrow();
     });
 
     it('exports getSessionLogPath as a function', () => {

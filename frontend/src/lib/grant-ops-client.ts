@@ -7,6 +7,10 @@
 
 import type {
   ApprovalRecord,
+  Award,
+  AwardComplianceItem,
+  AwardExpense,
+  AwardReportDeadline,
   BackupFreshnessStatus,
   CrawlRun,
   DocumentMetadata,
@@ -436,6 +440,175 @@ const duplicatesApi = {
     }),
 };
 
+// ============ Awards API ============
+
+interface AwardsListResponse {
+  awards: Award[];
+}
+
+interface SpenddownAlertsResponse {
+  alerts: { awardId: string; type: 'under' | 'over'; category: string }[];
+}
+
+interface CalendarEventsResponse {
+  events: unknown[];
+}
+
+interface BudgetVsActualResponse {
+  rows: { category: string; budgeted: number; actual: number; variance: number; variancePct: number }[];
+}
+
+interface ExpensesResponse {
+  expenses: AwardExpense[];
+}
+
+interface ReportsResponse {
+  reports: AwardReportDeadline[];
+}
+
+interface ComplianceResponse {
+  compliance: AwardComplianceItem[];
+}
+
+interface CreateAwardRequest {
+  grantId: string;
+  funder: string;
+  title: string;
+  amount?: number;
+  startDate?: string;
+  endDate?: string;
+  status?: 'active' | 'completed' | 'terminated' | 'pending';
+  awardLetterPath?: string;
+  notes?: string;
+}
+
+interface CreateExpenseRequest {
+  awardId: string;
+  categoryId?: string;
+  description?: string;
+  amount?: number;
+  date?: string;
+  isPlanned?: number;
+  receiptPath?: string;
+}
+
+interface CreateExpenseForAwardRequest {
+  categoryId?: string;
+  description?: string;
+  amount?: number;
+  date?: string;
+  isPlanned?: number;
+  receiptPath?: string;
+}
+
+interface CreateReportRequest {
+  reportType?: string;
+  dueDate?: string;
+  status?: 'pending' | 'submitted' | 'overdue';
+  submittedAt?: string;
+  submittedBy?: string;
+  notes?: string;
+}
+
+interface CreateComplianceRequest {
+  requirement?: string;
+  dueDate?: string;
+  status?: 'pending' | 'completed' | 'overdue' | 'waived';
+  completedAt?: string;
+  notes?: string;
+}
+
+const awardsApi = {
+  getAll: () => apiFetch<AwardsListResponse>('/api/awards'),
+
+  create: (award: CreateAwardRequest) =>
+    apiFetch<{ award: Award }>('/api/awards', {
+      method: 'POST',
+      body: JSON.stringify(award),
+    }),
+
+  getSpenddownAlerts: () => apiFetch<SpenddownAlertsResponse>('/api/awards/spenddown-alerts'),
+
+  getCalendar: () => apiFetch<CalendarEventsResponse>('/api/awards/calendar'),
+
+  getExpenses: (awardId: string) =>
+    apiFetch<ExpensesResponse>(`/api/awards/expenses?awardId=${encodeURIComponent(awardId)}`),
+
+  createExpense: (expense: CreateExpenseRequest) =>
+    apiFetch<{ expense: AwardExpense }>('/api/awards/expenses', {
+      method: 'POST',
+      body: JSON.stringify(expense),
+    }),
+
+  getExpensesByAward: (awardId: string) =>
+    apiFetch<ExpensesResponse>(`/api/awards/${encodeURIComponent(awardId)}/expenses`),
+
+  createExpenseForAward: (awardId: string, expense: CreateExpenseForAwardRequest) =>
+    apiFetch<{ expense: AwardExpense }>(`/api/awards/${encodeURIComponent(awardId)}/expenses`, {
+      method: 'POST',
+      body: JSON.stringify(expense),
+    }),
+
+  getReports: (awardId: string) =>
+    apiFetch<ReportsResponse>(`/api/awards/${encodeURIComponent(awardId)}/reports`),
+
+  createReport: (awardId: string, report: CreateReportRequest) =>
+    apiFetch<{ report: AwardReportDeadline }>(`/api/awards/${encodeURIComponent(awardId)}/reports`, {
+      method: 'POST',
+      body: JSON.stringify(report),
+    }),
+
+  getBudgetVsActual: (awardId: string) =>
+    apiFetch<BudgetVsActualResponse>(`/api/awards/${encodeURIComponent(awardId)}/budget-vs-actual`),
+
+  getCompliance: (awardId: string) =>
+    apiFetch<ComplianceResponse>(`/api/awards/${encodeURIComponent(awardId)}/compliance`),
+
+  createCompliance: (awardId: string, item: CreateComplianceRequest) =>
+    apiFetch<{ compliance: AwardComplianceItem }>(`/api/awards/${encodeURIComponent(awardId)}/compliance`, {
+      method: 'PUT',
+      body: JSON.stringify(item),
+    }),
+};
+
+// ============ Settings API ============
+
+interface SettingsBody {
+  operatorName?: string;
+  agentSettings?: {
+    autoDraftThreshold?: number;
+    voiceAndTone?: string;
+    maxConcurrentJobs?: number;
+  };
+  crawlSettings?: {
+    intervalHours?: number;
+    maxConcurrentCrawls?: number;
+    requestDelayMs?: number;
+    respectRobotsTxt?: boolean;
+    userAgent?: string;
+  };
+  notificationSettings?: {
+    notifyEmail?: string;
+    notifyOnMatchAbove?: number;
+    notifyOnDeadlineDays?: number;
+  };
+  backupSchedule?: {
+    intervalHours?: number;
+    maxBackups?: number;
+    enabled?: boolean;
+  };
+}
+
+const settingsApi = {
+  get: () => apiFetch<Record<string, string>>('/api/settings'),
+
+  update: (settings: SettingsBody) =>
+    apiFetch<Record<string, string>>('/api/settings', {
+      method: 'PUT',
+      body: JSON.stringify(settings),
+    }),
+};
+
 // ============ Backup API ============
 
 interface BackupSnapshot {
@@ -496,6 +669,8 @@ function createGrantOpsClient() {
     duplicates: duplicatesApi,
     backup: backupApi,
     themes: themesApi,
+    awards: awardsApi,
+    settings: settingsApi,
   };
 }
 

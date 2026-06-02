@@ -60,6 +60,25 @@ describe('grant-ops-client', () => {
       expect(typeof client.tasks.create).toBe('function');
       expect(typeof client.tasks.override).toBe('function');
     });
+
+    it('has awards and settings method groups', () => {
+      expect(client.awards).toBeDefined();
+      expect(typeof client.awards.getAll).toBe('function');
+      expect(typeof client.awards.create).toBe('function');
+      expect(typeof client.awards.getSpenddownAlerts).toBe('function');
+      expect(typeof client.awards.getCalendar).toBe('function');
+      expect(typeof client.awards.getExpenses).toBe('function');
+      expect(typeof client.awards.createExpense).toBe('function');
+      expect(typeof client.awards.getBudgetVsActual).toBe('function');
+      expect(typeof client.awards.getCompliance).toBe('function');
+      expect(typeof client.awards.createCompliance).toBe('function');
+      expect(typeof client.awards.getReports).toBe('function');
+      expect(typeof client.awards.createReport).toBe('function');
+
+      expect(client.settings).toBeDefined();
+      expect(typeof client.settings.get).toBe('function');
+      expect(typeof client.settings.update).toBe('function');
+    });
   });
 
   describe('API calls via fetch', () => {
@@ -127,6 +146,67 @@ describe('grant-ops-client', () => {
       expect(options?.headers).toBeDefined();
       const headers = options?.headers as Headers;
       expect(headers.get('Content-Type')).toBe('application/json');
+    });
+
+    it('constructs the correct URL for awards.getAll', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ awards: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+      );
+
+      await client.awards.getAll();
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const fetchUrl = mockFetch.mock.calls[0]?.[0] as string;
+      expect(fetchUrl).toBe('/api/awards');
+    });
+
+    it('constructs the correct URL for awards.getExpenses with encoded awardId', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ expenses: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+      );
+
+      await client.awards.getExpenses('award-1');
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const fetchUrl = mockFetch.mock.calls[0]?.[0] as string;
+      expect(fetchUrl).toBe('/api/awards/expenses?awardId=award-1');
+    });
+
+    it('constructs the correct URL for awards.getBudgetVsActual with encoded awardId', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ rows: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+      );
+
+      await client.awards.getBudgetVsActual('award-2');
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const fetchUrl = mockFetch.mock.calls[0]?.[0] as string;
+      expect(fetchUrl).toBe('/api/awards/award-2/budget-vs-actual');
+    });
+
+    it('constructs the correct URL for settings.get', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+      );
+
+      await client.settings.get();
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const fetchUrl = mockFetch.mock.calls[0]?.[0] as string;
+      expect(fetchUrl).toBe('/api/settings');
+    });
+
+    it('sends PUT with JSON body for settings.update', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+      );
+
+      await client.settings.update({ operatorName: 'Alice' });
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const options = mockFetch.mock.calls[0]?.[1] as RequestInit | undefined;
+      expect(options?.method).toBe('PUT');
+      expect(JSON.parse(options?.body as string)).toEqual({ operatorName: 'Alice' });
     });
   });
 
