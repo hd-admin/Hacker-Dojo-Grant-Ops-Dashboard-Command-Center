@@ -166,13 +166,8 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
               return (
                 <div
                   key={candidate.id}
-                  className={`duplicate-card ${candidate.status} ${styles.duplicateCard}`}
+                  className={`duplicate-card ${candidate.status} ${styles.duplicateCard} ${isPending ? styles.pendingCard : styles.resolvedCard}`}
                   data-testid={`duplicate-card-${candidate.id}`}
-                  style={{
-                    border: `1px solid ${isPending ? 'var(--border)' : 'var(--border-dim)'}`,
-                    background: isPending ? 'var(--surface-1)' : 'var(--surface-2)',
-                    opacity: isPending ? 1 : 0.7,
-                  }}
                 >
                   <div className={styles.cardHeader}>
                     <div>
@@ -202,14 +197,8 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
                     </div>
                     <div className={styles.statusBadgeGroup}>
                       <span
-                        className={`status-badge ${styles.statusBadge}`}
+                        className={`status-badge ${styles.statusBadge} ${isPending ? styles.statusBadgePending : styles.statusBadgeResolved}`}
                         data-testid={`duplicate-status-${candidate.id}`}
-                        style={{
-                          background: isPending
-                            ? 'rgba(224, 137, 74, 0.12)'
-                            : 'rgba(138, 171, 111, 0.12)',
-                          color: isPending ? 'var(--warning)' : 'var(--success)',
-                        }}
                       >
                         {candidate.status}
                       </span>

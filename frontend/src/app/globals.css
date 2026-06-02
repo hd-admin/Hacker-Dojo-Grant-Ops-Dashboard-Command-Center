@@ -2775,6 +2775,10 @@ input.input-success:focus {
   line-height: 1.6;
 }
 
+.settings-status-guidance-desc--with-action {
+  margin-bottom: 10px;
+}
+
 .settings-status-guidance-action {
   font-size: 12px;
   color: var(--accent);

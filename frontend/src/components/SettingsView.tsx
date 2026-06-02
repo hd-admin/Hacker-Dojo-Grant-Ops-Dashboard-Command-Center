@@ -1039,8 +1039,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
                 >
                   <div className="settings-status-guidance-title">{statusGuidance.title}</div>
                   <div
-                    className="settings-status-guidance-desc"
-                    style={{ marginBottom: health.opencode !== 'ok' ? '10px' : 0 }}
+                    className={`settings-status-guidance-desc${health.opencode !== 'ok' ? ' settings-status-guidance-desc--with-action' : ''}`}
                   >
                     {statusGuidance.description}
                   </div>

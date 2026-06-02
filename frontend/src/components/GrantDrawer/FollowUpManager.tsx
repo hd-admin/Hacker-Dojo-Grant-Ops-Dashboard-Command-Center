@@ -210,8 +210,7 @@ export function FollowUpManager({
                       </span>
                     </div>
                     <div
-                      className="drawer-list-title"
-                      style={{ color: overdue ? 'var(--danger)' : undefined }}
+                      className={`drawer-list-title${overdue ? ` ${styles.overdueTitle}` : ''}`}
                     >
                       {overdue && (
                         <AlertTriangle
