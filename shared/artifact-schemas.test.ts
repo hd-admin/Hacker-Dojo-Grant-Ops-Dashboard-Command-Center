@@ -115,7 +115,11 @@ describe('DraftArtifactSchema', () => {
   });
 
   it('rejects draft with wordCount < 500 (quality gate)', () => {
-    const data = { ...validDraft, wordCount: 200, sections: sections500.map((s) => ({ ...s, wordCount: 40 })) };
+    const data = {
+      ...validDraft,
+      wordCount: 200,
+      sections: sections500.map((s) => ({ ...s, wordCount: 40 })),
+    };
     const result = DraftArtifactSchema.safeParse(data);
     expect(result.success).toBe(false);
     if (!result.success) {
@@ -186,7 +190,14 @@ describe('CrawlArtifactSchema', () => {
   });
 
   it('accepts failed crawl with error message', () => {
-    const data = { ...validCrawl, status: 'failed' as const, grantsFound: [], errorMessage: 'Connection timeout', pagesCrawled: 0, pagesFailed: 1 };
+    const data = {
+      ...validCrawl,
+      status: 'failed' as const,
+      grantsFound: [],
+      errorMessage: 'Connection timeout',
+      pagesCrawled: 0,
+      pagesFailed: 1,
+    };
     expect(CrawlArtifactSchema.safeParse(data).success).toBe(true);
   });
 
@@ -314,9 +325,7 @@ describe('ExtractArtifactSchema', () => {
         { category: 'Equipment', amount: '$100,000' },
       ],
       restrictions: ['No indirect costs'],
-      contacts: [
-        { name: 'Jane Doe', role: 'Program Officer', email: 'jane@example.org' },
-      ],
+      contacts: [{ name: 'Jane Doe', role: 'Program Officer', email: 'jane@example.org' }],
     },
     confidence: 'high' as const,
     sourceDocumentRef: 'doc-award-001',

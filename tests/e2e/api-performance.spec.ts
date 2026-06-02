@@ -50,9 +50,7 @@ test.describe('API Performance', () => {
   test('parallel API requests all respond within 500ms', async ({ request }) => {
     const endpoints = ['/api/grants', '/api/sources', '/api/tasks', '/api/documents'];
     const start = Date.now();
-    const responses = await Promise.all(
-      endpoints.map((ep) => request.get(`${BASE_URL}${ep}`)),
-    );
+    const responses = await Promise.all(endpoints.map((ep) => request.get(`${BASE_URL}${ep}`)));
     const elapsed = Date.now() - start;
 
     for (const res of responses) {

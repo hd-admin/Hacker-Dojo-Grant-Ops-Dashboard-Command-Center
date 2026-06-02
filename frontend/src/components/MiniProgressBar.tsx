@@ -25,42 +25,6 @@ const JOB_TYPE_ICONS: Record<string, string> = {
   'budget-import': '\uD83D\uDCB0',
 };
 
-const barStyle: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-  padding: '8px 16px',
-  background: 'var(--surface)',
-  borderTop: '1px solid var(--border)',
-  fontFamily: 'var(--sans), sans-serif',
-  fontSize: 12,
-  color: 'var(--text-dim)',
-  position: 'fixed',
-  bottom: 0,
-  left: 0,
-  right: 0,
-  zIndex: 100,
-};
-
-const trackStyle: React.CSSProperties = {
-  flex: 1,
-  height: 4,
-  background: 'var(--border)',
-  borderRadius: 2,
-  overflow: 'hidden',
-};
-
-const btnStyle: React.CSSProperties = {
-  background: 'none',
-  border: '1px solid var(--border)',
-  color: 'var(--text-dim)',
-  padding: '2px 8px',
-  borderRadius: 'var(--radius)',
-  cursor: 'pointer',
-  fontSize: 11,
-  fontFamily: 'var(--sans), sans-serif',
-};
-
 export function MiniProgressBar({
   jobType,
   stage,
@@ -79,18 +43,13 @@ export function MiniProgressBar({
   const fillColor = isFailed ? 'var(--danger)' : isComplete ? 'var(--success)' : 'var(--accent)';
 
   const fillStyle: React.CSSProperties = {
-    height: '100%',
     background: fillColor,
-    borderRadius: 2,
-    width: '100%',
     transform: isActive ? `scaleX(${Math.max(progress, 5) / 100})` : 'scaleX(1)',
-    transformOrigin: 'left',
-    transition: 'transform 300ms ease-out',
   };
 
   return (
     <div
-      style={barStyle}
+      className={styles.bar}
       role="progressbar"
       aria-valuenow={progress}
       aria-valuemin={0}
@@ -103,16 +62,20 @@ export function MiniProgressBar({
       <span className={styles.label}>
         {isFailed ? `Failed: ${errorMessage ?? 'Unknown error'}` : stage}
       </span>
-      <div style={trackStyle}>
-        <div style={fillStyle} />
+      <div className={styles.track}>
+        <div className={styles.fill} style={fillStyle} />
       </div>
       {isActive && onCancel && (
-        <button style={btnStyle} onClick={onCancel} aria-label={`Cancel ${jobType} job`}>
+        <button className={styles.btn} onClick={onCancel} aria-label={`Cancel ${jobType} job`}>
           ✕
         </button>
       )}
       {isFailed && onViewLog && (
-        <button style={btnStyle} onClick={onViewLog} aria-label={`View log for ${jobType} job`}>
+        <button
+          className={styles.btn}
+          onClick={onViewLog}
+          aria-label={`View log for ${jobType} job`}
+        >
           Log
         </button>
       )}

@@ -97,7 +97,7 @@
   text-transform: uppercase;
   letter-spacing: 0.1em;
   padding: 3px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius);
 }
 
 .conflictingFieldTag {
@@ -106,7 +106,7 @@
   padding: 2px 8px;
   background: var(--info-bg);
   color: var(--info);
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   border: 1px solid var(--info-border);
 }
 

@@ -112,13 +112,15 @@ export function manualCheckpoint(): void {
 export function checkIntegrity(): { ok: boolean; errors: string[] } {
   const db = getWriteDb();
   const result = db.pragma('quick_check');
-  const errors = result.filter(row => row.integrity_check !== 'ok')
-    .map(row => row.integrity_check);
+  const errors = result
+    .filter((row) => row.integrity_check !== 'ok')
+    .map((row) => row.integrity_check);
   return { ok: errors.length === 0, errors };
 }
 ```
 
 If `quick_check` fails, fall back to `integrity_check` (full bidirectional scan). If both fail:
+
 - Block all writes
 - Show error: "Database integrity check failed. Your data may be corrupted."
 - Offer restore-from-backup option
@@ -208,21 +210,26 @@ END;
 ```typescript
 export function searchGrants(query: string, limit = 20): Grant[] {
   const db = getReadDb();
-  const ftsQuery = query
-    .replace(/['"]/g, '')
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(term => `"${term}"*`)
-    .join(' OR ') || '"*"';
+  const ftsQuery =
+    query
+      .replace(/['"]/g, '')
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((term) => `"${term}"*`)
+      .join(' OR ') || '"*"';
 
-  return db.prepare(`
+  return db
+    .prepare(
+      `
     SELECT g.*, bm25(grants_fts) as rank
     FROM grants_fts
     JOIN grants g ON g.id = grants_fts.grantId
     WHERE grants_fts MATCH ? AND g.deletedAt IS NULL
     ORDER BY rank
     LIMIT ?
-  `).all(ftsQuery, limit) as Grant[];
+  `,
+    )
+    .all(ftsQuery, limit) as Grant[];
 }
 ```
 
@@ -634,8 +641,6 @@ CREATE TABLE backup_schedule (
 );
 ```
 
-
-
 ---
 
 ## 3. Seed Data
@@ -643,7 +648,9 @@ CREATE TABLE backup_schedule (
 On first run, the app seeds:
 
 ### 3.1 — Built-in Sources
+
 From the hardcoded profile (01-core-concept.md §Pre-Configured Default Sources):
+
 - grants.gov (federal, 24h interval)
 - nsf.gov (federal, 48h interval)
 - Google.org (corporate, 168h interval)
@@ -654,15 +661,19 @@ From the hardcoded profile (01-core-concept.md §Pre-Configured Default Sources)
 - California Grants Portal (state, 168h interval)
 
 ### 3.2 — Peer Discovery Sources
+
 From the hardcoded profile (11-technical-infrastructure.md §9.2):
+
 - Noisebridge, TechShop, NYC Resistor, Dallas Makerspace, Artisan's Asylum
 - All marked as `isPeerSource=1, intervalHours=720` (monthly)
 
 ### 3.3 — System Rows
+
 - **Settings**: autoDraftThreshold=75, voiceAndTone from hardcoded profile, agent.maxConcurrentJobs=3, crawl.maxConcurrentCrawls=1, notifications.deadlineWarningDays=7, notifications.reportWarningDays=14
 - **Backup schedule**: singleton row (enabled=0, intervalHours=168, maxBackups=10)
 
 ### 3.4 — Operator Name
+
 Written to the `settings` table (key=`operator.name`). Prompted on first launch — the only onboarding step.
 
 ---
@@ -674,6 +685,7 @@ There is no legacy v1 migration path. However, once a v2 operator has persisted 
 ### 4.1 — First Run
 
 On first run, the app checks if `grant-ops.sqlite` exists. If not:
+
 1. Create the database file
 2. Run `configurePragmas()` (WAL, busy_timeout, etc.)
 3. Execute all `CREATE TABLE` / `CREATE INDEX` / FTS5 statements in a single transaction
@@ -685,6 +697,7 @@ If the file already exists, verify integrity (PRAGMA quick_check) and proceed.
 ### 4.2 — Schema Changes (Future)
 
 Per the "no backward compatibility" principle (01-core-concept.md), old schemas are not supported indefinitely, but persisted operator data must still be transformed forward between released v2 builds. Therefore:
+
 - Schema changes are handled by ordered SQL migration scripts
 - Migrations are **forward-only**; down-migrations are not required
 - Each migration runs inside a transaction
@@ -705,7 +718,9 @@ If the operator explicitly chooses a destructive rebuild instead, the app MUST c
 ## 5. Backup Considerations
 
 ### 5.1 — Backup Contents
+
 Manual and automated backups include (via `adm-zip`):
+
 1. SQLite database file (`.grant-ops-data/grant-ops.sqlite`)
 2. All files in `.grant-ops-data/documents/`
 3. All files in `.grant-ops-data/artifacts/`
@@ -714,9 +729,11 @@ Manual and automated backups include (via `adm-zip`):
 The `-wal` and `-shm` files are NOT included — the app runs `wal_checkpoint(TRUNCATE)` before backup to ensure all data is in the main database file.
 
 ### 5.2 — Integrity Verification
+
 After zip creation, SHA-256 hash is computed via `node:crypto` and stored alongside the zip (`backup-{timestamp}.zip.sha256`). On restore, the hash is verified before replacing any data.
 
 ### 5.3 — Restore Safety
+
 - Validate the zip contains a valid SQLite database (runs `PRAGMA integrity_check` on restored DB before replacing current)
 - Warn if backup is > 7 days old
 - Create a pre-restore backup of current state before overwriting

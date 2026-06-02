@@ -114,9 +114,7 @@ describe('/api/grants/[grantId]/status', () => {
       ...blockedGrant,
       status: 'approved',
       statusLabel: 'Approved',
-      checklist: [
-        { label: 'Final review', done: false, required: true, blockSubmission: true },
-      ],
+      checklist: [{ label: 'Final review', done: false, required: true, blockSubmission: true }],
     } as Grant);
 
     const response = await PATCH(

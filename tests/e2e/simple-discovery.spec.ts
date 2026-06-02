@@ -1,12 +1,17 @@
-import fs from "node:fs/promises";
-import path from "node:path";
-import { expect, test } from "@playwright/test";
-import { configureOpencodeThroughSettingsView, resetAppState, saveProfileThroughSettingsView, uploadDocumentThroughSettingsView } from "./test-utils";
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { expect, test } from '@playwright/test';
+import {
+  configureOpencodeThroughSettingsView,
+  resetAppState,
+  saveProfileThroughSettingsView,
+  uploadDocumentThroughSettingsView,
+} from './test-utils';
 
-const opencodeStubPath = path.join(process.cwd(), "tests/e2e/opencode-stub.sh");
+const opencodeStubPath = path.join(process.cwd(), 'tests/e2e/opencode-stub.sh');
 
 async function ensureOpencodeStub(): Promise<string> {
-	const script = `#!/bin/sh
+  const script = `#!/bin/sh
 set -eu
 
 all_args="$*"
@@ -31,105 +36,98 @@ This draft is grounded in the uploaded organization profile.
 EOF
 fi
 `;
-	await fs.writeFile(opencodeStubPath, script, "utf8");
-	await fs.chmod(opencodeStubPath, 0o755);
-	return opencodeStubPath;
+  await fs.writeFile(opencodeStubPath, script, 'utf8');
+  await fs.chmod(opencodeStubPath, 0o755);
+  return opencodeStubPath;
 }
 
-test("simple-discovery: add source and refresh crawl state", async ({
-	request,
-	page,
-}) => {
-	const stubPath = await ensureOpencodeStub();
-	await resetAppState(request);
-	await page.goto("http://127.0.0.1:3000");
-	await page.waitForSelector(".app", { timeout: 60000 });
+test('simple-discovery: add source and refresh crawl state', async ({ request, page }) => {
+  const stubPath = await ensureOpencodeStub();
+  await resetAppState(request);
+  await page.goto('http://127.0.0.1:3000');
+  await page.waitForSelector('.app', { timeout: 60000 });
 
-	await saveProfileThroughSettingsView(
-		page,
-		"Community innovation and education with maker pathways.",
-	);
-	await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
-	await uploadDocumentThroughSettingsView(
-		page,
-		"tests/fixtures/documents/hacker-dojo-program-summary.pdf",
-	);
+  await saveProfileThroughSettingsView(
+    page,
+    'Community innovation and education with maker pathways.',
+  );
+  await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
+  await uploadDocumentThroughSettingsView(
+    page,
+    'tests/fixtures/documents/hacker-dojo-program-summary.pdf',
+  );
 
-	const opencodeSettingsResponse = await request.get("http://127.0.0.1:3000/api/opencode-settings");
-	expect(opencodeSettingsResponse.ok()).toBeTruthy();
-	const opencodeSettings = await opencodeSettingsResponse.json() as { isConfigured: boolean; binaryPath: string };
-	expect(opencodeSettings.isConfigured).toBe(true);
-	expect(opencodeSettings.binaryPath).toBe(stubPath);
+  const opencodeSettingsResponse = await request.get('http://127.0.0.1:3000/api/opencode-settings');
+  expect(opencodeSettingsResponse.ok()).toBeTruthy();
+  const opencodeSettings = (await opencodeSettingsResponse.json()) as {
+    isConfigured: boolean;
+    binaryPath: string;
+  };
+  expect(opencodeSettings.isConfigured).toBe(true);
+  expect(opencodeSettings.binaryPath).toBe(stubPath);
 
-	await page.click("[data-view=\"settings\"]");
-	await page.waitForSelector("#view-settings.active", { timeout: 10000 });
-	await expect(page.locator(".setting-card").filter({ hasText: "Organization Profile" })).toContainText("ed@hackerdojo.com");
-	await page.click("[data-view=\"discovery\"]");
+  await page.click('[data-view="settings"]');
+  await page.waitForSelector('#view-settings.active', { timeout: 10000 });
+  await expect(
+    page.locator('.setting-card').filter({ hasText: 'Organization Profile' }),
+  ).toContainText('ed@hackerdojo.com');
+  await page.click('[data-view="discovery"]');
 
-	await page.click('[data-view="discovery"]');
-	await expect(page.locator("#view-discovery")).toHaveClass(/active/);
+  await page.click('[data-view="discovery"]');
+  await expect(page.locator('#view-discovery')).toHaveClass(/active/);
 
-	await expect(page.locator("button:has-text('+ Add source')")).toBeVisible();
-	await expect(page.locator(".sidebar-footer")).toContainText("Logged in as");
+  await expect(page.locator("button:has-text('+ Add source')")).toBeVisible();
+  await expect(page.locator('.sidebar-footer')).toContainText('Logged in as');
 
-	await page.getByRole("button", { name: "+ Add source" }).click();
-	await page.locator('input[placeholder="Source name"]').fill("Candid");
-	await page.locator('input[placeholder="https://..."]').fill("https://www.candid.org");
-	const addSourceResponse = page.waitForResponse(
-		(response) =>
-			response.url().endsWith("/api/sources") &&
-			response.request().method() === "POST",
-	);
-	const researchTriggerResponse = page.waitForResponse(
-		(response) =>
-			response.url().endsWith("/api/research") &&
-			response.request().method() === "POST",
-	);
-	await page.getByRole("button", { name: "Add" }).click();
-	const [sourceResponse, researchResponse] = await Promise.all([
-		addSourceResponse,
-		researchTriggerResponse,
-	]);
-	expect(sourceResponse.ok()).toBeTruthy();
-	expect(researchResponse.ok()).toBeTruthy();
+  await page.getByRole('button', { name: '+ Add source' }).click();
+  await page.locator('input[placeholder="Source name"]').fill('Candid');
+  await page.locator('input[placeholder="https://..."]').fill('https://www.candid.org');
+  const addSourceResponse = page.waitForResponse(
+    (response) => response.url().endsWith('/api/sources') && response.request().method() === 'POST',
+  );
+  const researchTriggerResponse = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/research') && response.request().method() === 'POST',
+  );
+  await page.getByRole('button', { name: 'Add' }).click();
+  const [sourceResponse, researchResponse] = await Promise.all([
+    addSourceResponse,
+    researchTriggerResponse,
+  ]);
+  expect(sourceResponse.ok()).toBeTruthy();
+  expect(researchResponse.ok()).toBeTruthy();
 
-	await expect(page.locator(".source-item")).toHaveCount(1);
-	await expect(page.locator(".source-item .source-name")).toContainText("Candid");
+  await expect(page.locator('.source-item')).toHaveCount(1);
+  await expect(page.locator('.source-item .source-name')).toContainText('Candid');
 
-	const sourcesResponse = await request.get("http://127.0.0.1:3000/api/sources");
-	expect(sourcesResponse.ok()).toBeTruthy();
-	const sources = (await sourcesResponse.json()) as Array<{
-		name: string;
-		url: string;
-	}>;
-	expect(
-		sources.some(
-			(source) =>
-				source.name === "Candid" && source.url === "https://www.candid.org",
-		),
-	).toBe(true);
+  const sourcesResponse = await request.get('http://127.0.0.1:3000/api/sources');
+  expect(sourcesResponse.ok()).toBeTruthy();
+  const sources = (await sourcesResponse.json()) as Array<{
+    name: string;
+    url: string;
+  }>;
+  expect(
+    sources.some((source) => source.name === 'Candid' && source.url === 'https://www.candid.org'),
+  ).toBe(true);
 
-	let research = null as {
-		latestRun: { status: string; sourcesCrawled: number } | null;
-	} | null;
-	for (let attempt = 0; attempt < 30; attempt += 1) {
-		const researchResponse = await request.get("http://127.0.0.1:3000/api/research");
-		expect(researchResponse.ok()).toBeTruthy();
-		research = (await researchResponse.json()) as typeof research;
-		if (
-			research.latestRun?.status === "completed" &&
-			research.latestRun.sourcesCrawled > 0
-		) {
-			break;
-		}
-		await new Promise((resolve) => setTimeout(resolve, 500));
-	}
-	expect(research?.latestRun?.status).toBe("completed");
-	expect(research?.latestRun?.sourcesCrawled).toBeGreaterThan(0);
+  let research = null as {
+    latestRun: { status: string; sourcesCrawled: number } | null;
+  } | null;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    const researchResponse = await request.get('http://127.0.0.1:3000/api/research');
+    expect(researchResponse.ok()).toBeTruthy();
+    research = (await researchResponse.json()) as typeof research;
+    if (research.latestRun?.status === 'completed' && research.latestRun.sourcesCrawled > 0) {
+      break;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+  expect(research?.latestRun?.status).toBe('completed');
+  expect(research?.latestRun?.sourcesCrawled).toBeGreaterThan(0);
 
-	// Crawl status subtitle check
-	await page.click('[data-view="discovery"]');
-	await expect(page.locator('#view-discovery .header-sub')).toContainText('crawled');
+  // Crawl status subtitle check
+  await page.click('[data-view="discovery"]');
+  await expect(page.locator('#view-discovery .header-sub')).toContainText('crawled');
 
-	await expect(page.locator(".sidebar-footer")).toContainText("Crawler");
+  await expect(page.locator('.sidebar-footer')).toContainText('Crawler');
 });

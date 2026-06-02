@@ -1,77 +1,82 @@
 import { z } from 'zod';
 
-export const ResearchArtifactSchema = z.object({
-  artifactType: z.literal('research'),
-  jobId: z.string(),
-  timestamp: z.string(),
-  grants: z.array(
-    z.object({
-      title: z.string().min(1),
-      funder: z.string().min(1),
-      funderShort: z.string(),
-      award: z.string().optional(),
-      awardSort: z.number().optional(),
-      deadline: z.string().optional(),
-      deadlineConfidence: z.enum(['exact', 'estimated', 'rolling', 'unknown']).optional(),
-      eligibility: z.string().optional(),
-      requirements: z.array(z.string()).optional(),
-      externalUrl: z.string().optional(),
-      summary: z.string().optional(),
-      tags: z.array(z.string()),
-      category: z.string().optional(),
-    }),
-  ),
-  evidence: z.array(
-    z.object({
-      grantTitle: z.string(),
-      evidenceType: z.enum([
-        'fit_score',
-        'deadline',
-        'award_amount',
-        'eligibility',
-        'requirements',
-      ]),
-      content: z.string(),
-      sourceUrl: z.string().optional(),
-    }),
-  ),
-  rationale: z.string().optional(),
-  sourcesFound: z.number().int().min(0),
-  grantsFound: z.number().int().min(0),
-  errors: z.array(z.string()).optional(),
-}).refine(
-  (data) => data.grants.length > 0 || (data.errors && data.errors.length > 0),
-  { message: 'Research must produce at least one grant or list errors', path: ['grants'] },
-);
+export const ResearchArtifactSchema = z
+  .object({
+    artifactType: z.literal('research'),
+    jobId: z.string(),
+    timestamp: z.string(),
+    grants: z.array(
+      z.object({
+        title: z.string().min(1),
+        funder: z.string().min(1),
+        funderShort: z.string(),
+        award: z.string().optional(),
+        awardSort: z.number().optional(),
+        deadline: z.string().optional(),
+        deadlineConfidence: z.enum(['exact', 'estimated', 'rolling', 'unknown']).optional(),
+        eligibility: z.string().optional(),
+        requirements: z.array(z.string()).optional(),
+        externalUrl: z.string().optional(),
+        summary: z.string().optional(),
+        tags: z.array(z.string()),
+        category: z.string().optional(),
+      }),
+    ),
+    evidence: z.array(
+      z.object({
+        grantTitle: z.string(),
+        evidenceType: z.enum([
+          'fit_score',
+          'deadline',
+          'award_amount',
+          'eligibility',
+          'requirements',
+        ]),
+        content: z.string(),
+        sourceUrl: z.string().optional(),
+      }),
+    ),
+    rationale: z.string().optional(),
+    sourcesFound: z.number().int().min(0),
+    grantsFound: z.number().int().min(0),
+    errors: z.array(z.string()).optional(),
+  })
+  .refine((data) => data.grants.length > 0 || (data.errors && data.errors.length > 0), {
+    message: 'Research must produce at least one grant or list errors',
+    path: ['grants'],
+  });
 
-export const DraftArtifactSchema = z.object({
-  artifactType: z.literal('draft'),
-  jobId: z.string(),
-  grantId: z.string(),
-  version: z.number(),
-  timestamp: z.string(),
-  content: z.string(),
-  sections: z.array(
-    z.object({
-      sectionTitle: z.string(),
-      content: z.string(),
-      groundingSources: z.array(z.string()),
-      isGrounded: z.boolean(),
-      wordCount: z.number().optional(),
-    }),
-  ),
-  wordCount: z.number(),
-  groundingDocumentIds: z.array(z.string()),
-  groundingSourceUrls: z.array(z.string()),
-  notes: z.string().optional(),
-  errors: z.array(z.string()).optional(),
-}).refine(
-  (data) => data.wordCount >= 500,
-  { message: 'Draft must contain at least 500 words', path: ['wordCount'] },
-).refine(
-  (data) => data.sections.some((s) => s.isGrounded),
-  { message: 'Draft must have at least one grounded section', path: ['sections'] },
-);
+export const DraftArtifactSchema = z
+  .object({
+    artifactType: z.literal('draft'),
+    jobId: z.string(),
+    grantId: z.string(),
+    version: z.number(),
+    timestamp: z.string(),
+    content: z.string(),
+    sections: z.array(
+      z.object({
+        sectionTitle: z.string(),
+        content: z.string(),
+        groundingSources: z.array(z.string()),
+        isGrounded: z.boolean(),
+        wordCount: z.number().optional(),
+      }),
+    ),
+    wordCount: z.number(),
+    groundingDocumentIds: z.array(z.string()),
+    groundingSourceUrls: z.array(z.string()),
+    notes: z.string().optional(),
+    errors: z.array(z.string()).optional(),
+  })
+  .refine((data) => data.wordCount >= 500, {
+    message: 'Draft must contain at least 500 words',
+    path: ['wordCount'],
+  })
+  .refine((data) => data.sections.some((s) => s.isGrounded), {
+    message: 'Draft must have at least one grounded section',
+    path: ['sections'],
+  });
 
 export const CrawlArtifactSchema = z.object({
   artifactType: z.literal('crawl'),
@@ -94,75 +99,85 @@ export const CrawlArtifactSchema = z.object({
   pagesFailed: z.number().int().min(0),
 });
 
-export const MatchArtifactSchema = z.object({
-  artifactType: z.literal('match'),
-  runId: z.string(),
-  timestamp: z.string(),
-  matches: z.array(
-    z.object({
-      grantTitle: z.string(),
-      grantId: z.string(),
-      fitScore: z.number().min(0).max(100),
-      breakdown: z.object({
-        missionAlignment: z.number().min(0).max(100),
-        geographicFocus: z.number().min(0).max(100),
-        programTrackrecord: z.number().min(0).max(100),
-        budgetCapacity: z.number().min(0).max(100),
-        partnershipReadiness: z.number().min(0).max(100),
+export const MatchArtifactSchema = z
+  .object({
+    artifactType: z.literal('match'),
+    runId: z.string(),
+    timestamp: z.string(),
+    matches: z.array(
+      z.object({
+        grantTitle: z.string(),
+        grantId: z.string(),
+        fitScore: z.number().min(0).max(100),
+        breakdown: z.object({
+          missionAlignment: z.number().min(0).max(100),
+          geographicFocus: z.number().min(0).max(100),
+          programTrackrecord: z.number().min(0).max(100),
+          budgetCapacity: z.number().min(0).max(100),
+          partnershipReadiness: z.number().min(0).max(100),
+        }),
+        rationale: z.string(),
       }),
-      rationale: z.string(),
-    }),
-  ),
-  totalGrantsEvaluated: z.number().int().min(0),
-  grantsAboveThreshold: z.number().int().min(0),
-}).refine(
-  (data) => {
-    if (data.matches.length <= 1) return true;
-    const scores = data.matches.map((m) => m.fitScore);
-    return new Set(scores).size === scores.length || scores.length === 1;
-  },
-  { message: 'Match scores should not all be identical when multiple matches exist', path: ['matches'] },
-);
+    ),
+    totalGrantsEvaluated: z.number().int().min(0),
+    grantsAboveThreshold: z.number().int().min(0),
+  })
+  .refine(
+    (data) => {
+      if (data.matches.length <= 1) return true;
+      const scores = data.matches.map((m) => m.fitScore);
+      return new Set(scores).size === scores.length || scores.length === 1;
+    },
+    {
+      message: 'Match scores should not all be identical when multiple matches exist',
+      path: ['matches'],
+    },
+  );
 
-export const ExtractArtifactSchema = z.object({
-  artifactType: z.literal('extract'),
-  jobId: z.string(),
-  grantId: z.string(),
-  timestamp: z.string(),
-  extracted: z.object({
-    amount: z.string().optional(),
-    startDate: z.string().optional(),
-    endDate: z.string().optional(),
-    reportingDeadlines: z.array(z.string()).optional(),
-    complianceRequirements: z.array(z.string()).optional(),
-    budgetCategories: z
-      .array(
-        z.object({
-          category: z.string(),
-          amount: z.string(),
-        }),
-      )
-      .optional(),
-    restrictions: z.array(z.string()).optional(),
-    contacts: z
-      .array(
-        z.object({
-          name: z.string(),
-          role: z.string(),
-          email: z.string().optional(),
-        }),
-      )
-      .optional(),
-  }),
-  confidence: z.enum(['high', 'medium', 'low']),
-  sourceDocumentRef: z.string(),
-  errors: z.array(z.string()).optional(),
-}).refine(
-  (data) =>
-    (data.extracted.amount && data.extracted.amount.length > 0) ||
-    (data.errors && data.errors.length > 0),
-  { message: 'Extract must have a non-empty amount or an errors explanation', path: ['extracted', 'amount'] },
-);
+export const ExtractArtifactSchema = z
+  .object({
+    artifactType: z.literal('extract'),
+    jobId: z.string(),
+    grantId: z.string(),
+    timestamp: z.string(),
+    extracted: z.object({
+      amount: z.string().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional(),
+      reportingDeadlines: z.array(z.string()).optional(),
+      complianceRequirements: z.array(z.string()).optional(),
+      budgetCategories: z
+        .array(
+          z.object({
+            category: z.string(),
+            amount: z.string(),
+          }),
+        )
+        .optional(),
+      restrictions: z.array(z.string()).optional(),
+      contacts: z
+        .array(
+          z.object({
+            name: z.string(),
+            role: z.string(),
+            email: z.string().optional(),
+          }),
+        )
+        .optional(),
+    }),
+    confidence: z.enum(['high', 'medium', 'low']),
+    sourceDocumentRef: z.string(),
+    errors: z.array(z.string()).optional(),
+  })
+  .refine(
+    (data) =>
+      (data.extracted.amount && data.extracted.amount.length > 0) ||
+      (data.errors && data.errors.length > 0),
+    {
+      message: 'Extract must have a non-empty amount or an errors explanation',
+      path: ['extracted', 'amount'],
+    },
+  );
 
 export const PeerDiscoveryArtifactSchema = z.object({
   artifactType: z.literal('peer-discovery'),
@@ -188,13 +203,7 @@ export const FunderInsightArtifactSchema = z.object({
   timestamp: z.string(),
   patterns: z.array(
     z.object({
-      patternType: z.enum([
-        'giving-trend',
-        'hidden-giving',
-        'focus-shift',
-        'new-program',
-        'other',
-      ]),
+      patternType: z.enum(['giving-trend', 'hidden-giving', 'focus-shift', 'new-program', 'other']),
       description: z.string(),
       confidence: z.enum(['high', 'medium', 'low']),
       suggestedAction: z.string().optional(),

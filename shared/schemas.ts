@@ -172,7 +172,9 @@ const _TaskSchema = z.object({
   text: z.string(),
   completed: z.boolean(),
   grantId: z.string().optional(),
-  taskStatus: z.enum(['blocked', 'in-progress', 'completed', 'waived', 'not-applicable']).optional(),
+  taskStatus: z
+    .enum(['blocked', 'in-progress', 'completed', 'waived', 'not-applicable'])
+    .optional(),
   responsibilityTag: z.enum(['finance', 'program', 'review', 'follow-up']).optional(),
   dependsOn: z.array(z.string()).optional(),
   justification: z.string().optional(),
@@ -392,11 +394,15 @@ const _DraftArtifactSchema = z.object({
   createdAt: z.string(),
   createdBy: z.enum(['agent', 'human']),
   revisionNotes: z.string().optional(),
-  groundingSections: z.array(z.object({
-    sectionTitle: z.string(),
-    evidence: z.array(z.string()),
-    isGrounded: z.boolean(),
-  })).optional(),
+  groundingSections: z
+    .array(
+      z.object({
+        sectionTitle: z.string(),
+        evidence: z.array(z.string()),
+        isGrounded: z.boolean(),
+      }),
+    )
+    .optional(),
   status: z.enum(['generated', 'partial-failure']).optional(),
   jobId: z.string().optional(),
   sections: z.array(z.string()).optional(),
@@ -480,8 +486,26 @@ const _FollowUpSchema = z.object({
 
 export const JobQueueItemSchema = z.object({
   id: z.string(),
-  jobType: z.enum(['research', 'draft', 'crawl', 'match', 'extract', 'peer-discovery', 'funder-insights', 'eligibility-vetting', 'budget-import']),
-  status: z.enum(['queued', 'running', 'verifying', 'retrying', 'completed', 'failed', 'cancelled']),
+  jobType: z.enum([
+    'research',
+    'draft',
+    'crawl',
+    'match',
+    'extract',
+    'peer-discovery',
+    'funder-insights',
+    'eligibility-vetting',
+    'budget-import',
+  ]),
+  status: z.enum([
+    'queued',
+    'running',
+    'verifying',
+    'retrying',
+    'completed',
+    'failed',
+    'cancelled',
+  ]),
   stage: z.string().optional(),
   lastUpdate: z.string().optional(),
   createdAt: z.string(),

@@ -100,7 +100,11 @@ describe('Shared Persistence Integrity', () => {
             approvalRecords: [],
             submissionRecords: [],
             followUps: [],
-            opencodeSettings: { ...defaultOpencodeSettings, binaryPath: '/embedded/bin', isConfigured: true },
+            opencodeSettings: {
+              ...defaultOpencodeSettings,
+              binaryPath: '/embedded/bin',
+              isConfigured: true,
+            },
             notifications: [],
             tasks: [],
             documents: [],
@@ -140,7 +144,11 @@ describe('Shared Persistence Integrity', () => {
 
       await saveGrants([grant]);
       await saveProfile(defaultProfile);
-      await saveOpencodeSettings({ ...defaultOpencodeSettings, isConfigured: true, binaryPath: '/bin/opencode' });
+      await saveOpencodeSettings({
+        ...defaultOpencodeSettings,
+        isConfigured: true,
+        binaryPath: '/bin/opencode',
+      });
 
       const persisted = await loadPersistedData();
       expect(persisted.sources).toHaveLength(13);
@@ -151,7 +159,11 @@ describe('Shared Persistence Integrity', () => {
 
     it('preserves standalone opencode settings when aggregate persisted data omits them', async () => {
       tempDataDir = await withTempDataDir();
-      await saveOpencodeSettings({ ...defaultOpencodeSettings, isConfigured: true, binaryPath: '/standalone/bin' });
+      await saveOpencodeSettings({
+        ...defaultOpencodeSettings,
+        isConfigured: true,
+        binaryPath: '/standalone/bin',
+      });
 
       const staleData = (await loadPersistedData()) as PersistedData;
       await savePersistedData({ ...staleData, opencodeSettings: null });
@@ -227,14 +239,19 @@ describe('SQLITE_BUSY retry via busy_timeout pragma (Step 5)', () => {
 
       const writeTx = db2.transaction(() => {
         for (let i = 0; i < 10; i++) {
-          db2.prepare('INSERT OR REPLACE INTO busy_test (id, value) VALUES (?, ?)').run(i, `value-${i}`);
+          db2
+            .prepare('INSERT OR REPLACE INTO busy_test (id, value) VALUES (?, ?)')
+            .run(i, `value-${i}`);
         }
       });
 
       // Both writes should succeed; WAL mode + busy_timeout prevent SQLITE_BUSY errors
       const mainTx = db.transaction(() => {
         for (let i = 10; i < 20; i++) {
-          db.prepare('INSERT OR REPLACE INTO busy_test (id, value) VALUES (?, ?)').run(i, `value-${i}`);
+          db.prepare('INSERT OR REPLACE INTO busy_test (id, value) VALUES (?, ?)').run(
+            i,
+            `value-${i}`,
+          );
         }
       });
 
@@ -242,7 +259,9 @@ describe('SQLITE_BUSY retry via busy_timeout pragma (Step 5)', () => {
       expect(() => mainTx()).not.toThrow();
 
       // Verify all rows were inserted
-      const count = db.prepare('SELECT COUNT(*) as count FROM busy_test').get() as { count: number };
+      const count = db.prepare('SELECT COUNT(*) as count FROM busy_test').get() as {
+        count: number;
+      };
       expect(count.count).toBe(20);
 
       db2.close();

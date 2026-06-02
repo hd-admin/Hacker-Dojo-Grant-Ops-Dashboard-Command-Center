@@ -31,19 +31,13 @@ test.describe('working-context', () => {
 
     await expect(page.locator('#view-pipeline')).toHaveClass(/active/);
     await expect(page.getByTestId('pipeline-list-view')).toBeVisible();
-    await expect(
-      page.locator('#view-pipeline .header-actions select').first(),
-    ).toHaveValue('Drafting');
-    await expect(page.getByTestId('pipeline-responsibility-filter')).toHaveValue(
-      'finance',
+    await expect(page.locator('#view-pipeline .header-actions select').first()).toHaveValue(
+      'Drafting',
     );
+    await expect(page.getByTestId('pipeline-responsibility-filter')).toHaveValue('finance');
     await expect(page.getByTestId('pipeline-urgency-filter')).toHaveValue('soon');
-    await expect(page.getByTestId('pipeline-funder-type-filter')).toHaveValue(
-      'Foundation',
-    );
-    await expect(page.locator('.drawer-title')).toHaveText(
-      'Dell Technologies Equality Fund',
-    );
+    await expect(page.getByTestId('pipeline-funder-type-filter')).toHaveValue('Foundation');
+    await expect(page.locator('.drawer-title')).toHaveText('Dell Technologies Equality Fund');
   });
 
   test('persistence: writes discovery filters and selected grant into localStorage', async ({
@@ -54,22 +48,12 @@ test.describe('working-context', () => {
 
     await page.click('[data-view="discovery"]');
     await expect(page.locator('#view-discovery')).toHaveClass(/active/);
-    await page
-      .locator('input[placeholder="Search grants, funders, tags..."]')
-      .fill('Dell');
+    await page.locator('input[placeholder="Search grants, funders, tags..."]').fill('Dell');
     await page.locator('#view-discovery .filter-bar select').selectOption('deadline');
-    await page
-      .locator('#view-discovery .filter-pill', { hasText: 'Corporate' })
-      .click();
-    await expect(
-      page.locator('#view-discovery .grants-row:not(.header)'),
-    ).toHaveCount(1);
-    await page
-      .locator('.grants-row', { hasText: 'Dell Technologies Equality Fund' })
-      .click();
-    await expect(page.locator('.drawer-title')).toHaveText(
-      'Dell Technologies Equality Fund',
-    );
+    await page.locator('#view-discovery .filter-pill', { hasText: 'Corporate' }).click();
+    await expect(page.locator('#view-discovery .grants-row:not(.header)')).toHaveCount(1);
+    await page.locator('.grants-row', { hasText: 'Dell Technologies Equality Fund' }).click();
+    await expect(page.locator('.drawer-title')).toHaveText('Dell Technologies Equality Fund');
 
     const workingContext = await page.evaluate(() =>
       JSON.parse(window.localStorage.getItem('grantops.workingContext') || '{}'),

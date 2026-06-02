@@ -25,19 +25,19 @@ ARCHIVED
 
 ### State Definitions
 
-| State | Meaning | Auto-Actions |
-|---|---|---|
-| Matched | New opportunity found | Creates task: "Review match" |
-| Draft | AI drafting in progress | Creates task: "Review draft" |
-| Review | Draft ready for human review | Blocks other changes |
-| Approved | Human approved the draft | Locks draft, creates submission task |
-| Submission Ready | All checklist items done | Creates "Submit to portal" task |
-| Submitted | Evidence recorded | Creates follow-up tasks |
-| Follow-up | Post-submission tracking | Creates report-due tasks |
-| Awarded | Grant won! | Creates spend-down tracking |
-| Declined | Not awarded | Archives with lessons learned |
-| Closed | No longer active | Moves to historical view |
-| Archived | Historical record | Searchable but not in active views |
+| State            | Meaning                      | Auto-Actions                         |
+| ---------------- | ---------------------------- | ------------------------------------ |
+| Matched          | New opportunity found        | Creates task: "Review match"         |
+| Draft            | AI drafting in progress      | Creates task: "Review draft"         |
+| Review           | Draft ready for human review | Blocks other changes                 |
+| Approved         | Human approved the draft     | Locks draft, creates submission task |
+| Submission Ready | All checklist items done     | Creates "Submit to portal" task      |
+| Submitted        | Evidence recorded            | Creates follow-up tasks              |
+| Follow-up        | Post-submission tracking     | Creates report-due tasks             |
+| Awarded          | Grant won!                   | Creates spend-down tracking          |
+| Declined         | Not awarded                  | Archives with lessons learned        |
+| Closed           | No longer active             | Moves to historical view             |
+| Archived         | Historical record            | Searchable but not in active views   |
 
 ## Board View (Kanban)
 
@@ -66,18 +66,19 @@ ARCHIVED
 
 When a grant is added to the pipeline, the system generates tasks from its requirements:
 
-| Requirement | Auto-Task | Responsibility | Blocks |
-|---|---|---|---|
-| 501(c)(3) verification | Upload IRS determination letter | review | submission |
-| SAM.gov registration | Verify SAM.gov active status | review | submission |
-| Budget | Prepare detailed budget | finance | submission |
-| Board list | Update board roster | program | — |
-| Letters of support | Request partnership letters | program | submission |
-| Logic model | Finalize program logic model | program | — |
+| Requirement            | Auto-Task                       | Responsibility | Blocks     |
+| ---------------------- | ------------------------------- | -------------- | ---------- |
+| 501(c)(3) verification | Upload IRS determination letter | review         | submission |
+| SAM.gov registration   | Verify SAM.gov active status    | review         | submission |
+| Budget                 | Prepare detailed budget         | finance        | submission |
+| Board list             | Update board roster             | program        | —          |
+| Letters of support     | Request partnership letters     | program        | submission |
+| Logic model            | Finalize program logic model    | program        | —          |
 
 ### Task States & Blocking
 
 Tasks can be:
+
 - **Blocked** (waiting on external dependency)
 - **In Progress** (being worked on)
 - **Completed** (done, with evidence)
@@ -89,12 +90,15 @@ Tasks marked `blockSubmission: true` prevent the grant from moving to "Submissio
 ## Filters & Views
 
 ### List View
+
 For spreadsheet-minded users. Columns: Grant Title, Funder, Status, Deadline, Award, Responsibility, Urgency.
 
 ### Board View (default)
+
 Kanban columns per pipeline state. Cards do **not** move by drag-and-drop. Each card exposes an explicit "Move to…" action menu with confirmation for irreversible moves like "Submitted".
 
 ### Filters
+
 - By status, responsibility tag, urgency, funder type
 - "Show only overdue" (deadline passed, not yet submitted)
 - "Show only my review queue" (status = review)
@@ -103,12 +107,14 @@ Kanban columns per pipeline state. Cards do **not** move by drag-and-drop. Each 
 ## Deadline Intelligence
 
 ### Urgency Classification
+
 - **Overdue**: deadline passed, status < submitted
 - **Urgent**: < 30 days remaining
 - **Soon**: 30-60 days
 - **Normal**: 60+ days or rolling
 
 ### Deadline Confidence Handling
+
 - **Exact**: firm date from source → shown with calendar icon
 - **Estimated**: approximate date → shown with "~" prefix
 - **Rolling**: no fixed deadline → shown as "Rolling"
@@ -121,6 +127,7 @@ The UI must never infer certainty where the source data is ambiguous. This is a 
 The app does NOT sync with external calendar services — that would violate the local-first, zero-cloud principle. Instead, it generates local `.ics` files (via `ical-generator` v10.2.0) that the operator can import into any calendar application (macOS Calendar, Google Calendar, Outlook) as a one-time import or recurring manual refresh.
 
 **Export workflow:**
+
 1. Operator clicks "Export Calendar" from the Calendar view
 2. App generates an `.ics` file at `.grant-ops-data/exports/calendar.ics` containing:
    - Grant deadlines with 24h and 1h before alarms
@@ -130,6 +137,7 @@ The app does NOT sync with external calendar services — that would violate the
 4. To update: operator clicks "Export Calendar" again for a fresh `.ics` file
 
 **Built-in calendar view** within the app shows:
+
 - Grant deadlines color-coded by urgency (overdue red, urgent orange, soon yellow, normal blue)
 - Reporting due dates from awarded grants
 - Follow-up task due dates
@@ -156,6 +164,7 @@ Beyond the standard pipeline fields, the operator can add custom tracking column
 ## State Transition Logging
 
 Every pipeline state change is logged:
+
 ```typescript
 interface PipelineTransition {
   id: string;
@@ -163,7 +172,7 @@ interface PipelineTransition {
   fromState: GrantStatus;
   toState: GrantStatus;
   timestamp: string;
-  actor: "user" | "system";
+  actor: 'user' | 'system';
   reason?: string;
 }
 ```

@@ -14,69 +14,69 @@ This is a local-only desktop application. Application data persistence is fully 
 
 ### Runtime & Framework
 
-| Package | Version | Release Date | Notes |
-|---|---|---|---|
-| **Node.js** | **v24.16.0** (Active LTS) | 2026-05-21 | Codename: Krypton. v22 is Maintenance LTS. |
-| **Next.js** | **v16.2.6** (LTS) | 2026-05-07 | App Router. Binding to `127.0.0.1` only via `-H 127.0.0.1`. |
-| **React** | **v19.2.6** | 2026-05-06 | |
-| **TypeScript** | **v6.0.3** | 2026-04-16 | Strict mode. No `any`, no `@ts-ignore`. |
+| Package        | Version                   | Release Date | Notes                                                       |
+| -------------- | ------------------------- | ------------ | ----------------------------------------------------------- |
+| **Node.js**    | **v24.16.0** (Active LTS) | 2026-05-21   | Codename: Krypton. v22 is Maintenance LTS.                  |
+| **Next.js**    | **v16.2.6** (LTS)         | 2026-05-07   | App Router. Binding to `127.0.0.1` only via `-H 127.0.0.1`. |
+| **React**      | **v19.2.6**               | 2026-05-06   |                                                             |
+| **TypeScript** | **v6.0.3**                | 2026-04-16   | Strict mode. No `any`, no `@ts-ignore`.                     |
 
 ### Database
 
-| Package | Version | Notes |
-|---|---|---|
+| Package            | Version      | Notes                                                          |
+| ------------------ | ------------ | -------------------------------------------------------------- |
 | **better-sqlite3** | **v12.10.0** | Bundles SQLite 3.53.1. Requires Node.js v20+. Synchronous API. |
-| **SQLite** | **3.53.1** | Bundled inside better-sqlite3. WAL mode, FTS5. |
+| **SQLite**         | **3.53.1**   | Bundled inside better-sqlite3. WAL mode, FTS5.                 |
 
 ### Schema Validation
 
-| Package | Version | Notes |
-|---|---|---|
+| Package | Version    | Notes                                                                     |
+| ------- | ---------- | ------------------------------------------------------------------------- |
 | **Zod** | **v4.4.3** | All API inputs, agent artifacts, and database records validated with Zod. |
 
 ### Document Parsing
 
-| Format | Library | Version | Notes |
-|---|---|---|---|
-| **PDF** (simple text) | `pdf-parse` | `^2.0.0` | Wraps pdfjs-dist. For plain text extraction from grant docs. |
-| **PDF** (layout-aware) | `pdfjs-dist` | `^5.7.284` | Mozilla's PDF.js. For complex/scanned award letters. |
-| **DOCX** | `mammoth` | `^1.12.0` | `.extractRawText()` for clean semantic text; `.convertToHtml()` for structure. |
-| **CSV** | `csv-parse` | `^5.6.0` | Most robust, RFC 4180 compliant, memory-efficient streaming. |
-| **XLSX** | `xlsx` (SheetJS) | `0.20.3` | Vendored tarball in the repo (for example `vendor/xlsx-0.20.3.tgz`). npm registry is stale (0.18.5, 2022); do not rely on a live CDN during install. |
-| **Budget schema** | `excel-zod` | `^1.0.0` | Type-safe column mapping with Zod schemas, auto header detection. |
+| Format                 | Library          | Version    | Notes                                                                                                                                                |
+| ---------------------- | ---------------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PDF** (simple text)  | `pdf-parse`      | `^2.0.0`   | Wraps pdfjs-dist. For plain text extraction from grant docs.                                                                                         |
+| **PDF** (layout-aware) | `pdfjs-dist`     | `^5.7.284` | Mozilla's PDF.js. For complex/scanned award letters.                                                                                                 |
+| **DOCX**               | `mammoth`        | `^1.12.0`  | `.extractRawText()` for clean semantic text; `.convertToHtml()` for structure.                                                                       |
+| **CSV**                | `csv-parse`      | `^5.6.0`   | Most robust, RFC 4180 compliant, memory-efficient streaming.                                                                                         |
+| **XLSX**               | `xlsx` (SheetJS) | `0.20.3`   | Vendored tarball in the repo (for example `vendor/xlsx-0.20.3.tgz`). npm registry is stale (0.18.5, 2022); do not rely on a live CDN during install. |
+| **Budget schema**      | `excel-zod`      | `^1.0.0`   | Type-safe column mapping with Zod schemas, auto header detection.                                                                                    |
 
 ### File Operations
 
-| Purpose | Library | Version | Notes |
-|---|---|---|---|
-| **Backup zip** | `adm-zip` | `v0.5.17` | Actively maintained (Apr 2026). Alternative to stale `jszip` (v3.10.1, 2022). |
-| **iCal export** | `ical-generator` | `v10.2.0` | Full TypeScript types, events + alarms + timezone support. |
-| **File integrity** | `node:crypto` | built-in | SHA-256 streaming hash, `crypto.randomUUID()` for filenames. No npm package needed. |
-| **MIME validation** | `file-type` | `^19.0.0` | Magic number sniffing for upload validation (not just client-reported MIME). |
-| **Canvas (standalone)** | `@napi-rs/canvas` | `^0.1.0` | Required for pdfjs-dist on Next.js standalone builds only. |
+| Purpose                 | Library           | Version   | Notes                                                                               |
+| ----------------------- | ----------------- | --------- | ----------------------------------------------------------------------------------- |
+| **Backup zip**          | `adm-zip`         | `v0.5.17` | Actively maintained (Apr 2026). Alternative to stale `jszip` (v3.10.1, 2022).       |
+| **iCal export**         | `ical-generator`  | `v10.2.0` | Full TypeScript types, events + alarms + timezone support.                          |
+| **File integrity**      | `node:crypto`     | built-in  | SHA-256 streaming hash, `crypto.randomUUID()` for filenames. No npm package needed. |
+| **MIME validation**     | `file-type`       | `^19.0.0` | Magic number sniffing for upload validation (not just client-reported MIME).        |
+| **Canvas (standalone)** | `@napi-rs/canvas` | `^0.1.0`  | Required for pdfjs-dist on Next.js standalone builds only.                          |
 
 ### Logging & Security
 
-| Purpose | Library | Version | Notes |
-|---|---|---|---|
-| **Server-only guard** | `server-only` | latest | Build-time guard preventing DB/filesystem modules from being imported into client components. |
-| **Logging** | `pino` | `^10.3.1` | 5-8x faster than Winston. Structured JSON output. |
-| **Log rotation** | `pino-roll` | `^4.0.0` | Daily rotation with size limits. Worker-thread transport. |
+| Purpose               | Library       | Version   | Notes                                                                                         |
+| --------------------- | ------------- | --------- | --------------------------------------------------------------------------------------------- |
+| **Server-only guard** | `server-only` | latest    | Build-time guard preventing DB/filesystem modules from being imported into client components. |
+| **Logging**           | `pino`        | `^10.3.1` | 5-8x faster than Winston. Structured JSON output.                                             |
+| **Log rotation**      | `pino-roll`   | `^4.0.0`  | Daily rotation with size limits. Worker-thread transport.                                     |
 
 ### Testing
 
-| Package | Version | Notes |
-|---|---|---|
-| **Vitest** | **v4.1.7** | Unit + integration tests. |
+| Package        | Version     | Notes                                               |
+| -------------- | ----------- | --------------------------------------------------- |
+| **Vitest**     | **v4.1.7**  | Unit + integration tests.                           |
 | **Playwright** | **v1.60.0** | E2E browser tests. `@playwright/test` same version. |
 
 ### Build & Quality
 
-| Tool | Purpose |
-|---|---|
-| **pnpm** | Package manager (no npm, no yarn). |
-| **ESLint + Prettier** | Linting and formatting. |
-| **npx knip** | Dead code detection (run before significant commits). |
+| Tool                  | Purpose                                               |
+| --------------------- | ----------------------------------------------------- |
+| **pnpm**              | Package manager (no npm, no yarn).                    |
+| **ESLint + Prettier** | Linting and formatting.                               |
+| **npx knip**          | Dead code detection (run before significant commits). |
 
 ### Key Architectural Rules
 
@@ -158,6 +158,7 @@ pnpm typecheck && pnpm lint && pnpm test
 ```
 
 **Version bump rules:**
+
 - **PATCH** bumps (x.y.Z): auto-accept after tests pass
 - **MINOR** bumps (x.Y.z): review changelog for breaking changes, test manually
 - **MAJOR** bumps (X.y.z): full review required — check migration guides, breaking changes, API surface changes. Do NOT blindly upgrade major versions.
@@ -170,35 +171,36 @@ All routes are served from `localhost` only (Next.js bound to `127.0.0.1`). Ever
 
 ### 1.1 — Grants
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/grants` | List grants (paginated, filterable) |
-| `GET` | `/api/grants/{id}` | Single grant with full details |
-| `POST` | `/api/grants` | Create grant manually |
-| `PUT` | `/api/grants/{id}` | Update grant fields |
-| `DELETE` | `/api/grants/{id}` | Delete grant (soft-delete: sets `deletedAt`) |
-| `POST` | `/api/grants/{id}/transition` | Execute pipeline state transition |
-| `GET` | `/api/grants/{id}/history` | State transition history |
-| `GET` | `/api/grants/{id}/tasks` | Tasks for this grant |
-| `GET` | `/api/grants/{id}/documents` | Documents linked to this grant |
-| `GET` | `/api/grants/{id}/drafts` | Draft versions for this grant |
-| `PUT` | `/api/grants/{id}/fit-score` | Recalculate fit score |
+| Method   | Route                         | Purpose                                      |
+| -------- | ----------------------------- | -------------------------------------------- |
+| `GET`    | `/api/grants`                 | List grants (paginated, filterable)          |
+| `GET`    | `/api/grants/{id}`            | Single grant with full details               |
+| `POST`   | `/api/grants`                 | Create grant manually                        |
+| `PUT`    | `/api/grants/{id}`            | Update grant fields                          |
+| `DELETE` | `/api/grants/{id}`            | Delete grant (soft-delete: sets `deletedAt`) |
+| `POST`   | `/api/grants/{id}/transition` | Execute pipeline state transition            |
+| `GET`    | `/api/grants/{id}/history`    | State transition history                     |
+| `GET`    | `/api/grants/{id}/tasks`      | Tasks for this grant                         |
+| `GET`    | `/api/grants/{id}/documents`  | Documents linked to this grant               |
+| `GET`    | `/api/grants/{id}/drafts`     | Draft versions for this grant                |
+| `PUT`    | `/api/grants/{id}/fit-score`  | Recalculate fit score                        |
 
 **`GET /api/grants` Query Parameters:**
 
-| Param | Type | Default | Description |
-|---|---|---|---|
-| `status` | GrantStatus | — | Filter by pipeline status |
-| `funderType` | string | — | Filter by funder type |
-| `minFit` | number | — | Minimum fit score |
-| `maxDeadline` | string (ISO) | — | Deadline before this date |
-| `search` | string | — | FTS5 search query |
-| `sort` | string | `"createdAt"` | Sort field |
-| `order` | `"asc"` \| `"desc"` | `"desc"` | Sort direction |
-| `page` | number | `1` | Page number |
-| `pageSize` | number | `25` | Results per page (max 100) |
+| Param         | Type                | Default       | Description                |
+| ------------- | ------------------- | ------------- | -------------------------- |
+| `status`      | GrantStatus         | —             | Filter by pipeline status  |
+| `funderType`  | string              | —             | Filter by funder type      |
+| `minFit`      | number              | —             | Minimum fit score          |
+| `maxDeadline` | string (ISO)        | —             | Deadline before this date  |
+| `search`      | string              | —             | FTS5 search query          |
+| `sort`        | string              | `"createdAt"` | Sort field                 |
+| `order`       | `"asc"` \| `"desc"` | `"desc"`      | Sort direction             |
+| `page`        | number              | `1`           | Page number                |
+| `pageSize`    | number              | `25`          | Results per page (max 100) |
 
 **`POST /api/grants/{id}/transition` Request Body:**
+
 ```json
 {
   "toState": "draft",
@@ -209,128 +211,128 @@ All routes are served from `localhost` only (Next.js bound to `127.0.0.1`). Ever
 
 ### 1.2 — Sources
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/sources` | List all sources |
-| `POST` | `/api/sources` | Add a new source |
-| `PUT` | `/api/sources/{id}` | Update source config |
-| `DELETE` | `/api/sources/{id}` | Remove source + related data |
-| `POST` | `/api/sources/{id}/crawl` | Trigger manual crawl |
-| `GET` | `/api/sources/{id}/crawls` | Crawl history for source |
+| Method   | Route                      | Purpose                      |
+| -------- | -------------------------- | ---------------------------- |
+| `GET`    | `/api/sources`             | List all sources             |
+| `POST`   | `/api/sources`             | Add a new source             |
+| `PUT`    | `/api/sources/{id}`        | Update source config         |
+| `DELETE` | `/api/sources/{id}`        | Remove source + related data |
+| `POST`   | `/api/sources/{id}/crawl`  | Trigger manual crawl         |
+| `GET`    | `/api/sources/{id}/crawls` | Crawl history for source     |
 
 Deleting a source MUST set `grants.sourceId` to `NULL` on linked grants; grant records remain intact.
 Per-source crawl history is persisted in the `crawl_runs` table and linked to both `sourceId` and the agent `jobId`.
 
 ### 1.3 — Tasks
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/tasks` | List tasks (filterable by grant, status, responsibility) |
-| `POST` | `/api/tasks` | Create task |
-| `PUT` | `/api/tasks/{id}` | Update task (status, notes, assignment) |
-| `DELETE` | `/api/tasks/{id}` | Delete task |
+| Method   | Route             | Purpose                                                  |
+| -------- | ----------------- | -------------------------------------------------------- |
+| `GET`    | `/api/tasks`      | List tasks (filterable by grant, status, responsibility) |
+| `POST`   | `/api/tasks`      | Create task                                              |
+| `PUT`    | `/api/tasks/{id}` | Update task (status, notes, assignment)                  |
+| `DELETE` | `/api/tasks/{id}` | Delete task                                              |
 
 ### 1.4 — Documents
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/documents` | List documents (filterable by grant, type, tag) |
-| `POST` | `/api/documents` | Upload document (multipart form) |
-| `GET` | `/api/documents/{id}` | Download document file |
-| `GET` | `/api/documents/{id}/text` | Extracted text content |
-| `PUT` | `/api/documents/{id}` | Update document metadata |
-| `DELETE` | `/api/documents/{id}` | Delete document |
+| Method   | Route                      | Purpose                                         |
+| -------- | -------------------------- | ----------------------------------------------- |
+| `GET`    | `/api/documents`           | List documents (filterable by grant, type, tag) |
+| `POST`   | `/api/documents`           | Upload document (multipart form)                |
+| `GET`    | `/api/documents/{id}`      | Download document file                          |
+| `GET`    | `/api/documents/{id}/text` | Extracted text content                          |
+| `PUT`    | `/api/documents/{id}`      | Update document metadata                        |
+| `DELETE` | `/api/documents/{id}`      | Delete document                                 |
 
 Document upload validates: file size ≤ 50MB, allowed extensions (`.pdf`, `.docx`, `.doc`, `.xlsx`, `.xls`, `.csv`, `.txt`, `.png`, `.jpg`, `.jpeg`), MIME type matches extension.
 
 ### 1.5 — Agent Jobs
 
-| Method | Route | Purpose |
-|---|---|---|
-| `POST` | `/api/jobs` | Start a new job (research, draft, crawl, match, extract) |
-| `GET` | `/api/jobs` | List all jobs (active + recent) |
-| `GET` | `/api/jobs/{jobId}` | Job status and progress (poll every 2s) |
-| `POST` | `/api/jobs/{jobId}/cancel` | Cancel running job |
+| Method | Route                      | Purpose                                                  |
+| ------ | -------------------------- | -------------------------------------------------------- |
+| `POST` | `/api/jobs`                | Start a new job (research, draft, crawl, match, extract) |
+| `GET`  | `/api/jobs`                | List all jobs (active + recent)                          |
+| `GET`  | `/api/jobs/{jobId}`        | Job status and progress (poll every 2s)                  |
+| `POST` | `/api/jobs/{jobId}/cancel` | Cancel running job                                       |
 
 ### 1.6 — Drafts
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/drafts/{grantId}` | List draft versions |
-| `GET` | `/api/drafts/{grantId}/{version}` | Get specific draft version |
-| `POST` | `/api/drafts/{grantId}` | Generate new draft (spawns agent job) |
-| `POST` | `/api/drafts/{grantId}/revise` | Request revision of latest draft |
-| `POST` | `/api/drafts/{grantId}/approve` | Approve and lock draft |
-| `POST` | `/api/drafts/{grantId}/reopen` | Reopen locked draft |
-| `GET` | `/api/drafts/{grantId}/diff` | Diff between two versions (query: `v1`, `v2`) |
+| Method | Route                             | Purpose                                       |
+| ------ | --------------------------------- | --------------------------------------------- |
+| `GET`  | `/api/drafts/{grantId}`           | List draft versions                           |
+| `GET`  | `/api/drafts/{grantId}/{version}` | Get specific draft version                    |
+| `POST` | `/api/drafts/{grantId}`           | Generate new draft (spawns agent job)         |
+| `POST` | `/api/drafts/{grantId}/revise`    | Request revision of latest draft              |
+| `POST` | `/api/drafts/{grantId}/approve`   | Approve and lock draft                        |
+| `POST` | `/api/drafts/{grantId}/reopen`    | Reopen locked draft                           |
+| `GET`  | `/api/drafts/{grantId}/diff`      | Diff between two versions (query: `v1`, `v2`) |
 
 ### 1.7 — Settings & Configuration
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/settings` | Get current settings |
-| `PUT` | `/api/settings` | Update settings |
-| `GET` | `/api/settings/operator` | Get operator name |
-| `PUT` | `/api/settings/operator` | Set operator name |
+| Method | Route                    | Purpose              |
+| ------ | ------------------------ | -------------------- |
+| `GET`  | `/api/settings`          | Get current settings |
+| `PUT`  | `/api/settings`          | Update settings      |
+| `GET`  | `/api/settings/operator` | Get operator name    |
+| `PUT`  | `/api/settings/operator` | Set operator name    |
 
 ### 1.8 — Awards & Post-Award
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/awards` | List awards (filterable) |
-| `POST` | `/api/awards` | Create award (from grant) |
-| `PUT` | `/api/awards/{id}` | Update award |
-| `GET` | `/api/awards/{id}/expenses` | List expenses |
-| `POST` | `/api/awards/{id}/expenses` | Add expense |
-| `PUT` | `/api/awards/{id}/expenses/{expenseId}` | Update expense |
-| `DELETE` | `/api/awards/{id}/expenses/{expenseId}` | Delete expense |
-| `GET` | `/api/awards/{id}/reports` | Report deadlines |
-| `POST` | `/api/awards/{id}/reports/{reportId}/submit` | Mark report submitted |
+| Method   | Route                                        | Purpose                   |
+| -------- | -------------------------------------------- | ------------------------- |
+| `GET`    | `/api/awards`                                | List awards (filterable)  |
+| `POST`   | `/api/awards`                                | Create award (from grant) |
+| `PUT`    | `/api/awards/{id}`                           | Update award              |
+| `GET`    | `/api/awards/{id}/expenses`                  | List expenses             |
+| `POST`   | `/api/awards/{id}/expenses`                  | Add expense               |
+| `PUT`    | `/api/awards/{id}/expenses/{expenseId}`      | Update expense            |
+| `DELETE` | `/api/awards/{id}/expenses/{expenseId}`      | Delete expense            |
+| `GET`    | `/api/awards/{id}/reports`                   | Report deadlines          |
+| `POST`   | `/api/awards/{id}/reports/{reportId}/submit` | Mark report submitted     |
 
 ### 1.9 — Snippets (Institutional Memory)
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/snippets` | List snippets (searchable by topic, funder, program) |
-| `POST` | `/api/snippets` | Create snippet from approved draft section |
-| `PUT` | `/api/snippets/{id}` | Update snippet |
-| `DELETE` | `/api/snippets/{id}` | Delete snippet |
+| Method   | Route                | Purpose                                              |
+| -------- | -------------------- | ---------------------------------------------------- |
+| `GET`    | `/api/snippets`      | List snippets (searchable by topic, funder, program) |
+| `POST`   | `/api/snippets`      | Create snippet from approved draft section           |
+| `PUT`    | `/api/snippets/{id}` | Update snippet                                       |
+| `DELETE` | `/api/snippets/{id}` | Delete snippet                                       |
 
 ### 1.10 — Saved Searches
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/saved-searches` | List saved searches |
-| `POST` | `/api/saved-searches` | Create saved search |
-| `PUT` | `/api/saved-searches/{id}` | Update saved search |
+| Method   | Route                      | Purpose             |
+| -------- | -------------------------- | ------------------- |
+| `GET`    | `/api/saved-searches`      | List saved searches |
+| `POST`   | `/api/saved-searches`      | Create saved search |
+| `PUT`    | `/api/saved-searches/{id}` | Update saved search |
 | `DELETE` | `/api/saved-searches/{id}` | Delete saved search |
 
 ### 1.11 — Funder Profiles
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/funders` | List cached funder profiles |
-| `GET` | `/api/funders/{id}` | Single funder profile with giving history + insights |
-| `PUT` | `/api/funders/{id}` | Update operator-curated funder metadata |
+| Method | Route               | Purpose                                              |
+| ------ | ------------------- | ---------------------------------------------------- |
+| `GET`  | `/api/funders`      | List cached funder profiles                          |
+| `GET`  | `/api/funders/{id}` | Single funder profile with giving history + insights |
+| `PUT`  | `/api/funders/{id}` | Update operator-curated funder metadata              |
 
 ### 1.12 — Application Form Templates
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/forms` | List known funder form templates |
-| `GET` | `/api/forms/{id}` | Get single form template |
-| `POST` | `/api/forms` | Create operator-defined form template |
-| `PUT` | `/api/forms/{id}` | Update form template |
-| `DELETE` | `/api/forms/{id}` | Delete form template |
+| Method   | Route             | Purpose                               |
+| -------- | ----------------- | ------------------------------------- |
+| `GET`    | `/api/forms`      | List known funder form templates      |
+| `GET`    | `/api/forms/{id}` | Get single form template              |
+| `POST`   | `/api/forms`      | Create operator-defined form template |
+| `PUT`    | `/api/forms/{id}` | Update form template                  |
+| `DELETE` | `/api/forms/{id}` | Delete form template                  |
 
 ### 1.13 — Outreach Tracking
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/outreach?grantId={id}` | List outreach records for a grant |
-| `POST` | `/api/outreach` | Create outreach record |
-| `PUT` | `/api/outreach/{id}` | Update outreach record / response status |
-| `DELETE` | `/api/outreach/{id}` | Delete outreach record |
+| Method   | Route                        | Purpose                                  |
+| -------- | ---------------------------- | ---------------------------------------- |
+| `GET`    | `/api/outreach?grantId={id}` | List outreach records for a grant        |
+| `POST`   | `/api/outreach`              | Create outreach record                   |
+| `PUT`    | `/api/outreach/{id}`         | Update outreach record / response status |
+| `DELETE` | `/api/outreach/{id}`         | Delete outreach record                   |
 
 ### 1.14 — Peer Organizations
 
@@ -338,54 +340,54 @@ Peer organizations are stored in the `sources` table with `type='peer'`. They us
 
 ### 1.15 — Backup & Restore
 
-| Method | Route | Purpose |
-|---|---|---|
-| `POST` | `/api/backup` | Create backup (returns .zip path) |
-| `POST` | `/api/backup/restore` | Restore from backup .zip |
-| `GET` | `/api/backup/status` | Last backup info + scheduled status |
-| `PUT` | `/api/backup/schedule` | Configure auto-backup interval |
+| Method | Route                  | Purpose                             |
+| ------ | ---------------------- | ----------------------------------- |
+| `POST` | `/api/backup`          | Create backup (returns .zip path)   |
+| `POST` | `/api/backup/restore`  | Restore from backup .zip            |
+| `GET`  | `/api/backup/status`   | Last backup info + scheduled status |
+| `PUT`  | `/api/backup/schedule` | Configure auto-backup interval      |
 
 ### 1.16 — Calendar (Local iCal Export)
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/calendar/deadlines` | Grant deadline events |
-| `GET` | `/api/calendar/reports` | Report due date events |
-| `GET` | `/api/calendar/export` | Export all events as `.ics` file |
-| `GET` | `/api/calendar/export/{scope}` | Export filtered scope: `grants`, `reports`, `all` |
+| Method | Route                          | Purpose                                           |
+| ------ | ------------------------------ | ------------------------------------------------- |
+| `GET`  | `/api/calendar/deadlines`      | Grant deadline events                             |
+| `GET`  | `/api/calendar/reports`        | Report due date events                            |
+| `GET`  | `/api/calendar/export`         | Export all events as `.ics` file                  |
+| `GET`  | `/api/calendar/export/{scope}` | Export filtered scope: `grants`, `reports`, `all` |
 
 ### 1.17 — Activity & Audit
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/activity` | Activity events (paginated, filterable) |
-| `GET` | `/api/activity/{entityType}/{entityId}` | Activity for specific entity |
+| Method | Route                                   | Purpose                                 |
+| ------ | --------------------------------------- | --------------------------------------- |
+| `GET`  | `/api/activity`                         | Activity events (paginated, filterable) |
+| `GET`  | `/api/activity/{entityType}/{entityId}` | Activity for specific entity            |
 
 ### 1.18 — Health & Diagnostics
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/health` | System health check |
-| `GET` | `/api/health/db` | Database integrity + WAL status |
-| `GET` | `/api/health/disk` | Disk space in `.grant-ops-data/` |
-| `GET` | `/api/health/opencode` | OpenCode detection + version |
+| Method | Route                  | Purpose                          |
+| ------ | ---------------------- | -------------------------------- |
+| `GET`  | `/api/health`          | System health check              |
+| `GET`  | `/api/health/db`       | Database integrity + WAL status  |
+| `GET`  | `/api/health/disk`     | Disk space in `.grant-ops-data/` |
+| `GET`  | `/api/health/opencode` | OpenCode detection + version     |
 
 ### 1.19 — Logs
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/logs/app` | Stream or paginate application logs |
-| `GET` | `/api/logs/error` | Stream or paginate error logs |
-| `GET` | `/api/logs/session/{jobId}` | View specific OpenCode session log |
+| Method | Route                       | Purpose                             |
+| ------ | --------------------------- | ----------------------------------- |
+| `GET`  | `/api/logs/app`             | Stream or paginate application logs |
+| `GET`  | `/api/logs/error`           | Stream or paginate error logs       |
+| `GET`  | `/api/logs/session/{jobId}` | View specific OpenCode session log  |
 
 ### 1.20 — Exports
 
-| Method | Route | Purpose |
-|---|---|---|
-| `GET` | `/api/exports/grants` | Export grants as CSV |
-| `GET` | `/api/exports/pipeline` | Export pipeline as CSV |
-| `GET` | `/api/exports/awards` | Export awards report as CSV |
-| `GET` | `/api/exports/activity` | Export activity log as CSV |
+| Method | Route                   | Purpose                     |
+| ------ | ----------------------- | --------------------------- |
+| `GET`  | `/api/exports/grants`   | Export grants as CSV        |
+| `GET`  | `/api/exports/pipeline` | Export pipeline as CSV      |
+| `GET`  | `/api/exports/awards`   | Export awards report as CSV |
+| `GET`  | `/api/exports/activity` | Export activity log as CSV  |
 
 ---
 
@@ -394,6 +396,7 @@ Peer organizations are stored in the `sources` table with `type='peer'`. They us
 The complete database schema — all 19 tables, indexes, FTS5 virtual tables, connection configuration, WAL pragmas, migration strategy, seed data, and backup considerations — is defined in **[12-data-architecture.md](./12-data-architecture.md)**.
 
 **Key points:**
+
 - better-sqlite3 v12.10.0, SQLite 3.53.1, WAL mode
 - Single writer connection + 4 read replicas (round-robin)
 - PRAGMA config: `busy_timeout=5000`, `synchronous=NORMAL`, `cache_size=-64000`, `wal_autocheckpoint=1000`, `foreign_keys=ON`, `mmap_size=268435456`
@@ -429,25 +432,25 @@ The complete database schema — all 19 tables, indexes, FTS5 virtual tables, co
 
 ### 3.3 — Text Extraction
 
-| Format | Library | Version | Method |
-|---|---|---|---|
-| **PDF** (simple) | `pdf-parse` | `^2.0.0` | `pdf(buffer).then(data => data.text)` — wraps pdfjs-dist internally |
-| **PDF** (complex/scanned) | `pdfjs-dist` | `^5.7.284` | `getDocument().promise` → `page.getTextContent()` — layout-aware extraction |
-| **DOCX** | `mammoth` | `^1.12.0` | `mammoth.extractRawText({buffer})` — clean semantic text for AI grounding |
-| **CSV** | `csv-parse` | `^5.6.0` | Streaming: `createReadStream().pipe(parse({columns: true, cast: true}))` |
-| **XLSX** | `xlsx` (SheetJS) | `0.20.3` | `XLSX.read(buffer, {type:'buffer'})` → `XLSX.utils.sheet_to_json()` |
-| **TXT** | `node:fs` | built-in | `fs.readFileSync(path, 'utf-8')` |
-| **Images** | — | — | No text extraction. Stored as binary reference only. |
+| Format                    | Library          | Version    | Method                                                                      |
+| ------------------------- | ---------------- | ---------- | --------------------------------------------------------------------------- |
+| **PDF** (simple)          | `pdf-parse`      | `^2.0.0`   | `pdf(buffer).then(data => data.text)` — wraps pdfjs-dist internally         |
+| **PDF** (complex/scanned) | `pdfjs-dist`     | `^5.7.284` | `getDocument().promise` → `page.getTextContent()` — layout-aware extraction |
+| **DOCX**                  | `mammoth`        | `^1.12.0`  | `mammoth.extractRawText({buffer})` — clean semantic text for AI grounding   |
+| **CSV**                   | `csv-parse`      | `^5.6.0`   | Streaming: `createReadStream().pipe(parse({columns: true, cast: true}))`    |
+| **XLSX**                  | `xlsx` (SheetJS) | `0.20.3`   | `XLSX.read(buffer, {type:'buffer'})` → `XLSX.utils.sheet_to_json()`         |
+| **TXT**                   | `node:fs`        | built-in   | `fs.readFileSync(path, 'utf-8')`                                            |
+| **Images**                | —                | —          | No text extraction. Stored as binary reference only.                        |
 
 **⚠️ Next.js Standalone Build Note**: `pdf-parse` wraps `pdfjs-dist`, which requires browser globals. On Next.js standalone builds, add `@napi-rs/canvas` and configure `serverExternalPackages` in `next.config.ts`.
 
 ### 3.4 — Document Classification
 
-| Classification | AI Grounding | Backup |
-|---|---|---|
-| `canonical` | Used as source of truth for drafting | Always included |
-| `draft-only` | Used for drafting context | Always included |
-| `restricted` | **Never** sent to OpenCode | Always included |
+| Classification | AI Grounding                         | Backup          |
+| -------------- | ------------------------------------ | --------------- |
+| `canonical`    | Used as source of truth for drafting | Always included |
+| `draft-only`   | Used for drafting context            | Always included |
+| `restricted`   | **Never** sent to OpenCode           | Always included |
 
 ---
 
@@ -458,6 +461,7 @@ The complete database schema — all 19 tables, indexes, FTS5 virtual tables, co
 Grants use **SQLite FTS5** with the `grants_fts` virtual table. Full-text search runs across: `title`, `funder`, `funderShort`, `summary`, `eligibility`, `tags`, `category`.
 
 **Search URI** (via `GET /api/grants?search=...`):
+
 - Plain text: SQLite FTS5 query on concatenated text fields
 - Ranked by FTS5 relevance (`bm25`)
 - Combined with status/funder/fit filters
@@ -466,6 +470,7 @@ Grants use **SQLite FTS5** with the `grants_fts` virtual table. Full-text search
 ### 4.2 — Natural Language Search
 
 The "smart search" described in 02-discovery-prospecting works as follows:
+
 1. User types natural-language query into the discovery search bar
 2. The query is passed to OpenCode via the agent loop (`research` job type)
 3. OpenCode interprets the query, searches configured sources, and returns structured results via `ResearchArtifact`
@@ -484,25 +489,28 @@ Snippets are searched client-side on the indexed `topicTags` and `programArea` f
 ### 5.1 — Toast Notifications
 
 Toast notifications are in-memory only (no database persistence). They are triggered by:
+
 - Job completion or failure (agent loop events)
 - Crawl completion or failure
 - Backup completion
 - Deadline approaching (when app is open)
 
 **Toast Schema:**
+
 ```typescript
 interface Toast {
   id: string;
-  type: "success" | "error" | "warning" | "info";
+  type: 'success' | 'error' | 'warning' | 'info';
   title: string;
   message: string;
-  action?: { label: string; href: string };  // e.g., "View grant"
-  duration: number;  // ms, 0 = sticky
+  action?: { label: string; href: string }; // e.g., "View grant"
+  duration: number; // ms, 0 = sticky
   timestamp: number;
 }
 ```
 
 **Toast behavior:**
+
 - Stack from top-right, max 3 visible
 - Auto-dismiss after `duration` ms (default 5000ms for success/info, sticky for errors)
 - Dismissible via close button
@@ -514,17 +522,17 @@ The sidebar shows an unread badge count. Clicking opens a drawer listing recent 
 
 ### 5.3 — System-Driven Notifications
 
-| Trigger | Type | Message |
-|---|---|---|
-| Crawl completed | success | "Crawl completed: {source} — {n} new grants found" |
-| Crawl failed | error | "Crawl failed for {source}: {error}" |
-| Draft generated | success | "Draft v{n} generated for {grant}" |
-| Draft failed | error | "Draft generation failed after {n} attempts" |
-| Backup completed | success | "Backup saved to {path}" |
-| Backup failed | error | "Backup failed: {error}" |
-| Deadline < 7 days | warning | "{grant} deadline in {n} days" |
-| Report due < 14 days | warning | "{report} due in {n} days" |
-| Source stale > 7d | warning | "{source} crawl is {n} days stale" |
+| Trigger              | Type    | Message                                            |
+| -------------------- | ------- | -------------------------------------------------- |
+| Crawl completed      | success | "Crawl completed: {source} — {n} new grants found" |
+| Crawl failed         | error   | "Crawl failed for {source}: {error}"               |
+| Draft generated      | success | "Draft v{n} generated for {grant}"                 |
+| Draft failed         | error   | "Draft generation failed after {n} attempts"       |
+| Backup completed     | success | "Backup saved to {path}"                           |
+| Backup failed        | error   | "Backup failed: {error}"                           |
+| Deadline < 7 days    | warning | "{grant} deadline in {n} days"                     |
+| Report due < 14 days | warning | "{report} due in {n} days"                         |
+| Source stale > 7d    | warning | "{source} crawl is {n} days stale"                 |
 
 ---
 
@@ -532,12 +540,12 @@ The sidebar shows an unread badge count. Clicking opens a drawer listing recent 
 
 ### 6.1 — Supported Formats
 
-| Format | Library | Version | Strategy |
-|---|---|---|---|
-| CSV | `csv-parse` | `^5.6.0` | Streaming: `createReadStream().pipe(parse({columns: true, cast: true}))` |
-| XLSX | `xlsx` (SheetJS) | `0.20.3` | `XLSX.read(buffer)` → `sheet_to_json()` with sheet detection and header row detection |
-| CSV/XLSX (typed) | `excel-zod` | `^1.0.0` | Zod schema → auto-detect headers → type-safe column mapping |
-| PDF (tabular budget) | OpenCode subprocess | — | Extract via agent loop, returned as `ExtractArtifact` budget fields |
+| Format               | Library             | Version  | Strategy                                                                              |
+| -------------------- | ------------------- | -------- | ------------------------------------------------------------------------------------- |
+| CSV                  | `csv-parse`         | `^5.6.0` | Streaming: `createReadStream().pipe(parse({columns: true, cast: true}))`              |
+| XLSX                 | `xlsx` (SheetJS)    | `0.20.3` | `XLSX.read(buffer)` → `sheet_to_json()` with sheet detection and header row detection |
+| CSV/XLSX (typed)     | `excel-zod`         | `^1.0.0` | Zod schema → auto-detect headers → type-safe column mapping                           |
+| PDF (tabular budget) | OpenCode subprocess | —        | Extract via agent loop, returned as `ExtractArtifact` budget fields                   |
 
 ### 6.2 — Budget Import Flow
 
@@ -550,6 +558,7 @@ The sidebar shows an unread badge count. Clicking opens a drawer listing recent 
 ### 6.3 — Column Detection Heuristic
 
 The CSV/XLSX parser:
+
 1. Reads first 10 rows
 2. Detects header row by searching for budget-related keywords: `category`, `item`, `line`, `description`, `amount`, `budget`, `total`, `cost`, `expense`
 3. If no header detected, assumes row 1 is the header
@@ -564,28 +573,29 @@ All configurable settings are stored in the SQLite `settings` key-value table. T
 
 ### 7.1 — Setting Keys
 
-| Key | Type | Default | Description |
-|---|---|---|---|
-| `operator.name` | string | `""` | Operator name (only name prompt) |
-| `agent.autoDraftThreshold` | integer | `75` | Fit score threshold for auto-draft suggestion |
-| `agent.voiceAndTone` | string | hardcoded profile | Voice/tone rules for drafting |
-| `agent.maxConcurrentJobs` | integer | `3` | Max concurrent OpenCode subprocesses |
-| `crawl.defaultIntervalHours` | integer | `168` | Default crawl interval for new sources |
-| `crawl.maxConcurrentCrawls` | integer | `1` | Max concurrent crawl jobs |
-| `crawl.requestDelayMs` | integer | `2000` | Minimum delay between requests to the same source |
-| `crawl.respectRobotsTxt` | integer | `1` | Whether crawls honor `robots.txt` restrictions |
-| `crawl.userAgent` | string | `"HackerDojoGrantOps/2.0 (+https://hackerdojo.org)"` | User-Agent string used for external crawls |
-| `ui.theme` | string | `"dark"` | Theme (only "dark" supported in v2) |
-| `backup.autoEnabled` | integer | `0` | Auto-backup enabled |
-| `backup.autoIntervalHours` | integer | `168` | Auto-backup interval |
-| `backup.autoPath` | string | `""` | Auto-backup directory path |
-| `integrations.propublicaApiKey` | string | `""` | Optional API key for ProPublica Nonprofit API. If unset, peer/funder 990 enrichment is disabled. |
-| `notifications.deadlineWarningDays` | integer | `7` | Days before deadline to warn |
-| `notifications.reportWarningDays` | integer | `14` | Days before report due to warn |
+| Key                                 | Type    | Default                                              | Description                                                                                      |
+| ----------------------------------- | ------- | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `operator.name`                     | string  | `""`                                                 | Operator name (only name prompt)                                                                 |
+| `agent.autoDraftThreshold`          | integer | `75`                                                 | Fit score threshold for auto-draft suggestion                                                    |
+| `agent.voiceAndTone`                | string  | hardcoded profile                                    | Voice/tone rules for drafting                                                                    |
+| `agent.maxConcurrentJobs`           | integer | `3`                                                  | Max concurrent OpenCode subprocesses                                                             |
+| `crawl.defaultIntervalHours`        | integer | `168`                                                | Default crawl interval for new sources                                                           |
+| `crawl.maxConcurrentCrawls`         | integer | `1`                                                  | Max concurrent crawl jobs                                                                        |
+| `crawl.requestDelayMs`              | integer | `2000`                                               | Minimum delay between requests to the same source                                                |
+| `crawl.respectRobotsTxt`            | integer | `1`                                                  | Whether crawls honor `robots.txt` restrictions                                                   |
+| `crawl.userAgent`                   | string  | `"HackerDojoGrantOps/2.0 (+https://hackerdojo.org)"` | User-Agent string used for external crawls                                                       |
+| `ui.theme`                          | string  | `"dark"`                                             | Theme (only "dark" supported in v2)                                                              |
+| `backup.autoEnabled`                | integer | `0`                                                  | Auto-backup enabled                                                                              |
+| `backup.autoIntervalHours`          | integer | `168`                                                | Auto-backup interval                                                                             |
+| `backup.autoPath`                   | string  | `""`                                                 | Auto-backup directory path                                                                       |
+| `integrations.propublicaApiKey`     | string  | `""`                                                 | Optional API key for ProPublica Nonprofit API. If unset, peer/funder 990 enrichment is disabled. |
+| `notifications.deadlineWarningDays` | integer | `7`                                                  | Days before deadline to warn                                                                     |
+| `notifications.reportWarningDays`   | integer | `14`                                                 | Days before report due to warn                                                                   |
 
 ### 7.2 — Operator Name
 
 The operator name is the **only** field prompted at first launch (see 01-core-concept). It is stored in the `settings` table under `operator.name`. It is used in:
+
 - Email draft salutations and signatures
 - Submission record "submitted by" field
 - Draft approval records
@@ -598,7 +608,13 @@ Custom tracker fields (pipeline management feature: program area, strategic prio
 ```json
 [
   { "key": "programArea", "label": "Program Area", "type": "text", "visible": true },
-  { "key": "strategicPriority", "label": "Strategic Priority", "type": "select", "options": ["High","Medium","Low"], "visible": true }
+  {
+    "key": "strategicPriority",
+    "label": "Strategic Priority",
+    "type": "select",
+    "options": ["High", "Medium", "Low"],
+    "visible": true
+  }
 ]
 ```
 
@@ -629,21 +645,21 @@ If `integrations.propublicaApiKey` is empty, steps 3-4 are skipped and the app r
 
 ```yaml
 peerOrganizations:
-  - name: "Noisebridge"
-    url: "https://noisebridge.net"
-    type: "hackerspace"
-  - name: "TechShop"  
-    url: "https://techshop.ws"
-    type: "makerspace"
-  - name: "NYC Resistor"
-    url: "https://nycresistor.com"
-    type: "hackerspace"
-  - name: "Dallas Makerspace"
-    url: "https://dallasmakerspace.org"
-    type: "makerspace"
+  - name: 'Noisebridge'
+    url: 'https://noisebridge.net'
+    type: 'hackerspace'
+  - name: 'TechShop'
+    url: 'https://techshop.ws'
+    type: 'makerspace'
+  - name: 'NYC Resistor'
+    url: 'https://nycresistor.com'
+    type: 'hackerspace'
+  - name: 'Dallas Makerspace'
+    url: 'https://dallasmakerspace.org'
+    type: 'makerspace'
   - name: "Artisan's Asylum"
-    url: "https://artisansasylum.com"
-    type: "makerspace"
+    url: 'https://artisansasylum.com'
+    type: 'makerspace'
 ```
 
 The operator can add, edit, or remove peer organizations via the Sources view (they appear as a special source type `"peer"` with lower crawl frequency: 720 hours / monthly).
@@ -651,6 +667,7 @@ The operator can add, edit, or remove peer organizations via the Sources view (t
 ### 9.3 — Hidden Giving Pattern Detection
 
 This feature (02-discovery-prospecting, feature #8) analyzes funder data from crawled sources and the ProPublica Nonprofit API:
+
 1. OpenCode ingests funder 990 data (via ProPublica API) for known foundations
 2. Analyzes giving patterns: year-over-year trends, focus area shifts, average grant sizes, co-funding patterns
 3. Returns insights as structured `ResearchArtifact` evidence entries with `evidenceType: "giving_pattern"`
@@ -668,27 +685,30 @@ This feature (02-discovery-prospecting, feature #8) analyzes funder data from cr
 import pino from 'pino';
 import { pinoRoll } from 'pino-roll';
 
-const logger = pino({
-  level: process.env.LOG_LEVEL ?? 'info',
-  timestamp: pino.stdTimeFunctions.isoTime,
-}, pinoRoll({
-  target: '.grant-ops-data/logs/app',
-  dateFormat: 'YYYY-MM-DD',
-  maxSize: '20m',
-  maxFiles: 10,
-  compress: true,
-}));
+const logger = pino(
+  {
+    level: process.env.LOG_LEVEL ?? 'info',
+    timestamp: pino.stdTimeFunctions.isoTime,
+  },
+  pinoRoll({
+    target: '.grant-ops-data/logs/app',
+    dateFormat: 'YYYY-MM-DD',
+    maxSize: '20m',
+    maxFiles: 10,
+    compress: true,
+  }),
+);
 ```
 
 ### 10.2 — Log Streams
 
 Two log streams, both filesystem-based:
 
-| Stream | Location | Rotation | Retention |
-|---|---|---|---|
-| App logs | `.grant-ops-data/logs/app.log` | Daily, max 10 files | 30 days |
-| Agent session logs | `.grant-ops-data/tmp/session-{jobId}.log` | Per-job, cleanup at 30 days | 30 days |
-| Error logs | `.grant-ops-data/logs/error.log` | Daily, max 10 files | 90 days |
+| Stream             | Location                                  | Rotation                    | Retention |
+| ------------------ | ----------------------------------------- | --------------------------- | --------- |
+| App logs           | `.grant-ops-data/logs/app.log`            | Daily, max 10 files         | 30 days   |
+| Agent session logs | `.grant-ops-data/tmp/session-{jobId}.log` | Per-job, cleanup at 30 days | 30 days   |
+| Error logs         | `.grant-ops-data/logs/error.log`          | Daily, max 10 files         | 90 days   |
 
 ### 10.2 — Log Format
 
@@ -701,11 +721,11 @@ Structured JSON lines (one object per line):
 
 ### 10.3 — Log Levels
 
-| Level | Usage |
-|---|---|
-| `error` | Operation failures, crashes, data corruption |
-| `warn` | Degraded states, retry attempts, stale data |
-| `info` | Job start/complete, state transitions, crawler events |
+| Level   | Usage                                                                 |
+| ------- | --------------------------------------------------------------------- |
+| `error` | Operation failures, crashes, data corruption                          |
+| `warn`  | Degraded states, retry attempts, stale data                           |
+| `info`  | Job start/complete, state transitions, crawler events                 |
 | `debug` | Full prompt text, raw artifact JSON, detailed timing (off by default) |
 
 ### 10.4 — Log Access
@@ -725,6 +745,7 @@ Structured JSON lines (one object per line):
 ### 11.1 — Auto-Backup Configuration
 
 The operator can enable automated backups from Settings → Backup:
+
 - **Toggle**: Enable/disable scheduled backups
 - **Interval**: Every N hours (default 168 = weekly, min 24)
 - **Destination**: Directory path (must be writable, validated on save)
@@ -746,6 +767,7 @@ The operator can enable automated backups from Settings → Backup:
 ### 11.3 — Dashboard Warning
 
 Per AC-8.2.3, the Settings view (and dashboard system status panel) show:
+
 - "Last backup: {relative time}" (or "Never backed up")
 - Warning if no backup in 7+ days
 - Warning if last backup failed verification
@@ -763,11 +785,11 @@ Per AC-8.2.3, the Settings view (and dashboard system status panel) show:
 
 ### 12.2 — OpenCode Subprocess Limits
 
-| Limit | Value | Configurable |
-|---|---|---|
-| Max concurrent subprocesses | 3 | Yes (`agent.maxConcurrentJobs`) |
-| Max memory per subprocess | No enforced limit (OS-managed) | No |
-| Subprocess timeout | Per job type (60–300s) | Yes, per job type |
+| Limit                       | Value                          | Configurable                    |
+| --------------------------- | ------------------------------ | ------------------------------- |
+| Max concurrent subprocesses | 3                              | Yes (`agent.maxConcurrentJobs`) |
+| Max memory per subprocess   | No enforced limit (OS-managed) | No                              |
+| Subprocess timeout          | Per job type (60–300s)         | Yes, per job type               |
 
 On startup, the app scans `.grant-ops-data/tmp/session-*.log` for jobs marked `running` in the database. Any orphaned OpenCode subprocess PIDs associated with those jobs MUST be terminated and the jobs marked `failed` with error `"App terminated during operation"`.
 
@@ -796,6 +818,7 @@ On startup, the app scans `.grant-ops-data/tmp/session-*.log` for jobs marked `r
 ### 13.3 — No Web Serving
 
 The app runs exclusively on `localhost` (AC-12.1.1). It is:
+
 - Not deployed to any public URL
 - Not accessible from other machines on the network
 - Not packaged with any CDN or external web service

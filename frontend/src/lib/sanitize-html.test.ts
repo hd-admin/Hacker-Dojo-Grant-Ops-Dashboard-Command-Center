@@ -47,8 +47,7 @@ describe('sanitizeNotificationText', () => {
   });
 
   it('preserves mixed allowed tags with stripped attributes', () => {
-    const input =
-      '<strong onclick="x()">Bold</strong> and <em style="color:red">italic</em> text';
+    const input = '<strong onclick="x()">Bold</strong> and <em style="color:red">italic</em> text';
     expect(sanitizeNotificationText(input)).toBe('<strong>Bold</strong> and <em>italic</em> text');
   });
 });
@@ -81,8 +80,6 @@ describe('escapeForHtml', () => {
   });
 
   it('escapes text containing grant data', () => {
-    expect(escapeForHtml('Grant: <Untitled> & Co.')).toBe(
-      'Grant: &lt;Untitled&gt; &amp; Co.',
-    );
+    expect(escapeForHtml('Grant: <Untitled> & Co.')).toBe('Grant: &lt;Untitled&gt; &amp; Co.');
   });
 });

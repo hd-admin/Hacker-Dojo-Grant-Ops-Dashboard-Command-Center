@@ -70,7 +70,9 @@ export function OperatorNamePrompt({ onComplete }: OperatorNamePromptProps) {
       }
     }
     void checkExisting();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [onComplete]);
 
   const handleSubmit = useCallback(async () => {
@@ -140,10 +142,6 @@ export function OperatorNamePrompt({ onComplete }: OperatorNamePromptProps) {
           )}
           <button
             className={styles.button}
-            style={{
-              opacity: disabled ? 0.4 : 1,
-              cursor: disabled ? 'not-allowed' : 'pointer',
-            }}
             onClick={handleSubmit}
             disabled={disabled}
             aria-label="Get started"

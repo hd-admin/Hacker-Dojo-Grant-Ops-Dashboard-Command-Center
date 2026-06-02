@@ -1,9 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { BASE_URL, markScheduleDue, resetAppState } from './test-utils';
 
-test('scheduled-crawl: due schedules trigger a real crawl run', async ({
-  request,
-}) => {
+test('scheduled-crawl: due schedules trigger a real crawl run', async ({ request }) => {
   await resetAppState(request);
 
   const createSourceResponse = await request.post(`${BASE_URL}/api/sources`, {
@@ -31,9 +29,7 @@ test('scheduled-crawl: due schedules trigger a real crawl run', async ({
 
   await markScheduleDue(request, createdSource.source.id);
 
-  const triggerResponse = await request.post(
-    `${BASE_URL}/api/crawl/scheduled`,
-  );
+  const triggerResponse = await request.post(`${BASE_URL}/api/crawl/scheduled`);
   expect(triggerResponse.ok()).toBeTruthy();
   const triggerResult = (await triggerResponse.json()) as { triggered: number };
   expect(triggerResult.triggered).toBe(1);
@@ -59,9 +55,7 @@ test('scheduled-crawl: due schedules trigger a real crawl run', async ({
   const refreshedSchedule = (await scheduleResponse.json()) as {
     nextScheduledAt: string;
   };
-  expect(new Date(refreshedSchedule.nextScheduledAt).getTime()).toBeGreaterThan(
-    Date.now(),
-  );
+  expect(new Date(refreshedSchedule.nextScheduledAt).getTime()).toBeGreaterThan(Date.now());
 
   const sourcesResponse = await request.get(`${BASE_URL}/api/sources`);
   expect(sourcesResponse.ok()).toBeTruthy();
@@ -69,8 +63,6 @@ test('scheduled-crawl: due schedules trigger a real crawl run', async ({
     id: string;
     lastCrawledAt?: string;
   }>;
-  const scheduledSource = sources.find(
-    (source) => source.id === createdSource.source.id,
-  );
+  const scheduledSource = sources.find((source) => source.id === createdSource.source.id);
   expect(scheduledSource?.lastCrawledAt).toBeTruthy();
 });

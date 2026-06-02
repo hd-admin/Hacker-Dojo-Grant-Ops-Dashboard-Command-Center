@@ -1,4 +1,21 @@
-/* MiniProgressBar CSS Module — extracted inline styles */
+/* MiniProgressBar CSS Module */
+
+.bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-family: var(--sans);
+  font-size: 12px;
+  color: var(--text-dim);
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+}
 
 .icon {
   font-size: 14px;
@@ -10,4 +27,31 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.track {
+  flex: 1;
+  height: 4px;
+  background: var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.fill {
+  height: 100%;
+  border-radius: var(--radius);
+  width: 100%;
+  transform-origin: left;
+  transition: transform 300ms ease-out;
+}
+
+.btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  padding: 2px 8px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 11px;
+  font-family: var(--sans);
 }

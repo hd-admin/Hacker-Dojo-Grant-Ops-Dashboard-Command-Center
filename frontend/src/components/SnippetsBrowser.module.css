@@ -60,6 +60,6 @@
   padding: 1px 6px;
   background: var(--accent-bg-dim);
   color: var(--accent);
-  border-radius: 3px;
+  border-radius: var(--radius);
   font-size: 11px;
 }

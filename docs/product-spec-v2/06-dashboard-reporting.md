@@ -47,19 +47,20 @@ The Dashboard is the first thing the user sees. It must immediately communicate 
 
 ## KPI Definitions
 
-| KPI | Calculation | Update Trigger |
-|---|---|---|
+| KPI                   | Calculation                                                                       | Update Trigger                    |
+| --------------------- | --------------------------------------------------------------------------------- | --------------------------------- |
 | Active Pipeline Value | Sum of `awardSort` for all grants where status ≠ awarded/declined/closed/archived | Grant added/removed from pipeline |
-| Next Deadline | Grant with fewest `daysOut` > 0 where status < submitted | Grant added, deadline changed |
-| Drafted & Ready | Count of grants where status = 'review' | Draft generation, status change |
-| New Matches (7d) | Count of grants where `matchedAt` within last 7 days | New match discovered |
-| High-Fit Matches | Count of grants with fit ≥ 85 and status = 'matched' | Fit score change |
+| Next Deadline         | Grant with fewest `daysOut` > 0 where status < submitted                          | Grant added, deadline changed     |
+| Drafted & Ready       | Count of grants where status = 'review'                                           | Draft generation, status change   |
+| New Matches (7d)      | Count of grants where `matchedAt` within last 7 days                              | New match discovered              |
+| High-Fit Matches      | Count of grants with fit ≥ 85 and status = 'matched'                              | Fit score change                  |
 
 ## System Status Panel
 
 Must show at-a-glance health of all subsystems:
 
 ### Fully Online
+
 ```
 🟢 All systems operational
    Crawler running · Last crawl 2h ago
@@ -68,6 +69,7 @@ Must show at-a-glance health of all subsystems:
 ```
 
 ### Partially Degraded
+
 ```
 🟡 AI features unavailable
    Crawler running · Last crawl 2h ago
@@ -77,6 +79,7 @@ Must show at-a-glance health of all subsystems:
 ```
 
 ### Fully Offline
+
 ```
 🔴 Storage unavailable
    Cannot read or write grant data
@@ -87,7 +90,9 @@ Must show at-a-glance health of all subsystems:
 ## Internal Reports
 
 ### Grant Pipeline Report
+
 For board/leadership review:
+
 - Grants by status (count + value)
 - Success rate (submitted → awarded)
 - Average time from match → submission
@@ -95,16 +100,19 @@ For board/leadership review:
 - Export as CSV or print-friendly view
 
 ### Fundraising Forecast
+
 - Projected submissions next 90 days
 - Projected award value based on historical success rate
 - At-risk grants (near deadline, not yet submitted)
 
 **Calculation rules (deterministic, not AI-generated):**
+
 - `projected submissions next 90 days` = count of grants in `approved` or `submission-ready` state with deadlines inside the next 90 days
 - `projected award value` = sum of each projected submission's `awardSort * historicalSuccessRate`, where `historicalSuccessRate = awarded / submitted` over the trailing 24 months (or 0 if fewer than 5 submitted grants exist)
 - `at-risk grants` = grants with deadline < 14 days and status not in `submitted`, `awarded`, or `declined`
 
 ### Annual Summary
+
 - Total grants submitted
 - Total awarded
 - Success rate
@@ -120,23 +128,23 @@ The activity feed is powered by real event records — not static text:
 ```typescript
 interface ActivityEvent {
   id: string;
-  eventType: 
-    | "grant.matched"
-    | "grant.status_changed"
-    | "draft.generated"
-    | "draft.approved"
-    | "draft.revision_requested"
-    | "crawl.completed"
-    | "crawl.failed"
-    | "crawl.partial"
-    | "task.completed"
-    | "task.blocked"
-    | "submission.recorded"
-    | "follow_up.created"
-    | "follow_up.completed"
-    | "award.created"
-    | "expense.added"
-    | "report.submitted";
+  eventType:
+    | 'grant.matched'
+    | 'grant.status_changed'
+    | 'draft.generated'
+    | 'draft.approved'
+    | 'draft.revision_requested'
+    | 'crawl.completed'
+    | 'crawl.failed'
+    | 'crawl.partial'
+    | 'task.completed'
+    | 'task.blocked'
+    | 'submission.recorded'
+    | 'follow_up.created'
+    | 'follow_up.completed'
+    | 'award.created'
+    | 'expense.added'
+    | 'report.submitted';
   entityId: string;
   entityType: string;
   summary: string;
@@ -147,10 +155,10 @@ interface ActivityEvent {
 
 ## Export Formats
 
-| Export | Format | Includes |
-|---|---|---|
-| Discovery results | CSV | All filtered grants with fit scores |
-| Pipeline | CSV | All pipeline grants with status, deadline |
-| Award report | PDF (print) | All active awards with spend-down |
-| Activity log | CSV | Filtered activity events for date range |
-| Full backup | ZIP | SQLite DB + all documents |
+| Export            | Format      | Includes                                  |
+| ----------------- | ----------- | ----------------------------------------- |
+| Discovery results | CSV         | All filtered grants with fit scores       |
+| Pipeline          | CSV         | All pipeline grants with status, deadline |
+| Award report      | PDF (print) | All active awards with spend-down         |
+| Activity log      | CSV         | Filtered activity events for date range   |
+| Full backup       | ZIP         | SQLite DB + all documents                 |

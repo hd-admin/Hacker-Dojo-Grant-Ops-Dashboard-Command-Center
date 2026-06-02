@@ -70,7 +70,7 @@ OpenCode agents never communicate results via stdout. Instead, they write struct
 ```typescript
 // tmp/research-{jobId}.json
 interface ResearchArtifact {
-  artifactType: "research";
+  artifactType: 'research';
   jobId: string;
   timestamp: string;
   grants: Array<{
@@ -80,7 +80,7 @@ interface ResearchArtifact {
     award?: string;
     awardSort?: number;
     deadline?: string;
-    deadlineConfidence?: "exact" | "estimated" | "rolling" | "unknown";
+    deadlineConfidence?: 'exact' | 'estimated' | 'rolling' | 'unknown';
     eligibility?: string;
     requirements?: string[];
     externalUrl?: string;
@@ -90,7 +90,13 @@ interface ResearchArtifact {
   }>;
   evidence: Array<{
     grantTitle: string;
-    evidenceType: "fit_score" | "deadline" | "award_amount" | "eligibility" | "requirements" | "giving_pattern";
+    evidenceType:
+      | 'fit_score'
+      | 'deadline'
+      | 'award_amount'
+      | 'eligibility'
+      | 'requirements'
+      | 'giving_pattern';
     content: string;
     sourceUrl?: string;
   }>;
@@ -106,16 +112,16 @@ interface ResearchArtifact {
 ```typescript
 // tmp/draft-{jobId}-{version}.json
 interface DraftArtifact {
-  artifactType: "draft";
+  artifactType: 'draft';
   jobId: string;
   grantId: string;
   version: number;
   timestamp: string;
-  content: string;  // Full draft text
+  content: string; // Full draft text
   sections: Array<{
     sectionTitle: string;
     content: string;
-    groundingSources: string[];  // document IDs or URLs
+    groundingSources: string[]; // document IDs or URLs
     isGrounded: boolean;
   }>;
   wordCount: number;
@@ -131,11 +137,11 @@ interface DraftArtifact {
 ```typescript
 // tmp/crawl-{jobId}.json
 interface CrawlArtifact {
-  artifactType: "crawl";
+  artifactType: 'crawl';
   jobId: string;
   sourceId: string;
   timestamp: string;
-  status: "completed" | "partial" | "failed";
+  status: 'completed' | 'partial' | 'failed';
   grantsFound: Array<{
     title: string;
     funder: string;
@@ -155,7 +161,7 @@ interface CrawlArtifact {
 ```typescript
 // tmp/match-{jobId}.json
 interface MatchArtifact {
-  artifactType: "match";
+  artifactType: 'match';
   jobId: string;
   timestamp: string;
   matches: Array<{
@@ -181,7 +187,7 @@ interface MatchArtifact {
 ```typescript
 // tmp/extract-{jobId}.json
 interface ExtractArtifact {
-  artifactType: "extract";
+  artifactType: 'extract';
   jobId: string;
   grantId: string;
   timestamp: string;
@@ -195,7 +201,7 @@ interface ExtractArtifact {
     restrictions?: string[];
     contacts?: Array<{ name: string; role: string; email?: string }>;
   };
-  confidence: "high" | "medium" | "low";
+  confidence: 'high' | 'medium' | 'low';
   sourceDocumentRef: string;
   errors?: string[];
 }
@@ -208,14 +214,14 @@ interface ExtractArtifact {
 ```typescript
 // server/agent-loop.ts
 
-type AgentTaskType = "research" | "draft" | "crawl" | "match" | "extract";
+type AgentTaskType = 'research' | 'draft' | 'crawl' | 'match' | 'extract';
 
 interface AgentJob {
   id: string;
   type: AgentTaskType;
   grantId?: string;
   params: Record<string, unknown>;
-  status: "queued" | "running" | "verifying" | "retrying" | "completed" | "failed" | "cancelled";
+  status: 'queued' | 'running' | 'verifying' | 'retrying' | 'completed' | 'failed' | 'cancelled';
   retryCount: number;
   maxRetries: number;
   artifactPath?: string;
@@ -225,33 +231,34 @@ interface AgentJob {
 }
 
 async function executeAgentJob(job: AgentJob): Promise<void> {
-  const tmpDir = path.join(DATA_DIR, "tmp");
-  const artifactPath = job.type === 'draft'
-    ? path.join(tmpDir, `${job.type}-${job.id}-${job.params.version}.json`)
-    : path.join(tmpDir, `${job.type}-${job.id}.json`);
+  const tmpDir = path.join(DATA_DIR, 'tmp');
+  const artifactPath =
+    job.type === 'draft'
+      ? path.join(tmpDir, `${job.type}-${job.id}-${job.params.version}.json`)
+      : path.join(tmpDir, `${job.type}-${job.id}.json`);
 
   // 1. Build the prompt with artifact schema embedded
   const prompt = buildPrompt(job.type, job.params, artifactPath);
 
   // 2. Spawn OpenCode subprocess
-  updateJobStatus(job, "running", 0, "Starting agent...");
+  updateJobStatus(job, 'running', 0, 'Starting agent...');
 
   let attempt = 0;
   const maxAttempts = 3;
 
-    while (attempt < maxAttempts) {
-      attempt++;
+  while (attempt < maxAttempts) {
+    attempt++;
 
-      try {
-        // Ensure no stale artifact from a previous attempt can be reused.
-        if (fs.existsSync(artifactPath)) {
-          fs.unlinkSync(artifactPath);
-        }
-        const attemptStartedAt = Date.now();
+    try {
+      // Ensure no stale artifact from a previous attempt can be reused.
+      if (fs.existsSync(artifactPath)) {
+        fs.unlinkSync(artifactPath);
+      }
+      const attemptStartedAt = Date.now();
 
-        // Run OpenCode with timeout
-        const result = await runOpenCode(prompt, {
-        timeoutMs: job.type === "draft" ? 300000 : 120000,
+      // Run OpenCode with timeout
+      const result = await runOpenCode(prompt, {
+        timeoutMs: job.type === 'draft' ? 300000 : 120000,
         workingDir: tmpDir,
         env: { ...process.env, ARTIFACT_PATH: artifactPath },
       });
@@ -259,32 +266,42 @@ async function executeAgentJob(job: AgentJob): Promise<void> {
       // 3. Check if artifact file exists
       if (!fs.existsSync(artifactPath)) {
         if (attempt < maxAttempts) {
-          updateJobStatus(job, "retrying", 30, `Artifact not found, retrying (${attempt}/${maxAttempts})...`);
+          updateJobStatus(
+            job,
+            'retrying',
+            30,
+            `Artifact not found, retrying (${attempt}/${maxAttempts})...`,
+          );
           prompt += `\n\nPREVIOUS ATTEMPT FAILED: No artifact file was written to ${artifactPath}. You MUST write valid JSON to this exact path.`;
           continue;
         }
-        throw new Error("Agent did not produce an artifact file after all attempts");
+        throw new Error('Agent did not produce an artifact file after all attempts');
       }
 
       // 4. Read and parse the artifact
-      updateJobStatus(job, "verifying", 80, "Verifying artifact...");
+      updateJobStatus(job, 'verifying', 80, 'Verifying artifact...');
       const stat = fs.statSync(artifactPath);
       if (stat.mtimeMs < attemptStartedAt) {
-        throw new Error("Artifact file is stale from an earlier attempt");
+        throw new Error('Artifact file is stale from an earlier attempt');
       }
 
-      const raw = fs.readFileSync(artifactPath, "utf-8");
+      const raw = fs.readFileSync(artifactPath, 'utf-8');
       let artifact: unknown;
 
       try {
         artifact = JSON.parse(raw);
       } catch {
         if (attempt < maxAttempts) {
-          updateJobStatus(job, "retrying", 40, `Invalid JSON, retrying (${attempt}/${maxAttempts})...`);
+          updateJobStatus(
+            job,
+            'retrying',
+            40,
+            `Invalid JSON, retrying (${attempt}/${maxAttempts})...`,
+          );
           prompt += `\n\nPREVIOUS ATTEMPT FAILED: The file at ${artifactPath} contained invalid JSON. Ensure valid JSON output.`;
           continue;
         }
-        throw new Error("Agent produced invalid JSON after all attempts");
+        throw new Error('Agent produced invalid JSON after all attempts');
       }
 
       // 5. Typecheck against schema
@@ -292,9 +309,16 @@ async function executeAgentJob(job: AgentJob): Promise<void> {
       const parseResult = schema.safeParse(artifact);
 
       if (!parseResult.success) {
-        const errors = parseResult.error.issues.map(i => `${i.path.join(".")}: ${i.message}`).join("; ");
+        const errors = parseResult.error.issues
+          .map((i) => `${i.path.join('.')}: ${i.message}`)
+          .join('; ');
         if (attempt < maxAttempts) {
-          updateJobStatus(job, "retrying", 50, `Schema mismatch, retrying (${attempt}/${maxAttempts})...`);
+          updateJobStatus(
+            job,
+            'retrying',
+            50,
+            `Schema mismatch, retrying (${attempt}/${maxAttempts})...`,
+          );
           prompt += `\n\nPREVIOUS ATTEMPT FAILED: Schema validation errors: ${errors}. Fix these issues.`;
           continue;
         }
@@ -315,7 +339,7 @@ async function executeAgentJob(job: AgentJob): Promise<void> {
         DATA_DIR,
         'artifacts',
         artifactDirByType[job.type],
-        `${job.id}.json`
+        `${job.id}.json`,
       );
       fs.mkdirSync(path.dirname(persistPath), { recursive: true });
       fs.writeFileSync(persistPath, JSON.stringify(verified, null, 2));
@@ -324,12 +348,11 @@ async function executeAgentJob(job: AgentJob): Promise<void> {
       await ingestArtifact(job.type, verified, job);
 
       // 8. Mark done
-      updateJobStatus(job, "completed", 100, "Complete");
+      updateJobStatus(job, 'completed', 100, 'Complete');
       return;
-
     } catch (error) {
       if (attempt >= maxAttempts) {
-        updateJobStatus(job, "failed", 0, error.message);
+        updateJobStatus(job, 'failed', 0, error.message);
         throw error;
       }
     }
@@ -341,33 +364,44 @@ async function executeAgentJob(job: AgentJob): Promise<void> {
 
 ```typescript
 // shared/artifact-schemas.ts
-import { z } from "zod";
+import { z } from 'zod';
 
 export const ResearchArtifactSchema = z.object({
-  artifactType: z.literal("research"),
+  artifactType: z.literal('research'),
   jobId: z.string(),
   timestamp: z.string(),
-  grants: z.array(z.object({
-    title: z.string().min(1),
-    funder: z.string().min(1),
-    funderShort: z.string(),
-    award: z.string().optional(),
-    awardSort: z.number().optional(),
-    deadline: z.string().optional(),
-    deadlineConfidence: z.enum(["exact","estimated","rolling","unknown"]).optional(),
-    eligibility: z.string().optional(),
-    requirements: z.array(z.string()).optional(),
-    externalUrl: z.string().url().optional(),
-    summary: z.string().optional(),
-    tags: z.array(z.string()),
-    category: z.string().optional(),
-  })),
-  evidence: z.array(z.object({
-    grantTitle: z.string(),
-    evidenceType: z.enum(["fit_score","deadline","award_amount","eligibility","requirements","giving_pattern"]),
-    content: z.string(),
-    sourceUrl: z.string().optional(),
-  })),
+  grants: z.array(
+    z.object({
+      title: z.string().min(1),
+      funder: z.string().min(1),
+      funderShort: z.string(),
+      award: z.string().optional(),
+      awardSort: z.number().optional(),
+      deadline: z.string().optional(),
+      deadlineConfidence: z.enum(['exact', 'estimated', 'rolling', 'unknown']).optional(),
+      eligibility: z.string().optional(),
+      requirements: z.array(z.string()).optional(),
+      externalUrl: z.string().url().optional(),
+      summary: z.string().optional(),
+      tags: z.array(z.string()),
+      category: z.string().optional(),
+    }),
+  ),
+  evidence: z.array(
+    z.object({
+      grantTitle: z.string(),
+      evidenceType: z.enum([
+        'fit_score',
+        'deadline',
+        'award_amount',
+        'eligibility',
+        'requirements',
+        'giving_pattern',
+      ]),
+      content: z.string(),
+      sourceUrl: z.string().optional(),
+    }),
+  ),
   rationale: z.string().optional(),
   sourcesFound: z.number().int().min(0),
   grantsFound: z.number().int().min(0),
@@ -380,13 +414,18 @@ export const ResearchArtifactSchema = z.object({
 ### OpenCode Prompt Template
 
 The prompt we send to OpenCode must be explicit about:
+
 1. What artifact to produce
 2. Where to write it
 3. The exact JSON schema
 4. What to do on failure
 
 ```typescript
-function buildPrompt(type: AgentTaskType, params: Record<string, unknown>, artifactPath: string): string {
+function buildPrompt(
+  type: AgentTaskType,
+  params: Record<string, unknown>,
+  artifactPath: string,
+): string {
   const schema = getSchemaDefinition(type);
   const context = getOrgContext(); // hardcoded Hacker Dojo profile
 
@@ -427,6 +466,7 @@ I will ask you to retry with specific error details.
 ### Current Problem
 
 Currently pressing a button like "Generate Draft" or "Run Discovery":
+
 - No loading indicator
 - No progress bar
 - No stage indicator
@@ -454,8 +494,8 @@ Every async operation must show:
 // frontend/src/components/JobProgress.tsx
 interface JobProgressProps {
   jobId: string;
-  jobType: "research" | "draft" | "crawl" | "match" | "extract";
-  status: "queued" | "running" | "verifying" | "retrying" | "completed" | "failed" | "cancelled";
+  jobType: 'research' | 'draft' | 'crawl' | 'match' | 'extract';
+  status: 'queued' | 'running' | 'verifying' | 'retrying' | 'completed' | 'failed' | 'cancelled';
   progress: number; // 0-100
   stage: string;
   errorMessage?: string;
@@ -469,13 +509,13 @@ interface JobProgressProps {
 
 The OpenCode subprocess is a black box. The app MUST report only stages it can directly observe from the controller lifecycle. No fictional mid-process stages are allowed unless OpenCode writes a separate progress file.
 
-| Job Type | Observable Stages |
-|---|---|
+| Job Type | Observable Stages                                    |
+| -------- | ---------------------------------------------------- |
 | research | queued → preparing → running → verifying → completed |
-| draft | queued → preparing → running → verifying → completed |
-| crawl | queued → preparing → running → verifying → completed |
-| match | queued → preparing → running → verifying → completed |
-| extract | queued → preparing → running → verifying → completed |
+| draft    | queued → preparing → running → verifying → completed |
+| crawl    | queued → preparing → running → verifying → completed |
+| match    | queued → preparing → running → verifying → completed |
+| extract  | queued → preparing → running → verifying → completed |
 
 If a future OpenCode version emits structured progress into `tmp/progress-{jobId}.json`, these stages may be refined. Until then, the UI MUST NOT imply insight into internal agent work such as "analyzing" or "ranking".
 
@@ -497,8 +537,8 @@ export function useJobProgress(jobId: string) {
 ```typescript
 // server/cache-cleanup.ts
 
-const TMP_DIR = path.join(DATA_DIR, "tmp");
-const CACHE_DIR = path.join(TMP_DIR, ".cache");
+const TMP_DIR = path.join(DATA_DIR, 'tmp');
+const CACHE_DIR = path.join(TMP_DIR, '.cache');
 const MAX_CACHE_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 const MAX_CACHE_SIZE_MB = 500;
 

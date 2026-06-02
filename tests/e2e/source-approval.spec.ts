@@ -26,9 +26,7 @@ test('source-approval-review: approve a pending source from the sources queue', 
   await page.goto(BASE_URL);
   await page.waitForSelector('.app', { timeout: 60000 });
 
-  await expect(
-    page.locator('.nav-item[data-view="sources"] .nav-count'),
-  ).toHaveText('1');
+  await expect(page.locator('.nav-item[data-view="sources"] .nav-count')).toHaveText('1');
 
   await page.click('[data-view="sources"]');
   await expect(page.locator('#view-sources')).toHaveClass(/active/);
@@ -39,18 +37,15 @@ test('source-approval-review: approve a pending source from the sources queue', 
 
   const approveResponse = page.waitForResponse(
     (response) =>
-      response.url().includes(
-        `/api/sources/${createdSource.source.id}/review`,
-      ) && response.request().method() === 'POST',
+      response.url().includes(`/api/sources/${createdSource.source.id}/review`) &&
+      response.request().method() === 'POST',
   );
   await page.getByTestId(`approve-source-btn-${createdSource.source.id}`).click();
   const approveResult = await approveResponse;
   expect(approveResult.ok()).toBeTruthy();
 
   await expect(pendingReviewSection).toContainText('No sources pending review');
-  await expect(
-    page.locator('.nav-item[data-view="sources"] .nav-count'),
-  ).toHaveCount(0);
+  await expect(page.locator('.nav-item[data-view="sources"] .nav-count')).toHaveCount(0);
 
   const sourcesResponse = await request.get(`${BASE_URL}/api/sources`);
   expect(sourcesResponse.ok()).toBeTruthy();
@@ -60,9 +55,7 @@ test('source-approval-review: approve a pending source from the sources queue', 
     approvedAt?: string;
     isActive: boolean;
   }>;
-  const approvedSource = sources.find(
-    (source) => source.id === createdSource.source.id,
-  );
+  const approvedSource = sources.find((source) => source.id === createdSource.source.id);
   expect(approvedSource).toBeDefined();
   expect(approvedSource?.reviewStatus).toBe('approved');
   expect(approvedSource?.approvedAt).toBeTruthy();

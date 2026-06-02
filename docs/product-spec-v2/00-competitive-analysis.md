@@ -8,15 +8,15 @@ Hacker Dojo doesn't need any of that. It needs a tool that works locally, knows 
 
 ## Our Position
 
-| Market Standard | Our Approach |
-|---|---|
-| Cloud SaaS with recurring fees | **Local-first**, no subscription |
-| Your data on their servers | **Everything on your machine** |
-| Generic nonprofit configuration | **Hardcoded for Hacker Dojo** |
-| Multi-user roles and teams | **Single-user, zero overhead** |
-| Web-based with latency | **Local desktop, instant** |
-| Setup wizard with org onboarding | **Works on launch — profile pre-loaded** |
-| Separate tools for discovery, writing, tracking | **One integrated workflow** |
+| Market Standard                                 | Our Approach                             |
+| ----------------------------------------------- | ---------------------------------------- |
+| Cloud SaaS with recurring fees                  | **Local-first**, no subscription         |
+| Your data on their servers                      | **Everything on your machine**           |
+| Generic nonprofit configuration                 | **Hardcoded for Hacker Dojo**            |
+| Multi-user roles and teams                      | **Single-user, zero overhead**           |
+| Web-based with latency                          | **Local desktop, instant**               |
+| Setup wizard with org onboarding                | **Works on launch — profile pre-loaded** |
+| Separate tools for discovery, writing, tracking | **One integrated workflow**              |
 
 ## Design Direction
 

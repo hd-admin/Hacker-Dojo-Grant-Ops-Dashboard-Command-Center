@@ -12,9 +12,12 @@ describe('OperatorNamePrompt', () => {
     document.body.appendChild(container);
     root = createRoot(container);
 
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      json: () => Promise.resolve({ name: '' }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        json: () => Promise.resolve({ name: '' }),
+      }),
+    );
     vi.stubGlobal('localStorage', {
       getItem: vi.fn().mockReturnValue(null),
       setItem: vi.fn(),
@@ -30,9 +33,7 @@ describe('OperatorNamePrompt', () => {
   async function render(props: Record<string, unknown> = {}) {
     const module = await import('./OperatorNamePrompt');
     const { OperatorNamePrompt } = module;
-    root.render(
-      React.createElement(OperatorNamePrompt, props),
-    );
+    root.render(React.createElement(OperatorNamePrompt, props));
     await new Promise((r) => setTimeout(r, 100));
     return container;
   }
@@ -67,9 +68,12 @@ describe('OperatorNamePrompt', () => {
   });
 
   it('shows error message via alert role when fetch fails', async () => {
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce({ json: () => Promise.resolve({ name: '' }) }) // initial check
-      .mockRejectedValueOnce(new Error('Network error')) // save call
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({ json: () => Promise.resolve({ name: '' }) }) // initial check
+        .mockRejectedValueOnce(new Error('Network error')), // save call
     );
     const el = await render();
     const input = el.querySelector('input')!;
@@ -100,9 +104,12 @@ describe('OperatorNamePrompt', () => {
 
   it('calls onComplete when button clicked after save', async () => {
     const onComplete = vi.fn();
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce({ json: () => Promise.resolve({ name: '' }) }) // initial check
-      .mockResolvedValueOnce({ json: () => Promise.resolve({ name: 'Alice' }) }) // save call
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce({ json: () => Promise.resolve({ name: '' }) }) // initial check
+        .mockResolvedValueOnce({ json: () => Promise.resolve({ name: 'Alice' }) }), // save call
     );
 
     const el = await render({ onComplete });
@@ -124,8 +131,9 @@ describe('OperatorNamePrompt', () => {
 
   it('does not submit with empty name', async () => {
     const onComplete = vi.fn();
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce({ json: () => Promise.resolve({ name: '' }) }) // initial check
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({ json: () => Promise.resolve({ name: '' }) }), // initial check
     );
 
     const el = await render({ onComplete });
@@ -146,9 +154,7 @@ describe('OperatorNamePrompt', () => {
 
     const module = await import('./OperatorNamePrompt');
     const { OperatorNamePrompt } = module;
-    root.render(
-      React.createElement(OperatorNamePrompt, { onComplete }),
-    );
+    root.render(React.createElement(OperatorNamePrompt, { onComplete }));
     await new Promise((r) => setTimeout(r, 100));
 
     const dialog = container.querySelector('[role="dialog"]');
@@ -161,16 +167,15 @@ describe('OperatorNamePrompt', () => {
       getItem: vi.fn().mockReturnValue(null),
       setItem: vi.fn(),
     });
-    vi.stubGlobal('fetch', vi.fn()
-      .mockResolvedValueOnce({ json: () => Promise.resolve({ name: 'ServerUser' }) })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValueOnce({ json: () => Promise.resolve({ name: 'ServerUser' }) }),
     );
     const onComplete = vi.fn();
 
     const module = await import('./OperatorNamePrompt');
     const { OperatorNamePrompt } = module;
-    root.render(
-      React.createElement(OperatorNamePrompt, { onComplete }),
-    );
+    root.render(React.createElement(OperatorNamePrompt, { onComplete }));
     await new Promise((r) => setTimeout(r, 100));
 
     const dialog = container.querySelector('[role="dialog"]');

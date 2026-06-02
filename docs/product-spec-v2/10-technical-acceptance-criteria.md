@@ -11,6 +11,7 @@
 ### 1.1 — Artifact Contract
 
 **AC-1.1.1** — When the app spawns an OpenCode process for any job type (research, draft, crawl, match, extract), the prompt sent to OpenCode MUST include:
+
 - The exact file path where the artifact JSON must be written (e.g., `.grant-ops-data/tmp/research-{jobId}.json`)
 - The complete JSON schema the artifact must conform to
 - An explicit instruction: "Write ONLY valid JSON to this path. No markdown, no code fences, no explanatory text in the file."
@@ -37,6 +38,7 @@
 ### 1.3 — Artifact Ingestion
 
 **AC-1.3.1** — On successful validation, the verified artifact MUST be:
+
 - Copied to exactly one canonical directory based on job type:
   - research → `.grant-ops-data/artifacts/research/{jobId}.json`
   - crawl → `.grant-ops-data/artifacts/crawls/{jobId}.json`
@@ -56,6 +58,7 @@
 ### 1.4 — Progress Reporting
 
 **AC-1.4.1** — Every job MUST report progress through the `/api/jobs/{jobId}` endpoint with these fields:
+
 ```typescript
 {
   status: "queued" | "running" | "verifying" | "retrying" | "completed" | "failed" | "cancelled";
@@ -69,13 +72,13 @@
 
 **AC-1.4.2** — Progress MUST transition only through stages the controller can directly observe. Until OpenCode emits structured progress, the required stages are:
 
-| Job Type | Required Stages (in order) |
-|---|---|
+| Job Type | Required Stages (in order)                                              |
+| -------- | ----------------------------------------------------------------------- |
 | research | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
-| draft | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
-| crawl | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
-| match | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
-| extract | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
+| draft    | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
+| crawl    | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
+| match    | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
+| extract  | queued(0) → preparing(5) → running(50) → verifying(90) → completed(100) |
 
 **AC-1.4.3** — The `/api/jobs/{jobId}` endpoint MUST return progress within 100ms. The frontend MUST poll every 2 seconds while a job has status `"queued"`, `"running"`, `"verifying"`, or `"retrying"`.
 
@@ -84,6 +87,7 @@
 ### 1.5 — Cancellation
 
 **AC-1.5.1** — `POST /api/jobs/{jobId}/cancel` MUST:
+
 - Send SIGTERM to the OpenCode subprocess
 - Wait up to 5 seconds for graceful shutdown
 - Send SIGKILL if still running after 5 seconds
@@ -98,12 +102,12 @@
 **AC-1.6.1** — Each job type MUST have a configurable timeout:
 
 | Job Type | Default Timeout |
-|---|---|
-| research | 120 seconds |
-| draft | 300 seconds |
-| crawl | 180 seconds |
-| match | 60 seconds |
-| extract | 60 seconds |
+| -------- | --------------- |
+| research | 120 seconds     |
+| draft    | 300 seconds     |
+| crawl    | 180 seconds     |
+| match    | 60 seconds      |
+| extract  | 60 seconds      |
 
 **AC-1.6.2** — On timeout, the OpenCode subprocess MUST be killed (SIGTERM → 5s → SIGKILL). The job enters retry (if attempts remain) with error `"Operation timed out after {timeout}s"`.
 
@@ -114,6 +118,7 @@
 ### 2.1 — JobProgress Component
 
 **AC-2.1.1** — Every button that triggers an async AI operation MUST render a `<JobProgress>` component after click, replacing or overlaying the button area. The component MUST show:
+
 - Current stage as human-readable text (e.g., "Searching for grants...")
 - Progress bar: determinate (filled to `progress`%) when `progress > 0`, indeterminate animation when `progress === 0`
 - Retry count badge if `retryCount > 0` (e.g., "Attempt 2 of 3")
@@ -123,11 +128,13 @@
 **AC-2.1.2** — The progress bar MUST update visually within 500ms of the API returning new progress data. No polling lag visible to the user beyond 2 seconds.
 
 **AC-2.1.3** — When a job completes (`"completed"`), the component MUST:
+
 - Show a brief success animation (checkmark or green flash, ≤ 500ms)
 - Auto-dismiss after 3 seconds (unless the result requires user review)
 - Trigger data refresh for the relevant view (e.g., reload grants list after research completes)
 
 **AC-2.1.4** — When a job fails after all retries (`"failed"`), the component MUST:
+
 - Show the error message in red
 - Show a "Retry" button
 - Show a "View log" link that opens `.grant-ops-data/tmp/session-{jobId}.log`
@@ -140,6 +147,7 @@
 **AC-2.2.1** — All OpenCode subprocess spawning MUST happen on the server side (Next.js API route with Node.js `child_process`). The frontend MUST communicate only via HTTP fetch/polling. At no point must the frontend event loop be blocked by agent operations.
 
 **AC-2.2.2** — While a job is running, the user MUST be able to:
+
 - Navigate to other views (Dashboard, Pipeline, Settings)
 - Open and read grant details
 - Edit non-locked data
@@ -154,6 +162,7 @@
 ### 3.1 — Directory Structure
 
 **AC-3.1.1** — The following directory structure MUST exist and be created on first run if missing:
+
 ```
 .grant-ops-data/
   tmp/                          # Agent working directory
@@ -171,6 +180,7 @@
 ### 3.2 — Cleanup
 
 **AC-3.2.1** — On app startup, a cleanup routine MUST run that:
+
 - Deletes all `.grant-ops-data/tmp/*.json` files older than 24 hours (completed or cancelled job artifacts)
 - Deletes all `.grant-ops-data/tmp/*.log` files older than 30 days (session logs)
 - Deletes all `.grant-ops-data/tmp/.cache/` contents older than 7 days
@@ -191,6 +201,7 @@
 **AC-4.1.1** — The crawler MUST use the agent loop pattern (Section 1). A crawl job spawns OpenCode with instructions to crawl the specified source URL(s) and write results to the artifact file.
 
 **AC-4.1.2** — The crawler prompt MUST include:
+
 - Source URL(s) to crawl
 - The Hacker Dojo organization profile (for context-aware extraction)
 - Instructions to extract: grant title, funder name, award amount, deadline, eligibility, requirements, URL
@@ -205,6 +216,7 @@
 ### 4.2 — Crawl Scheduling
 
 **AC-4.2.1** — Each source MUST have a configurable `intervalHours`. Default intervals:
+
 - grants.gov: 24 hours
 - nsf.gov: 48 hours
 - Foundation/corporate websites: 168 hours (weekly)
@@ -218,6 +230,7 @@
 ### 4.3 — Crawl Status Visibility
 
 **AC-4.3.1** — The dashboard MUST show:
+
 - Crawl freshness indicator: "Data fresh" (< 24h), "Data may be stale" (24h–7d), "Data is very stale" (> 7d), "Crawl failed", "No crawls yet"
 - Per-source staleness: each source name + freshness tier + last crawl time
 - Crawl retry button for failed crawls
@@ -225,6 +238,7 @@
 **AC-4.3.2** — When a crawl is running, the dashboard MUST show the JobProgress component for the crawl job.
 
 **AC-4.3.3** — The Sources view MUST show per-source crawl state:
+
 - `never-crawled`: "Not yet crawled"
 - `queued`: "Queued for crawling"
 - `running`: "Crawling..." with progress bar
@@ -239,6 +253,7 @@
 ### 5.1 — Fit Score Calculation
 
 **AC-5.1.1** — Each grant matched from a crawl MUST receive a fit score (0–100) calculated by OpenCode and validated against the MatchArtifact schema. The score MUST include breakdown into 5 dimensions:
+
 - `missionAlignment` (0–100)
 - `geographicFocus` (0–100)
 - `programTrackrecord` (0–100)
@@ -246,6 +261,7 @@
 - `partnershipReadiness` (0–100)
 
 **AC-5.1.2** — The match prompt sent to OpenCode MUST include:
+
 - Full Hacker Dojo organization profile
 - Full grant text/details
 - Instructions to score each dimension with justification
@@ -256,6 +272,7 @@
 ### 5.2 — Score Display
 
 **AC-5.2.1** — The Discovery view MUST show each grant's fit score as a number (e.g., "92") with a color-coded bar:
+
 - Score ≥ 85: green bar, full width proportional to score
 - Score 70–84: amber/gold bar
 - Score < 70: muted/gray bar
@@ -271,6 +288,7 @@
 ### 6.1 — Draft Execution
 
 **AC-6.1.1** — Draft generation MUST use the agent loop pattern. The prompt MUST include:
+
 - The specific grant details (title, funder, requirements, deadline)
 - The full Hacker Dojo organization profile
 - All uploaded reference documents marked as `"canonical"` or `"draft-only"` (NOT `"restricted"`)
@@ -279,6 +297,7 @@
 - The DraftArtifact schema
 
 **AC-6.1.2** — The generated draft MUST include, for each section:
+
 - `sectionTitle`: e.g., "Project Vision", "Why Hacker Dojo", "Proposed Activities"
 - `content`: the generated text
 - `groundingSources`: array of document IDs or URLs that support claims in this section
@@ -289,6 +308,7 @@
 ### 6.2 — Draft Display
 
 **AC-6.2.1** — The draft preview MUST display each section with:
+
 - Section title as a heading
 - Content as formatted text (preserving paragraphs and emphasis)
 - Grounding status badge: 🟢 "Grounded" (6+ sources) / 🟡 "Weakly grounded" (1–5 sources) / 🔴 "Ungrounded" (0 sources)
@@ -301,11 +321,13 @@
 **AC-6.3.1** — The "Approve & Lock" button MUST be disabled if any section has `isGrounded: false` and the user has not explicitly acknowledged the gap (via a checkbox: "I acknowledge this section lacks grounding evidence").
 
 **AC-6.3.2** — On approval, the draft MUST be:
+
 - Locked (no further edits without explicit "Reopen" action)
 - Recorded with approver identity, timestamp, and approval notes in the audit log
 - Version number frozen
 
 **AC-6.3.3** — Reopening a locked draft MUST:
+
 - Require a reason (text input)
 - Preserve the locked version
 - Create a new editable working copy with incremented version number
@@ -319,19 +341,19 @@
 
 **AC-7.1.1** — Only these transitions are valid:
 
-| From | Valid To |
-|---|---|
-| matched | draft, closed, archived |
-| draft | review, closed |
-| review | draft (revision), approved, closed |
-| approved | submission-ready, closed |
-| submission-ready | submitted, closed |
-| submitted | follow-up, awarded, declined |
-| follow-up | awarded, declined, submitted |
-| awarded | closed |
-| declined | closed, archived |
-| closed | archived |
-| archived | (terminal) |
+| From             | Valid To                           |
+| ---------------- | ---------------------------------- |
+| matched          | draft, closed, archived            |
+| draft            | review, closed                     |
+| review           | draft (revision), approved, closed |
+| approved         | submission-ready, closed           |
+| submission-ready | submitted, closed                  |
+| submitted        | follow-up, awarded, declined       |
+| follow-up        | awarded, declined, submitted       |
+| awarded          | closed                             |
+| declined         | closed, archived                   |
+| closed           | archived                           |
+| archived         | (terminal)                         |
 
 **AC-7.1.2** — Invalid transitions MUST be rejected by the API with HTTP 400 and message `"Cannot transition from {fromState} to {toState}"`.
 
@@ -340,11 +362,13 @@
 ### 7.2 — Submission Blocking
 
 **AC-7.2.1** — A grant CANNOT transition to `"submission-ready"` if:
+
 - Any task with `blockSubmission: true` is not completed
 - The draft is not approved
 - Required profile fields are missing (legal name, EIN, mission)
 
 **AC-7.2.2** — The API MUST return the specific blocking reasons when rejecting a transition to `"submission-ready"`:
+
 ```json
 {
   "error": "Cannot transition to submission-ready",
@@ -364,6 +388,7 @@
 **AC-8.1.1** — All writes to SQLite MUST use WAL mode (Write-Ahead Logging). The database file MUST be at `.grant-ops-data/grant-ops.sqlite`.
 
 **AC-8.1.2** — On startup, the app MUST run `PRAGMA quick_check`. If it fails, the app MUST fall back to `PRAGMA integrity_check`. If either check fails, the app MUST:
+
 - Show a blocking error: "Database integrity check failed. Your data may be corrupted."
 - Offer a restore-from-backup option
 - NOT allow any writes until resolved
@@ -373,6 +398,7 @@
 ### 8.2 — Backup & Restore
 
 **AC-8.2.1** — Manual backup MUST:
+
 - Copy the SQLite database file
 - Copy all files in `.grant-ops-data/documents/`
 - Copy all files in `.grant-ops-data/artifacts/`
@@ -380,6 +406,7 @@
 - Verify the zip file integrity (can be opened, contains all expected files)
 
 **AC-8.2.2** — Restore MUST:
+
 - Validate that the zip file contains a valid SQLite database (runs `PRAGMA integrity_check` on the restored DB before replacing current)
 - Warn if the backup is older than 7 days: "This backup is {n} days old. Restoring will replace all current data."
 - Require explicit confirmation before proceeding
@@ -387,6 +414,7 @@
 - Pause new jobs, wait for running write transactions to finish, close all SQLite handles, perform the restore, then re-open handles only after integrity checks pass
 
 **AC-8.2.3** — The Settings view MUST show:
+
 - "Last backup: {relative time}" or "Never backed up"
 - "Last backup verification: {outcome}" (from the backup manifest)
 - Warning banner if no backup in 7+ days: "⚠️ No recent backup. We recommend backing up weekly."
@@ -428,16 +456,19 @@
 ### 10.1 — Graceful Degradation
 
 **AC-10.1.1** — If OpenCode is not installed or not on PATH:
+
 - The app MUST start and show all local data (grants, pipeline, tasks)
 - AI features MUST show "AI features unavailable — OpenCode not detected"
 - The user MUST still be able to browse, edit, review, and track grants manually
 
 **AC-10.1.2** — If the SQLite database cannot be opened:
+
 - The app MUST show a blocking error screen with the exact error message
 - The user MUST NOT be able to navigate to any view (all data-dependent views are blocked)
 - A "Re-run health check" button MUST be available
 
 **AC-10.1.3** — If the crawl scheduler encounters a persistent failure (3+ consecutive failures for the same source):
+
 - That source MUST be flagged with `sourceCrawlState: "failed"`
 - The dashboard MUST show "Crawl failed for {source}" with the error message
 - Other sources MUST continue crawling normally
@@ -446,6 +477,7 @@
 ### 10.2 — Data Integrity
 
 **AC-10.2.1** — If the app crashes or is force-quit during a database write, on next startup:
+
 - The WAL file MUST be automatically checkpointed (SQLite WAL recovery)
 - Any in-progress jobs MUST be marked `"failed"` with error "App terminated during operation"
 - No corrupted or partial records MUST exist in the database
@@ -461,6 +493,7 @@
 ## 11. Performance
 
 **AC-11.1.1** — The dashboard MUST render within 2 seconds on a dataset of:
+
 - 500 grants
 - 50 sources
 - 100 tasks
@@ -482,18 +515,19 @@
 
 **AC-12.1.3** — All application-managed persistent reads and writes MUST be restricted to within `.grant-ops-data/`. The only exceptions are operator-initiated backup/restore import-export targets (for example a user-selected `.zip` destination or source). The API MUST reject any path containing `..` or arbitrary absolute paths unless it is an explicit operator-selected backup/restore/export path.
 
-
 ---
 
 ## 13. Testing Gates
 
 **AC-13.1.1** — Before any release, these tests MUST pass:
+
 - `pnpm typecheck` — zero errors
 - `pnpm lint` — zero errors, zero warnings
 - `pnpm test` — all unit and integration tests pass
 - `pnpm test:e2e` — all end-to-end tests pass
 
 **AC-13.2.1** — The agent loop MUST have unit tests that mock the OpenCode subprocess and test:
+
 - Successful artifact generation and ingestion
 - Invalid JSON → retry → success on 2nd attempt
 - Invalid JSON → retry → retry → failure on 3rd attempt
@@ -503,6 +537,7 @@
 - Schema validation failure with specific error propagation
 
 **AC-13.2.2** — The progress polling system MUST have integration tests that verify:
+
 - Progress updates are received within 2 seconds of state change
 - UI updates within 500ms of receiving new progress data
 - Job completion triggers data refresh
@@ -515,6 +550,7 @@
 ### 14.1 — Complete Discovery → Submission Workflow
 
 **AC-14.1.1** — An integration test MUST verify the full workflow end-to-end:
+
 1. Source is added (via API)
 2. Crawl is triggered → agent mocked to return valid CrawlArtifact
 3. Grants are ingested into SQLite
@@ -547,6 +583,7 @@
 **AC-14.3.1** — The system MUST support at least 3 concurrent OpenCode subprocesses (one research, one draft, one crawl) without interference. Each subprocess writes to a distinct artifact path.
 
 **AC-14.3.2** — A test MUST verify that concurrent jobs do not share or overwrite each other's artifact files:
+
 - Job A writes to `tmp/research-jobA.json`
 - Job B writes to `tmp/draft-jobB.json`
 - Both complete independently
@@ -577,6 +614,7 @@
 ### 14.6 — Document Upload Validation Chain
 
 **AC-14.6.1** — Document upload MUST validate:
+
 1. File exists and is readable
 2. File size ≤ 50MB (configurable)
 3. File extension is in the allowed list: `.pdf`, `.docx`, `.doc`, `.xlsx`, `.xls`, `.csv`, `.txt`, `.png`, `.jpg`, `.jpeg`
@@ -586,6 +624,7 @@
 **AC-14.6.2** — If any validation step fails, the upload MUST be rejected with a specific error message naming which check failed. No partial file or database record is created.
 
 **AC-14.6.3** — Document extraction (text extraction for AI grounding) MUST handle:
+
 - Successfully extracted text → stored in `extractedText`, status `"extracted"`
 - Unsupported format → stored as binary only, status `"stored_unparsed"`
 - Corrupt file → status `"failed"` with `extractionError`
@@ -596,6 +635,7 @@
 **AC-14.7.1** — On startup, if a WAL file exists from a previous crash, the app MUST run `PRAGMA wal_checkpoint(TRUNCATE)` before any reads. This recovers committed-but-not-checkpointed transactions.
 
 **AC-14.7.2** — If checkpoint fails (e.g., WAL file is corrupt), the app MUST:
+
 - Show a blocking error: "Database recovery failed. The write-ahead log may be corrupted."
 - NOT delete the WAL file (preserves data for manual recovery)
 - Offer: "Restore from backup" as the recovery path
@@ -615,6 +655,7 @@
 ### 14.9 — OpenCode Subprocess Lifecycle
 
 **AC-14.9.1** — When spawning OpenCode, the app MUST:
+
 - Set a timeout timer (configurable per job type)
 - Capture stdout and stderr to `.grant-ops-data/tmp/session-{jobId}.log`
 - Set the `ARTIFACT_PATH` environment variable
@@ -629,15 +670,17 @@
 ### 14.10 — API Error Response Contract
 
 **AC-14.10.1** — Every API error response MUST follow this shape:
+
 ```json
 {
   "error": "Human-readable error message",
   "code": "MACHINE_READABLE_CODE",
-  "details": {}  // optional, type-specific
+  "details": {} // optional, type-specific
 }
 ```
 
 **AC-14.10.2** — Machine-readable error codes MUST include:
+
 - `AGENT_ARTIFACT_NOT_FOUND` — artifact file missing after OpenCode exit
 - `AGENT_INVALID_JSON` — artifact file contains unparseable JSON
 - `AGENT_SCHEMA_MISMATCH` — Zod validation failed
@@ -665,6 +708,7 @@
 ### 14.12 — End-to-End Test Requirements
 
 **AC-14.12.1** — E2E tests MUST cover at minimum:
+
 - App launches and shows dashboard within 3 seconds
 - Health check returns all-green on clean setup
 - Source can be added, crawl triggered, results displayed
@@ -695,6 +739,7 @@
 ### 15.2 — Research/Crawl Prompt Quality
 
 **AC-15.2.1** — When the research prompt is sent against a known-good source (e.g., grants.gov or nsf.gov), the resulting `ResearchArtifact` MUST:
+
 - Contain at least 1 grant (not an empty `grants` array)
 - Each grant MUST have a non-empty `title` and `funder`
 - At least one grant MUST have a non-empty `award`, `deadline`, or `eligibility` field
@@ -702,6 +747,7 @@
 - If no grants were found, the `errors` array MUST explain why (e.g., "Source returned no results for search criteria", "Source requires authentication", "Source structure changed")
 
 **AC-15.2.2** — The research prompt MUST be structured such that OpenCode understands:
+
 - What source(s) to search
 - What to extract (title, funder, award, deadline, eligibility, requirements, URL)
 - How to format the output (the exact JSON schema)
@@ -713,6 +759,7 @@
 ### 15.3 — Draft Prompt Quality
 
 **AC-15.3.1** — When the draft prompt is sent for a grant with real requirements and real org profile data, the resulting `DraftArtifact` MUST:
+
 - Contain at least 3 sections with non-empty `content` (not just section titles)
 - Total `wordCount` MUST be ≥ 500 words
 - Each section MUST have a `groundingSources` array — at least one section MUST reference a specific Hacker Dojo document or fact
@@ -720,6 +767,7 @@
 - Section content MUST be substantive paragraphs, not single sentences or bullet points
 
 **AC-15.3.2** — The draft prompt MUST include:
+
 - The full grant details from the crawled/discovered record
 - Hacker Dojo's hardcoded organization profile (mission, programs, impact stats)
 - Specific instructions about voice and tone
@@ -727,6 +775,7 @@
 - A requirement that each section cites its grounding sources
 
 **AC-15.3.3** — Anti-patterns that MUST cause the prompt to be rewritten:
+
 - Agent returns "I cannot generate this draft" with no section content → prompt needs better context
 - Agent returns generic content with no Hacker Dojo specifics → prompt needs to emphasize org profile usage
 - Agent returns all sections with `isGrounded: false` → prompt needs to emphasize document grounding
@@ -737,12 +786,14 @@
 ### 15.4 — Match/Scoring Prompt Quality
 
 **AC-15.4.1** — When the match prompt scores a grant against Hacker Dojo's profile, the resulting `MatchArtifact` MUST:
+
 - Have a `fitScore` that is not 0 and not 100 for every grant (scores should vary based on actual alignment)
 - Each dimension (`missionAlignment`, `geographicFocus`, etc.) MUST have a non-zero score
 - The `rationale` MUST reference specific Hacker Dojo attributes (not just "good match")
 - Scores MUST be distinguishable — two different grants should not get identical scores unless they're genuinely identical matches
 
 **AC-15.4.2** — The match prompt MUST include:
+
 - The full Hacker Dojo profile with all program areas, geography, populations served
 - The specific grant details to score
 - The 5 scoring dimensions with descriptions of what each means
@@ -751,6 +802,7 @@
 ### 15.5 — Extract/Award Letter Prompt Quality
 
 **AC-15.5.1** — When the extract prompt processes a real award letter PDF, the resulting `ExtractArtifact` MUST:
+
 - Contain a non-empty `amount` field (the award dollar figure)
 - Contain at least one `reportingDeadline` or `budgetCategory`
 - Have `confidence` set (not default to "low" when data is clearly present)
@@ -759,7 +811,8 @@
 ### 15.6 — Prompt Structure Requirements (All Types)
 
 **AC-15.6.1** — Every prompt sent to OpenCode MUST follow this structure:
-```
+
+````
 # Task: {type}
 
 ## Context
@@ -775,9 +828,10 @@ You MUST write a single JSON file to: {ARTIFACT_PATH}
 The JSON must match this schema exactly:
 ```json
 {complete JSON schema with example values}
-```
+````
 
 ## Rules
+
 1. Write ONLY valid, parseable JSON. No markdown, no code fences, no explanatory text in the file.
 2. Every field in the schema must be present (unless marked optional).
 3. If you cannot complete the task, include an "errors" array explaining why.
@@ -785,7 +839,9 @@ The JSON must match this schema exactly:
 5. Do NOT write anything else to this file — only the JSON object.
 
 ## Quality Requirements
+
 {Type-specific quality requirements, e.g., "Must find at least 1 grant" or "Must be ≥ 500 words"}
+
 ```
 
 **AC-15.6.2** — The prompt MUST be stored alongside the artifact for debugging. Save to `.grant-ops-data/tmp/prompt-{jobId}.txt` before spawning OpenCode.
@@ -962,3 +1018,4 @@ The app is NOT ready for use unless ALL acceptance criteria in sections 1–15 a
 - [ ] Logging uses pino with structured JSON and daily rotation (AC-16.8)
 - [ ] Automated backup uses adm-zip with SHA-256 verification (AC-16.9)
 - [ ] Calendar export generates valid .ics files, no cloud connection (AC-16.10)
+```

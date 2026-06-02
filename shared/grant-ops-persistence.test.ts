@@ -14,7 +14,6 @@ import {
   resetPersistentStateForTests,
 } from './grant-ops-persistence';
 
-
 describe('grant-ops-persistence', () => {
   let temp: Awaited<ReturnType<typeof withTempDataDir>>;
 

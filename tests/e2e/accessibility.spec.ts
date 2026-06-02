@@ -15,7 +15,7 @@ test.describe('Accessibility', () => {
   });
 
   test('skip link is first focusable element', async ({ page }) => {
-    await page.goto('/', { waitUntil: "domcontentloaded" });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.app', { timeout: 30000 });
     await page.waitForTimeout(500);
     await page.keyboard.press('Tab');
@@ -25,7 +25,7 @@ test.describe('Accessibility', () => {
   });
 
   test('Tab navigates through interactive elements', async ({ page }) => {
-    await page.goto('/', { waitUntil: "domcontentloaded" });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.app', { timeout: 30000 });
     // Key sidebar elements should be focusable
     const keyElements = [
@@ -52,14 +52,14 @@ test.describe('Accessibility', () => {
   test('Escape closes grant drawer', async ({ page, request }) => {
     const grantsRes = await request.get(`${BASE_URL}/api/grants`);
     const grants = await grantsRes.json();
-    const grantsArr = Array.isArray(grants) ? grants : grants.grants ?? [];
+    const grantsArr = Array.isArray(grants) ? grants : (grants.grants ?? []);
 
     if (grantsArr.length === 0) {
       test.skip();
       return;
     }
 
-    await page.goto('/', { waitUntil: "domcontentloaded" });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.app', { timeout: 30000 });
 
     // Navigate to Discovery view
@@ -82,7 +82,7 @@ test.describe('Accessibility', () => {
   });
 
   test('all interactive elements have accessible names', async ({ page }) => {
-    await page.goto('/', { waitUntil: "domcontentloaded" });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.app', { timeout: 30000 });
     const buttons = await page.locator('button').all();
     const links = await page.locator('a').all();
@@ -94,7 +94,8 @@ test.describe('Accessibility', () => {
       const text = await el.textContent();
       const placeholder = await el.getAttribute('placeholder');
       const title = await el.getAttribute('title');
-      const hasLabel = ariaLabel || ariaLabelledBy || (text && text.trim().length > 0) || placeholder || title;
+      const hasLabel =
+        ariaLabel || ariaLabelledBy || (text && text.trim().length > 0) || placeholder || title;
       if (!hasLabel) {
         // Report the element for debugging but don't hard-fail in all envs
         const tag = await el.evaluate((node: Element) => node.tagName);
@@ -107,7 +108,7 @@ test.describe('Accessibility', () => {
   });
 
   test('no tabindex greater than 0', async ({ page }) => {
-    await page.goto('/', { waitUntil: "domcontentloaded" });
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
     const elements = await page.locator('[tabindex]').all();
     for (const el of elements) {
       const tabindex = await el.getAttribute('tabindex');

@@ -6,18 +6,18 @@
 
 This design system is governed by a hierarchy of design skills. When skills conflict, the PRIMARY skill takes precedence.
 
-| Priority | Skill | Role |
-|---|---|---|
-| **PRIMARY** | `frontend-design` | Aesthetic direction, typography, color, spatial composition, motion philosophy, anti-slop |
-| **GUARDRAIL** | `baseline-ui` | Component primitives, interaction patterns, animation performance constraints |
-| **GUARDRAIL** | `fixing-motion-performance` | Compositor-only animation, no layout thrashing, scroll performance |
-| **GUARDRAIL** | `accessibility` + `fixing-accessibility` | WCAG 2.2 AA compliance, keyboard, screen reader, focus management |
+| Priority      | Skill                                    | Role                                                                                      |
+| ------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **PRIMARY**   | `frontend-design`                        | Aesthetic direction, typography, color, spatial composition, motion philosophy, anti-slop |
+| **GUARDRAIL** | `baseline-ui`                            | Component primitives, interaction patterns, animation performance constraints             |
+| **GUARDRAIL** | `fixing-motion-performance`              | Compositor-only animation, no layout thrashing, scroll performance                        |
+| **GUARDRAIL** | `accessibility` + `fixing-accessibility` | WCAG 2.2 AA compliance, keyboard, screen reader, focus management                         |
 
-**How conflicts are resolved**: Frontend-design sets the creative direction. Guardrail skills constrain *how* that direction is executed (never animate layout properties, always meet contrast ratios, always use accessible primitives) — but they do NOT override aesthetic choices. We use gradients by design. We use motion by design. We use custom CSS by design. These are intentional frontend-design choices, not violations.
+**How conflicts are resolved**: Frontend-design sets the creative direction. Guardrail skills constrain _how_ that direction is executed (never animate layout properties, always meet contrast ratios, always use accessible primitives) — but they do NOT override aesthetic choices. We use gradients by design. We use motion by design. We use custom CSS by design. These are intentional frontend-design choices, not violations.
 
 ---
 
-## 1. Aesthetic Direction & Anti-Slop Rules *(from frontend-design)*
+## 1. Aesthetic Direction & Anti-Slop Rules _(from frontend-design)_
 
 ### 1.1 — Commit to the Direction
 
@@ -29,9 +29,10 @@ This design system is governed by a hierarchy of design skills. When skills conf
 
 **Rule D4 — SPATIAL**: Unexpected layouts. Asymmetry where it creates interest. The sidebar creates left-weight; the main content area is generous and open. Panels use controlled density. Generous negative space is intentional — do not reduce it to "fit more content."
 
-**Rule D5 — BACKGROUND ATMOSPHERE** *(from frontend-design)*: Create depth and atmosphere rather than defaulting to solid colors. The two radial gradients (gold at top-left, blue at bottom-right, both at low opacity) establish the makerspace-at-night feeling. Solid color backgrounds are only for surfaces (cards, panels), never for the page body.
+**Rule D5 — BACKGROUND ATMOSPHERE** _(from frontend-design)_: Create depth and atmosphere rather than defaulting to solid colors. The two radial gradients (gold at top-left, blue at bottom-right, both at low opacity) establish the makerspace-at-night feeling. Solid color backgrounds are only for surfaces (cards, panels), never for the page body.
 
-**Rule D6 — VISUAL DETAILS** *(from frontend-design)*: Layer contextual effects that match the makerspace aesthetic:
+**Rule D6 — VISUAL DETAILS** _(from frontend-design)_: Layer contextual effects that match the makerspace aesthetic:
+
 - **Geometric patterns**: subtle circuit-board or maker-themed line patterns on empty states or hero areas
 - **Noise/grain textures**: light grain overlay on surfaces for tactile depth (≤ 3% opacity, non-distracting)
 - **Layered transparencies**: semi-transparent borders, glass-like surface overlays for depth
@@ -40,11 +41,12 @@ This design system is governed by a hierarchy of design skills. When skills conf
 
 These are enhancements, not requirements. Apply where they elevate the aesthetic — never add decoration that fights the content for attention.
 
-**Rule D7 — MOTION PHILOSOPHY** *(from frontend-design)*: Use motion for high-impact moments. One well-orchestrated page load with staggered reveals (`animation-delay`) creates more delight than scattered micro-interactions. Use scroll-triggered reveals and hover states that surprise. Motion is part of the aesthetic identity — it is NOT "decoration that can be removed." Prefer CSS-only solutions; use Motion library for React when CSS alone can't achieve the effect.
+**Rule D7 — MOTION PHILOSOPHY** _(from frontend-design)_: Use motion for high-impact moments. One well-orchestrated page load with staggered reveals (`animation-delay`) creates more delight than scattered micro-interactions. Use scroll-triggered reveals and hover states that surprise. Motion is part of the aesthetic identity — it is NOT "decoration that can be removed." Prefer CSS-only solutions; use Motion library for React when CSS alone can't achieve the effect.
 
-**Rule D8 — COMPLEXITY MATCHING** *(from frontend-design)*: Match implementation complexity to the aesthetic vision. The makerspace-at-night concept is refined, not maximalist. It demands precision, careful attention to spacing and typography, and subtle atmospheric details. Elegance comes from executing the vision well, not from adding more effects. Every visual detail must serve the concept — if it doesn't reinforce "makerspace at night," it doesn't belong.
+**Rule D8 — COMPLEXITY MATCHING** _(from frontend-design)_: Match implementation complexity to the aesthetic vision. The makerspace-at-night concept is refined, not maximalist. It demands precision, careful attention to spacing and typography, and subtle atmospheric details. Elegance comes from executing the vision well, not from adding more effects. Every visual detail must serve the concept — if it doesn't reinforce "makerspace at night," it doesn't belong.
 
-**Rule D9 — ANTI-SLOP** *(from frontend-design)*: The following are NEVER used anywhere in the application. These are the hallmarks of generic AI-generated UI and have no place in a distinctive, context-specific design:
+**Rule D9 — ANTI-SLOP** _(from frontend-design)_: The following are NEVER used anywhere in the application. These are the hallmarks of generic AI-generated UI and have no place in a distinctive, context-specific design:
+
 - ❌ Inter, Roboto, Arial, Space Grotesk, or system fonts as primary typefaces
 - ❌ Purple gradients on white backgrounds (the most overused AI aesthetic)
 - ❌ Cookie-cutter SaaS layouts (hero image → 3 feature cards → CTA)
@@ -97,13 +99,14 @@ If a component could have come from any SaaS app, it is wrong for Hacker Dojo Gr
 
 ### 2.2 — Typography
 
-| Token | Font Stack | Usage | Rules |
-|---|---|---|---|
-| `--serif` | `'Fraunces', Georgia, serif` | Page titles, KPI values, drawer titles | **text-balance** on headings |
-| `--sans` | `'Funnel Sans', system-ui, sans-serif` | Body text, buttons, labels, UI controls | **text-pretty** on paragraphs |
-| `--mono` | `'JetBrains Mono', ui-monospace, monospace` | Labels, funder names, codes, data | **tabular-nums** on all data |
+| Token     | Font Stack                                  | Usage                                   | Rules                         |
+| --------- | ------------------------------------------- | --------------------------------------- | ----------------------------- |
+| `--serif` | `'Fraunces', Georgia, serif`                | Page titles, KPI values, drawer titles  | **text-balance** on headings  |
+| `--sans`  | `'Funnel Sans', system-ui, sans-serif`      | Body text, buttons, labels, UI controls | **text-pretty** on paragraphs |
+| `--mono`  | `'JetBrains Mono', ui-monospace, monospace` | Labels, funder names, codes, data       | **tabular-nums** on all data  |
 
 **Type Scale** (no arbitrary sizes):
+
 - 38px: page titles (h1)
 - 26px: drawer titles
 - 22px: brand mark
@@ -125,9 +128,9 @@ If a component could have come from any SaaS app, it is wrong for Hacker Dojo Gr
 ### 2.3 — Spacing & Radius
 
 ```css
---radius: 6px;       /* Default: cards, inputs, buttons */
---radius-lg: 10px;   /* Large: panels, KPI cards, tables */
---radius-xl: 14px;   /* Extra large: modals */
+--radius: 6px; /* Default: cards, inputs, buttons */
+--radius-lg: 10px; /* Large: panels, KPI cards, tables */
+--radius-xl: 14px; /* Extra large: modals */
 ```
 
 No arbitrary border-radius values. These three tokens are the only allowed values.
@@ -147,33 +150,33 @@ body {
 
 ---
 
-## 3. Animation & Motion *(from frontend-design, with baseline-ui + fixing-motion-performance guardrails)*
+## 3. Animation & Motion _(from frontend-design, with baseline-ui + fixing-motion-performance guardrails)_
 
 **Frontend-design philosophy**: Motion creates delight and memorability. One well-orchestrated page load with staggered reveals creates more impact than scattered micro-interactions. Use scroll-triggered reveals and hover states that surprise. Motion is part of our aesthetic identity — not an afterthought.
 
-**Guardrail philosophy**: Frontend-design decides *what* animates and *why*. Baseline-ui and fixing-motion-performance constrain *how* — ensuring animations stay on the compositor, respect user preferences, and never cause jank.
+**Guardrail philosophy**: Frontend-design decides _what_ animates and _why_. Baseline-ui and fixing-motion-performance constrain _how_ — ensuring animations stay on the compositor, respect user preferences, and never cause jank.
 
 ### 3.1 — What CAN Animate
 
-| Property | Allowed? | Constraint |
-|---|---|---|
-| `transform` (translate, scale, rotate) | ✅ YES | Primary animation mechanism |
-| `opacity` | ✅ YES | Secondary mechanism |
-| `background-color`, `border-color` | ⚠️ LIMITED | Only on small isolated elements (buttons, nav items, badges). Duration ≤ 150ms. |
-| `color` | ⚠️ LIMITED | Text color transitions on hover only. Duration ≤ 150ms. |
-| `width`, `height`, `top`, `left`, `margin`, `padding` | ❌ NEVER | Use transform instead. See FLIP pattern. |
-| `filter: blur()` | ❌ NEVER | Except one-shot effects ≤ 8px, ≤ 200ms. Never continuous. |
-| `box-shadow` | ❌ AVOID | Prefer opacity transitions on pseudo-elements. |
+| Property                                              | Allowed?   | Constraint                                                                      |
+| ----------------------------------------------------- | ---------- | ------------------------------------------------------------------------------- |
+| `transform` (translate, scale, rotate)                | ✅ YES     | Primary animation mechanism                                                     |
+| `opacity`                                             | ✅ YES     | Secondary mechanism                                                             |
+| `background-color`, `border-color`                    | ⚠️ LIMITED | Only on small isolated elements (buttons, nav items, badges). Duration ≤ 150ms. |
+| `color`                                               | ⚠️ LIMITED | Text color transitions on hover only. Duration ≤ 150ms.                         |
+| `width`, `height`, `top`, `left`, `margin`, `padding` | ❌ NEVER   | Use transform instead. See FLIP pattern.                                        |
+| `filter: blur()`                                      | ❌ NEVER   | Except one-shot effects ≤ 8px, ≤ 200ms. Never continuous.                       |
+| `box-shadow`                                          | ❌ AVOID   | Prefer opacity transitions on pseudo-elements.                                  |
 
 ### 3.2 — Duration & Easing
 
-| Context | Max Duration | Easing |
-|---|---|---|
-| Interaction feedback (hover, click, focus) | 150ms | `ease-out` |
-| Micro-interactions (toggle, expand) | 200ms | `ease-out` |
-| View transitions (page/drawer enter) | 300ms | `cubic-bezier(0.32, 0.72, 0, 1)` |
-| Status indicators (pulse) | 2500ms | `ease-in-out` |
-| Loading (indeterminate shimmer) | Continuous | Linear |
+| Context                                    | Max Duration | Easing                           |
+| ------------------------------------------ | ------------ | -------------------------------- |
+| Interaction feedback (hover, click, focus) | 150ms        | `ease-out`                       |
+| Micro-interactions (toggle, expand)        | 200ms        | `ease-out`                       |
+| View transitions (page/drawer enter)       | 300ms        | `cubic-bezier(0.32, 0.72, 0, 1)` |
+| Status indicators (pulse)                  | 2500ms       | `ease-in-out`                    |
+| Loading (indeterminate shimmer)            | Continuous   | Linear                           |
 
 **Rule M1 — DURATION**: Never exceed 200ms for interaction feedback (hover, click, focus, toggle). View transitions may use up to 300ms. Status indicators are exempt.
 
@@ -195,16 +198,16 @@ body {
 
 ### 3.5 — Specific Animations
 
-| Animation | Property | Duration | Notes |
-|---|---|---|---|
-| View fade-in | `opacity` + `transform: translateY(8px) → 0` | 300ms | Entrance only |
-| Drawer slide-in | `transform: translateX(100%) → 0` | 300ms | Right panel |
-| Button hover | `background-color` | 150ms | Small surface |
-| Nav item hover | `background-color` + `color` | 150ms | Small surface |
-| Card hover | `border-color` | 150ms | No transform |
-| Status dot pulse | `opacity` | 2500ms | Looping, pauses off-screen |
-| Progress bar fill | `transform: scaleX()` | 300ms | Determinate only |
-| Progress indeterminate | `transform: translateX()` | 2000ms | Shimmer, loops, pauses off-screen |
+| Animation              | Property                                     | Duration | Notes                             |
+| ---------------------- | -------------------------------------------- | -------- | --------------------------------- |
+| View fade-in           | `opacity` + `transform: translateY(8px) → 0` | 300ms    | Entrance only                     |
+| Drawer slide-in        | `transform: translateX(100%) → 0`            | 300ms    | Right panel                       |
+| Button hover           | `background-color`                           | 150ms    | Small surface                     |
+| Nav item hover         | `background-color` + `color`                 | 150ms    | Small surface                     |
+| Card hover             | `border-color`                               | 150ms    | No transform                      |
+| Status dot pulse       | `opacity`                                    | 2500ms   | Looping, pauses off-screen        |
+| Progress bar fill      | `transform: scaleX()`                        | 300ms    | Determinate only                  |
+| Progress indeterminate | `transform: translateX()`                    | 2000ms   | Shimmer, loops, pauses off-screen |
 
 **Rule M8 — NO EXCESS**: Do not add animation to elements not listed above unless explicitly approved. The animations listed here are the complete set of allowed animations.
 
@@ -214,7 +217,7 @@ body {
 
 **Rule M10 — NO rAF LOOPS**: Never use `requestAnimationFrame` loops without a stop condition. Infinite rAF loops are forbidden.
 
-**Rule M11 — NEVER partially migrate animation APIs or mix animation systems within the same component.
+\*\*Rule M11 — NEVER partially migrate animation APIs or mix animation systems within the same component.
 
 ---
 
@@ -298,12 +301,12 @@ body {
 
 ### 6.1 — Text Contrast
 
-| Text Type | Minimum Ratio | Our Values |
-|---|---|---|
-| Normal text (< 18px) | 4.5:1 | `--text` (#ebe6dc) on `--bg` (#1c1a17) = **10.2:1** ✅ |
-| Large text (≥ 18px or bold ≥ 14px) | 3:1 | Same as above ✅ |
-| UI components, icons | 3:1 | Checked per component |
-| Muted/disabled text | No minimum (must not convey essential info) | `--text-muted` (#807a6d) = **3.9:1** ⚠️ — only for non-essential labels |
+| Text Type                          | Minimum Ratio                               | Our Values                                                              |
+| ---------------------------------- | ------------------------------------------- | ----------------------------------------------------------------------- |
+| Normal text (< 18px)               | 4.5:1                                       | `--text` (#ebe6dc) on `--bg` (#1c1a17) = **10.2:1** ✅                  |
+| Large text (≥ 18px or bold ≥ 14px) | 3:1                                         | Same as above ✅                                                        |
+| UI components, icons               | 3:1                                         | Checked per component                                                   |
+| Muted/disabled text                | No minimum (must not convey essential info) | `--text-muted` (#807a6d) = **3.9:1** ⚠️ — only for non-essential labels |
 
 **Rule CR1 — CONTRAST**: All text conveying essential information must meet WCAG AA contrast ratios. Muted text (#807a6d) may only be used for supplementary, non-essential information (timestamps, secondary labels, "no items" messages when icon is present).
 
@@ -319,21 +322,22 @@ body {
 
 **Rule L1 — Z-INDEX**: Use this fixed z-index scale. No arbitrary values.
 
-| Layer | z-index | Usage |
-|---|---|---|
-| Content | 0 | Default stacking |
-| Dropdown, tooltip | 50 | Floating UI |
-| Sticky header | 100 | Sticky elements |
-| Drawer overlay | 200 | Modal backdrop |
-| Drawer, modal | 300 | Drawer and modal panels |
-| Skip-to-content | 400 | Must be above everything |
-| Toast, notification | 500 | Temporary overlays |
+| Layer               | z-index | Usage                    |
+| ------------------- | ------- | ------------------------ |
+| Content             | 0       | Default stacking         |
+| Dropdown, tooltip   | 50      | Floating UI              |
+| Sticky header       | 100     | Sticky elements          |
+| Drawer overlay      | 200     | Modal backdrop           |
+| Drawer, modal       | 300     | Drawer and modal panels  |
+| Skip-to-content     | 400     | Must be above everything |
+| Toast, notification | 500     | Temporary overlays       |
 
 ---
 
 ## 8. Design Rules Summary (Quick Reference)
 
 ### NEVER (Hard Blocks)
+
 - ❌ Inter, Roboto, Arial, Space Grotesk fonts
 - ❌ Purple or multicolor gradients
 - ❌ Glow effects as primary affordances
@@ -357,6 +361,7 @@ body {
 - ❌ Empty states without a next action
 
 ### ALWAYS (Hard Requirements)
+
 - ✅ Fraunces / Funnel Sans / JetBrains Mono only
 - ✅ Gold as sole accent color per view
 - ✅ Background atmosphere gradients on body

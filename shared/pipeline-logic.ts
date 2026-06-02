@@ -40,7 +40,10 @@ export interface SubmissionReadinessResult {
   requiredDocuments: boolean;
 }
 
-export function checkSubmissionReadiness(grant: Grant, profileReady?: boolean): SubmissionReadinessResult {
+export function checkSubmissionReadiness(
+  grant: Grant,
+  profileReady?: boolean,
+): SubmissionReadinessResult {
   const blockingReasons: string[] = [];
 
   if (!grant.draftContent || grant.draftContent.length === 0) {
@@ -62,7 +65,8 @@ export function checkSubmissionReadiness(grant: Grant, profileReady?: boolean): 
   }
 
   const blockingItems = checklist.filter(
-    (item: { blockSubmission?: boolean; done: boolean }) => item.blockSubmission === true && !item.done,
+    (item: { blockSubmission?: boolean; done: boolean }) =>
+      item.blockSubmission === true && !item.done,
   );
   if (blockingItems.length > 0) {
     blockingReasons.push(
@@ -71,10 +75,13 @@ export function checkSubmissionReadiness(grant: Grant, profileReady?: boolean): 
   }
 
   if (profileReady === false) {
-    blockingReasons.push('Organization profile is incomplete. Complete required profile fields before submission.');
+    blockingReasons.push(
+      'Organization profile is incomplete. Complete required profile fields before submission.',
+    );
   }
 
-  const checklistComplete = (requiredItems.length === 0 || incompleteRequired.length === 0) && blockingItems.length === 0;
+  const checklistComplete =
+    (requiredItems.length === 0 || incompleteRequired.length === 0) && blockingItems.length === 0;
 
   return {
     ready: blockingReasons.length === 0,

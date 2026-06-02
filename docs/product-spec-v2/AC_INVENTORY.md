@@ -6,31 +6,32 @@
 
 ## Summary
 
-| Section | AC Count | Implemented | Verified by Test | Gap Count | Status |
-|---|---|---|---|---|---|
-| 1. Agent Loop | 17 | 17 | 14 | 0 | PASS |
-| 2. Async UI | 8 | 8 | 3 | 0 | PASS |
-| 3. Tmp & Cache | 7 | 7 | 2 | 0 | PASS |
-| 4. Crawler | 12 | 12 | 4 | 0 | PASS |
-| 5. Matching | 6 | 6 | 2 | 0 | PASS |
-| 6. Draft Generation | 8 | 8 | 3 | 0 | PASS |
-| 7. Pipeline State | 5 | 5 | 22 | 0 | PASS |
-| 8. Persistence & Backup | 7 | 7 | 3 | 0 | PASS |
-| 9. Accessibility | 9 | 9 | 4 | 0 | PASS |
-| 10. Error Handling | 7 | 7 | 3 | 0 | PASS |
-| 11. Performance | 4 | 4 | 4 | 0 | PASS |
-| 12. Security | 3 | 3 | 2 | 0 | PASS |
-| 13. Testing Gates | 3 | 3 | 3 | 0 | PASS |
-| 14. Integration & E2E | 28 | 28 | 20 | 0 | PASS |
-| 15. Prompt Quality | 16 | 16 | 14 | 0 | PASS |
-| 16. Technical Infrastructure | 29 | 29 | 20 | 0 | PASS |
-| **TOTAL** | **169** | **169** | **123** | **0** | **100%** |
+| Section                      | AC Count | Implemented | Verified by Test | Gap Count | Status   |
+| ---------------------------- | -------- | ----------- | ---------------- | --------- | -------- |
+| 1. Agent Loop                | 17       | 17          | 14               | 0         | PASS     |
+| 2. Async UI                  | 8        | 8           | 3                | 0         | PASS     |
+| 3. Tmp & Cache               | 7        | 7           | 2                | 0         | PASS     |
+| 4. Crawler                   | 12       | 12          | 4                | 0         | PASS     |
+| 5. Matching                  | 6        | 6           | 2                | 0         | PASS     |
+| 6. Draft Generation          | 8        | 8           | 3                | 0         | PASS     |
+| 7. Pipeline State            | 5        | 5           | 22               | 0         | PASS     |
+| 8. Persistence & Backup      | 7        | 7           | 3                | 0         | PASS     |
+| 9. Accessibility             | 9        | 9           | 4                | 0         | PASS     |
+| 10. Error Handling           | 7        | 7           | 3                | 0         | PASS     |
+| 11. Performance              | 4        | 4           | 4                | 0         | PASS     |
+| 12. Security                 | 3        | 3           | 2                | 0         | PASS     |
+| 13. Testing Gates            | 3        | 3           | 3                | 0         | PASS     |
+| 14. Integration & E2E        | 28       | 28          | 20               | 0         | PASS     |
+| 15. Prompt Quality           | 16       | 16          | 14               | 0         | PASS     |
+| 16. Technical Infrastructure | 29       | 29          | 20               | 0         | PASS     |
+| **TOTAL**                    | **169**  | **169**     | **123**          | **0**     | **100%** |
 
 ## Section Details
 
 ### 1. OpenCode Agent Loop (17 ACs) — PASS
 
 All ACs implemented and tested:
+
 - **AC-1.1.1**: Prompt includes artifact path, schema, JSON instructions, ARTIFACT_PATH env var — `agent-loop.ts:217`, `prompt-templates.ts:50`
 - **AC-1.1.2**: Results read from artifact file, not stdout — `agent-loop.ts:341`
 - **AC-1.1.3**: Missing artifact triggers retry/failed — `agent-loop.ts:324-327`, tested in `agent-loop.test.ts:332-343`
@@ -164,36 +165,36 @@ All ACs implemented and tested:
 
 ## Release Gate Checklist
 
-| # | Checklist Item | Status | Evidence |
-|---|---|---|---|
-| 1 | All 15 sections of AC verified | PASS | This inventory document |
-| 2 | Smoke test suite completed | N/A | Manual pre-release step |
-| 3 | Smoke test results documented | N/A | Manual pre-release step |
-| 4 | `pnpm typecheck` passes | PASS | `npx tsc --noEmit -p frontend/tsconfig.json` = 0 errors (verified 2026-06-01) |
-| 5 | `pnpm lint` passes | PASS | `npx eslint . --ext .ts,.tsx` = 0 errors, 0 warnings (verified 2026-06-01) |
-| 6 | `pnpm test` passes | PASS | 127 test files, 1034 tests, 0 failures (verified 2026-06-01) |
-| 7 | `pnpm test:e2e` passes | SKIP | 17 spec files exist; server CSS compilation issue prevents in-session e2e execution (env limitation) |
-| 8 | No dead code | PASS | `npx knip` = {"issues":[]} exit code 0 (verified 2026-06-01) |
-| 9 | No `any` types | PASS | Strict mode enforced, zero `any` found |
-| 10 | No `@ts-ignore` / `@ts-expect-error` | PASS | Grep confirms zero matches |
-| 11 | API error responses follow contract | PASS | All routes use Zod validation with standard error shape |
-| 12 | Agent loop retries work | PASS | `agent-loop.test.ts` tests all 3 failure modes |
-| 13 | Job cancellation safe | PASS | Cancellation test in `agent-loop.test.ts` |
-| 14 | Database integrity check passes | PASS | `db.ts` runs PRAGMA quick_check on startup |
-| 15 | Backup → restore round-trip | PASS | `backup/route.test.ts` verifies |
-| 16 | No placeholder text in prompts | PASS | `prompt-templates.test.ts` verifies no TODO/FIXME |
-| 17 | Quality gates pass | PASS | `agent-loop.test.ts:395-432` tests wordCount=500 threshold |
-| 18 | All API routes validate with Zod | PASS | Every route has Zod schema validation |
-| 19 | Database PRAGMAs correct | PASS | `db.ts` configures all required PRAGMAs |
-| 20 | FTS5 search < 200ms | PASS | `grants/route.ts` uses FTS5 with bm25 |
-| 21 | Document uploads compute SHA-256 | PASS | `documents/route.ts` uses `node:crypto` |
-| 22 | Notifications within 5s | PASS | `notification-service.test.ts` timing tests |
-| 23 | Budget import parser detects headers | PASS | `budget-import/route.ts` implements header detection |
-| 24 | No application-level lock | PASS | Spec explicitly states no lock in v2 |
-| 25 | Logging uses pino with rotation | PASS | `logger.ts` uses pino with pino-roll |
-| 26 | Backup uses adm-zip with SHA-256 | PASS | `backup/route.ts` uses adm-zip + crypto |
-| 27 | Calendar export generates .ics | PASS | `calendar/export/route.ts` uses ical-generator |
-| 28 | Log viewer level filtering | PASS | `app/route.ts` and `error/route.ts` support `?level=` filter |
-| 29 | All API error codes have user-facing messages | PASS | `failure-messages.ts` contains `apiErrorMessages` for all 18 codes |
-| 30 | useJobProgress hook with retry/visibility | PASS | `frontend/src/hooks/useJobProgress.ts` + tests |
-| 31 | Filesystem edge case tests | PASS | `filesystem-edge-cases.test.ts` covers ENOSPC, EACCES, SQLITE_BUSY, cleanup |
+| #   | Checklist Item                                | Status | Evidence                                                                                             |
+| --- | --------------------------------------------- | ------ | ---------------------------------------------------------------------------------------------------- |
+| 1   | All 15 sections of AC verified                | PASS   | This inventory document                                                                              |
+| 2   | Smoke test suite completed                    | N/A    | Manual pre-release step                                                                              |
+| 3   | Smoke test results documented                 | N/A    | Manual pre-release step                                                                              |
+| 4   | `pnpm typecheck` passes                       | PASS   | `npx tsc --noEmit -p frontend/tsconfig.json` = 0 errors (verified 2026-06-01)                        |
+| 5   | `pnpm lint` passes                            | PASS   | `npx eslint . --ext .ts,.tsx` = 0 errors, 0 warnings (verified 2026-06-01)                           |
+| 6   | `pnpm test` passes                            | PASS   | 127 test files, 1034 tests, 0 failures (verified 2026-06-01)                                         |
+| 7   | `pnpm test:e2e` passes                        | SKIP   | 17 spec files exist; server CSS compilation issue prevents in-session e2e execution (env limitation) |
+| 8   | No dead code                                  | PASS   | `npx knip` = {"issues":[]} exit code 0 (verified 2026-06-01)                                         |
+| 9   | No `any` types                                | PASS   | Strict mode enforced, zero `any` found                                                               |
+| 10  | No `@ts-ignore` / `@ts-expect-error`          | PASS   | Grep confirms zero matches                                                                           |
+| 11  | API error responses follow contract           | PASS   | All routes use Zod validation with standard error shape                                              |
+| 12  | Agent loop retries work                       | PASS   | `agent-loop.test.ts` tests all 3 failure modes                                                       |
+| 13  | Job cancellation safe                         | PASS   | Cancellation test in `agent-loop.test.ts`                                                            |
+| 14  | Database integrity check passes               | PASS   | `db.ts` runs PRAGMA quick_check on startup                                                           |
+| 15  | Backup → restore round-trip                   | PASS   | `backup/route.test.ts` verifies                                                                      |
+| 16  | No placeholder text in prompts                | PASS   | `prompt-templates.test.ts` verifies no TODO/FIXME                                                    |
+| 17  | Quality gates pass                            | PASS   | `agent-loop.test.ts:395-432` tests wordCount=500 threshold                                           |
+| 18  | All API routes validate with Zod              | PASS   | Every route has Zod schema validation                                                                |
+| 19  | Database PRAGMAs correct                      | PASS   | `db.ts` configures all required PRAGMAs                                                              |
+| 20  | FTS5 search < 200ms                           | PASS   | `grants/route.ts` uses FTS5 with bm25                                                                |
+| 21  | Document uploads compute SHA-256              | PASS   | `documents/route.ts` uses `node:crypto`                                                              |
+| 22  | Notifications within 5s                       | PASS   | `notification-service.test.ts` timing tests                                                          |
+| 23  | Budget import parser detects headers          | PASS   | `budget-import/route.ts` implements header detection                                                 |
+| 24  | No application-level lock                     | PASS   | Spec explicitly states no lock in v2                                                                 |
+| 25  | Logging uses pino with rotation               | PASS   | `logger.ts` uses pino with pino-roll                                                                 |
+| 26  | Backup uses adm-zip with SHA-256              | PASS   | `backup/route.ts` uses adm-zip + crypto                                                              |
+| 27  | Calendar export generates .ics                | PASS   | `calendar/export/route.ts` uses ical-generator                                                       |
+| 28  | Log viewer level filtering                    | PASS   | `app/route.ts` and `error/route.ts` support `?level=` filter                                         |
+| 29  | All API error codes have user-facing messages | PASS   | `failure-messages.ts` contains `apiErrorMessages` for all 18 codes                                   |
+| 30  | useJobProgress hook with retry/visibility     | PASS   | `frontend/src/hooks/useJobProgress.ts` + tests                                                       |
+| 31  | Filesystem edge case tests                    | PASS   | `filesystem-edge-cases.test.ts` covers ENOSPC, EACCES, SQLITE_BUSY, cleanup                          |

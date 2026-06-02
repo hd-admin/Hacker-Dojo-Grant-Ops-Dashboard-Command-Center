@@ -171,9 +171,7 @@ describe('pipeline-logic', () => {
       };
       const result = checkSubmissionReadiness(grant);
       expect(result.ready).toBe(false);
-      expect(result.blockingReasons).toContainEqual(
-        expect.stringContaining('Budget'),
-      );
+      expect(result.blockingReasons).toContainEqual(expect.stringContaining('Budget'));
     });
 
     it('marks checklist complete when all required items done', () => {
@@ -214,21 +212,33 @@ describe('pipeline-logic', () => {
       const grant: Grant = {
         ...baseGrant,
         checklist: [
-          { label: 'Budget Approval', done: false, source: 'review', required: false, blockSubmission: true },
+          {
+            label: 'Budget Approval',
+            done: false,
+            source: 'review',
+            required: false,
+            blockSubmission: true,
+          },
           { label: 'Narrative', done: true, source: 'review', required: true },
         ],
       };
       const result = checkSubmissionReadiness(grant);
       expect(result.ready).toBe(false);
-      expect(result.blockingReasons.some(r => r.includes('submission-blocking'))).toBe(true);
-      expect(result.blockingReasons.some(r => r.includes('Budget Approval'))).toBe(true);
+      expect(result.blockingReasons.some((r) => r.includes('submission-blocking'))).toBe(true);
+      expect(result.blockingReasons.some((r) => r.includes('Budget Approval'))).toBe(true);
     });
 
     it('allows submission when blockSubmission checklist items are completed', () => {
       const grant: Grant = {
         ...baseGrant,
         checklist: [
-          { label: 'Budget Approval', done: true, source: 'review', required: false, blockSubmission: true },
+          {
+            label: 'Budget Approval',
+            done: true,
+            source: 'review',
+            required: false,
+            blockSubmission: true,
+          },
           { label: 'Narrative', done: true, source: 'review', required: true },
         ],
       };
@@ -240,7 +250,7 @@ describe('pipeline-logic', () => {
     it('blocks submission when profile is not ready', () => {
       const result = checkSubmissionReadiness(baseGrant, false);
       expect(result.ready).toBe(false);
-      expect(result.blockingReasons.some(r => r.includes('profile'))).toBe(true);
+      expect(result.blockingReasons.some((r) => r.includes('profile'))).toBe(true);
     });
 
     it('allows submission when profile is ready', () => {
@@ -255,7 +265,13 @@ describe('pipeline-logic', () => {
         statusLabel: 'Drafting',
         draftContent: '',
         checklist: [
-          { label: 'Blocking Item', done: false, source: 'review', required: false, blockSubmission: true },
+          {
+            label: 'Blocking Item',
+            done: false,
+            source: 'review',
+            required: false,
+            blockSubmission: true,
+          },
         ],
       };
       const result = checkSubmissionReadiness(grant, false);

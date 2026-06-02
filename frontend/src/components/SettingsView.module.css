@@ -107,7 +107,7 @@
   color: var(--text-muted);
   padding: 1px 6px;
   background: var(--surface-2);
-  border-radius: 3px;
+  border-radius: var(--radius);
 }
 
 .docClassBadge {
@@ -116,7 +116,7 @@
   text-transform: uppercase;
   font-weight: 600;
   padding: 1px 6px;
-  border-radius: 3px;
+  border-radius: var(--radius);
 }
 
 .docClassCanonical {
@@ -144,7 +144,7 @@
   padding: 2px 6px;
   background: var(--surface-2);
   border: 1px solid var(--border);
-  border-radius: 3px;
+  border-radius: var(--radius);
   color: var(--text);
 }
 
@@ -160,7 +160,7 @@
   margin-top: 8px;
   padding: 8px;
   background: var(--surface-2);
-  border-radius: 4px;
+  border-radius: var(--radius);
   font-size: 11px;
   color: var(--text-dim);
 }

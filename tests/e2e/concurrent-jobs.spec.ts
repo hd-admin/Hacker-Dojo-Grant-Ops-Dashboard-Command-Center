@@ -39,7 +39,11 @@ test.describe('Concurrent Jobs', () => {
           const res = await request.get(`${BASE_URL}/api/jobs/${encodeURIComponent(jobId)}`);
           if (res.ok()) {
             const job = await res.json();
-            if (job.status === 'completed' || job.status === 'failed' || job.status === 'cancelled') {
+            if (
+              job.status === 'completed' ||
+              job.status === 'failed' ||
+              job.status === 'cancelled'
+            ) {
               return job.status;
             }
           }

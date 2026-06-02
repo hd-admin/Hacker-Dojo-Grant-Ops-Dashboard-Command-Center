@@ -7,34 +7,44 @@ The Discovery module finds and ranks grant opportunities for Hacker Dojo. It com
 ## Key Features
 
 ### 1. Smart Search
+
 Natural-language interface to find grants. The operator describes what they're looking for in plain language ("makerspace equipment grants in the Bay Area, $50K–$500K") and OpenCode searches configured sources plus the built-in funder database.
 
 ### 2. Built-in Funder Database
+
 Curated, hardcoded starter set of funders relevant to Hacker Dojo, plus crawled additions from operator-added sources. Pre-loaded with NSF, Google.org, Knight Foundation, Sloan, Schmidt Futures, and ProPublica nonprofit data. Everything stored locally in SQLite — no cloud dependency.
 
 ### 3. Peer Discovery
+
 OpenCode analyzes similar maker spaces, hackerspaces, and community innovation hubs to surface funders that support comparable organizations. "Organizations like Hacker Dojo also received funding from..."
 
 ### 4. Smart Matching Engine
+
 Five-dimension fit scoring (mission alignment, geographic focus, program track record, budget capacity, partnership readiness) with:
+
 - AI-powered eligibility checking against funder requirements
 - Historical award-size analysis from funder giving patterns
 - Deadline urgency factoring
 - Configurable auto-draft threshold (default: fit ≥ 75)
 
 ### 5. Saved Searches & Auto-Updates
+
 Saved search queries that automatically refresh with each crawl cycle. New opportunities matching saved criteria surface automatically. "3 new grants matched your 'AI literacy programs' search this week."
 
 ### 6. Advanced Funder Insights
+
 Beyond basic funder profiles: multi-year giving trends, typical award sizes, funding priorities by year, organizations commonly funded together. "This foundation has increased STEM funding 40% year-over-year."
 
 ### 7. Eligibility Vetting
+
 Before the operator spends time on a grant, the AI checks basic eligibility: nonprofit status, geography, budget range, and program area fit. Clearly flags: "You meet all eligibility requirements" or "Requires uploaded audited financial statements — confirm the required documents are on file."
 
 ### 8. Hidden Giving Pattern Detection
+
 OpenCode analyzes funder 990 data to detect patterns a human might miss: funders that consistently support makerspaces but don't advertise it, foundations shifting focus areas, new corporate giving programs without formal RFPs yet.
 
 ### 9. Auto-Updating Grant Pipeline
+
 Newly crawled grants are automatically matched, scored, and added to the discovery queue. The operator opens the app and sees what's new since last session — no manual refresh required (though manual refresh is available).
 
 ## User Flow
@@ -74,7 +84,7 @@ Newly crawled grants are automatically matched, scored, and added to the discove
 interface FunderProfile {
   id: string;
   name: string;
-  type: "foundation" | "government" | "corporate" | "community" | "other";
+  type: 'foundation' | 'government' | 'corporate' | 'community' | 'other';
   ein?: string;
   givingHistory: {
     year: number;
@@ -116,13 +126,13 @@ See [09-technical-architecture.md](./09-technical-architecture.md) for the agent
 
 ```typescript
 const DEFAULT_SCHEDULES = {
-  "grants.gov": { intervalHours: 24 },
-  "nsf.gov": { intervalHours: 48 },
-  "google.org": { intervalHours: 168 },
-  "knightfoundation.org": { intervalHours: 168 },
-  "sloan.org": { intervalHours: 168 },
-  "schmidtfutures.com": { intervalHours: 168 },
-  "propublica.org": { intervalHours: 24 },
+  'grants.gov': { intervalHours: 24 },
+  'nsf.gov': { intervalHours: 48 },
+  'google.org': { intervalHours: 168 },
+  'knightfoundation.org': { intervalHours: 168 },
+  'sloan.org': { intervalHours: 168 },
+  'schmidtfutures.com': { intervalHours: 168 },
+  'propublica.org': { intervalHours: 24 },
 };
 ```
 

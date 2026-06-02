@@ -93,21 +93,26 @@ test.describe('Full Workflow E2E', () => {
     // Find a grant and move it to pipeline
     const allGrantsRes = await request.get(`${BASE_URL}/api/grants`);
     const allGrants = await allGrantsRes.json();
-    const grantsArr = Array.isArray(allGrants) ? allGrants : allGrants.grants ?? [];
+    const grantsArr = Array.isArray(allGrants) ? allGrants : (allGrants.grants ?? []);
     if (grantsArr.length > 0) {
       const firstGrant = grantsArr[0];
       const grantId: string = firstGrant.id;
       expect(grantId).toBeDefined();
 
       // Move to matched status (pipeline entry)
-      const statusRes = await request.put(`${BASE_URL}/api/grants/${encodeURIComponent(grantId)}/status`, {
-        data: { status: 'matched' },
-      });
+      const statusRes = await request.put(
+        `${BASE_URL}/api/grants/${encodeURIComponent(grantId)}/status`,
+        {
+          data: { status: 'matched' },
+        },
+      );
       // May succeed or return validation error — both are acceptable early
       expect(statusRes.status()).toBeLessThan(500);
 
       // ── Step 6: Trigger draft (agent mocked) ─────────────────────
-      const draftRes = await request.post(`${BASE_URL}/api/grants/${encodeURIComponent(grantId)}/draft`);
+      const draftRes = await request.post(
+        `${BASE_URL}/api/grants/${encodeURIComponent(grantId)}/draft`,
+      );
       // May return a jobId or direct result
       if (draftRes.ok()) {
         const draftData = await draftRes.json();
@@ -140,7 +145,7 @@ test.describe('Full Workflow E2E', () => {
       const tasksRes = await request.get(`${BASE_URL}/api/tasks`);
       if (tasksRes.ok()) {
         const tasksData = await tasksRes.json();
-        const tasks = Array.isArray(tasksData) ? tasksData : tasksData.tasks ?? [];
+        const tasks = Array.isArray(tasksData) ? tasksData : (tasksData.tasks ?? []);
         for (const task of tasks) {
           if (task.status === 'pending' || task.status === 'incomplete') {
             await request.put(`${BASE_URL}/api/tasks/${encodeURIComponent(task.id)}`, {
@@ -212,10 +217,12 @@ test.describe('Full Workflow E2E', () => {
     await page.goto('/');
     await page.click('[data-testid="nav-post-award"]');
     // Verify the post-award view loads (may show empty state)
-    await expect(page.locator('[data-testid="post-award-view"]')).toBeVisible({ timeout: 5000 }).catch(() => {
-      // Post-award view may not exist yet — verify page loaded
-      expect(page.locator('[data-testid="app-shell"]')).toBeVisible();
-    });
+    await expect(page.locator('[data-testid="post-award-view"]'))
+      .toBeVisible({ timeout: 5000 })
+      .catch(() => {
+        // Post-award view may not exist yet — verify page loaded
+        expect(page.locator('[data-testid="app-shell"]')).toBeVisible();
+      });
 
     // AC-14.1.2: Full workflow must complete within 30 seconds
     const workflowElapsed = Date.now() - workflowStart;
@@ -255,7 +262,7 @@ test.describe('Full Workflow E2E', () => {
     const grantsRes = await request.get(`${BASE_URL}/api/grants`);
     expect(grantsRes.ok()).toBeTruthy();
     const grants = await grantsRes.json();
-    const grantsArr = Array.isArray(grants) ? grants : grants.grants ?? [];
+    const grantsArr = Array.isArray(grants) ? grants : (grants.grants ?? []);
 
     if (grantsArr.length > 0) {
       const firstGrant = grantsArr[0];
@@ -274,7 +281,7 @@ test.describe('Full Workflow E2E', () => {
 
     const grantsRes = await request.get(`${BASE_URL}/api/grants`);
     const grants = await grantsRes.json();
-    const grantsArr = Array.isArray(grants) ? grants : grants.grants ?? [];
+    const grantsArr = Array.isArray(grants) ? grants : (grants.grants ?? []);
 
     if (grantsArr.length > 0) {
       const firstGrant = grantsArr[0];
@@ -283,7 +290,9 @@ test.describe('Full Workflow E2E', () => {
       );
       const submitBody = await submitRes.json();
       // Either success or blocked with reasons
-      expect(submitRes.ok() || submitBody.blockingReason || submitBody.blockingReasons).toBeTruthy();
+      expect(
+        submitRes.ok() || submitBody.blockingReason || submitBody.blockingReasons,
+      ).toBeTruthy();
     }
   });
 
@@ -306,7 +315,9 @@ test.describe('Full Workflow E2E', () => {
     const srcId: string = src.id || src.sourceId;
 
     // Trigger crawl
-    const crawlRes = await request.post(`${BASE_URL}/api/crawl/start`, { data: { sourceId: srcId } });
+    const crawlRes = await request.post(`${BASE_URL}/api/crawl/start`, {
+      data: { sourceId: srcId },
+    });
     expect(crawlRes.ok()).toBeTruthy();
     const { jobId } = await crawlRes.json();
     expect(jobId).toBeDefined();

@@ -179,11 +179,12 @@ export function FollowUpManager({
             })
             .map((followUp) => {
               const overdue = isOverdue(followUp);
-              const statusBadgeClass = followUp.status === 'completed'
-                ? styles.statusBadgeCompleted
-                : overdue
-                  ? styles.statusBadgeOverdue
-                  : styles.statusBadgePending;
+              const statusBadgeClass =
+                followUp.status === 'completed'
+                  ? styles.statusBadgeCompleted
+                  : overdue
+                    ? styles.statusBadgeOverdue
+                    : styles.statusBadgePending;
               return (
                 <div
                   key={followUp.id}
@@ -192,18 +193,14 @@ export function FollowUpManager({
                 >
                   <div className={styles.followUpContent}>
                     <div className={styles.followUpHeader}>
-                      <span
-                        className={`${styles.followUpStatusBadge} ${statusBadgeClass}`}
-                      >
+                      <span className={`${styles.followUpStatusBadge} ${statusBadgeClass}`}>
                         {overdue ? 'OVERDUE' : followUp.status}
                       </span>
                       <span className={styles.followUpTypeBadge}>
                         {followUp.type.replace(/_/g, ' ')}
                       </span>
                     </div>
-                    <div
-                      className={`drawer-list-title${overdue ? ` ${styles.overdueTitle}` : ''}`}
-                    >
+                    <div className={`drawer-list-title${overdue ? ` ${styles.overdueTitle}` : ''}`}>
                       {overdue && (
                         <AlertTriangle
                           size={16}

@@ -29,17 +29,17 @@ That's it. Your data lives in `.grant-ops-data/` (SQLite database and uploaded d
 
 Think of it as a CRM for nonprofit grants — custom-built for Hacker Dojo:
 
-| Feature | What you can do |
-|---|---|
-| **Discovery** | Search for grant opportunities from configured funding sources |
-| **Pipeline** | Track every grant through its lifecycle: Matched → Draft → Review → Submitted → Awarded |
-| **AI Drafting** | Generate grant proposals grounded in your organization's profile and documents (requires OpenCode) |
-| **Sources** | Manage funding sources — add websites, APIs, databases; schedule crawls; approve AI-suggested sources |
-| **Tasks** | Track action items with responsibility tags (finance, program, review, follow-up) |
-| **Documents** | Upload and organize supporting materials, letters, compliance docs |
-| **Submission** | Package grant materials with manifests, track submission methods, and manage follow-ups |
-| **Audit Log** | Every change is recorded — know who did what and when |
-| **Settings** | Configure organization profile, matching policies, themes and strategic priorities |
+| Feature         | What you can do                                                                                       |
+| --------------- | ----------------------------------------------------------------------------------------------------- |
+| **Discovery**   | Search for grant opportunities from configured funding sources                                        |
+| **Pipeline**    | Track every grant through its lifecycle: Matched → Draft → Review → Submitted → Awarded               |
+| **AI Drafting** | Generate grant proposals grounded in your organization's profile and documents (requires OpenCode)    |
+| **Sources**     | Manage funding sources — add websites, APIs, databases; schedule crawls; approve AI-suggested sources |
+| **Tasks**       | Track action items with responsibility tags (finance, program, review, follow-up)                     |
+| **Documents**   | Upload and organize supporting materials, letters, compliance docs                                    |
+| **Submission**  | Package grant materials with manifests, track submission methods, and manage follow-ups               |
+| **Audit Log**   | Every change is recorded — know who did what and when                                                 |
+| **Settings**    | Configure organization profile, matching policies, themes and strategic priorities                    |
 
 ## How Data Works
 
@@ -67,16 +67,16 @@ The app includes a built-in backup/restore system accessible from the Settings v
 
 ## Common Commands
 
-| Command | Purpose |
-|---|---|
-| `pnpm dev` | Start development server |
-| `pnpm build` | Build for production |
-| `pnpm start` | Run production build |
-| `pnpm test` | Run unit/integration tests |
-| `pnpm test:e2e` | Run end-to-end tests (requires Playwright) |
-| `pnpm lint` | Check code style |
-| `pnpm typecheck` | Type-check the codebase |
-| `bash scripts/setup-check.sh` | Verify your environment is ready |
+| Command                       | Purpose                                    |
+| ----------------------------- | ------------------------------------------ |
+| `pnpm dev`                    | Start development server                   |
+| `pnpm build`                  | Build for production                       |
+| `pnpm start`                  | Run production build                       |
+| `pnpm test`                   | Run unit/integration tests                 |
+| `pnpm test:e2e`               | Run end-to-end tests (requires Playwright) |
+| `pnpm lint`                   | Check code style                           |
+| `pnpm typecheck`              | Type-check the codebase                    |
+| `bash scripts/setup-check.sh` | Verify your environment is ready           |
 
 ## Configuring OpenCode
 

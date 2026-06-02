@@ -232,7 +232,7 @@ async function _getSpendDownAlerts(): Promise<
 
     const awardCats = categories.filter((c) => c.awardId === award.id);
     const deps = getDependencies();
-  const now = deps.clock.now();
+    const now = deps.clock.now();
     const start = new Date(award.startDate);
     const end = new Date(award.endDate);
     const periodProgress = Math.min(

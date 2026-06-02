@@ -9,33 +9,33 @@ This specification defines the next evolution of Hacker Dojo Grant Ops — a loc
 
 ## Key Shift from v1
 
-| Aspect | V1 (Current) | V2 (Target) |
-|---|---|---|
-| Setup | Guided 3-step wizard | Hacker Dojo profile hardcoded; no setup needed |
-| Scope | Discovery + Pipeline | Full lifecycle: Discovery → Draft → Submit → Post-Award |
-| AI | OpenCode CLI backend | Typed artifact agent loop with retry, verification, progress feedback |
-| Funder Data | Crawled from user sources | Built-in curated funder database + crawler |
-| Post-Award | Not present | Spend-down tracking, compliance, reporting |
-| Design | Dark theme, utilitarian | Refined dark theme with cohesive design system |
-| Async UX | No progress indicators | Full progress bars, stage indicators, cancel/retry for all AI operations |
+| Aspect      | V1 (Current)              | V2 (Target)                                                              |
+| ----------- | ------------------------- | ------------------------------------------------------------------------ |
+| Setup       | Guided 3-step wizard      | Hacker Dojo profile hardcoded; no setup needed                           |
+| Scope       | Discovery + Pipeline      | Full lifecycle: Discovery → Draft → Submit → Post-Award                  |
+| AI          | OpenCode CLI backend      | Typed artifact agent loop with retry, verification, progress feedback    |
+| Funder Data | Crawled from user sources | Built-in curated funder database + crawler                               |
+| Post-Award  | Not present               | Spend-down tracking, compliance, reporting                               |
+| Design      | Dark theme, utilitarian   | Refined dark theme with cohesive design system                           |
+| Async UX    | No progress indicators    | Full progress bars, stage indicators, cancel/retry for all AI operations |
 
 ## Document Index
 
-| # | Document | Content |
-|---|---|---|
-| 00 | [Competitive Context](./00-competitive-analysis.md) | Market landscape, our positioning, design direction |
-| 01 | [Core Concept](./01-core-concept.md) | Product vision, hardcoded Hacker Dojo profile, architecture decisions |
-| 02 | [Discovery & Prospecting](./02-discovery-prospecting.md) | Smart matching, funder database, peer discovery |
-| 03 | [AI Drafting](./03-ai-drafting.md) | Grounded drafting, institutional memory, revision workflow |
-| 04 | [Pipeline & Workflow](./04-pipeline-management.md) | Full pipeline states, task management, submission readiness |
-| 05 | [Post-Award Management](./05-post-award.md) | Award tracking, spend-down, compliance, reporting |
-| 06 | [Dashboard & Reporting](./06-dashboard-reporting.md) | KPI dashboard, internal reports, activity feed |
-| 07 | [Wireframes](./07-wireframes.md) | ASCII wireframes for all key screens |
-| 08 | [Design System](./08-design-system.md) | Color palette, typography, components |
-| 09 | [Technical Architecture](./09-technical-architecture.md) | Agent loop, typed artifacts, tmp management, async UI |
-| 10 | [Technical Acceptance Criteria](./10-technical-acceptance-criteria.md) | **Specific, testable AC for every subsystem** |
-| 11 | [Technical Infrastructure](./11-technical-infrastructure.md) | Technology stack, API routes, document management, search, notifications, configuration, logging, backup, identity |
-| 12 | [Data Architecture](./12-data-architecture.md) | Connection configuration, complete database schema (all tables, indexes, FTS5), seed data, initialization, SQLite gotchas |
+| #   | Document                                                               | Content                                                                                                                   |
+| --- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 00  | [Competitive Context](./00-competitive-analysis.md)                    | Market landscape, our positioning, design direction                                                                       |
+| 01  | [Core Concept](./01-core-concept.md)                                   | Product vision, hardcoded Hacker Dojo profile, architecture decisions                                                     |
+| 02  | [Discovery & Prospecting](./02-discovery-prospecting.md)               | Smart matching, funder database, peer discovery                                                                           |
+| 03  | [AI Drafting](./03-ai-drafting.md)                                     | Grounded drafting, institutional memory, revision workflow                                                                |
+| 04  | [Pipeline & Workflow](./04-pipeline-management.md)                     | Full pipeline states, task management, submission readiness                                                               |
+| 05  | [Post-Award Management](./05-post-award.md)                            | Award tracking, spend-down, compliance, reporting                                                                         |
+| 06  | [Dashboard & Reporting](./06-dashboard-reporting.md)                   | KPI dashboard, internal reports, activity feed                                                                            |
+| 07  | [Wireframes](./07-wireframes.md)                                       | ASCII wireframes for all key screens                                                                                      |
+| 08  | [Design System](./08-design-system.md)                                 | Color palette, typography, components                                                                                     |
+| 09  | [Technical Architecture](./09-technical-architecture.md)               | Agent loop, typed artifacts, tmp management, async UI                                                                     |
+| 10  | [Technical Acceptance Criteria](./10-technical-acceptance-criteria.md) | **Specific, testable AC for every subsystem**                                                                             |
+| 11  | [Technical Infrastructure](./11-technical-infrastructure.md)           | Technology stack, API routes, document management, search, notifications, configuration, logging, backup, identity        |
+| 12  | [Data Architecture](./12-data-architecture.md)                         | Connection configuration, complete database schema (all tables, indexes, FTS5), seed data, initialization, SQLite gotchas |
 
 ## How to Use This Spec
 
@@ -50,4 +50,4 @@ This specification defines the next evolution of Hacker Dojo Grant Ops — a loc
 - `PROMPT.md` — still authoritative for implementation scope
 - `docs/product-spec-v2/10-technical-acceptance-criteria.md` — authoritative for technical acceptance criteria (169 ACs)
 - `docs/product-spec-v2/AC_INVENTORY.md` — execution-proven verification map with specific file/test references
-- This spec defines the *what and why*; acceptance criteria define the *verification*
+- This spec defines the _what and why_; acceptance criteria define the _verification_

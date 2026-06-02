@@ -19,7 +19,7 @@ test.describe('Agent Failure Propagation', () => {
     const res = await request.post(`${BASE_URL}/api/research`, {
       data: { query: '' }, // empty query may trigger validation failure
     });
-    
+
     if (!res.ok()) {
       // If it fails immediately, verify error response format
       const body = await res.json();
@@ -56,7 +56,7 @@ test.describe('Agent Failure Propagation', () => {
 
     const grantsRes = await request.get(`${BASE_URL}/api/grants`);
     const grants = await grantsRes.json();
-    const grantsArr = Array.isArray(grants) ? grants : grants.grants ?? [];
+    const grantsArr = Array.isArray(grants) ? grants : (grants.grants ?? []);
 
     if (grantsArr.length === 0) {
       test.skip();

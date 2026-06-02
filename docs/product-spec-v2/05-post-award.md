@@ -7,28 +7,36 @@ Post-award management tracks grants after they're won — budgets, compliance de
 ## Key Features
 
 ### 1. Award Letter Extraction
+
 Upload the award letter (PDF/DOCX). OpenCode extracts structured data into a typed artifact: amount, start/end dates, reporting deadlines, budget categories, compliance requirements, program officer contact info. All extracted data is reviewed and confirmed by the operator before ingestion.
 
 ### 2. Spend-Down Tracking
+
 Manual expense entry per budget category (no accounting software integration for v2). Track budget vs actual with visual progress bars. Flag categories that are significantly over or under target relative to the grant timeline.
 
 ### 3. Compliance Calendar
+
 Extracted reporting deadlines auto-populate with reminders. Track submission status per report (pending, submitted, overdue). Reminders X days before due.
 
 ### 4. Awards Overview
+
 Central view showing:
+
 - Active awards with spend-down progress bars
 - Upcoming reporting deadlines
 - Per-award compliance checklist
 - Total awarded/remaining across all grants
 
 ### 5. Drag and Drop Budget Imports
+
 Upload the funder-approved budget (PDF, spreadsheet, or CSV). The system extracts budget categories and amounts automatically. The operator can drag to reorder, adjust amounts, and map funder budget lines to internal tracking categories before confirming.
 
 ### 6. Planned Expenses
+
 Log planned future expenses against budget categories to see the full spending picture — not just what's been spent. "We plan to spend $45K on equipment in Q3" — this shows in forecasts and helps catch timing issues before they become compliance problems.
 
 ### 7. Budget vs Actual Reports
+
 Export-ready reports showing budget vs actual spending per category. Color-coded: green (on track), yellow (slightly behind/ahead), red (significantly off track). Reports include percentage complete relative to grant timeline, so "22% spent but 40% through the period" is immediately visible.
 
 ## User Flow
@@ -87,18 +95,18 @@ Export-ready reports showing budget vs actual spending per category. Color-coded
 
 ```typescript
 interface AwardExtraction {
-  amount: string;           // "$1,500,000"
-  startDate: string;        // "2025-01-15"
-  endDate: string;          // "2027-12-31"
+  amount: string; // "$1,500,000"
+  startDate: string; // "2025-01-15"
+  endDate: string; // "2027-12-31"
   reportingDeadlines: Array<{
-    type: string;           // "Quarterly Progress Report"
-    dueDate: string;        // "2025-07-15"
-    format: string;         // "PDF via grants.gov"
+    type: string; // "Quarterly Progress Report"
+    dueDate: string; // "2025-07-15"
+    format: string; // "PDF via grants.gov"
   }>;
   budgetCategories: Array<{
-    category: string;       // "Personnel"
-    amount: string;         // "$600,000"
-    restrictions?: string;  // "Cannot exceed 40% of total"
+    category: string; // "Personnel"
+    amount: string; // "$600,000"
+    restrictions?: string; // "Cannot exceed 40% of total"
   }>;
   complianceRequirements: string[];
   specialConditions: string[];
@@ -113,12 +121,15 @@ interface AwardExtraction {
 ## Spend-Down Alerts
 
 ### Over-Spending Alert
+
 > ⚠️ **Equipment budget over target**: You've spent 95% of the equipment budget but the grant period is only 40% complete. Review expenses or request a budget modification.
 
 ### Under-Spending Alert
+
 > ⚠️ **Program Delivery behind schedule**: Only 11% of the program budget spent, but the grant is 25% through its period. Risk of unspent funds at year-end.
 
 ### Reporting Reminder
+
 > 📅 **Q2 Progress Report due in 14 days**: The NSF requires a quarterly progress report via grants.gov by July 15.
 
 ## Data Model
@@ -131,7 +142,7 @@ interface Award {
   startDate: string;
   endDate: string;
   awardLetterDocumentId?: string;
-  extractionConfidence: "high" | "medium" | "low";
+  extractionConfidence: 'high' | 'medium' | 'low';
   budgetCategories: AwardBudgetCategory[];
   reportingDeadlines: AwardReportDeadline[];
   complianceItems: AwardComplianceItem[];
@@ -161,7 +172,7 @@ interface AwardReportDeadline {
   type: string;
   dueDate: string;
   format: string;
-  status: "pending" | "submitted" | "overdue";
+  status: 'pending' | 'submitted' | 'overdue';
   submittedAt?: string;
   documentId?: string;
 }
@@ -169,7 +180,7 @@ interface AwardReportDeadline {
 interface AwardComplianceItem {
   id: string;
   requirement: string;
-  status: "compliant" | "at-risk" | "non-compliant";
+  status: 'compliant' | 'at-risk' | 'non-compliant';
   evidence?: string;
   dueDate?: string;
 }

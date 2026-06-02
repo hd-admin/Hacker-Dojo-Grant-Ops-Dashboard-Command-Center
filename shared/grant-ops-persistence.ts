@@ -66,14 +66,8 @@ import {
   readThemesData as readThemesDataFromSqlite,
   writeThemesData as writeThemesDataToSqlite,
 } from './grant-ops-sqlite';
-import {
-  defaultOpencodeSettings,
-} from './seed-data';
-import {
-  testFixtureGrants,
-  propublicaSourceFixture,
-  testProfile,
-} from './test-fixtures';
+import { defaultOpencodeSettings } from './seed-data';
+import { testFixtureGrants, propublicaSourceFixture, testProfile } from './test-fixtures';
 import type {
   ApprovalRecord,
   AuditEvent,
@@ -333,7 +327,10 @@ export async function resetPersistentStateForTests(): Promise<void> {
     lastSync: new Date().toISOString(),
   });
   const db = await getBootstrappedDatabase(state);
-  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)").run("operator.name", "Test Operator");
+  db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)').run(
+    'operator.name',
+    'Test Operator',
+  );
 }
 
 export async function loadAuditEvents(limit?: number): Promise<AuditEvent[]> {
@@ -356,7 +353,10 @@ export async function saveJobQueueItem(item: JobQueueItem): Promise<void> {
   await saveJobQueueItemToSqlite(getSqliteState(), item);
 }
 
-export async function updateJobQueueItemPersistence(id: string, updates: Partial<JobQueueItem>): Promise<void> {
+export async function updateJobQueueItemPersistence(
+  id: string,
+  updates: Partial<JobQueueItem>,
+): Promise<void> {
   await updateJobQueueItemToSqlite(getSqliteState(), id, updates);
 }
 
@@ -368,7 +368,10 @@ export async function saveDuplicateCandidate(item: DuplicateCandidate): Promise<
   await saveDuplicateCandidateToSqlite(getSqliteState(), item);
 }
 
-export async function updateDuplicateCandidatePersistence(id: string, updates: Partial<DuplicateCandidate>): Promise<void> {
+export async function updateDuplicateCandidatePersistence(
+  id: string,
+  updates: Partial<DuplicateCandidate>,
+): Promise<void> {
   await updateDuplicateCandidateToSqlite(getSqliteState(), id, updates);
 }
 
@@ -380,7 +383,10 @@ export async function saveConflictRecord(item: ConflictRecord): Promise<void> {
   await saveConflictRecordToSqlite(getSqliteState(), item);
 }
 
-export async function updateConflictRecordPersistence(id: string, updates: Partial<ConflictRecord>): Promise<void> {
+export async function updateConflictRecordPersistence(
+  id: string,
+  updates: Partial<ConflictRecord>,
+): Promise<void> {
   await updateConflictRecordToSqlite(getSqliteState(), id, updates);
 }
 
@@ -400,11 +406,15 @@ export async function loadBackupFreshness(): Promise<import('./types').BackupFre
   return readBackupFreshnessFromSqlite(getSqliteState());
 }
 
-export async function saveBackupVerificationRecord(record: import('./types').BackupVerificationRecord): Promise<void> {
+export async function saveBackupVerificationRecord(
+  record: import('./types').BackupVerificationRecord,
+): Promise<void> {
   await saveBackupVerificationRecordToSqlite(getSqliteState(), record);
 }
 
-export async function saveBackupFreshness(freshness: import('./types').BackupFreshnessStatus): Promise<void> {
+export async function saveBackupFreshness(
+  freshness: import('./types').BackupFreshnessStatus,
+): Promise<void> {
   await saveBackupFreshnessToSqlite(getSqliteState(), freshness);
 }
 
@@ -535,11 +545,27 @@ export async function savePipelineTransition(transition: PipelineTransition): Pr
   writePipelineTransitionToSqlite(getSqliteState(), transition);
 }
 
-export async function loadSnippets(grantId?: string): Promise<Array<{ id: string; grantId: string | null; title: string; content: string; category: string; createdAt: string }>> {
+export async function loadSnippets(grantId?: string): Promise<
+  Array<{
+    id: string;
+    grantId: string | null;
+    title: string;
+    content: string;
+    category: string;
+    createdAt: string;
+  }>
+> {
   return readSnippetsFromSqlite(getSqliteState(), grantId);
 }
 
-export async function saveSnippet(snippet: { id: string; grantId?: string | null; title: string; content: string; category?: string; createdAt: string }): Promise<void> {
+export async function saveSnippet(snippet: {
+  id: string;
+  grantId?: string | null;
+  title: string;
+  content: string;
+  category?: string;
+  createdAt: string;
+}): Promise<void> {
   writeSnippetToSqlite(getSqliteState(), snippet);
 }
 
@@ -547,11 +573,19 @@ export async function removeSnippet(id: string): Promise<void> {
   deleteSnippetFromSqlite(getSqliteState(), id);
 }
 
-export async function loadFormTemplates(): Promise<Array<{ id: string; name: string; funderId: string | null; fields: unknown[]; createdAt: string }>> {
+export async function loadFormTemplates(): Promise<
+  Array<{ id: string; name: string; funderId: string | null; fields: unknown[]; createdAt: string }>
+> {
   return readFormTemplatesFromSqlite(getSqliteState());
 }
 
-export async function saveFormTemplate(template: { id: string; name: string; funderId?: string | null; fields?: unknown[]; createdAt: string }): Promise<void> {
+export async function saveFormTemplate(template: {
+  id: string;
+  name: string;
+  funderId?: string | null;
+  fields?: unknown[];
+  createdAt: string;
+}): Promise<void> {
   writeFormTemplateToSqlite(getSqliteState(), template);
 }
 
@@ -559,11 +593,35 @@ export async function removeFormTemplate(id: string): Promise<void> {
   deleteFormTemplateFromSqlite(getSqliteState(), id);
 }
 
-export async function loadOutreachRecords(grantId?: string): Promise<Array<{ id: string; grantId: string; funderId: string | null; contactName: string; contactEmail: string; method: string; notes: string; outcome: string; followUpDate: string; createdAt: string }>> {
+export async function loadOutreachRecords(grantId?: string): Promise<
+  Array<{
+    id: string;
+    grantId: string;
+    funderId: string | null;
+    contactName: string;
+    contactEmail: string;
+    method: string;
+    notes: string;
+    outcome: string;
+    followUpDate: string;
+    createdAt: string;
+  }>
+> {
   return readOutreachRecordsFromSqlite(getSqliteState(), grantId);
 }
 
-export async function saveOutreachRecord(record: { id: string; grantId: string; funderId?: string | null; contactName?: string; contactEmail?: string; method?: string; notes?: string; outcome?: string; followUpDate?: string; createdAt: string }): Promise<void> {
+export async function saveOutreachRecord(record: {
+  id: string;
+  grantId: string;
+  funderId?: string | null;
+  contactName?: string;
+  contactEmail?: string;
+  method?: string;
+  notes?: string;
+  outcome?: string;
+  followUpDate?: string;
+  createdAt: string;
+}): Promise<void> {
   writeOutreachRecordToSqlite(getSqliteState(), record);
 }
 
