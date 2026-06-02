@@ -353,6 +353,7 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
                   <select
                     value={overrideTaskStatus}
                     onChange={(e) => setOverrideTaskStatus(e.target.value as TaskStatus)}
+                    aria-label="Override task status"
                   >
                     <option value="blocked">blocked</option>
                     <option value="in-progress">in-progress</option>
@@ -364,6 +365,7 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
                     placeholder="Rationale"
                     value={overrideTaskRationale}
                     onChange={(e) => setOverrideTaskRationale(e.target.value)}
+                    aria-label="Override rationale"
                   />
                   <div>
                     <button

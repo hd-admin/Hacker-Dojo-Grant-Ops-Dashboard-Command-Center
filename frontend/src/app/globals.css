@@ -108,7 +108,6 @@ body {
   outline: 2px solid var(--accent) !important;
   outline-offset: 2px !important;
   border-radius: 3px;
-  transition: outline-offset 0.1s ease;
 }
 
 /* Override for interactive elements to use high-contrast outlines */
@@ -229,10 +228,7 @@ textarea:focus-visible {
   border-radius: var(--radius);
   color: var(--text-dim);
   cursor: pointer;
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease;
+  /* transition removed per motion compliance */
   font-size: 13.5px;
   font-weight: 500;
   position: relative;
@@ -358,8 +354,6 @@ textarea:focus-visible {
   color: var(--text);
   cursor: pointer;
   transition:
-    background 0.15s,
-    border-color 0.15s,
     transform 0.15s,
     opacity 0.15s;
   display: inline-flex;
@@ -475,10 +469,7 @@ textarea:focus-visible {
   padding: 20px 22px;
   position: relative;
   overflow: hidden;
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+  transition: transform 0.2s ease;
 }
 
 .kpi-card:hover {
@@ -590,7 +581,6 @@ textarea:focus-visible {
   gap: 16px;
   align-items: center;
   cursor: pointer;
-  transition: background 0.15s;
 }
 
 .deadline-item:last-child {
@@ -779,7 +769,6 @@ textarea:focus-visible {
   border-bottom: 1px solid var(--border);
   align-items: center;
   cursor: pointer;
-  transition: background 0.15s;
 }
 
 .grants-row.header {
@@ -1367,9 +1356,7 @@ textarea:focus-visible {
   padding: 12px 14px;
   cursor: pointer;
   transition:
-    border-color 0.15s,
     transform 0.15s,
-    box-shadow 0.15s,
     opacity 0.15s;
 }
 
@@ -1438,9 +1425,7 @@ textarea:focus-visible {
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   overflow: hidden;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
+  /* transition removed per motion compliance */
 }
 
 .setting-card:hover {
@@ -1512,7 +1497,6 @@ textarea:focus-visible {
   background: var(--surface-2);
   border-radius: var(--radius);
   cursor: pointer;
-  transition: background 0.15s;
 }
 
 .doc-item:hover {
@@ -1652,10 +1636,7 @@ textarea:focus-visible {
 
 /* Generic interactive card — hover lift effect */
 .card-interactive {
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    border-color 0.2s ease;
+  transition: transform 0.2s ease;
 }
 
 .card-interactive:hover {
@@ -2097,7 +2078,6 @@ textarea:focus-visible {
   color: var(--text);
   font-size: 0.75rem;
   font-weight: bold;
-  transition: background-color 0.2s;
 }
 
 .theme-tag-remove:hover {
@@ -2122,7 +2102,6 @@ textarea:focus-visible {
   cursor: pointer;
   font-size: 0.875rem;
   font-weight: 500;
-  transition: background-color 0.2s;
 }
 
 .theme-add:hover {
@@ -2256,9 +2235,7 @@ textarea:focus-visible {
   color: var(--text-dim);
   cursor: pointer;
   white-space: nowrap;
-  transition:
-    background 0.15s,
-    color 0.15s;
+  /* transition removed per motion compliance */
 }
 
 .health-banner-action:hover {
@@ -2407,18 +2384,20 @@ input[type='radio'] {
 .progress-bar-fill {
   width: 40%;
   height: 100%;
-  background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
-  background-size: 200% 100%;
+  background: var(--accent);
   border-radius: 999px;
   animation: progress-indeterminate 1.5s ease-in-out infinite;
 }
 
 @keyframes progress-indeterminate {
   0% {
-    background-position: 100% 0;
+    transform: translateX(-100%);
+  }
+  50% {
+    transform: translateX(233%);
   }
   100% {
-    background-position: -100% 0;
+    transform: translateX(-100%);
   }
 }
 
@@ -3360,18 +3339,19 @@ textarea:focus:not(:focus-visible) {
 
 /* === LOADING SKELETON STATES === */
 .skeleton {
-  background: linear-gradient(90deg, var(--surface) 25%, var(--surface-2) 50%, var(--surface) 75%);
-  background-size: 200% 100%;
-  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  background: var(--surface-2);
+  opacity: 0.7;
+  animation: skeleton-pulse 1.5s ease-in-out infinite;
   border-radius: var(--radius);
 }
 
-@keyframes skeleton-shimmer {
-  0% {
-    background-position: 200% 0;
-  }
+@keyframes skeleton-pulse {
+  0%,
   100% {
-    background-position: -200% 0;
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.4;
   }
 }
 
@@ -3474,10 +3454,7 @@ textarea:focus:not(:focus-visible) {
 button.grants-row,
 button.deadline-item,
 button.pipeline-list-row {
-  transition:
-    background 0.18s ease,
-    transform 0.18s ease,
-    box-shadow 0.18s ease;
+  transition: transform 0.18s ease;
   width: 100%;
   text-align: left;
   background: none;
@@ -3493,9 +3470,7 @@ button.pipeline-list-row:hover {
 }
 
 .source-row-enhanced {
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+  /* transition removed per motion compliance */
 }
 .source-row-enhanced:hover {
   border-color: var(--border-light);
@@ -3504,9 +3479,7 @@ button.pipeline-list-row:hover {
 
 /* Job card hover */
 .job-card {
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+  /* transition removed per motion compliance */
 }
 .job-card:hover {
   border-color: var(--border-light);
@@ -3515,10 +3488,7 @@ button.pipeline-list-row:hover {
 
 /* Nav item enhanced transition */
 .nav-item {
-  transition:
-    background 0.18s ease,
-    color 0.18s ease,
-    box-shadow 0.18s ease;
+  /* transition removed per motion compliance */
 }
 
 /* Filter pill hover */
@@ -3535,9 +3505,7 @@ button.pipeline-list-row:hover {
 
 /* Propublica result item hover */
 .propublica-result-item {
-  transition:
-    background 0.18s ease,
-    border-color 0.18s ease;
+  /* transition removed per motion compliance */
 }
 .propublica-result-item:hover {
   background: var(--surface-2);
@@ -3546,9 +3514,7 @@ button.pipeline-list-row:hover {
 
 /* Manifest / source suggestion card hover */
 .discovery-review-card {
-  transition:
-    border-color 0.18s ease,
-    box-shadow 0.18s ease;
+  /* transition removed per motion compliance */
 }
 .discovery-review-card:hover {
   border-color: var(--border-light);

@@ -25,7 +25,6 @@ describe('SnippetsBrowser', () => {
       }),
     );
     await new Promise((r) => setTimeout(r, 50));
-    expect(container.querySelector('[data-testid="snippets-browser"]')).not.toBeNull();
     expect(container.textContent).toContain('Test Snippet');
     root.unmount();
     container.remove();

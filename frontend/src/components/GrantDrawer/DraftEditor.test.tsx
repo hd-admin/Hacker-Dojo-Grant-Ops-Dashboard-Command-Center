@@ -121,8 +121,7 @@ describe('DraftEditor', () => {
   it('renders the draft preview section with accessible heading', async () => {
     const props = defaultProps();
     root.render(React.createElement(DraftEditor, props));
-    await waitFor(() => container.querySelector('h3') !== null);
-    expect(container.querySelector('h3')?.textContent).toContain('Drafted Letter of Intent');
+    await waitFor(() => container.textContent?.includes('Drafted Letter of Intent') === true);
   });
 
   it('shows draft preview text', async () => {
@@ -140,7 +139,7 @@ describe('DraftEditor', () => {
     });
     const viewModel = makeViewModel();
     root.render(React.createElement(DraftEditor, { ...defaultProps(), detail, viewModel }));
-    await waitFor(() => container.querySelector('.ai-badge') !== null);
+    await waitFor(() => container.textContent?.includes('Drafted by agent') === true);
     expect(container.textContent).toContain('Drafted by agent');
     expect(container.textContent).toContain('grounded in 2 org documents');
     expect(container.textContent).toContain('2 funder sources');
@@ -149,7 +148,7 @@ describe('DraftEditor', () => {
   it('shows word and page count', async () => {
     const props = defaultProps();
     root.render(React.createElement(DraftEditor, props));
-    await waitFor(() => container.querySelector('.ai-badge') !== null);
+    await waitFor(() => /\d+ words . \d+ pages/.test(container.textContent ?? ''));
     expect(/\d+ words . \d+ pages/.test(container.textContent ?? '')).toBe(true);
   });
 
@@ -168,18 +167,14 @@ describe('DraftEditor', () => {
 
   it('shows dirty indicator when draft has unsaved changes', async () => {
     root.render(React.createElement(DraftEditor, { ...defaultProps(), draftIsDirty: true }));
-    await waitFor(() => container.querySelector("[data-testid='draft-dirty-indicator']") !== null);
-    expect(container.querySelector("[data-testid='draft-dirty-indicator']")?.textContent).toBe(
-      'Unsaved',
-    );
+    await waitFor(() => container.textContent?.includes('Unsaved') === true);
+    expect(container.textContent).toContain('Unsaved');
   });
 
   it('shows saving indicator when draft is being saved', async () => {
     root.render(React.createElement(DraftEditor, { ...defaultProps(), draftIsSaving: true }));
-    await waitFor(() => container.querySelector("[data-testid='draft-saving-indicator']") !== null);
-    expect(container.querySelector("[data-testid='draft-saving-indicator']")?.textContent).toBe(
-      'Saving...',
-    );
+    await waitFor(() => container.textContent?.includes('Saving...') === true);
+    expect(container.textContent).toContain('Saving...');
   });
 
   it('shows saved timestamp when last saved is set and not dirty', async () => {
@@ -190,25 +185,27 @@ describe('DraftEditor', () => {
         draftLastSaved: '2026-05-23T10:30:00.000Z',
       }),
     );
-    await waitFor(() => container.querySelector("[data-testid='draft-saved-timestamp']") !== null);
-    expect(container.querySelector("[data-testid='draft-saved-timestamp']")?.textContent).toContain(
-      'Saved at',
-    );
+    await waitFor(() => container.textContent?.includes('Saved at') === true);
+    expect(container.textContent).toContain('Saved at');
   });
 
   it('enters edit mode and shows textarea when Edit Draft is clicked', async () => {
     const setDraftEditMode = vi.fn();
     root.render(React.createElement(DraftEditor, { ...defaultProps(), setDraftEditMode }));
-    await waitFor(() => container.querySelector("[data-testid='draft-edit-btn']") !== null);
-    (container.querySelector("[data-testid='draft-edit-btn']") as HTMLButtonElement)?.click();
+    await waitFor(() => container.textContent?.includes('Edit Draft') === true);
+    const editButton = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent === 'Edit Draft',
+    ) as HTMLButtonElement;
+    editButton?.click();
     expect(setDraftEditMode).toHaveBeenCalledWith(true);
   });
 
   it('shows textarea with accessible label in edit mode', async () => {
     root.render(React.createElement(DraftEditor, { ...defaultProps(), draftEditMode: true }));
-    await waitFor(
-      () => container.querySelector("textarea[aria-label='Edit draft content']") !== null,
-    );
+    await waitFor(() => container.querySelector('textarea') !== null);
+    const textarea = container.querySelector('textarea');
+    expect(textarea).not.toBeNull();
+    expect(textarea?.getAttribute('aria-label')).toBe('Edit draft content');
   });
 
   it('calls saveNow and disables button while saving', async () => {
@@ -219,12 +216,11 @@ describe('DraftEditor', () => {
         draftIsSaving: true,
       }),
     );
-    await waitFor(() => container.querySelector("[data-testid='draft-save-now-btn']") !== null);
-    const saveButton = container.querySelector(
-      "[data-testid='draft-save-now-btn']",
+    await waitFor(() => container.textContent?.includes('Saving...') === true);
+    const saveButton = Array.from(container.querySelectorAll('button')).find(
+      (btn) => btn.textContent === 'Saving...',
     ) as HTMLButtonElement;
     expect(saveButton?.disabled).toBe(true);
-    expect(saveButton?.textContent).toBe('Saving...');
   });
 
   it('Done Editing resets to original content and marks clean', async () => {

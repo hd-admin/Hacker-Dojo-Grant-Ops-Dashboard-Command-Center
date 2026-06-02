@@ -598,8 +598,8 @@ describe('GrantDrawer', () => {
     expect(
       getByText(container, 'Submission blocked: Grant must be approved before submission'),
     ).not.toBeNull();
-    expect(container.querySelector('[aria-label="Approve and lock"]')).toBeNull();
-    expect(container.querySelector('[aria-label="Submit"]')).toBeNull();
+    expect(queryByRole(container, 'button', { name: 'Approve and lock' })).toBeNull();
+    expect(queryByRole(container, 'button', { name: 'Submit' })).toBeNull();
   });
 
   it(
@@ -624,7 +624,7 @@ describe('GrantDrawer', () => {
       expect(container.textContent).toContain('community innovation in Silicon Valley');
       expect(getByRole(container, 'button', { name: 'Request revision' })).not.toBeNull();
       expect(getByRole(container, 'button', { name: 'Approve and lock' })).not.toBeNull();
-      expect(container.querySelector('[aria-label="Generate draft"]')).toBeNull();
+      expect(queryByRole(container, 'button', { name: 'Generate draft' })).toBeNull();
 
       getByRole(container, 'button', { name: 'Request revision' }).click();
       await new Promise<void>((resolve) => setTimeout(resolve, 500));

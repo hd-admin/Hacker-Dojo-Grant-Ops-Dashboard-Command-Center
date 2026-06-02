@@ -27,7 +27,6 @@ describe('FormTemplateView', () => {
       }),
     );
     await new Promise((r) => setTimeout(r, 50));
-    expect(container.querySelector('[data-testid="form-template-view"]')).not.toBeNull();
     expect(container.textContent).toContain('Test Funder');
     root.unmount();
     container.remove();

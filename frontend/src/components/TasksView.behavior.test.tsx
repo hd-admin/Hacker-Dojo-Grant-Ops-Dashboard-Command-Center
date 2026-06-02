@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { getByLabelText } from '../test-helpers';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { Task } from '../../../shared/types';
 
@@ -78,16 +79,14 @@ describe('TasksView behavior', () => {
     await waitFor(() => container.textContent?.includes('Need finance sign-off') === true);
 
     expect(container.textContent).toContain('Rationale: Need finance sign-off');
-    expect(container.querySelector('[data-testid="task-override-btn"]')).not.toBeNull();
 
     Array.from(container.querySelectorAll('button'))
       .find((button) => button.textContent === 'Override')
       ?.click();
     await waitFor(() => container.textContent?.includes('Save override') === true);
 
-    const overridePanel = container.querySelector('.task-override-panel');
-    const select = overridePanel?.querySelector('select') as HTMLSelectElement;
-    const textarea = overridePanel?.querySelector('textarea') as HTMLTextAreaElement;
+    const select = getByLabelText(container, 'Override task status') as HTMLSelectElement;
+    const textarea = getByLabelText(container, 'Override rationale') as HTMLTextAreaElement;
     select.value = 'waived';
     select.dispatchEvent(new Event('change', { bubbles: true }));
     setTextareaValue(textarea, 'Operator reviewed and waived the task.');
