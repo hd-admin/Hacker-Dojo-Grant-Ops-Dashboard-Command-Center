@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import type { FitScoreBreakdown as FitScoreBreakdownType } from '../../../../shared/types';
 import styles from './FitScoreBreakdown.module.css';

@@ -1,5 +1,3 @@
-'use client';
-
 import React from 'react';
 import type { ChecklistItem as ChecklistItemType } from '../../../../shared/types';
 

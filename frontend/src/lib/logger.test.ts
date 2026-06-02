@@ -3,12 +3,14 @@ import { logger, getSessionLogPath } from '@/lib/logger';
 
 describe('logger', () => {
   describe('exports', () => {
-    it('exports the logger as a callable function (pino instance)', () => {
+    it('exports the logger as a pino instance with callable log-level methods', () => {
       expect(logger).toBeDefined();
       expect(typeof logger.info).toBe('function');
       expect(typeof logger.warn).toBe('function');
       expect(typeof logger.error).toBe('function');
       expect(typeof logger.debug).toBe('function');
+      expect(typeof logger.fatal).toBe('function');
+      expect(typeof logger.trace).toBe('function');
     });
 
     it('exports getSessionLogPath as a function', () => {
