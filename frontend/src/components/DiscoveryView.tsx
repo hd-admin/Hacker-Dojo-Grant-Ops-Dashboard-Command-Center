@@ -756,6 +756,7 @@ export function DiscoveryView({
       <div className="filter-bar">
         <input
           type="text"
+          aria-label="Search grants, funders, and tags"
           placeholder="Search grants, funders, tags..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}

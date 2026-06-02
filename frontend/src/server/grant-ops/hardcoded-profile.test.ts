@@ -21,6 +21,7 @@ describe('HARDCODED_PROFILE', () => {
     expect(HARDCODED_PROFILE.yearFounded).toBe(2009);
     expect(HARDCODED_PROFILE.geography).toBe('San Francisco Bay Area / Silicon Valley');
     expect(HARDCODED_PROFILE.contactInfo.website).toBe('https://hackerdojo.org');
+    expect(HARDCODED_PROFILE.samUEI).toBe('');
   });
 
   it('should have program areas', () => {

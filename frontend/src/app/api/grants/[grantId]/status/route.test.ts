@@ -69,4 +69,119 @@ describe('/api/grants/[grantId]/status', () => {
     expect((await repository.getGrant(grant.id))?.status).toBe('draft');
     expect((await repository.getGrant(grant.id))?.statusLabel).toBe('Drafting');
   });
+
+  it('returns 400 for an invalid state transition', async () => {
+    const response = await PATCH(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'review', statusLabel: 'In Review' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.code).toBe('INVALID_STATE_TRANSITION');
+    expect(body.details.from).toBe('matched');
+    expect(body.details.to).toBe('review');
+  });
+
+  it('returns 400 when submission-ready transition is blocked', async () => {
+    // Set the grant to approved first
+    await repository.updateGrant(grant.id, { status: 'approved', statusLabel: 'Approved' });
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'submission-ready', statusLabel: 'Ready to Submit' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.code).toBe('SUBMISSION_BLOCKED');
+    expect(body.details.blockingReasons).toBeDefined();
+    expect(body.details.blockingReasons.length).toBeGreaterThan(0);
+  });
+
+  it('returns 400 when submission-ready transition is blocked with blocking checklist items', async () => {
+    // Create a grant in approved state with a submission-blocking checklist item
+    const blockedGrant = createGrant(`status-blocked-${Date.now()}`);
+    await repository.addGrant({
+      ...blockedGrant,
+      status: 'approved',
+      statusLabel: 'Approved',
+      checklist: [
+        { label: 'Final review', done: false, required: true, blockSubmission: true },
+      ],
+    } as Grant);
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/grants/${blockedGrant.id}/status`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'submission-ready', statusLabel: 'Ready to Submit' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: blockedGrant.id }) },
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.code).toBe('SUBMISSION_BLOCKED');
+    const reasons = body.details.blockingReasons as string[];
+    expect(reasons.some((r) => r.includes('Final review'))).toBe(true);
+  });
+
+  it('returns 400 for a closed grant transition to anything other than archived', async () => {
+    // Set the grant to closed first
+    await repository.updateGrant(grant.id, { status: 'closed', statusLabel: 'Closed' });
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'draft', statusLabel: 'Drafting' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+
+    expect(response.status).toBe(400);
+    const body = await response.json();
+    expect(body.code).toBe('INVALID_STATE_TRANSITION');
+  });
+
+  it('allows valid transition from draft to review', async () => {
+    await repository.updateGrant(grant.id, { status: 'draft', statusLabel: 'Drafting' });
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'review', statusLabel: 'In Review' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect((await repository.getGrant(grant.id))?.status).toBe('review');
+  });
+
+  it('allows valid transition from review back to draft for revisions', async () => {
+    await repository.updateGrant(grant.id, { status: 'review', statusLabel: 'In Review' });
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'draft', statusLabel: 'Drafting' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect((await repository.getGrant(grant.id))?.status).toBe('draft');
+  });
 });

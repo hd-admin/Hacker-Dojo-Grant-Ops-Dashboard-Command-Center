@@ -621,6 +621,7 @@ export function AppShell() {
                 type="button"
                 className={`nav-item ${activeView === item.view ? 'active' : ''}`}
                 data-view={item.view}
+                data-testid={item.view ? `nav-${item.view}` : undefined}
                 aria-label={item.ariaLabel}
                 aria-current={activeView === item.view ? 'page' : undefined}
                 tabIndex={0}
@@ -646,6 +647,7 @@ export function AppShell() {
               type="button"
               className={`nav-item ${activeView === item.view ? 'active' : ''}`}
               data-view={item.view}
+              data-testid={item.view ? `nav-${item.view}` : undefined}
               aria-label={item.ariaLabel}
               aria-current={activeView === item.view ? 'page' : undefined}
               tabIndex={0}

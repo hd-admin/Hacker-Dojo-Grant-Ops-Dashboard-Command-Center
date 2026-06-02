@@ -3,7 +3,7 @@ import type { OrganizationProfile } from '../../../../shared/types';
 export const HARDCODED_PROFILE: OrganizationProfile = {
   legalName: 'Hacker Dojo, a California nonprofit corporation',
   ein: '26-4812213',
-  samUEI: 'HD20240601001',
+  samUEI: '',
   nonprofitStatus: '501(c)(3)',
   yearFounded: 2009,
   contactInfo: {
