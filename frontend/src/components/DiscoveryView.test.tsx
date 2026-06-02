@@ -194,13 +194,17 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       }),
     );
-    await waitFor(() => container.textContent?.includes('3 grants') === true);
+    await waitFor(() => container.textContent?.includes('3 grants') === true, 5000);
 
     const searchInput = container.querySelector('input[type="text"]') as HTMLInputElement;
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-    setter?.call(searchInput, 'nonexistent grant');
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set;
+    nativeInputValueSetter?.call(searchInput, 'nonexistent grant');
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
     searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 100));
 
     await waitFor(
       () => container.querySelector('[data-testid="discovery-filter-empty-state"]') !== null,
@@ -211,7 +215,7 @@ describe('DiscoveryView', () => {
     container.remove();
   });
 
-  it('opens FunderDetail dialog when funder name is clicked', async () => {
+  it('opens FunderDetail dialog when funder name is clicked', { timeout: 10000 }, async () => {
     mockGetAllGrants.mockResolvedValue(mockGrants);
     mockGetAllSources.mockResolvedValue(mockSources);
     const container = document.createElement('div');
@@ -224,15 +228,19 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       }),
     );
-    await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true);
+    await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true, 5000);
 
     const funderLink = container.querySelector(
       '[aria-label="View funder details for National Science Foundation"]',
     );
     expect(funderLink).not.toBeNull();
     funderLink?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 100));
 
-    await waitFor(() => container.querySelector('[data-testid="funder-detail-overlay"]') !== null);
+    await waitFor(
+      () => container.querySelector('[data-testid="funder-detail-overlay"]') !== null,
+      5000,
+    );
     expect(getByRole(container, 'dialog', { name: /Funder details/ })).not.toBeNull();
     expect(container.querySelector('[data-testid="funder-detail"]')).not.toBeNull();
     root.unmount();

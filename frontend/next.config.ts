@@ -1,4 +1,7 @@
 import type { NextConfig } from 'next';
+import path from 'node:path';
+
+const projectRoot = path.resolve(__dirname, '..');
 
 const nextConfig: NextConfig = {
   typescript: {
@@ -12,6 +15,10 @@ const nextConfig: NextConfig = {
     return config;
   },
   output: 'standalone',
+  outputFileTracingRoot: projectRoot,
+  turbopack: {
+    root: projectRoot,
+  },
   images: {
     unoptimized: true,
   },
