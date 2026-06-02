@@ -60,3 +60,4 @@ Thumbs.db
 
 /PROMPT*
 wt-*/
+.build-output*.log
