@@ -47,7 +47,6 @@
   font-family: var(--sans);
   font-size: 14px;
   outline: none;
-  transition: border-color 0.15s ease;
 }
 
 .button {

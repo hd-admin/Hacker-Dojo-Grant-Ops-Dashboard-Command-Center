@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import { queryByRole } from '../test-helpers';
+import { getByRole, queryByRole } from '../test-helpers';
 import { PipelineBoard } from './PipelineBoard';
 
 let container: HTMLDivElement;
@@ -73,8 +73,8 @@ describe('PipelineBoard', () => {
       />,
     );
     await waitFor(() => queryByRole(container, 'grid', { name: 'Pipeline Kanban Board' }) !== null);
-    expect(container.querySelector('[data-testid="pipeline-column-matched"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="pipeline-column-draft"]')).not.toBeNull();
+    expect(queryByRole(container, 'gridcell', { name: 'Matched column, 1 grants' })).not.toBeNull();
+    expect(queryByRole(container, 'gridcell', { name: 'Draft column, 1 grants' })).not.toBeNull();
   });
 
   it('shows grant cards in correct columns', async () => {
@@ -85,9 +85,7 @@ describe('PipelineBoard', () => {
         onStatusChange={vi.fn().mockResolvedValue(undefined)}
       />,
     );
-    await waitFor(() => container.querySelector('[data-testid="pipeline-board"]') !== null);
-    expect(container.querySelector('[data-testid="pipeline-card-grant-1"]')).not.toBeNull();
-    expect(container.querySelector('[data-testid="pipeline-card-grant-2"]')).not.toBeNull();
+    await waitFor(() => queryByRole(container, 'grid', { name: 'Pipeline Kanban Board' }) !== null);
     expect(container.textContent).toContain('NSF Grant');
     expect(container.textContent).toContain('Community Fund');
   });
@@ -100,7 +98,7 @@ describe('PipelineBoard', () => {
         onStatusChange={vi.fn().mockResolvedValue(undefined)}
       />,
     );
-    await waitFor(() => container.querySelector('[data-testid="pipeline-board"]') !== null);
+    await waitFor(() => queryByRole(container, 'grid', { name: 'Pipeline Kanban Board' }) !== null);
     expect(container.textContent).toContain('No grants');
   });
 
@@ -113,8 +111,8 @@ describe('PipelineBoard', () => {
         onStatusChange={vi.fn().mockResolvedValue(undefined)}
       />,
     );
-    await waitFor(() => container.querySelector('[data-testid="pipeline-board"]') !== null);
-    const card = container.querySelector('[data-testid="pipeline-card-grant-1"]');
+    await waitFor(() => queryByRole(container, 'grid', { name: 'Pipeline Kanban Board' }) !== null);
+    const card = getByRole(container, 'button', { name: 'NSF Grant' });
     expect(card).not.toBeNull();
     card?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     expect(onSelectGrant).toHaveBeenCalledWith('grant-1');

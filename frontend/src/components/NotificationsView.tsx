@@ -72,6 +72,7 @@ export function NotificationsView({ notifications: notificationsProp }: Notifica
         <div
           className="empty-state-guide"
           data-testid="notifications-empty-state"
+          role="status"
           aria-label="No notifications"
         >
           <div aria-live="polite">
@@ -127,9 +128,19 @@ export function NotificationsView({ notifications: notificationsProp }: Notifica
           </button>
         ))}
       </div>
-      <div className="notifications-list" aria-live="polite" aria-label="Notifications list">
+      <div
+        className="notifications-list"
+        role="list"
+        aria-live="polite"
+        aria-label="Notifications list"
+      >
         {filteredNotifications.map((notification) => (
-          <div key={notification.id} className="notification-item">
+          <div
+            key={notification.id}
+            className="notification-item"
+            role="listitem"
+            aria-label={notification.text.replace(/<[^>]*>/g, '')}
+          >
             <div className={getUrgencyDotClass(notification.urgency, notification.dot)} />
             <div className="notification-content">
               <div

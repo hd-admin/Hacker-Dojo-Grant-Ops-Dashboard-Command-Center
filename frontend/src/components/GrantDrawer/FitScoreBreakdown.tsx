@@ -12,7 +12,7 @@ export function FitScoreBreakdown({ fitBreakdown }: FitScoreBreakdownProps) {
   return (
     <div className="drawer-section">
       <h3>Why it fits</h3>
-      <div className="fit-breakdown">
+      <div className="fit-breakdown" role="list">
         {(
           [
             ['Mission alignment', fitBreakdown.missionAlignment],
@@ -22,7 +22,12 @@ export function FitScoreBreakdown({ fitBreakdown }: FitScoreBreakdownProps) {
             ['Partnership readiness', fitBreakdown.partnershipReadiness],
           ] as const
         ).map(([label, score]) => (
-          <div className="fit-row" key={label}>
+          <div
+            className="fit-row"
+            key={label}
+            role="listitem"
+            aria-label={`${label}: ${score} percent`}
+          >
             <div className="fit-row-label">{label}</div>
             <div className="fit-row-bar">
               <div className={styles.fitRowBar} style={{ transform: `scaleX(${score / 100})` }} />

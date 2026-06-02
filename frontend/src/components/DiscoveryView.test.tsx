@@ -209,7 +209,10 @@ describe('DiscoveryView', () => {
     searchInput.dispatchEvent(new Event('change', { bubbles: true }));
     await new Promise((r) => setTimeout(r, 100));
 
-    await waitFor(() => container.textContent?.includes('No grants match your current filters') === true, 10000);
+    await waitFor(
+      () => container.textContent?.includes('No grants match your current filters') === true,
+      10000,
+    );
     expect(container.textContent).toContain('No grants match your current filters');
     root.unmount();
     container.remove();

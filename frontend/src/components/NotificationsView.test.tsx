@@ -2,6 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { getByRole, getAllByRole, queryByText } from '../test-helpers';
 import type { Notification } from '../../../shared/types';
 
 const mockNotifications: Notification[] = [
@@ -114,14 +115,17 @@ describe('NotificationsView', () => {
       ];
       root.render(React.createElement(NotificationsView, { notifications }));
       await new Promise((r) => setTimeout(r, 0));
-      expect(container.querySelector('.notification-text strong')).not.toBeNull();
+      const items = getAllByRole(container, 'listitem');
+      expect(items.length).toBeGreaterThan(0);
+      expect(items[0]?.getAttribute('aria-label')).toContain('3 new grants');
     });
 
     it('renders empty state when notifications array is empty', async () => {
       root.render(React.createElement(NotificationsView, { notifications: [] }));
       await new Promise((r) => setTimeout(r, 0));
-      expect(container.querySelector('[data-testid="notifications-empty-state"]')).not.toBeNull();
-      expect(container.querySelector('[aria-live="polite"]')).not.toBeNull();
+      expect(getByRole(container, 'heading', { name: 'Notifications Activity' })).not.toBeNull();
+      expect(queryByText(container, 'No notifications yet')).not.toBeNull();
+      expect(getByRole(container, 'status', { name: 'No notifications' })).not.toBeNull();
     });
 
     it('renders all notification items', async () => {
@@ -131,7 +135,8 @@ describe('NotificationsView', () => {
       ];
       root.render(React.createElement(NotificationsView, { notifications }));
       await new Promise((r) => setTimeout(r, 0));
-      expect(container.querySelectorAll('.notification-item').length).toBe(2);
+      const items = getAllByRole(container, 'listitem');
+      expect(items.length).toBe(2);
     });
   });
 });

@@ -2,7 +2,7 @@
 import React from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
-import { getByRole, queryByText } from '../test-helpers';
+import { getByRole, queryByRole, queryByText } from '../test-helpers';
 import { SavedSearchesPanel } from './SavedSearchesPanel';
 
 let container: HTMLDivElement;
@@ -38,9 +38,7 @@ describe('SavedSearchesPanel', () => {
         onRunSearch: () => {},
       }),
     );
-    await waitFor(() => container.querySelector('[data-testid="saved-searches-empty"]') !== null);
-    expect(container.querySelector('[data-testid="saved-searches-empty"]')).not.toBeNull();
-    // also verify via accessible text
+    await waitFor(() => queryByText(container, 'No saved searches yet') !== null);
     expect(queryByText(container, 'No saved searches yet')).not.toBeNull();
   });
 
@@ -68,7 +66,9 @@ describe('SavedSearchesPanel', () => {
       }),
     );
 
-    await waitFor(() => container.querySelector('[data-testid="saved-search-card"]') !== null);
+    await waitFor(
+      () => queryByRole(container, 'button', { name: 'Run saved search NSF Grants' }) !== null,
+    );
     expect(container.textContent).toContain('NSF Grants');
     expect(container.textContent).toContain('NSF');
     expect(container.textContent).toContain('3 new');
@@ -76,7 +76,7 @@ describe('SavedSearchesPanel', () => {
     fetchMock.mockRestore();
   });
 
-  it('shows save search input when + Save search is clicked', async () => {
+  it('shows save search input when Save current search is clicked', async () => {
     const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
       ok: true,
       json: async () => [],
@@ -89,14 +89,16 @@ describe('SavedSearchesPanel', () => {
       }),
     );
 
-    await waitFor(() => container.querySelector('[data-testid="saved-searches-empty"]') !== null);
+    await waitFor(() => queryByText(container, 'No saved searches yet') !== null);
 
     const saveBtn = getByRole(container, 'button', { name: 'Save current search' });
     expect(saveBtn).not.toBeNull();
     saveBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('[data-testid="save-search-name-input"]') !== null);
-    expect(container.querySelector('[data-testid="save-search-name-input"]')).not.toBeNull();
+    await waitFor(
+      () => queryByRole(container, 'textbox', { name: 'Name for saved search' }) !== null,
+    );
+    expect(getByRole(container, 'textbox', { name: 'Name for saved search' })).not.toBeNull();
 
     fetchMock.mockRestore();
   });
@@ -126,8 +128,10 @@ describe('SavedSearchesPanel', () => {
       }),
     );
 
-    await waitFor(() => container.querySelector('[data-testid="run-saved-search-btn"]') !== null);
-    const runBtn = container.querySelector('[data-testid="run-saved-search-btn"]');
+    await waitFor(
+      () => queryByRole(container, 'button', { name: 'Run saved search NSF Grants' }) !== null,
+    );
+    const runBtn = getByRole(container, 'button', { name: 'Run saved search NSF Grants' });
     runBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
     expect(onRunSearch).toHaveBeenCalledWith('NSF');
@@ -159,12 +163,14 @@ describe('SavedSearchesPanel', () => {
       }),
     );
 
-    await waitFor(() => container.querySelector('[data-testid="edit-saved-search-btn"]') !== null);
-    const editBtn = container.querySelector('[data-testid="edit-saved-search-btn"]');
+    await waitFor(
+      () => queryByRole(container, 'button', { name: 'Edit saved search NSF Grants' }) !== null,
+    );
+    const editBtn = getByRole(container, 'button', { name: 'Edit saved search NSF Grants' });
     editBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('[data-testid="edit-search-name-input"]') !== null);
-    expect(container.querySelector('[data-testid="edit-search-name-input"]')).not.toBeNull();
+    await waitFor(() => queryByRole(container, 'textbox', { name: 'Edit search name' }) !== null);
+    expect(getByRole(container, 'textbox', { name: 'Edit search name' })).not.toBeNull();
 
     fetchMock.mockRestore();
   });
@@ -182,14 +188,14 @@ describe('SavedSearchesPanel', () => {
       }),
     );
 
-    await waitFor(() => container.querySelector('[data-testid="saved-searches-empty"]') !== null);
+    await waitFor(() => queryByText(container, 'No saved searches yet') !== null);
 
     const toggle = getByRole(container, 'button', { name: 'Collapse saved searches' });
     expect(toggle).not.toBeNull();
     toggle.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('[data-testid="saved-searches-empty"]') === null);
-    expect(container.querySelector('[data-testid="saved-searches-empty"]')).toBeNull();
+    await waitFor(() => queryByText(container, 'No saved searches yet') === null);
+    expect(queryByText(container, 'No saved searches yet')).toBeNull();
 
     const expandToggle = getByRole(container, 'button', { name: 'Expand saved searches' });
     expect(expandToggle).not.toBeNull();

@@ -126,6 +126,7 @@ export function PipelineBoard({
                     className={`pipeline-card ${activeColumn === colIndex && getActiveCardIndex(colIndex) === cardIndex ? 'pipeline-card-active' : ''}`}
                     role="button"
                     tabIndex={-1}
+                    aria-label={grant.title}
                     onClick={() => onSelectGrant(grant.id)}
                     onMouseEnter={() =>
                       setActiveCard((prev) => {
