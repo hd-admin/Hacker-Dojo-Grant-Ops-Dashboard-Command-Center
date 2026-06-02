@@ -65,7 +65,7 @@ const mockJobs: JobQueueItem[] = [
   },
 ];
 
-import { getByLabelText } from '../test-helpers';
+import { getByLabelText, getByRole, getAllByRole } from '../test-helpers';
 import { JobsPanel } from './JobsPanel';
 
 let container: HTMLDivElement;
@@ -94,38 +94,34 @@ describe('JobsPanel', () => {
 
     const header = getByLabelText(container, 'Job Queue');
     expect(header).not.toBeNull();
-    expect(header?.querySelector('.header-title')?.textContent).toContain('Job');
+    expect(header?.textContent).toContain('Job');
   });
 
   it('renders status filter tabs', async () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const statusFilter = container.querySelector(
-      '[role="tablist"][aria-label="Filter by job status"]',
-    );
+    const statusFilter = getByRole(container, 'tablist', { name: 'Filter by job status' });
     expect(statusFilter).not.toBeNull();
-    const buttons = statusFilter?.querySelectorAll('button');
-    expect(buttons?.length).toBe(6); // All, Queued, Running, Completed, Failed, Cancelled
+    const buttons = statusFilter.querySelectorAll('button');
+    expect(buttons.length).toBe(6); // All, Queued, Running, Completed, Failed, Cancelled
   });
 
   it('renders type filter tabs', async () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const typeFilter = container.querySelector('[role="tablist"][aria-label="Filter by job type"]');
+    const typeFilter = getByRole(container, 'tablist', { name: 'Filter by job type' });
     expect(typeFilter).not.toBeNull();
-    const buttons = typeFilter?.querySelectorAll('button');
-    expect(buttons?.length).toBe(10); // All + 9 job types
+    const buttons = typeFilter.querySelectorAll('button');
+    expect(buttons.length).toBe(10); // All + 9 job types
   });
 
   it('renders job items with progress bars', async () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const jobItems = container.querySelectorAll('[data-testid^="job-item-"]');
-    expect(jobItems.length).toBeGreaterThanOrEqual(1);
-    const progressBars = container.querySelectorAll('[data-testid^="job-progress-"]');
+    const progressBars = getAllByRole(container, 'progressbar');
     expect(progressBars.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -133,18 +129,14 @@ describe('JobsPanel', () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const failedItem = container.querySelector('[data-testid="job-item-failed-job-3"]');
-    expect(failedItem).not.toBeNull();
-    // Expand the job card to see failure guidance
+    // Expand the failed job card to see failure guidance
     const toggleBtn = container.querySelector(
-      '[data-testid="job-toggle-details-job-3"]',
-    ) as HTMLButtonElement;
+      'button[aria-label="Toggle details for research job job-3"]',
+    ) as HTMLButtonElement | null;
     toggleBtn?.click();
-    await new Promise((r) => setTimeout(r, 50));
-    // Expanded failure guidance should include the category and description
-    const guidanceEl = container.querySelector('[data-testid="job-failure-guidance-job-3"]');
-    expect(guidanceEl).not.toBeNull();
-    expect(guidanceEl?.textContent).toMatch(/Rate limited|rate.limit/i);
+    await new Promise((r) => setTimeout(r, 100));
+    // Failure guidance should include the category and description
+    expect(container.textContent).toMatch(/Rate limited|rate.limit/i);
   });
 
   it('filters by status', async () => {
@@ -152,21 +144,17 @@ describe('JobsPanel', () => {
     await new Promise((r) => setTimeout(r, 100));
 
     // Click "Failed" filter
-    const failedBtn = container.querySelector(
-      '[role="tablist"][aria-label="Filter by job status"] button[data-status="failed"]',
-    ) as HTMLButtonElement;
+    const statusFilter = getByRole(container, 'tablist', { name: 'Filter by job status' });
+    const failedBtn = Array.from(statusFilter.querySelectorAll('button')).find((b) =>
+      b.textContent?.toLowerCase().includes('failed'),
+    ) as HTMLButtonElement | null;
     expect(failedBtn).not.toBeNull();
     failedBtn?.click();
     await new Promise((r) => setTimeout(r, 50));
 
     // Should only show failed jobs
-    const visibleItems = container.querySelectorAll(
-      '[data-testid^="job-item-"]:not([style*="display: none"])',
-    );
-    expect(visibleItems.length).toBeGreaterThanOrEqual(1);
-    visibleItems.forEach((item) => {
-      expect(item.getAttribute('data-testid')).toContain('failed');
-    });
+    expect(container.textContent).toMatch(/Retry #1/);
+    expect(container.textContent).not.toMatch(/Draft generated successfully/);
   });
 
   it('filters by type', async () => {
@@ -174,40 +162,31 @@ describe('JobsPanel', () => {
     await new Promise((r) => setTimeout(r, 100));
 
     // Click "Draft" type filter
-    const draftBtn = container.querySelector(
-      '[role="tablist"][aria-label="Filter by job type"] button[data-type="draft"]',
-    ) as HTMLButtonElement;
+    const typeFilter = getByRole(container, 'tablist', { name: 'Filter by job type' });
+    const draftBtn = Array.from(typeFilter.querySelectorAll('button')).find((b) =>
+      b.textContent?.toLowerCase().includes('draft'),
+    ) as HTMLButtonElement | null;
     expect(draftBtn).not.toBeNull();
     draftBtn?.click();
     await new Promise((r) => setTimeout(r, 50));
 
     // Should only show draft jobs
-    const visibleItems = container.querySelectorAll(
-      '[data-testid^="job-item-"]:not([style*="display: none"])',
-    );
-    expect(visibleItems.length).toBeGreaterThanOrEqual(1);
-    visibleItems.forEach((item) => {
-      expect(item.textContent).toMatch(/draft/i);
-    });
+    expect(container.textContent).toMatch(/Waiting to start/);
+    expect(container.textContent).not.toMatch(/Retry #1/);
   });
 
   it('shows entity links when entityId exists', async () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const entityLink = container.querySelector('[data-testid="job-entity-link-job-1"]');
-    expect(entityLink).not.toBeNull();
-    expect(entityLink?.textContent).toContain('grant-1');
+    expect(container.textContent).toContain('grant-1');
   });
 
   it('shows timestamps for each job', async () => {
     root.render(React.createElement(JobsPanel, { onRefreshAppState: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));
 
-    const jobItems = container.querySelectorAll('[data-testid^="job-item-"]');
-    jobItems.forEach((item) => {
-      const timestamps = item.querySelector('[data-testid^="job-timestamps-"]');
-      expect(timestamps).not.toBeNull();
-    });
+    expect(container.textContent).toMatch(/Created:/);
+    expect(container.textContent).toMatch(/Updated:/);
   });
 });

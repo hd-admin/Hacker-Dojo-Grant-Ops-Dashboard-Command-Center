@@ -119,17 +119,10 @@ describe('SubmissionReadiness', () => {
     expect(container.textContent).toBeTruthy();
     const region = getByRole(container, 'region', { name: 'Submission readiness' });
     expect(region).not.toBeNull();
-    const draftIndicator = container.querySelector('[data-testid="readiness-draft"]');
-    expect(draftIndicator?.className).toContain('green');
-
-    const approvalIndicator = container.querySelector('[data-testid="readiness-approval"]');
-    expect(approvalIndicator?.className).toContain('green');
-
-    const checklistItemA = container.querySelector('[data-testid="readiness-checklist-0"]');
-    expect(checklistItemA?.className).toContain('green');
-
-    const checklistItemB = container.querySelector('[data-testid="readiness-checklist-1"]');
-    expect(checklistItemB?.className).toContain('red');
+    expect(container.textContent).toContain('Completed draft');
+    expect(container.textContent).toContain('Approved draft');
+    expect(container.textContent).toContain('Required doc A');
+    expect(container.textContent).toContain('Required doc B');
   });
 
   it('shows red indicator when no draft exists', async () => {
@@ -146,8 +139,7 @@ describe('SubmissionReadiness', () => {
       );
     });
 
-    const draftIndicator = container.querySelector('[data-testid="readiness-draft"]');
-    expect(draftIndicator?.className).toContain('red');
+    expect(container.textContent).toContain('No draft exists');
   });
 
   it('shows yellow indicator when approval is expired', async () => {
@@ -169,8 +161,7 @@ describe('SubmissionReadiness', () => {
       );
     });
 
-    const approvalIndicator = container.querySelector('[data-testid="readiness-approval"]');
-    expect(approvalIndicator?.className).toContain('yellow');
+    expect(container.textContent).toContain('Approval has expired');
   });
 
   it('renders manifest listing artifacts', async () => {

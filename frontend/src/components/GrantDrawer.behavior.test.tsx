@@ -27,7 +27,7 @@ vi.mock('../lib/grant-ops-client', () => ({
   },
 }));
 
-import { getByRole } from '../test-helpers';
+import { getByRole, queryByRole, queryByText } from '../test-helpers';
 import { GrantDrawer } from './GrantDrawer';
 
 const grantId = 'grant-override';
@@ -159,7 +159,7 @@ describe('GrantDrawer behavior', () => {
     const onClose = vi.fn();
     root.render(React.createElement(GrantDrawer, { grantId, onClose, onRefreshAppState: vi.fn() }));
 
-    await waitFor(() => container.querySelector('[role="dialog"]') !== null);
+    await waitFor(() => queryByRole(container, 'dialog', { name: 'Grant details' }) !== null);
     expect(getByRole(container, 'dialog', { name: 'Grant details' })).not.toBeNull();
 
     await waitFor(() => container.textContent?.includes('Request revision') === true);
@@ -170,11 +170,12 @@ describe('GrantDrawer behavior', () => {
     await waitFor(() => container.querySelector('textarea') !== null);
 
     setTextareaValue(container.querySelector('textarea') as HTMLTextAreaElement, 'Keep this note');
-    (container.querySelector('.drawer-close') as HTMLButtonElement | null)?.click();
+    const closeBtn = container.querySelector(
+      '[aria-label="Close grant drawer"]',
+    ) as HTMLButtonElement | null;
+    closeBtn?.click();
 
-    await waitFor(
-      () => container.querySelector('[data-testid="grant-drawer-unsaved-warning"]') !== null,
-    );
+    await waitFor(() => queryByText(container, 'Discard unsaved notes?') !== null);
     expect(onClose).not.toHaveBeenCalled();
 
     const discardBtn = Array.from(container.querySelectorAll('button')).find(
@@ -189,15 +190,15 @@ describe('GrantDrawer behavior', () => {
       React.createElement(GrantDrawer, { grantId, onClose: vi.fn(), onRefreshAppState: vi.fn() }),
     );
 
-    await waitFor(() => container.querySelector('[data-testid="override-fit-score-btn"]') !== null);
-    (
-      container.querySelector('[data-testid="override-fit-score-btn"]') as HTMLButtonElement
-    ).click();
-    await waitFor(() => container.querySelector('.override-panel') !== null);
+    await waitFor(() => container.textContent?.includes('Override fit score') === true);
+    const overrideBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Override fit score'),
+    );
+    overrideBtn?.click();
+    await waitFor(() => container.querySelector('input[type="number"]') !== null);
 
-    const inputs = container.querySelectorAll('.override-panel input, .override-panel textarea');
-    const scoreInput = inputs[0] as HTMLInputElement;
-    const rationaleInput = inputs[1] as HTMLTextAreaElement;
+    const scoreInput = container.querySelector('input[type="number"]') as HTMLInputElement;
+    const rationaleInput = container.querySelector('textarea') as HTMLTextAreaElement;
     const scoreSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set;
     scoreSetter?.call(scoreInput, '91');
     scoreInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -208,10 +209,8 @@ describe('GrantDrawer behavior', () => {
       .find((button) => button.textContent === 'Save override')
       ?.click();
 
-    await waitFor(
-      () => container.querySelector('[data-testid="fit-human-confirmed-badge"]') !== null,
-    );
-    expect(container.querySelector('[data-testid="fit-human-confirmed-badge"]')).not.toBeNull();
+    await waitFor(() => container.textContent?.includes('Human-confirmed') === true);
+    expect(container.textContent).toContain('Human-confirmed');
     expect(currentDetail.grant.humanOverrides?.some((override) => override.field === 'fit')).toBe(
       true,
     );

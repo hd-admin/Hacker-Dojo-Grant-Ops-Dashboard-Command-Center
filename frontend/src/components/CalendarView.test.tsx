@@ -2,6 +2,7 @@
 import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
+import { getByRole, getByText } from '../test-helpers';
 import { CalendarView } from './CalendarView';
 
 describe('CalendarView', () => {
@@ -11,11 +12,11 @@ describe('CalendarView', () => {
     const root = createRoot(container);
     root.render(React.createElement(CalendarView, { grants: [] }));
     await new Promise((r) => setTimeout(r, 100));
-    expect(container.querySelector('[data-testid="calendar-view"]')).not.toBeNull();
-    expect(container.querySelectorAll('[role="columnheader"]').length).toBe(7);
+    expect(container.textContent).toContain('Calendar');
     const headers = Array.from(container.querySelectorAll('[role="columnheader"]')).map(
       (el) => el.textContent,
     );
+    expect(headers.length).toBe(7);
     expect(headers).toEqual(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']);
     root.unmount();
     container.remove();
@@ -27,10 +28,9 @@ describe('CalendarView', () => {
     const root = createRoot(container);
     root.render(React.createElement(CalendarView, { grants: [] }));
     await new Promise((r) => setTimeout(r, 100));
-    const upcomingSection = container.querySelector('.calendar-upcoming');
-    expect(upcomingSection).not.toBeNull();
-    const allText = container.textContent ?? '';
-    expect(allText).toContain('No upcoming deadlines');
+    const upcomingHeading = getByRole(container, 'heading', { name: 'Upcoming Deadlines' });
+    expect(upcomingHeading).not.toBeNull();
+    expect(getByText(container, 'No upcoming deadlines')).not.toBeNull();
     root.unmount();
     container.remove();
   });
@@ -41,7 +41,7 @@ describe('CalendarView', () => {
     const root = createRoot(container);
     root.render(React.createElement(CalendarView, { grants: [] }));
     await new Promise((r) => setTimeout(r, 100));
-    const monthLabel = container.querySelector('.calendar-month-label');
+    const monthLabel = getByText(container, /\w+ \d{4}/);
     expect(monthLabel).not.toBeNull();
     root.unmount();
     container.remove();
@@ -53,7 +53,8 @@ describe('CalendarView', () => {
     const root = createRoot(container);
     root.render(React.createElement(CalendarView, { grants: [] }));
     await new Promise((r) => setTimeout(r, 100));
-    expect(container.querySelector('.calendar-legend')).not.toBeNull();
+    expect(getByText(container, 'Overdue')).not.toBeNull();
+    expect(getByText(container, 'Urgent')).not.toBeNull();
     root.unmount();
     container.remove();
   });

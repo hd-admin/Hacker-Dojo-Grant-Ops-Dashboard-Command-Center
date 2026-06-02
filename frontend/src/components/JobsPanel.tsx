@@ -457,6 +457,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
                       setSelectedJobId((current) => (current === job.id ? null : job.id))
                     }
                     aria-expanded={selectedJobId === job.id}
+                    aria-label={`Toggle details for ${job.jobType} job ${job.id}`}
                   >
                     {selectedJobId === job.id ? '▲' : '▼'}
                   </button>

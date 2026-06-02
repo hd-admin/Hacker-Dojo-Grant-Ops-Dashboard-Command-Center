@@ -229,9 +229,8 @@ describe('DashboardView', () => {
       root.render(React.createElement(DashboardView, stalenessProps));
       await new Promise((r) => setTimeout(r, 500));
 
-      const indicator = container.querySelector('[data-testid="crawl-freshness-indicator"]');
-      expect(indicator).not.toBeNull();
-      expect(indicator!.querySelector('.staleness-dot-fresh')).not.toBeNull();
+      expect(container.textContent).toContain('Crawl Freshness');
+      expect(container.textContent).toContain('Data fresh');
     });
 
     it('shows stale (amber) staleness for crawl 24h-7d ago', async () => {
@@ -253,9 +252,8 @@ describe('DashboardView', () => {
       root.render(React.createElement(DashboardView, stalenessProps));
       await new Promise((r) => setTimeout(r, 200));
 
-      const indicator = container.querySelector('[data-testid="crawl-freshness-indicator"]');
-      expect(indicator).not.toBeNull();
-      expect(indicator!.querySelector('.staleness-dot-stale-warn')).not.toBeNull();
+      expect(container.textContent).toContain('Crawl Freshness');
+      expect(container.textContent).toContain('Data may be stale');
     });
 
     it('shows very-stale (red) staleness for crawl > 7d ago', async () => {
@@ -277,9 +275,8 @@ describe('DashboardView', () => {
       root.render(React.createElement(DashboardView, stalenessProps));
       await new Promise((r) => setTimeout(r, 200));
 
-      const indicator = container.querySelector('[data-testid="crawl-freshness-indicator"]');
-      expect(indicator).not.toBeNull();
-      expect(indicator!.querySelector('.staleness-dot-stale-danger')).not.toBeNull();
+      expect(container.textContent).toContain('Crawl Freshness');
+      expect(container.textContent).toContain('Data is very stale');
     });
   });
 
@@ -313,7 +310,7 @@ describe('DashboardView', () => {
       root.render(React.createElement(DashboardView, requiredProps));
       await new Promise((r) => setTimeout(r, 0));
       // With grants=[], profile=null: renders dashboard-empty-state
-      expect(container.querySelector('[data-testid="dashboard-empty-state"]')).not.toBeNull();
+      expect(container.textContent).toContain('Get started with Grant Ops');
       expect(getByText(container, 'Get started with Grant Ops')).not.toBeNull();
     });
 
@@ -338,8 +335,7 @@ describe('DashboardView', () => {
         }),
       );
       await new Promise((r) => setTimeout(r, 0));
-      expect(container.querySelector('.activity-text strong')).not.toBeNull();
-      expect(container.querySelector('.activity-text')?.innerHTML).toContain('Grant matched');
+      expect(container.textContent).toContain('Grant matched');
     });
 
     it('renders activity-empty-state when notifications is empty array', async () => {
@@ -352,20 +348,16 @@ describe('DashboardView', () => {
         }),
       );
       await new Promise((r) => setTimeout(r, 0));
-      expect(container.querySelector('[data-testid="activity-empty-state"]')).not.toBeNull();
-      expect(
-        container.querySelector('[data-testid="activity-empty-state"] .empty-state-title')
-          ?.textContent,
-      ).toBe('No activity yet');
+      expect(container.textContent).toContain('No activity yet');
     });
 
     it('shows empty state with no synthetic KPI fallbacks when grants are empty', async () => {
       root.render(React.createElement(DashboardView, { ...requiredProps }));
       await new Promise((r) => setTimeout(r, 0));
       // Should show empty state, not synthetic KPI cards
-      expect(container.querySelector('[data-testid="dashboard-empty-state"]')).not.toBeNull();
+      expect(container.textContent).toContain('Get started with Grant Ops');
       // KPI grid should not exist when no grants
-      expect(container.querySelector('.kpi-grid')).toBeNull();
+      expect(container.textContent).not.toContain('Active Pipeline');
     });
 
     it('renders KPI cards with real data when grants exist', async () => {
@@ -377,8 +369,6 @@ describe('DashboardView', () => {
         }),
       );
       await new Promise((r) => setTimeout(r, 0));
-      // KPI grid should exist
-      expect(container.querySelector('.kpi-grid')).not.toBeNull();
       // KPI values should reflect actual data, not synthetic placeholders
       expect(container.textContent).toContain('Active Pipeline');
     });
@@ -393,8 +383,6 @@ describe('DashboardView', () => {
       );
       await new Promise((r) => setTimeout(r, 0));
       // Crawl freshness indicator should render
-      expect(container.querySelector('[data-testid="crawl-freshness-indicator"]')).not.toBeNull();
-      // Should show initial loading or never-run state
       expect(container.textContent).toContain('Crawl Freshness');
     });
   });

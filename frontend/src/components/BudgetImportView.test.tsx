@@ -33,7 +33,7 @@ describe('BudgetImportView', () => {
     await new Promise((r) => setTimeout(r, 50));
     const input = container.querySelector('input[type="file"]') as HTMLInputElement | null;
     expect(input).not.toBeNull();
-    expect(input?.className).toContain('hidden');
+    expect(input?.getAttribute('aria-label')).toBe('Select budget file');
     root.unmount();
     container.remove();
   });

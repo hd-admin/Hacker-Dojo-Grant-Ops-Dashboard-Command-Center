@@ -129,8 +129,8 @@ describe('GroundingReview', () => {
       createRoot(container).render(<GroundingReview draftArtifact={draft} />);
     });
     // Expand evidence section
-    const expandBtn = container.querySelector(
-      '.grounding-expand-toggle',
+    const expandBtn = Array.from(container.querySelectorAll('button')).find((b) =>
+      b.textContent?.includes('Evidence sources'),
     ) as HTMLButtonElement | null;
     if (expandBtn) {
       await act(async () => {

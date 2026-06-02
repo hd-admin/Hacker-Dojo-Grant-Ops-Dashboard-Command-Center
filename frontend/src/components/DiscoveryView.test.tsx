@@ -18,7 +18,7 @@ vi.mock('../lib/grant-ops-client', () => ({
   },
 }));
 
-import { getByRole } from '../test-helpers';
+import { getByRole, queryByRole } from '../test-helpers';
 import { DiscoveryView } from './DiscoveryView';
 
 const mockGrants: Grant[] = [
@@ -123,8 +123,7 @@ describe('DiscoveryView', () => {
       }),
     );
     await new Promise((r) => setTimeout(r, 50));
-    expect(container.querySelector('[data-testid="discovery-empty-state"]')).not.toBeNull();
-    expect(container.querySelector('[aria-hidden="true"]')).not.toBeNull();
+    expect(container.textContent).toContain('No grants discovered yet');
     root.unmount();
     container.remove();
   });
@@ -167,7 +166,9 @@ describe('DiscoveryView', () => {
     );
     await waitFor(() => container.textContent?.includes('3 grants') === true);
 
-    const searchInput = container.querySelector('input[type="text"]') as HTMLInputElement;
+    const searchInput = getByRole(container, 'textbox', {
+      name: 'Search grants, funders, and tags',
+    }) as HTMLInputElement;
     const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
     setter?.call(searchInput, 'NSF');
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
@@ -196,7 +197,9 @@ describe('DiscoveryView', () => {
     );
     await waitFor(() => container.textContent?.includes('3 grants') === true, 5000);
 
-    const searchInput = container.querySelector('input[type="text"]') as HTMLInputElement;
+    const searchInput = getByRole(container, 'textbox', {
+      name: 'Search grants, funders, and tags',
+    }) as HTMLInputElement;
     const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
       'value',
@@ -206,11 +209,8 @@ describe('DiscoveryView', () => {
     searchInput.dispatchEvent(new Event('change', { bubbles: true }));
     await new Promise((r) => setTimeout(r, 100));
 
-    await waitFor(
-      () => container.querySelector('[data-testid="discovery-filter-empty-state"]') !== null,
-      5000,
-    );
-    expect(container.querySelector('[data-testid="discovery-filter-empty-state"]')).not.toBeNull();
+    await waitFor(() => container.textContent?.includes('No grants match your current filters') === true, 10000);
+    expect(container.textContent).toContain('No grants match your current filters');
     root.unmount();
     container.remove();
   });
@@ -238,11 +238,15 @@ describe('DiscoveryView', () => {
     await new Promise((r) => setTimeout(r, 100));
 
     await waitFor(
-      () => container.querySelector('[data-testid="funder-detail-overlay"]') !== null,
+      () =>
+        queryByRole(container, 'dialog', {
+          name: /Funder details for National Science Foundation/,
+        }) !== null,
       5000,
     );
-    expect(getByRole(container, 'dialog', { name: /Funder details/ })).not.toBeNull();
-    expect(container.querySelector('[data-testid="funder-detail"]')).not.toBeNull();
+    expect(
+      queryByRole(container, 'dialog', { name: /Funder details for National Science Foundation/ }),
+    ).not.toBeNull();
     root.unmount();
     container.remove();
   });
@@ -266,14 +270,26 @@ describe('DiscoveryView', () => {
       '[aria-label="View funder details for National Science Foundation"]',
     );
     funderLink?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(() => container.querySelector('[data-testid="funder-detail-overlay"]') !== null);
+    await waitFor(
+      () =>
+        queryByRole(container, 'dialog', {
+          name: /Funder details for National Science Foundation/,
+        }) !== null,
+    );
 
     const closeBtn = container.querySelector('button[aria-label="Close funder detail"]');
     expect(closeBtn).not.toBeNull();
     closeBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(() => container.querySelector('[data-testid="funder-detail-overlay"]') === null);
-    expect(container.querySelector('[data-testid="funder-detail-overlay"]')).toBeNull();
+    await waitFor(
+      () =>
+        queryByRole(container, 'dialog', {
+          name: /Funder details for National Science Foundation/,
+        }) === null,
+    );
+    expect(
+      queryByRole(container, 'dialog', { name: /Funder details for National Science Foundation/ }),
+    ).toBeNull();
     root.unmount();
     container.remove();
   });
