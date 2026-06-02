@@ -668,11 +668,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
           </div>
         </section>
 
-        <section className="setting-card" data-testid="org-profile-card">
-          <div className="setting-card-header">
-            <div className="setting-card-title">Organization Profile</div>
-          </div>
-
+        <section className="setting-card" data-testid="matching-policy-card">
           <div className="setting-card-header">
             <div className="setting-card-title">Search Themes &amp; Matching Policy</div>
           </div>

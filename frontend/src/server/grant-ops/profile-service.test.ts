@@ -90,47 +90,15 @@ describe('ProfileService', () => {
     });
   });
 
-  describe('updateProfile', () => {
-    it('updates and persists profile fields', async () => {
+  describe('profile persistence', () => {
+    it('persists profile fields via repository', async () => {
       const profile = makeFullProfile();
-      await profileService.updateProfile(profile);
+      await repository.updateOrgProfile(profile);
 
       const result = await repository.getOrgProfile();
       expect(result?.legalName).toBe('Hacker Dojo');
       expect(result?.geography).toBe('Regional');
       expect(result?.fundingHistory).toHaveLength(2);
-    });
-
-    it('updates only specified fields without affecting others', async () => {
-      const initial = makeFullProfile({
-        legalName: 'Initial Org',
-        mission: 'Initial mission',
-      });
-      await profileService.updateProfile(initial);
-
-      await profileService.updateProfile({
-        legalName: 'Updated Org',
-        mission: initial.mission,
-        ein: initial.ein,
-        samUEI: initial.samUEI,
-        nonprofitStatus: initial.nonprofitStatus,
-        yearFounded: initial.yearFounded,
-        contactInfo: initial.contactInfo,
-        geography: initial.geography,
-        programAreas: initial.programAreas,
-        populationsServed: initial.populationsServed,
-        fundingHistory: initial.fundingHistory,
-        partnerships: initial.partnerships,
-        complianceFacts: initial.complianceFacts,
-        boardMembers: initial.boardMembers,
-        docTypes: initial.docTypes,
-        searchThemes: initial.searchThemes,
-        agentBehavior: initial.agentBehavior,
-      });
-
-      const result = await repository.getOrgProfile();
-      expect(result?.legalName).toBe('Updated Org');
-      expect(result?.mission).toBe('Initial mission');
     });
   });
 

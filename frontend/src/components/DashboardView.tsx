@@ -377,8 +377,8 @@ export function DashboardView({
           </div>
           <div className="empty-state-title">Get started with Grant Ops</div>
           <div className="empty-state-description">
-            Add your first grant source to discover funding opportunities, or complete your
-            organization profile to enable AI-powered grant matching and drafting.
+            Add your first grant source to discover funding opportunities.
+            The Hacker Dojo organization profile is pre-configured for AI-powered grant matching and drafting.
           </div>
           <div className="empty-state-actions">
             <button
@@ -388,14 +388,6 @@ export function DashboardView({
               aria-label="Add your first grant source"
             >
               Add a source
-            </button>
-            <button
-              type="button"
-              className="btn"
-              onClick={() => onNavigate?.('settings')}
-              aria-label="Complete organization profile"
-            >
-              Complete profile
             </button>
           </div>
         </div>

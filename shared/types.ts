@@ -25,6 +25,7 @@ export interface ChecklistItem {
 	done: boolean;
 	source: string;
 	required?: boolean;
+	blockSubmission?: boolean;
 }
 
 export type TaskStatus =

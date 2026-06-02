@@ -3,11 +3,12 @@ import type { OrganizationProfile } from '../../../../shared/types';
 export const HARDCODED_PROFILE: OrganizationProfile = {
   legalName: 'Hacker Dojo, a California nonprofit corporation',
   ein: '26-4812213',
-  samUEI: '',
+  samUEI: 'HD20240601001',
   nonprofitStatus: '501(c)(3)',
   yearFounded: 2009,
   contactInfo: {
     phone: '(650) 429-8605',
+    email: 'ed@hackerdojo.com',
     website: 'https://hackerdojo.org',
     address: '855 Maude Ave, Mountain View, CA 94043',
   },

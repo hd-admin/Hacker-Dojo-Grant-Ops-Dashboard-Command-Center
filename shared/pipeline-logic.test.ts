@@ -209,5 +209,58 @@ describe('pipeline-logic', () => {
       const result = checkSubmissionReadiness(grant);
       expect(result.hasDraft).toBe(true);
     });
+
+    it('blocks submission when blockSubmission checklist items are incomplete', () => {
+      const grant: Grant = {
+        ...baseGrant,
+        checklist: [
+          { label: 'Budget Approval', done: false, source: 'review', required: false, blockSubmission: true },
+          { label: 'Narrative', done: true, source: 'review', required: true },
+        ],
+      };
+      const result = checkSubmissionReadiness(grant);
+      expect(result.ready).toBe(false);
+      expect(result.blockingReasons.some(r => r.includes('submission-blocking'))).toBe(true);
+      expect(result.blockingReasons.some(r => r.includes('Budget Approval'))).toBe(true);
+    });
+
+    it('allows submission when blockSubmission checklist items are completed', () => {
+      const grant: Grant = {
+        ...baseGrant,
+        checklist: [
+          { label: 'Budget Approval', done: true, source: 'review', required: false, blockSubmission: true },
+          { label: 'Narrative', done: true, source: 'review', required: true },
+        ],
+      };
+      const result = checkSubmissionReadiness(grant);
+      expect(result.ready).toBe(true);
+      expect(result.blockingReasons).toHaveLength(0);
+    });
+
+    it('blocks submission when profile is not ready', () => {
+      const result = checkSubmissionReadiness(baseGrant, false);
+      expect(result.ready).toBe(false);
+      expect(result.blockingReasons.some(r => r.includes('profile'))).toBe(true);
+    });
+
+    it('allows submission when profile is ready', () => {
+      const result = checkSubmissionReadiness(baseGrant, true);
+      expect(result.ready).toBe(true);
+    });
+
+    it('combines multiple blocking reasons', () => {
+      const grant: Grant = {
+        ...baseGrant,
+        status: 'draft',
+        statusLabel: 'Drafting',
+        draftContent: '',
+        checklist: [
+          { label: 'Blocking Item', done: false, source: 'review', required: false, blockSubmission: true },
+        ],
+      };
+      const result = checkSubmissionReadiness(grant, false);
+      expect(result.ready).toBe(false);
+      expect(result.blockingReasons.length).toBeGreaterThanOrEqual(3);
+    });
   });
 });

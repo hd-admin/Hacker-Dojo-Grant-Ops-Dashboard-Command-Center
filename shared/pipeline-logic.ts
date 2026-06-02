@@ -40,7 +40,7 @@ export interface SubmissionReadinessResult {
   requiredDocuments: boolean;
 }
 
-export function checkSubmissionReadiness(grant: Grant): SubmissionReadinessResult {
+export function checkSubmissionReadiness(grant: Grant, profileReady?: boolean): SubmissionReadinessResult {
   const blockingReasons: string[] = [];
 
   if (!grant.draftContent || grant.draftContent.length === 0) {
@@ -61,7 +61,20 @@ export function checkSubmissionReadiness(grant: Grant): SubmissionReadinessResul
     );
   }
 
-  const checklistComplete = requiredItems.length === 0 || incompleteRequired.length === 0;
+  const blockingItems = checklist.filter(
+    (item: { blockSubmission?: boolean; done: boolean }) => item.blockSubmission === true && !item.done,
+  );
+  if (blockingItems.length > 0) {
+    blockingReasons.push(
+      `${blockingItems.length} submission-blocking checklist item(s) not completed: ${blockingItems.map((i: { label: string }) => i.label).join(', ')}`,
+    );
+  }
+
+  if (profileReady === false) {
+    blockingReasons.push('Organization profile is incomplete. Complete required profile fields before submission.');
+  }
+
+  const checklistComplete = (requiredItems.length === 0 || incompleteRequired.length === 0) && blockingItems.length === 0;
 
   return {
     ready: blockingReasons.length === 0,

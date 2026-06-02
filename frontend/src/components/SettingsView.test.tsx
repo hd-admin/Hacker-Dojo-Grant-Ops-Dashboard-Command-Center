@@ -308,7 +308,7 @@ describe('SettingsView', () => {
     );
 
     // Profile is hardcoded in v2 — verify the Org Profile card renders
-    expect(container.querySelector('[data-testid="org-profile-card"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="matching-policy-card"]')).not.toBeNull();
     // No Edit profile button (read-only)
     const editBtn = Array.from(container.querySelectorAll('button')).find(
       (button) => button.textContent === 'Edit profile',

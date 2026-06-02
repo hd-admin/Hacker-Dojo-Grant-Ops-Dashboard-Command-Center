@@ -109,3 +109,27 @@
 .overdueTitle {
   color: var(--danger);
 }
+
+.overdueCard {
+  border-color: var(--danger);
+  border-width: 1.5px;
+}
+
+.statusBadgeCompleted {
+  background: color-mix(in srgb, var(--success) 13%, transparent);
+  color: var(--success);
+}
+
+.statusBadgeOverdue {
+  background: color-mix(in srgb, var(--danger) 13%, transparent);
+  color: var(--danger);
+}
+
+.statusBadgePending {
+  background: color-mix(in srgb, var(--warning) 13%, transparent);
+  color: var(--warning);
+}
+
+.overdueDueDate {
+  color: var(--danger);
+}

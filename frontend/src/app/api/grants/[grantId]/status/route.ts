@@ -3,6 +3,7 @@ import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import { getProfile, isSubmissionReady } from '@/server/grant-ops/profile-service';
 import type { GrantStatus } from '../../../../../../../shared/types';
 import {
   validateTransition,
@@ -80,7 +81,9 @@ export async function PATCH(
     }
 
     if (targetStatus === 'submission-ready') {
-      const readiness = checkSubmissionReadiness(existingGrant);
+      const profile = await getProfile();
+      const profileResult = await isSubmissionReady(profile);
+      const readiness = checkSubmissionReadiness(existingGrant, profileResult.ready);
       if (!readiness.ready) {
         return NextResponse.json(
           {

@@ -59,15 +59,6 @@ export async function getProfile(): Promise<OrganizationProfile> {
 }
 
 /**
- * Update the organization profile.
- * Replaces the entire profile with the provided data.
- */
-export async function updateProfile(profile: OrganizationProfile): Promise<void> {
-  const deps = getDependencies();
-  await deps.repository.updateOrgProfile(profile);
-}
-
-/**
  * Get list of required fields that are missing/empty.
  * Used to flag incomplete profile data.
  */

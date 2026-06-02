@@ -179,29 +179,21 @@ export function FollowUpManager({
             })
             .map((followUp) => {
               const overdue = isOverdue(followUp);
-              const statusColor =
-                followUp.status === 'completed'
-                  ? 'var(--success)'
-                  : overdue
-                    ? 'var(--danger)'
-                    : 'var(--warning)';
+              const statusBadgeClass = followUp.status === 'completed'
+                ? styles.statusBadgeCompleted
+                : overdue
+                  ? styles.statusBadgeOverdue
+                  : styles.statusBadgePending;
               return (
                 <div
                   key={followUp.id}
-                  className="drawer-list-item"
+                  className={`drawer-list-item${overdue ? ` ${styles.overdueCard}` : ''}`}
                   data-testid={`follow-up-item-${followUp.id}`}
-                  style={
-                    overdue ? { borderColor: 'var(--danger)', borderWidth: '1.5px' } : undefined
-                  }
                 >
                   <div className={styles.followUpContent}>
                     <div className={styles.followUpHeader}>
                       <span
-                        className={styles.followUpStatusBadge}
-                        style={{
-                          background: `${statusColor}22`,
-                          color: statusColor,
-                        }}
+                        className={`${styles.followUpStatusBadge} ${statusBadgeClass}`}
                       >
                         {overdue ? 'OVERDUE' : followUp.status}
                       </span>
@@ -228,7 +220,7 @@ export function FollowUpManager({
                     )}
                     <div className="drawer-note">
                       {followUp.dueDate && (
-                        <span style={overdue ? { color: 'var(--danger)' } : undefined}>
+                        <span className={overdue ? styles.overdueDueDate : undefined}>
                           Due {formatDate(followUp.dueDate.slice(0, 10))}
                         </span>
                       )}
