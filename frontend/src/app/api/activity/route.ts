@@ -21,7 +21,9 @@ export async function GET(request: NextRequest) {
     const parsed = querySchema.safeParse(rawParams);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid query parameters', details: parsed.error.format() },
+        createErrorResponse('VALIDATION_ERROR', 'Invalid query parameters', {
+          validationErrors: parsed.error.format(),
+        }),
         { status: 400 },
       );
     }

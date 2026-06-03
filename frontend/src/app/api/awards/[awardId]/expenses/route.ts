@@ -42,7 +42,9 @@ export async function POST(
     const parsed = expenseSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid expense payload', details: parsed.error.format() },
+        createErrorResponse('VALIDATION_ERROR', 'Invalid expense payload', {
+          validationErrors: parsed.error.format(),
+        }),
         { status: 400 },
       );
     }

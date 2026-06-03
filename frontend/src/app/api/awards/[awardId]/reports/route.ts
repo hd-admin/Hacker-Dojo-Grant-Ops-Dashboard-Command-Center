@@ -42,7 +42,9 @@ export async function POST(
     const parsed = reportSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid report payload', details: parsed.error.format() },
+        createErrorResponse('VALIDATION_ERROR', 'Invalid report payload', {
+          validationErrors: parsed.error.format(),
+        }),
         { status: 400 },
       );
     }

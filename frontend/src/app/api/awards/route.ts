@@ -37,7 +37,9 @@ export async function POST(request: NextRequest) {
     const parsed = awardSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid award payload', details: parsed.error.format() },
+        createErrorResponse('VALIDATION_ERROR', 'Invalid award payload', {
+          validationErrors: parsed.error.format(),
+        }),
         { status: 400 },
       );
     }

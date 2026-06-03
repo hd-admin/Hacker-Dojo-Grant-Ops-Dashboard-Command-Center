@@ -42,7 +42,9 @@ export async function PUT(
     const parsed = complianceSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid compliance payload', details: parsed.error.format() },
+        createErrorResponse('VALIDATION_ERROR', 'Invalid compliance payload', {
+          validationErrors: parsed.error.format(),
+        }),
         { status: 400 },
       );
     }

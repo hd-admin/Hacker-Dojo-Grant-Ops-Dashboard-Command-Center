@@ -36,7 +36,9 @@ export async function POST(request: NextRequest) {
     const parsed = funderCreateSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid funder payload', details: parsed.error.format() },
+        createErrorResponse('VALIDATION_ERROR', 'Invalid funder payload', {
+          validationErrors: parsed.error.format(),
+        }),
         { status: 400 },
       );
     }

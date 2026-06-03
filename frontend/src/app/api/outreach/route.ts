@@ -43,7 +43,9 @@ export async function POST(request: NextRequest) {
     const parsed = outreachSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid outreach payload', details: parsed.error.format() },
+        createErrorResponse('VALIDATION_ERROR', 'Invalid outreach payload', {
+          validationErrors: parsed.error.format(),
+        }),
         { status: 400 },
       );
     }

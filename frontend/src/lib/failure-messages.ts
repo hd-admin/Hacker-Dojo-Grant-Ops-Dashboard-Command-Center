@@ -166,10 +166,11 @@ export const apiErrorMessages: Record<string, FailureMessage> = {
     description: 'The application storage is not accessible.',
     action: 'Check disk space and file permissions, then retry.',
   },
-  OPERATOR_NAME_REQUIRED: {
-    title: 'Operator name required',
-    description: 'An operator name must be configured before proceeding.',
-    action: 'Enter your name in Settings and save.',
+  RESET_FAILED: {
+    title: 'Reset failed',
+    description:
+      'The application reset operation failed. Some data may not have been fully cleared.',
+    action: 'Check the logs for details and try again, or manually clean up data files.',
   },
   VALIDATION_ERROR: {
     title: 'Validation error',

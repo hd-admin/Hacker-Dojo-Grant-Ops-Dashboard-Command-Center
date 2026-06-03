@@ -25,6 +25,7 @@ describe('failure-messages', () => {
       'INVALID_STATE_TRANSITION',
       'SUBMISSION_BLOCKED',
       'STORAGE_UNAVAILABLE',
+      'RESET_FAILED',
       'VALIDATION_ERROR',
       'INTERNAL_ERROR',
     ];

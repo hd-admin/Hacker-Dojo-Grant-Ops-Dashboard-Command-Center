@@ -34,7 +34,9 @@ export async function POST(request: NextRequest) {
     const parsed = snippetSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid snippet payload', details: parsed.error.format() },
+        createErrorResponse('VALIDATION_ERROR', 'Invalid snippet payload', {
+          validationErrors: parsed.error.format(),
+        }),
         { status: 400 },
       );
     }
@@ -66,7 +68,9 @@ export async function PUT(request: NextRequest) {
     const parsed = snippetSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid snippet payload', details: parsed.error.format() },
+        createErrorResponse('VALIDATION_ERROR', 'Invalid snippet payload', {
+          validationErrors: parsed.error.format(),
+        }),
         { status: 400 },
       );
     }

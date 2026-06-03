@@ -54,7 +54,9 @@ export async function PUT(
     const parsed = funderUpdateSchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Invalid funder payload', details: parsed.error.format() },
+        createErrorResponse('VALIDATION_ERROR', 'Invalid funder payload', {
+          validationErrors: parsed.error.format(),
+        }),
         { status: 400 },
       );
     }
