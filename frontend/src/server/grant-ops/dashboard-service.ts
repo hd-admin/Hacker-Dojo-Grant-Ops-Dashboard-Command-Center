@@ -1,3 +1,4 @@
+import 'server-only';
 /**
  * Dashboard Service - KPIs, Reporting, and Export
  *

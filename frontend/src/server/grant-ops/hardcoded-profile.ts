@@ -1,3 +1,4 @@
+import 'server-only';
 import type { OrganizationProfile } from '../../../../shared/types';
 
 export const HARDCODED_PROFILE: OrganizationProfile = {

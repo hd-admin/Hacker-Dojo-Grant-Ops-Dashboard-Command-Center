@@ -98,6 +98,9 @@ importers:
       playwright:
         specifier: ^1.48.0
         version: 1.60.0
+      prettier:
+        specifier: ^3.8.3
+        version: 3.8.3
       tsx:
         specifier: ^4.19.3
         version: 4.22.4
@@ -3608,6 +3611,14 @@ packages:
       }
     engines: { node: '>= 0.8.0' }
 
+  prettier@3.8.3:
+    resolution:
+      {
+        integrity: sha512-7igPTM53cGHMW8xWuVTydi2KO233VFiTNyF5hLJqpilHfmn8C8gPf+PS7dUT64YcXFbiMGZxS9pCSxL/Dxm/Jw==,
+      }
+    engines: { node: '>=14' }
+    hasBin: true
+
   proc-log@6.1.0:
     resolution:
       {
@@ -6293,6 +6304,8 @@ snapshots:
       tunnel-agent: 0.6.0
 
   prelude-ls@1.2.1: {}
+
+  prettier@3.8.3: {}
 
   proc-log@6.1.0: {}
 

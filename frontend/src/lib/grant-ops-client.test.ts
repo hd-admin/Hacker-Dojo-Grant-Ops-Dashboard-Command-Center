@@ -84,7 +84,10 @@ describe('grant-ops-client', () => {
   describe('API calls via fetch', () => {
     it('constructs the correct URL for grants.getAll', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await client.grants.getAll();
@@ -96,7 +99,10 @@ describe('grant-ops-client', () => {
 
     it('constructs the correct URL for grants.getById with encoded grantId', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await client.grants.getById('test-id');
@@ -108,7 +114,10 @@ describe('grant-ops-client', () => {
 
     it('constructs the correct URL for jobs.get with encoded jobId', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await client.jobs.get('job-123');
@@ -120,7 +129,10 @@ describe('grant-ops-client', () => {
 
     it('constructs the correct URL for followUps.getFiltered with query params', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify([]), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response(JSON.stringify([]), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await client.followUps.getFiltered({ grantId: 'g-1', status: 'open' });
@@ -134,7 +146,10 @@ describe('grant-ops-client', () => {
 
     it('sets Content-Type header for JSON requests', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify({ success: true }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await client.grants.update('grant-1', { funderSummary: 'Updated funder info' });
@@ -150,7 +165,10 @@ describe('grant-ops-client', () => {
 
     it('constructs the correct URL for awards.getAll', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify({ awards: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response(JSON.stringify({ awards: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await client.awards.getAll();
@@ -162,7 +180,10 @@ describe('grant-ops-client', () => {
 
     it('constructs the correct URL for awards.getExpenses with encoded awardId', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify({ expenses: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response(JSON.stringify({ expenses: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await client.awards.getExpenses('award-1');
@@ -174,7 +195,10 @@ describe('grant-ops-client', () => {
 
     it('constructs the correct URL for awards.getBudgetVsActual with encoded awardId', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify({ rows: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response(JSON.stringify({ rows: [] }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await client.awards.getBudgetVsActual('award-2');
@@ -186,7 +210,10 @@ describe('grant-ops-client', () => {
 
     it('constructs the correct URL for settings.get', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await client.settings.get();
@@ -198,7 +225,10 @@ describe('grant-ops-client', () => {
 
     it('sends PUT with JSON body for settings.update', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify({}), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response(JSON.stringify({}), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await client.settings.update({ operatorName: 'Alice' });
@@ -220,9 +250,7 @@ describe('grant-ops-client', () => {
     });
 
     it('throws Unknown error when response body is not JSON', async () => {
-      mockFetch.mockResolvedValueOnce(
-        new Response('plain text error', { status: 500 }),
-      );
+      mockFetch.mockResolvedValueOnce(new Response('plain text error', { status: 500 }));
 
       await expect(client.grants.getAll()).rejects.toThrow('Unknown error');
     });
@@ -243,7 +271,10 @@ describe('grant-ops-client', () => {
 
     it('handles malformed JSON on 2xx response with graceful error message', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response('not valid json {{{', { status: 200, headers: { 'Content-Type': 'application/json' } }),
+        new Response('not valid json {{{', {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
       );
 
       await expect(client.grants.getAll()).rejects.toThrow('Malformed response body');

@@ -61,7 +61,9 @@ async function apiFetch<T>(endpoint: string, options?: RequestInit): Promise<T> 
   try {
     return await response.json();
   } catch (err) {
-    throw new Error(`Malformed response body: ${err instanceof Error ? err.message : 'JSON parse error'}`);
+    throw new Error(
+      `Malformed response body: ${err instanceof Error ? err.message : 'JSON parse error'}`,
+    );
   }
 }
 
@@ -95,7 +97,9 @@ async function apiFetchOptional<T>(endpoint: string, options?: RequestInit): Pro
   try {
     return await response.json();
   } catch (err) {
-    throw new Error(`Malformed response body: ${err instanceof Error ? err.message : 'JSON parse error'}`);
+    throw new Error(
+      `Malformed response body: ${err instanceof Error ? err.message : 'JSON parse error'}`,
+    );
   }
 }
 
@@ -455,7 +459,13 @@ interface CalendarEventsResponse {
 }
 
 interface BudgetVsActualResponse {
-  rows: { category: string; budgeted: number; actual: number; variance: number; variancePct: number }[];
+  rows: {
+    category: string;
+    budgeted: number;
+    actual: number;
+    variance: number;
+    variancePct: number;
+  }[];
 }
 
 interface ExpensesResponse {
@@ -553,10 +563,13 @@ const awardsApi = {
     apiFetch<ReportsResponse>(`/api/awards/${encodeURIComponent(awardId)}/reports`),
 
   createReport: (awardId: string, report: CreateReportRequest) =>
-    apiFetch<{ report: AwardReportDeadline }>(`/api/awards/${encodeURIComponent(awardId)}/reports`, {
-      method: 'POST',
-      body: JSON.stringify(report),
-    }),
+    apiFetch<{ report: AwardReportDeadline }>(
+      `/api/awards/${encodeURIComponent(awardId)}/reports`,
+      {
+        method: 'POST',
+        body: JSON.stringify(report),
+      },
+    ),
 
   getBudgetVsActual: (awardId: string) =>
     apiFetch<BudgetVsActualResponse>(`/api/awards/${encodeURIComponent(awardId)}/budget-vs-actual`),
@@ -565,10 +578,13 @@ const awardsApi = {
     apiFetch<ComplianceResponse>(`/api/awards/${encodeURIComponent(awardId)}/compliance`),
 
   createCompliance: (awardId: string, item: CreateComplianceRequest) =>
-    apiFetch<{ compliance: AwardComplianceItem }>(`/api/awards/${encodeURIComponent(awardId)}/compliance`, {
-      method: 'PUT',
-      body: JSON.stringify(item),
-    }),
+    apiFetch<{ compliance: AwardComplianceItem }>(
+      `/api/awards/${encodeURIComponent(awardId)}/compliance`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(item),
+      },
+    ),
 };
 
 // ============ Settings API ============
