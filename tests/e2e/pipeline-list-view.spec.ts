@@ -10,7 +10,7 @@ test.describe('pipeline-list-view', () => {
     await page.goto(BASE_URL);
     await page.waitForSelector('.app', { timeout: 60000 });
 
-    await page.getByRole('button', { name: 'Pipeline' }).click();
+    await page.getByTestId('nav-pipeline').click();
     await page.getByTestId('pipeline-view-mode-toggle').click();
 
     await expect(page.getByTestId('pipeline-list-view')).toBeVisible();

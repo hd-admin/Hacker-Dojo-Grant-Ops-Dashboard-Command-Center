@@ -1,5 +1,6 @@
 import { NextResponse, connection } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import { resetCachedOpencodePath } from '@/server/grant-ops/opencode-client';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { z } from 'zod';
@@ -27,6 +28,7 @@ export async function POST(request: Request) {
     }
 
     const deps = getDependencies();
+    resetCachedOpencodePath(); // ensure health checks use the new path
     await deps.repository.updateOpencodeSettings({
       binaryPath: parsed.data.binaryPath,
       workingDirectory: parsed.data.workingDirectory,
