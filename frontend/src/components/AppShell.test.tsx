@@ -139,10 +139,6 @@ vi.mock('./CalendarView', () => ({ CalendarView: () => <div>calendar</div> }));
 vi.mock('./JobsPanel', () => ({ JobsPanel: () => <div>jobs</div> }));
 vi.mock('./OperatorNamePrompt', () => ({ OperatorNamePrompt: () => <div>operator prompt</div> }));
 vi.mock('./PostAwardView', () => ({ PostAwardView: () => <div>post-award</div> }));
-const { mockAddToast } = vi.hoisted(() => ({ mockAddToast: vi.fn() }));
-vi.mock('./ToastProvider', () => ({
-  useToast: () => ({ addToast: mockAddToast, removeToast: vi.fn(), toasts: [] }),
-}));
 vi.mock('./GrantDrawer', () => ({
   GrantDrawer: ({
     grantId,
@@ -163,6 +159,7 @@ vi.mock('./GrantDrawer', () => ({
 
 import { getByRole, getByText, queryByRole, queryByText } from '../test-helpers';
 import { AppShell } from './AppShell';
+import { ToastProvider } from './ToastProvider';
 
 const initialGrants: Grant[] = [
   {
@@ -339,7 +336,7 @@ afterEach(() => {
 
 describe('AppShell rendering', () => {
   it('passes backend notifications to DashboardView after refreshAppState resolves', async () => {
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(
       () =>
         capturedDashboardNotifications !== undefined && capturedDashboardNotifications.length > 0,
@@ -358,7 +355,7 @@ describe('AppShell rendering', () => {
       }),
     );
 
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(() => window.localStorage.getItem('grantops.workingContext') !== null);
 
     const context = JSON.parse(window.localStorage.getItem('grantops.workingContext') ?? '{}') as {
@@ -368,7 +365,7 @@ describe('AppShell rendering', () => {
   });
 
   it('renders duplicates nav item in the sidebar', async () => {
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(
       () => queryByRole(container, 'button', { name: 'Review duplicate candidates' }) !== null,
     );
@@ -392,7 +389,7 @@ describe('AppShell rendering', () => {
       },
     ]);
 
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(
       () => queryByRole(container, 'button', { name: 'Review duplicate candidates' }) !== null,
     );
@@ -402,7 +399,7 @@ describe('AppShell rendering', () => {
   });
 
   it('renders v2 Calendar and Post-Award nav items in the workspace section', async () => {
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(() => queryByRole(container, 'button', { name: 'View calendar' }) !== null);
 
     const calendarNav = getByRole(container, 'button', { name: 'View calendar' });
@@ -412,7 +409,7 @@ describe('AppShell rendering', () => {
   });
 
   it('refreshes shell-owned badges and footer state when child views mutate state', async () => {
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(() => {
       const btn = queryByRole(container, 'button', { name: 'Discover grants' });
       return btn !== null && btn.textContent?.includes('1') === true;
@@ -490,7 +487,7 @@ describe('AppShell rendering', () => {
       return new Response(JSON.stringify({}), { headers: { 'content-type': 'application/json' } });
     });
 
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(() => queryByRole(container, 'button', { name: 'View job queue' }) !== null);
 
     // Trigger a refresh that will re-fetch jobs with completed status
@@ -499,8 +496,10 @@ describe('AppShell rendering', () => {
       new MouseEvent('click', { bubbles: true }),
     );
 
-    await waitFor(() => mockAddToast.mock.calls.length > 0);
-    expect(mockAddToast).toHaveBeenCalledWith('\u2705 research completed', 'success');
+    await waitFor(() => container.querySelector('[data-testid="toast-success"]') !== null, 5000);
+    const toast = container.querySelector('[data-testid="toast-success"]');
+    expect(toast).not.toBeNull();
+    expect(toast?.textContent).toContain('research completed');
   });
 });
 
@@ -525,7 +524,7 @@ describe('AppShell error states', () => {
       });
     });
 
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(() => queryByRole(container, 'alert') !== null);
 
     expect(queryByRole(container, 'complementary', { name: 'Main navigation' })).toBeNull();
@@ -551,7 +550,7 @@ describe('AppShell error states', () => {
       });
     });
 
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(() => queryByText(container, 'AI features unavailable') !== null);
 
     expect(getByText(container, 'AI features unavailable')).not.toBeNull();
@@ -574,7 +573,7 @@ describe('AppShell error states', () => {
         headers: { 'content-type': 'application/json' },
       });
     });
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(() => queryByText(container, 'AI features unavailable') !== null);
     const discoveryBtn = getByRole(container, 'button', {
       name: 'Discover grants',
@@ -603,18 +602,43 @@ describe('AppShell error states', () => {
         headers: { 'content-type': 'application/json' },
       });
     });
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(() => queryByText(container, 'AI features unavailable') !== null);
     const discoveryBtn = getByRole(container, 'button', { name: 'Discover grants' });
     discoveryBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await waitFor(() => queryByRole(container, 'button', { name: 'refresh discovery' }) !== null);
     expect(getByRole(container, 'button', { name: 'refresh discovery' })).not.toBeNull();
   });
+
+  it('shows reconnection banner after storage error resolves', async () => {
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/health') {
+        return new Response(
+          JSON.stringify({
+            storage: 'ok',
+            opencode: 'ok',
+            crawlerStatus: 'ok',
+            documentIndexer: 'ok',
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
+      }
+      return new Response(JSON.stringify({ triggered: 0 }), {
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
+    await waitFor(() => queryByRole(container, 'button', { name: 'Discover grants' }) !== null);
+
+    expect(getByText(container, 'All systems operational')).not.toBeNull();
+  });
 });
 
 describe('AppShell navigation', () => {
   it('navigates to duplicates view on click', async () => {
-    root.render(React.createElement(AppShell));
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
     await waitFor(
       () => queryByRole(container, 'button', { name: 'Review duplicate candidates' }) !== null,
     );
