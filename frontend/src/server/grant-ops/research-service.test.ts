@@ -10,7 +10,7 @@
  */
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
 import type { OrganizationProfile } from '../../../../shared/types';
 import { createDependencies, resetDependencies, setDependencies } from './dependencies';
 import * as repository from './repository';
@@ -55,6 +55,7 @@ describe('ResearchService', () => {
   afterEach(async () => {
     // Cleanup temp directory
     resetDependencies();
+    invalidateCache();
     await tempDataDir.cleanup();
   });
 
@@ -499,6 +500,7 @@ describe('auto-draft triggering', () => {
   });
   afterEach(async () => {
     resetDependencies();
+    invalidateCache();
     await tempDataDir.cleanup();
   });
 
@@ -647,6 +649,7 @@ describe('per-grant and summary notifications during research', () => {
   });
   afterEach(async () => {
     resetDependencies();
+    invalidateCache();
     await tempDataDir.cleanup();
   });
 
@@ -707,6 +710,7 @@ describe('notification emission', () => {
   });
   afterEach(async () => {
     resetDependencies();
+    invalidateCache();
     await tempDataDir.cleanup();
   });
   it('emits a notification after runResearch completes', async () => {
@@ -758,6 +762,7 @@ describe('PATH-fallback: no early isConfigured throw', () => {
   });
   afterEach(async () => {
     resetDependencies();
+    invalidateCache();
     await tempDataDir.cleanup();
   });
 
