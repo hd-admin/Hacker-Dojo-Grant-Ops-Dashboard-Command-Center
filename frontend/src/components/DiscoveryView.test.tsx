@@ -173,6 +173,7 @@ describe('DiscoveryView', () => {
     setter?.call(searchInput, 'NSF');
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
     searchInput.dispatchEvent(new Event('change', { bubbles: true }));
+    await new Promise((r) => setTimeout(r, 50));
 
     await waitFor(() => container.textContent?.includes('1 grants') === true, 5000);
     expect(container.textContent).toContain('NSF STEM Education Grant');
