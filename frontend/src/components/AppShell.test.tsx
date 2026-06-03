@@ -314,7 +314,7 @@ beforeEach(() => {
   });
   vi.stubGlobal('fetch', fetchMock);
 
-  grantsGetAll.mockResolvedValueOnce(initialGrants).mockResolvedValue(refreshedGrants);
+  grantsGetAll.mockResolvedValueOnce({ items: initialGrants }).mockResolvedValue({ items: refreshedGrants });
   profileGet.mockResolvedValue(profile);
   notificationsGetAll.mockResolvedValue(notifications);
   tasksGetAll.mockResolvedValue(tasks);
