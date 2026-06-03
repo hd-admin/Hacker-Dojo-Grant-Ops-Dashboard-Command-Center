@@ -1,3 +1,8 @@
+/**
+ * This route exists solely for e2e test support. It allows test-utils.ts to
+ * configure the opencode binary path and working directory before test runs.
+ * Do not delete unless e2e tests no longer depend on it.
+ */
 import { NextResponse, connection } from 'next/server';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { resetCachedOpencodePath } from '@/server/grant-ops/opencode-client';

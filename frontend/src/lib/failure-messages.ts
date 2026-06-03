@@ -11,7 +11,7 @@ export const opencodeFailureMessages: Record<OpencodeFailureMode, FailureMessage
   'install-missing': {
     title: 'Opencode not installed',
     description:
-      'The opencode binary was not found on PATH or at the configured path. The grant generation system cannot run without it.',
+      'The opencode binary was not found on PATH. The grant generation system cannot run without it.',
     action: 'Install opencode and ensure it is on PATH.'
   },
   'config-error': {
