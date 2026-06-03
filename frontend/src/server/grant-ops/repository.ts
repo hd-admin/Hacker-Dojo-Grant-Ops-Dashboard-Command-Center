@@ -6,7 +6,6 @@ import 'server-only';
  * Uses the shared grant-ops-persistence.ts functions for data storage.
  */
 
-import 'server-only';
 import type {
   ApprovalRecord,
   AuditEvent,

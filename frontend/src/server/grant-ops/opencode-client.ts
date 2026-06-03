@@ -10,7 +10,6 @@ import 'server-only';
  * Test path: uses a fake provider for deterministic testing
  */
 
-import 'server-only';
 import { spawn } from 'node:child_process';
 import type { OpencodeSettings } from '../../../../shared/types';
 
