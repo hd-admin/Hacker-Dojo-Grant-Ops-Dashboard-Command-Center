@@ -457,6 +457,21 @@ export function AppShell() {
       if (item.view) {
         setActiveView(item.view);
       }
+      return;
+    }
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const current = e.currentTarget as HTMLElement;
+      const sidebar = current.closest('.sidebar');
+      if (!sidebar) return;
+      const allNavItems = Array.from(sidebar.querySelectorAll<HTMLElement>('.nav-item'));
+      const currentIndex = allNavItems.indexOf(current);
+      if (currentIndex === -1) return;
+      const nextIndex =
+        e.key === 'ArrowDown'
+          ? (currentIndex + 1) % allNavItems.length
+          : (currentIndex - 1 + allNavItems.length) % allNavItems.length;
+      allNavItems[nextIndex]?.focus();
     }
   };
 
@@ -609,6 +624,9 @@ export function AppShell() {
               {item.label}
               {item.view === 'notifications' && notifications.length > 0 && (
                 <span className="nav-count">{notifications.length}</span>
+              )}
+              {item.view === 'jobs' && activeJobs.length > 0 && (
+                <span className="nav-count">{activeJobs.length}</span>
               )}
               {item.view === 'duplicates' && pendingDuplicatesCount > 0 && (
                 <span className="nav-count">{pendingDuplicatesCount}</span>

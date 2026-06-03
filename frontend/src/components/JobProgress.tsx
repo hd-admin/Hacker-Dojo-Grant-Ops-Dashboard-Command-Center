@@ -1,8 +1,8 @@
 'use client';
 
 import type { JobQueueItem, JobStatus } from '../../../shared/types';
-import { X, RefreshCw } from 'lucide-react';
-import React, { useEffect, useState, useCallback } from 'react';
+import { X, RefreshCw, FileText } from 'lucide-react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import styles from './JobProgress.module.css';
 import type { FetchFn } from '../hooks/useJobProgress';
 
@@ -47,6 +47,8 @@ export function JobProgress({
   const [job, setJob] = useState<JobQueueItem | null>(null);
   const [pollFailures, setPollFailures] = useState(0);
   const [dismissed, setDismissed] = useState(false);
+  const lastUpdateRef = useRef<number>(Date.now());
+  const [showSlowWarning, setShowSlowWarning] = useState(false);
 
   const fetchJob = useCallback(async () => {
     try {
@@ -56,6 +58,8 @@ export function JobProgress({
         return;
       }
       setPollFailures(0);
+      lastUpdateRef.current = Date.now();
+      setShowSlowWarning(false);
       const data = (await res.json()) as JobQueueItem;
       setJob(data);
 
@@ -90,6 +94,11 @@ export function JobProgress({
   }, [fetchJob]);
 
   if (dismissed) return null;
+
+  const isRunning = job?.status === 'running';
+  if (isRunning && !showSlowWarning && Date.now() - lastUpdateRef.current > 30000) {
+    setShowSlowWarning(true);
+  }
 
   if (!job) {
     if (pollFailures >= 3) {
@@ -179,6 +188,12 @@ export function JobProgress({
         </span>
       </div>
 
+      {showSlowWarning && isActive && (
+        <div className="job-progress-slow-warning" role="alert" aria-live="polite">
+          The agent appears to be taking longer than expected. You can continue waiting or cancel.
+        </div>
+      )}
+
       <div
         className="job-progress-bar"
         role="progressbar"
@@ -214,6 +229,21 @@ export function JobProgress({
       {isFailed && errorMessage && (
         <div className="job-progress-error" role="alert">
           {errorMessage}
+        </div>
+      )}
+
+      {isFailed && (
+        <div className="job-progress-log-link">
+          <a
+            href={`/api/logs/session/${jobId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn btn-ghost btn-sm"
+            aria-label={`View session log for job ${jobId}`}
+          >
+            <FileText size={14} />
+            View log
+          </a>
         </div>
       )}
 

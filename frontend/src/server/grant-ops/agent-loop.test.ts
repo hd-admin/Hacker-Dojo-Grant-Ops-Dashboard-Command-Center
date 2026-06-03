@@ -555,10 +555,14 @@ describe('agent-loop constants', () => {
   });
 
   it('has progress stages for each job type', () => {
+    const canonicalStageNames = ['queued', 'preparing', 'running', 'verifying', 'completed'];
+    const canonicalProgress = [0, 5, 50, 90, 100];
     for (const type of Object.keys(PROGRESS_STAGES)) {
       const stages = PROGRESS_STAGES[type as keyof typeof PROGRESS_STAGES];
       expect(stages).toBeDefined();
-      expect(stages.length).toBeGreaterThan(0);
+      expect(stages).toHaveLength(5);
+      expect(stages.map((s) => s.stage)).toEqual(canonicalStageNames);
+      expect(stages.map((s) => s.progress)).toEqual(canonicalProgress);
       const last = stages[stages.length - 1];
       expect(last?.progress).toBe(100);
       expect(last?.stage).toBe('completed');

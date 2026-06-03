@@ -3280,7 +3280,7 @@ textarea:focus:not(:focus-visible) {
   max-width: 400px;
   width: 90%;
   text-align: center;
-  z-index: 1;
+  z-index: 0;
 }
 .lockscreen-icon {
   font-size: 2.5rem;
