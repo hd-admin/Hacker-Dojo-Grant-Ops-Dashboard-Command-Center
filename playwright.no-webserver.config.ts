@@ -24,9 +24,7 @@ export default defineConfig({
           origins: [
             {
               origin: 'http://127.0.0.1:3000',
-              localStorage: [
-                { name: 'grantops.operatorName', value: 'E2E Test Operator' },
-              ],
+              localStorage: [{ name: 'grantops.operatorName', value: 'E2E Test Operator' }],
             },
           ],
         },

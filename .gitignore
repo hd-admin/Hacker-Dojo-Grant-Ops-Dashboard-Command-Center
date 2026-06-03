@@ -64,3 +64,4 @@ wt-*/
 .build-output*.log
 
 tmp_*
+vendor/

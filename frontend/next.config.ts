@@ -10,6 +10,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  output: 'standalone',
   serverExternalPackages: ['better-sqlite3'],
   webpack: (config, { isServer }) => {
     if (!isServer) {

@@ -117,7 +117,9 @@ describe('DiscoveryView', () => {
         onGrantSelect: () => {},
       }),
     );
-    await vi.waitFor(() => expect(container.textContent).toContain('No grants discovered yet'), { timeout: 5000 });
+    await vi.waitFor(() => expect(container.textContent).toContain('No grants discovered yet'), {
+      timeout: 5000,
+    });
     root.unmount();
     container.remove();
   });
@@ -135,7 +137,9 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       }),
     );
-    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), { timeout: 5000 });
+    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), {
+      timeout: 5000,
+    });
     expect(container.textContent).toContain('NSF STEM Education Grant');
     expect(container.textContent).toContain('Community Innovation Fund');
     expect(container.textContent).toContain('EdTech Accelerator');
@@ -227,7 +231,9 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       }),
     );
-    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), { timeout: 5000 });
+    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), {
+      timeout: 5000,
+    });
 
     const funderLink = container.querySelector(
       '[aria-label="View funder details for National Science Foundation"]',
@@ -237,9 +243,11 @@ describe('DiscoveryView', () => {
 
     await vi.waitFor(
       () =>
-        expect(queryByRole(container, 'dialog', {
-          name: /Funder details for National Science Foundation/,
-        })).not.toBeNull(),
+        expect(
+          queryByRole(container, 'dialog', {
+            name: /Funder details for National Science Foundation/,
+          }),
+        ).not.toBeNull(),
       { timeout: 5000 },
     );
     expect(
@@ -262,7 +270,9 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       }),
     );
-    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), { timeout: 5000 });
+    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), {
+      timeout: 5000,
+    });
 
     const funderLink2 = container.querySelector(
       '[aria-label="View funder details for National Science Foundation"]',
@@ -270,9 +280,11 @@ describe('DiscoveryView', () => {
     funderLink2?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
     await vi.waitFor(
       () =>
-        expect(queryByRole(container, 'dialog', {
-          name: /Funder details for National Science Foundation/,
-        })).not.toBeNull(),
+        expect(
+          queryByRole(container, 'dialog', {
+            name: /Funder details for National Science Foundation/,
+          }),
+        ).not.toBeNull(),
       { timeout: 5000 },
     );
 
@@ -282,9 +294,11 @@ describe('DiscoveryView', () => {
 
     await vi.waitFor(
       () =>
-        expect(queryByRole(container, 'dialog', {
-          name: /Funder details for National Science Foundation/,
-        })).toBeNull(),
+        expect(
+          queryByRole(container, 'dialog', {
+            name: /Funder details for National Science Foundation/,
+          }),
+        ).toBeNull(),
       { timeout: 5000 },
     );
     expect(

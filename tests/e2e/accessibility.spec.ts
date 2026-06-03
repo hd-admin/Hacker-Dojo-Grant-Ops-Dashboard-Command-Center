@@ -118,7 +118,11 @@ test.describe('Accessibility', () => {
         const type = await el.getAttribute('type');
         const value = await el.getAttribute('value');
         const tag = await el.evaluate((node: Element) => node.tagName);
-        if (type === 'hidden' || type === 'submit' || (tag === 'INPUT' && (type === 'button' || type === 'reset'))) {
+        if (
+          type === 'hidden' ||
+          type === 'submit' ||
+          (tag === 'INPUT' && (type === 'button' || type === 'reset'))
+        ) {
           hasLabel = true;
         } else if (!type && value && tag === 'INPUT' && value.trim().length > 0) {
           // Submit buttons often use value as label
