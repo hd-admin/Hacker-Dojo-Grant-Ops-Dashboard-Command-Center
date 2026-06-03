@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import { NextResponse, connection } from 'next/server';
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { getDependencies } from '@/server/grant-ops/dependencies';
@@ -18,10 +19,10 @@ export async function POST(_request: NextRequest) {
 
     if (!profile) {
       return NextResponse.json(
-        {
-          error: 'ORG_PROFILE_NOT_CONFIGURED',
-          message: 'Organization profile not configured. Please set up your profile in Settings.',
-        },
+        createErrorResponse(
+          'VALIDATION_ERROR',
+          'Organization profile not configured. Please set up your profile in Settings.',
+        ),
         { status: 400 },
       );
     }
@@ -29,11 +30,10 @@ export async function POST(_request: NextRequest) {
     const settings = await deps.repository.getOpencodeSettings();
     if (!settings?.isConfigured) {
       return NextResponse.json(
-        {
-          error: 'OPENCODE_NOT_CONFIGURED',
-          message:
-            'Opencode is not configured. Please set up Opencode settings in the application before running research.',
-        },
+        createErrorResponse(
+          'AGENT_QUALITY_FAILED',
+          'Opencode is not configured. Please set up Opencode settings in the application before running research.',
+        ),
         { status: 400 },
       );
     }
@@ -50,6 +50,7 @@ export async function POST(_request: NextRequest) {
       },
     );
 
+    revalidateAfterMutation();
     return NextResponse.json(
       {
         queued: true,
@@ -61,7 +62,10 @@ export async function POST(_request: NextRequest) {
     logger.error({ err: error }, 'Error running research');
 
     if (error instanceof NoSourcesConfiguredError) {
-      return NextResponse.json({ error: error.code, message: error.message }, { status: 409 });
+      return NextResponse.json(
+        createErrorResponse('AGENT_QUALITY_FAILED', error.message),
+        { status: 409 },
+      );
     }
 
     const errorMessage = error instanceof Error ? error.message : 'Failed to run research';
@@ -76,12 +80,11 @@ export async function POST(_request: NextRequest) {
     ].includes(failureMode);
 
     return NextResponse.json(
-      {
-        error: errorMessage,
+      createErrorResponse('AGENT_QUALITY_FAILED', errorMessage, {
         failureMode,
         retryable,
         guidance,
-      },
+      }),
       { status: 500 },
     );
   }

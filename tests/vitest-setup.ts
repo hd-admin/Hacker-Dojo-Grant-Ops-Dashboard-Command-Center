@@ -1,3 +1,14 @@
+// ── Per-test-suite SQLite DB isolation ──────────────────────────────────
+// Set a unique DATA_DIR before any test module loads resolveDataDir().
+// Uses raw strings (no Node builtins) because jsdom tests stub all
+// node:* imports. fileParallelism:false ensures sequential execution.
+// Test files that call withTempDataDir() will override this temporarily
+// and restore it afterwards.
+if (typeof process !== 'undefined' && process.env && !process.env.DATA_DIR) {
+  const tmpRoot = process.env.TMPDIR ?? '/tmp/vitest';
+  process.env.DATA_DIR = `${tmpRoot}/vitest-db-${Date.now()}`;
+}
+
 import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
@@ -49,3 +60,29 @@ vi.mock('server-only', () => {
 });
 
 import '@testing-library/jest-dom/vitest';
+
+// ── Per-test-file SQLite isolation hooks ────────────────────────────────
+// Each node-environment test file gets a fresh DATA_DIR to prevent
+// SQLite WAL contention. Uses createRequire to avoid module resolution
+// issues in jsdom (where node builtins are stubbed).
+// Wrapped in try/catch to gracefully skip when better-sqlite3 or node
+// builtins are unavailable (jsdom component tests).
+(function registerIsolationHooks() {
+  try {
+    const req = createRequire(import.meta.url);
+    const iso = req('./test-db-isolation') as typeof import('./test-db-isolation');
+    if (typeof iso.createTestDataDir !== 'function') return;
+
+    const { createTestDataDir, cleanupTestDataDir } = iso;
+
+    beforeAll(() => {
+      createTestDataDir();
+    });
+
+    afterAll(async () => {
+      await cleanupTestDataDir();
+    });
+  } catch {
+    // jsdom or module unavailable — skip isolation hooks
+  }
+})();

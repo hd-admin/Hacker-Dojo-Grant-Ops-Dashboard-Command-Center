@@ -1,16 +1,23 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { createBackupZip } from '@/server/grant-ops/backup-service';
 
 export const dynamic = 'force-dynamic';
 
+const querySchema = z.object({
+  format: z.enum(['json', 'zip']).optional().default('json'),
+});
+
 export async function GET(request: NextRequest) {
   await connection();
   try {
     const deps = getDependencies();
-    const format = new URL(request.url).searchParams.get('format') || 'json';
+    const rawParams = Object.fromEntries(new URL(request.url).searchParams.entries());
+    const parsed = querySchema.safeParse(rawParams);
+    const format = parsed.success ? parsed.data.format : 'json';
     const snapshot = await deps.backup.exportBackupSnapshot();
     await deps.backup.recordBackupVerification(snapshot);
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import ical, { ICalAlarmType } from 'ical-generator';
 import fs from 'node:fs';
@@ -10,7 +11,10 @@ export async function GET(request: NextRequest) {
   await connection();
   try {
     const { searchParams } = new URL(request.url);
-    const scope = searchParams.get('scope') || 'all';
+    const rawParams = Object.fromEntries(searchParams.entries());
+    const scopeSchema = z.object({ scope: z.enum(['all', 'grants', 'reports']).optional().default('all') });
+    const parsed = scopeSchema.safeParse(rawParams);
+    const scope = parsed.success ? parsed.data.scope : 'all';
     const deps = getDependencies();
 
     const calendar = ical({

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 
 export const dynamic = 'force-dynamic';
 
@@ -196,6 +197,7 @@ export async function POST(request: NextRequest) {
 
     const preview = parseBudgetFile(buffer, mimeType, fileName);
 
+    revalidateAfterMutation();
     return NextResponse.json(
       {
         preview,

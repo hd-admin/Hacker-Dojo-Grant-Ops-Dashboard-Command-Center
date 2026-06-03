@@ -1,6 +1,7 @@
 import { NextResponse, connection } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createErrorResponse } from '@/lib/api-error-handler';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import { loadGrants, saveGrants } from '../../../../../../shared/grant-ops-persistence';
 import { scoreGrantByThemes } from '@/server/grant-ops/theme-service';
 
@@ -23,6 +24,7 @@ export async function POST() {
       }),
     );
     if (changed > 0) await saveGrants(updated);
+    revalidateAfterMutation();
     return NextResponse.json({ success: true, rescored: changed });
   } catch (error) {
     logger.error({ err: error }, '[themes/rescore] failed');

@@ -27,6 +27,7 @@ export function FunderDetail({ funder, onClose, onDetectPatterns }: FunderDetail
       className="funder-detail"
       data-testid="funder-detail"
       role="dialog"
+      aria-modal="true"
       aria-label={`Funder details for ${funder.name}`}
     >
       <div className="funder-detail-header">

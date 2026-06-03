@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import { checkAndRunDue } from '@/server/grant-ops/crawl-scheduler-service';
 
 export const dynamic = 'force-dynamic';
@@ -25,6 +26,7 @@ export async function POST() {
   await connection();
   try {
     const triggered = await checkAndRunDue();
+    revalidateAfterMutation();
     return NextResponse.json({ triggered });
   } catch (error) {
     logger.error({ err: error }, 'Error triggering scheduled crawls');

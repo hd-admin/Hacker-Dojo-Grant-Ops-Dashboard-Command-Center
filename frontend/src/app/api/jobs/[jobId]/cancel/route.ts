@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { cancelQueuedJob } from '@/server/grant-ops/job-queue-service';
 
@@ -32,6 +33,7 @@ export async function POST(
     await cancelQueuedJob(jobId);
 
     const updated = await deps.repository.getJobQueueItem(jobId);
+    revalidateAfterMutation();
     return NextResponse.json(updated);
   } catch (error) {
     logger.error({ err: error }, 'Error cancelling job');

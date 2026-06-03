@@ -57,9 +57,15 @@ describe('Shared Persistence Integrity', () => {
   });
 
   describe('DATA_DIR constant', () => {
-    it('exports a canonical absolute path ending with .grant-ops-data', () => {
+    it('exports a canonical absolute path', () => {
       expect(DATA_DIR).toContain('/');
-      expect(DATA_DIR).toMatch(/\.grant-ops-data$/);
+      // In test mode DATA_DIR is a temp path (set by vitest-setup.ts).
+      // In production it ends with .grant-ops-data.
+      if (process.env.NODE_ENV !== 'test' || process.env.VITEST !== 'true') {
+        expect(DATA_DIR).toMatch(/\.grant-ops-data$/);
+      } else {
+        expect(DATA_DIR).toMatch(/vitest-db-\d+/);
+      }
     });
 
     it('resolves the same data dir from repo-root and frontend working directories', async () => {

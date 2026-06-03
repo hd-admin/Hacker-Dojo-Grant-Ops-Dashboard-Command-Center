@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
@@ -55,6 +56,7 @@ export async function DELETE(
       completedAt: new Date().toISOString(),
       errorMessage: 'Cancelled by operator',
     });
+    revalidateAfterMutation();
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, 'Error cancelling job');

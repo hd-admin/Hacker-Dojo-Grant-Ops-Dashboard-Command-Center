@@ -194,6 +194,7 @@ export function resetSqliteCache(dataDir?: string): void {
       dbCache.delete(dataDir);
     }
     initialized.delete(dataDir);
+    closeConnectionPools();
     return;
   }
 
@@ -202,6 +203,19 @@ export function resetSqliteCache(dataDir?: string): void {
     dbCache.delete(key);
   }
   initialized.clear();
+  closeConnectionPools();
+}
+
+function closeConnectionPools(): void {
+  if (writeDb) {
+    try { writeDb.close(); } catch { /* ignore */ }
+    writeDb = null;
+  }
+  for (const db of readDbs) {
+    try { db.close(); } catch { /* ignore */ }
+  }
+  readDbs.length = 0;
+  readIndex = 0;
 }
 
 // ============ CONNECTION FACTORY (v2) ============

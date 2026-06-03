@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createErrorResponse } from '@/lib/api-error-handler';
+import { z } from 'zod';
 import { NextResponse, connection } from 'next/server';
 import { opencodeFailureMessages } from '@/lib/failure-messages';
 import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
@@ -11,25 +12,23 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+const querySchema = z.object({
+  query: z.string().min(1).max(500),
+});
+
 export async function GET(request: NextRequest) {
   await connection();
   try {
     const { searchParams } = new URL(request.url);
-    const query = searchParams.get('query');
-
-    if (!query || query.trim().length === 0) {
+    const rawParams = Object.fromEntries(searchParams.entries());
+    const parsed = querySchema.safeParse(rawParams);
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'QUERY_REQUIRED', message: 'A search query is required' },
+        { error: 'QUERY_REQUIRED', message: 'A search query is required (1-500 characters)' },
         { status: 400 },
       );
     }
-
-    if (query.length > 500) {
-      return NextResponse.json(
-        { error: 'QUERY_TOO_LONG', message: 'Search query must be 500 characters or fewer' },
-        { status: 400 },
-      );
-    }
+    const query = parsed.data.query;
 
     // Lazily register ProPublica as a source record
     await ensureProPublicaSourceRegistered();

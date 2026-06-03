@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import * as draftingService from '@/server/grant-ops/drafting-service';
 import * as researchService from '@/server/grant-ops/research-service';
@@ -80,6 +81,7 @@ export async function POST(
       logger.error({ err: error }, 'Retry execution failed');
     });
 
+    revalidateAfterMutation();
     return NextResponse.json({ success: true, newJobId }, { status: 202 });
   } catch (error) {
     logger.error({ err: error }, 'Error retrying job');

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
@@ -65,6 +66,7 @@ export async function POST(
       metadata: { crawlRunId: crawlRun.id },
     });
 
+    revalidateAfterMutation();
     return NextResponse.json({ success: true, crawlRun });
   } catch (error) {
     logger.error({ err: error }, 'Error retrying crawl for source');

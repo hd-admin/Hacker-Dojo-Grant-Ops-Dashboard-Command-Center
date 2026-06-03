@@ -14,23 +14,35 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { logger } from '@/lib/logger';
 import { createErrorResponse } from '@/lib/api-error-handler';
-
+import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { exportGrantsToCsv, exportPipelineToCsv } from '@/server/grant-ops/dashboard-service';
 import type { Grant } from '../../../../../../shared/types';
 
 export const runtime = 'nodejs';
 
+const querySchema = z.object({
+  view: z.enum(['discovery', 'pipeline']).optional().default('discovery'),
+  status: z.string().optional(),
+  fit: z.coerce.number().positive().optional(),
+  category: z.string().optional(),
+  daysOut: z.coerce.number().positive().optional(),
+  deadlineConfidence: z.enum(['exact', 'estimated', 'rolling', 'unknown']).optional(),
+  funderType: z.string().optional(),
+});
+
 export async function GET(request: NextRequest) {
   await connection();
   const { searchParams } = new URL(request.url);
-  const view = searchParams.get('view') ?? 'discovery';
-  const status = searchParams.get('status') ?? undefined;
-  const fitMin = searchParams.get('fit') ? Number(searchParams.get('fit')) : undefined;
-  const category = searchParams.get('category') ?? undefined;
-  const daysOutMax = searchParams.get('daysOut') ? Number(searchParams.get('daysOut')) : undefined;
-  const deadlineConfidence = searchParams.get('deadlineConfidence') ?? undefined;
-  const funderType = searchParams.get('funderType') ?? undefined;
+  const rawParams = Object.fromEntries(searchParams.entries());
+  const parsed = querySchema.safeParse(rawParams);
+  if (!parsed.success) {
+    return NextResponse.json(
+      createErrorResponse('VALIDATION_ERROR', 'Invalid query parameters'),
+      { status: 400 },
+    );
+  }
+  const { view, status, fit: fitMin, category, daysOut: daysOutMax, deadlineConfidence, funderType } = parsed.data;
 
   try {
     const { repository } = getDependencies();

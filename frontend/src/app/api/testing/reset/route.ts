@@ -1,4 +1,5 @@
 import { NextResponse, connection } from 'next/server';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
@@ -10,6 +11,7 @@ export async function POST() {
     await connection();
     const deps = getDependencies();
     await deps.resetPersistentStateForTests();
+    revalidateAfterMutation();
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, 'Error resetting persistent state');

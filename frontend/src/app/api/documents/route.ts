@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import path from 'node:path';
 import fs from 'node:fs/promises';
 import crypto from 'node:crypto';
@@ -152,6 +153,7 @@ export async function POST(request: NextRequest) {
     // Index the document for search
     await documentService.indexDocument(doc);
 
+    revalidateAfterMutation();
     return NextResponse.json(doc, { status: 201 });
   } catch (error) {
     logger.error({ err: error }, 'Error adding document');
@@ -191,6 +193,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     await deps.repository.updateDocument(body.id, updates);
+    revalidateAfterMutation();
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, 'Error updating document');
@@ -221,6 +224,7 @@ export async function DELETE(request: NextRequest) {
       });
     }
 
+    revalidateAfterMutation();
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, 'Error deleting document');
