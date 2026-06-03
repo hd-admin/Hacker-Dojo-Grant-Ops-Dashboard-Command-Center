@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { Grant, Source } from '../../../shared/types';
 
@@ -88,18 +88,9 @@ const mockSources: Source[] = [
   },
 ];
 
-async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
-  const start = Date.now();
-  while (!predicate()) {
-    if (Date.now() - start > timeoutMs) {
-      throw new Error('Timed out waiting for condition');
-    }
-    await new Promise<void>((resolve) => setTimeout(resolve, 20));
-  }
-}
-
 describe('DiscoveryView', () => {
   beforeEach(() => {
+    vi.clearAllMocks();
     mockGetAllGrants.mockResolvedValue([]);
     mockGetAllSources.mockResolvedValue([]);
     mockGetRuns.mockResolvedValue({ latestRun: null, allRuns: [] });
@@ -113,6 +104,10 @@ describe('DiscoveryView', () => {
     );
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it('renders empty state when no grants provided', async () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -122,8 +117,7 @@ describe('DiscoveryView', () => {
         onGrantSelect: () => {},
       }),
     );
-    await new Promise((r) => setTimeout(r, 50));
-    expect(container.textContent).toContain('No grants discovered yet');
+    await vi.waitFor(() => expect(container.textContent).toContain('No grants discovered yet'), { timeout: 5000 });
     root.unmount();
     container.remove();
   });
@@ -141,7 +135,7 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       }),
     );
-    await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true);
+    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), { timeout: 5000 });
     expect(container.textContent).toContain('NSF STEM Education Grant');
     expect(container.textContent).toContain('Community Innovation Fund');
     expect(container.textContent).toContain('EdTech Accelerator');
@@ -164,18 +158,20 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       }),
     );
-    await waitFor(() => container.textContent?.includes('3 grants') === true);
+    await vi.waitFor(() => expect(container.textContent).toContain('3 grants'), { timeout: 5000 });
 
     const searchInput = getByRole(container, 'textbox', {
       name: 'Search grants, funders, and tags',
     }) as HTMLInputElement;
-    const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
-    setter?.call(searchInput, 'NSF');
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set;
+    nativeInputValueSetter?.call(searchInput, 'NSF');
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
     searchInput.dispatchEvent(new Event('change', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 50));
 
-    await waitFor(() => container.textContent?.includes('1 grants') === true, 5000);
+    await vi.waitFor(() => expect(container.textContent).toContain('1 grants'), { timeout: 5000 });
     expect(container.textContent).toContain('NSF STEM Education Grant');
     expect(container.textContent).not.toContain('Community Innovation Fund');
     expect(container.textContent).not.toContain('EdTech Accelerator');
@@ -196,23 +192,22 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       }),
     );
-    await waitFor(() => container.textContent?.includes('3 grants') === true, 5000);
+    await vi.waitFor(() => expect(container.textContent).toContain('3 grants'), { timeout: 5000 });
 
     const searchInput = getByRole(container, 'textbox', {
       name: 'Search grants, funders, and tags',
     }) as HTMLInputElement;
-    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+    const nativeInputValueSetter2 = Object.getOwnPropertyDescriptor(
       window.HTMLInputElement.prototype,
       'value',
     )?.set;
-    nativeInputValueSetter?.call(searchInput, 'nonexistent grant');
+    nativeInputValueSetter2?.call(searchInput, 'nonexistent grant');
     searchInput.dispatchEvent(new Event('input', { bubbles: true }));
     searchInput.dispatchEvent(new Event('change', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 100));
 
-    await waitFor(
-      () => container.textContent?.includes('No grants match your current filters') === true,
-      10000,
+    await vi.waitFor(
+      () => expect(container.textContent).toContain('No grants match your current filters'),
+      { timeout: 10000 },
     );
     expect(container.textContent).toContain('No grants match your current filters');
     root.unmount();
@@ -232,21 +227,20 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       }),
     );
-    await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true, 5000);
+    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), { timeout: 5000 });
 
     const funderLink = container.querySelector(
       '[aria-label="View funder details for National Science Foundation"]',
     );
     expect(funderLink).not.toBeNull();
     funderLink?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await new Promise((r) => setTimeout(r, 100));
 
-    await waitFor(
+    await vi.waitFor(
       () =>
-        queryByRole(container, 'dialog', {
+        expect(queryByRole(container, 'dialog', {
           name: /Funder details for National Science Foundation/,
-        }) !== null,
-      5000,
+        })).not.toBeNull(),
+      { timeout: 5000 },
     );
     expect(
       queryByRole(container, 'dialog', { name: /Funder details for National Science Foundation/ }),
@@ -268,28 +262,30 @@ describe('DiscoveryView', () => {
         sources: mockSources,
       }),
     );
-    await waitFor(() => container.textContent?.includes('NSF STEM Education Grant') === true);
+    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), { timeout: 5000 });
 
-    const funderLink = container.querySelector(
+    const funderLink2 = container.querySelector(
       '[aria-label="View funder details for National Science Foundation"]',
     );
-    funderLink?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
-    await waitFor(
+    funderLink2?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await vi.waitFor(
       () =>
-        queryByRole(container, 'dialog', {
+        expect(queryByRole(container, 'dialog', {
           name: /Funder details for National Science Foundation/,
-        }) !== null,
+        })).not.toBeNull(),
+      { timeout: 5000 },
     );
 
     const closeBtn = container.querySelector('button[aria-label="Close funder detail"]');
     expect(closeBtn).not.toBeNull();
     closeBtn?.dispatchEvent(new MouseEvent('click', { bubbles: true }));
 
-    await waitFor(
+    await vi.waitFor(
       () =>
-        queryByRole(container, 'dialog', {
+        expect(queryByRole(container, 'dialog', {
           name: /Funder details for National Science Foundation/,
-        }) === null,
+        })).toBeNull(),
+      { timeout: 5000 },
     );
     expect(
       queryByRole(container, 'dialog', { name: /Funder details for National Science Foundation/ }),

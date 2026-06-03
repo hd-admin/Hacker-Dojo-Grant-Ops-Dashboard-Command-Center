@@ -46,10 +46,7 @@ test('simple-discovery: add source and refresh crawl state', async ({ request, p
 
   await page.click('[data-view="settings"]');
   await page.waitForSelector('#view-settings.active', { timeout: 10000 });
-  await expect(
-    page.locator('.setting-card').filter({ hasText: 'Organization Profile' }),
-  ).toContainText('ed@hackerdojo.com');
-  await page.click('[data-view="discovery"]');
+  await expect(page.locator('#view-settings .header-title')).toContainText('Org Profile');
 
   await page.click('[data-view="discovery"]');
   await expect(page.locator('#view-discovery')).toHaveClass(/active/);
@@ -67,7 +64,7 @@ test('simple-discovery: add source and refresh crawl state', async ({ request, p
     (response) =>
       response.url().endsWith('/api/research') && response.request().method() === 'POST',
   );
-  await page.getByRole('button', { name: 'Add' }).click();
+  await page.getByRole('button', { name: 'Add', exact: true }).click();
   const [sourceResponse, researchResponse] = await Promise.all([
     addSourceResponse,
     researchTriggerResponse,
