@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { revalidateAfterMutation } from '@/lib/revalidate';
@@ -9,12 +10,22 @@ import {
 
 export const dynamic = 'force-dynamic';
 
+const paramsSchema = z.object({
+  sourceId: z.string().min(1),
+});
+
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ sourceId: string }> },
 ) {
   await connection();
   const { sourceId } = await params;
+  if (!paramsSchema.safeParse({ sourceId }).success) {
+    return NextResponse.json(
+      createErrorResponse('VALIDATION_ERROR', 'Invalid source ID'),
+      { status: 400 },
+    );
+  }
   const schedules = await loadCrawlSchedules();
   const schedule = schedules.find((s) => s.sourceId === sourceId);
   if (!schedule) {

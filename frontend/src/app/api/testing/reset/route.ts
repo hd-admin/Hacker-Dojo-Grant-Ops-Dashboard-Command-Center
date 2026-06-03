@@ -1,10 +1,13 @@
 import { NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { revalidateAfterMutation } from '@/lib/revalidate';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
+
+const _emptyBody = z.object({}).strict();
 
 export async function POST() {
   try {

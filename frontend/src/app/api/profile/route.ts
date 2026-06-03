@@ -1,9 +1,12 @@
 import { NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import * as profileService from '@/server/grant-ops/profile-service';
 
 export const dynamic = 'force-dynamic';
+
+const _emptyQuery = z.object({}).strict();
 
 export async function GET() {
   await connection();

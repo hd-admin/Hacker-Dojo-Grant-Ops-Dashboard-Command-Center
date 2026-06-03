@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { revalidateAfterMutation } from '@/lib/revalidate';
@@ -161,6 +162,11 @@ function parseBudgetFile(buffer: Buffer, mimeType: string, fileName: string): Bu
   };
 }
 
+const formSchema = z.object({
+  file: z.instanceof(File, { message: 'A file upload is required' }),
+  awardId: z.string().optional(),
+});
+
 export async function POST(request: NextRequest) {
   await connection();
   try {
@@ -179,15 +185,18 @@ export async function POST(request: NextRequest) {
     const file = formData.get('file');
     const awardId = formData.get('awardId');
 
-    if (!file || !(file instanceof File)) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'No file provided'), {
-        status: 400,
-      });
+    const formParsed = formSchema.safeParse({ file, awardId: awardId ?? undefined });
+    if (!formParsed.success) {
+      return NextResponse.json(
+        createErrorResponse('AGENT_INVALID_JSON', formParsed.error.issues.map((i) => i.message).join(', ')),
+        { status: 400 },
+      );
     }
 
-    const fileName = file.name;
-    const mimeType = file.type || 'application/octet-stream';
-    const buffer = Buffer.from(await file.arrayBuffer());
+    const uploadedFile = formParsed.data.file;
+    const fileName = uploadedFile.name;
+    const mimeType = uploadedFile.type || 'application/octet-stream';
+    const buffer = Buffer.from(await uploadedFile.arrayBuffer());
 
     if (buffer.length === 0) {
       return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'File is empty'), {

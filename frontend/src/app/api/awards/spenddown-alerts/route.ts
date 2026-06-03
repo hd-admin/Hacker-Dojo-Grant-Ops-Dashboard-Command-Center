@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+
+const _emptyQuery = z.object({}).strict();
 
 export async function GET(_request: NextRequest) {
   await connection();

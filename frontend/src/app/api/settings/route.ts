@@ -1,5 +1,5 @@
 import { NextResponse, connection } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import { z } from 'zod';
 import { createErrorResponse, withZodValidation } from '@/lib/api-helpers';
 import { logger } from '@/lib/logger';
@@ -188,8 +188,7 @@ export async function PUT(request: Request) {
     }
 
     const updatedSettings = getSettings(db);
-    revalidatePath('/api/settings');
-    revalidatePath('/');
+    revalidateAfterMutation();
     return NextResponse.json(updatedSettings);
   } catch (error) {
     logger.error({ err: error }, 'Error saving settings');

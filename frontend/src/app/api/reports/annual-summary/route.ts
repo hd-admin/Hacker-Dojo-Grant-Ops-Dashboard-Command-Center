@@ -1,10 +1,13 @@
 import { NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { getGrants } from '@/server/grant-ops/repository';
 import { generateAnnualSummary } from '@/server/grant-ops/dashboard-service';
 import { logger } from '@/lib/logger';
 import { createErrorResponse } from '@/lib/api-error-handler';
 
 export const dynamic = 'force-dynamic';
+
+const _emptyQuery = z.object({}).strict();
 
 export async function GET(): Promise<Response> {
   await connection();

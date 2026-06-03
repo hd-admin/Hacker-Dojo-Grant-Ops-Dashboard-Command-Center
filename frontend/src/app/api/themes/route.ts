@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse, connection } from 'next/server';
-import { revalidatePath } from 'next/cache';
+import { revalidateAfterMutation } from '@/lib/revalidate';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { loadThemesData, saveThemesData } from '../../../../../shared/grant-ops-persistence';
@@ -64,8 +64,7 @@ export async function PUT(request: NextRequest) {
     }
     const body = parsed.data as ThemesData;
     await saveThemesData(body);
-    revalidatePath('/api/themes');
-    revalidatePath('/');
+    revalidateAfterMutation();
     const saved = await loadThemesData();
     return NextResponse.json(saved);
   } catch (error) {

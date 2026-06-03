@@ -1210,6 +1210,71 @@ export async function clearDatabase(state: SqliteBootstrapState): Promise<void> 
   await fs.rm(state.documentsDir, { recursive: true, force: true });
 }
 
+const TRUNCATE_TABLES_SQL = `
+DELETE FROM grants;
+DELETE FROM grants_v2;
+DELETE FROM grants_fts;
+DELETE FROM sources;
+DELETE FROM sources_v2;
+DELETE FROM crawl_runs;
+DELETE FROM crawl_runs_v2;
+DELETE FROM draft_artifacts;
+DELETE FROM draft_versions;
+DELETE FROM revision_requests;
+DELETE FROM approval_records;
+DELETE FROM submission_records;
+DELETE FROM submission_manifests;
+DELETE FROM follow_ups;
+DELETE FROM notifications;
+DELETE FROM tasks;
+DELETE FROM tasks_v2;
+DELETE FROM documents;
+DELETE FROM documents_v2;
+DELETE FROM profile;
+DELETE FROM opencode_settings;
+DELETE FROM meta;
+DELETE FROM audit_events;
+DELETE FROM job_queue;
+DELETE FROM agent_jobs;
+DELETE FROM duplicate_candidates;
+DELETE FROM conflict_records;
+DELETE FROM crawl_schedules;
+DELETE FROM funder_profiles;
+DELETE FROM funder_profiles_v2;
+DELETE FROM saved_searches;
+DELETE FROM saved_searches_v2;
+DELETE FROM awards;
+DELETE FROM awards_v2;
+DELETE FROM award_budget_categories;
+DELETE FROM award_budget_categories_v2;
+DELETE FROM award_expenses;
+DELETE FROM award_expenses_v2;
+DELETE FROM planned_expenses;
+DELETE FROM award_report_deadlines;
+DELETE FROM award_report_deadlines_v2;
+DELETE FROM award_compliance_items;
+DELETE FROM award_compliance_items_v2;
+DELETE FROM draft_snippets;
+DELETE FROM snippets;
+DELETE FROM peer_discovery_results;
+DELETE FROM pipeline_transitions;
+DELETE FROM activity_events;
+DELETE FROM outreach_records;
+DELETE FROM application_form_templates;
+DELETE FROM backup_schedule;
+DELETE FROM schema_migrations;
+DELETE FROM schema_version;
+DELETE FROM themes_data;
+DELETE FROM settings;
+`;
+
+export async function truncateDatabase(state: SqliteBootstrapState): Promise<void> {
+  const db = openDatabase(state);
+  ensureSchema(db);
+  db.exec(TRUNCATE_TABLES_SQL);
+  initialized.delete(state.dataDir);
+}
+
 export const CURRENT_SCHEMA_VERSION = 3;
 
 export function getCurrentSchemaVersion(state: SqliteBootstrapState): number {

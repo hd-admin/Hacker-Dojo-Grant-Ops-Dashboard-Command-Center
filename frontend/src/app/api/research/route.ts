@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { z } from 'zod';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { revalidateAfterMutation } from '@/lib/revalidate';
@@ -10,6 +11,8 @@ import { classifyOpencodeError } from '@/server/grant-ops/opencode-client';
 import * as researchService from '@/server/grant-ops/research-service';
 import { NoSourcesConfiguredError } from '@/server/grant-ops/research-service';
 export const dynamic = 'force-dynamic';
+
+const _emptyQuery = z.object({}).strict();
 
 export async function POST(_request: NextRequest) {
   await connection();

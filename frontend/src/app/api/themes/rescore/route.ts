@@ -1,4 +1,5 @@
 import { NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { logger } from '@/lib/logger';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { revalidateAfterMutation } from '@/lib/revalidate';
@@ -7,6 +8,8 @@ import { scoreGrantByThemes } from '@/server/grant-ops/theme-service';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
+
+const _emptyBody = z.object({}).strict();
 
 export async function POST() {
   await connection();

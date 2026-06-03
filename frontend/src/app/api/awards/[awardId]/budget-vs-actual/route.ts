@@ -1,9 +1,14 @@
 import { NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { computeBudgetVsActual } from '@/server/grant-ops/award-service';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
+
+const paramsSchema = z.object({
+  awardId: z.string().min(1),
+});
 
 export async function GET(
   _request: Request,
@@ -12,6 +17,12 @@ export async function GET(
   await connection();
   try {
     const { awardId } = await params;
+    if (!paramsSchema.safeParse({ awardId }).success) {
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Invalid award ID'),
+        { status: 400 },
+      );
+    }
     const rows = await computeBudgetVsActual(awardId);
     return NextResponse.json({ rows });
   } catch (error) {

@@ -1,9 +1,12 @@
 import { NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { getComplianceCalendar } from '@/server/grant-ops/award-service';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
+
+const _emptyQuery = z.object({}).strict();
 
 export async function GET(): Promise<Response> {
   await connection();

@@ -1,12 +1,13 @@
 // ── Per-test-suite SQLite DB isolation ──────────────────────────────────
 // Set a unique DATA_DIR before any test module loads resolveDataDir().
-// Uses raw strings (no Node builtins) because jsdom tests stub all
-// node:* imports. fileParallelism:false ensures sequential execution.
-// Test files that call withTempDataDir() will override this temporarily
-// and restore it afterwards.
-if (typeof process !== 'undefined' && process.env && !process.env.DATA_DIR) {
+// fileParallelism:false ensures sequential execution.
+// Each test file resets SQLite state before and after, sharing one
+// DATA_DIR per suite to avoid 177x filesystem create/destroy overhead.
+if (typeof process !== 'undefined' && process.env) {
   const tmpRoot = process.env.TMPDIR ?? '/tmp/vitest';
-  process.env.DATA_DIR = `${tmpRoot}/vitest-db-${Date.now()}`;
+  if (!process.env.DATA_DIR) {
+    process.env.DATA_DIR = `${tmpRoot}/vitest-db-${Date.now()}`;
+  }
 }
 
 import { execFileSync } from 'node:child_process';
@@ -61,10 +62,10 @@ vi.mock('server-only', () => {
 
 import '@testing-library/jest-dom/vitest';
 
-// ── Per-test-file SQLite isolation hooks ────────────────────────────────
-// Each node-environment test file gets a fresh DATA_DIR to prevent
-// SQLite WAL contention. Uses createRequire to avoid module resolution
-// issues in jsdom (where node builtins are stubbed).
+// ── Per-test-file SQLite state reset hooks ─────────────────────────────
+// Each node-environment test file resets SQLite state before and after
+// to prevent cross-test contamination. Reuses the suite-level DATA_DIR
+// set above instead of creating a new directory per file.
 // Wrapped in try/catch to gracefully skip when better-sqlite3 or node
 // builtins are unavailable (jsdom component tests).
 (function registerIsolationHooks() {

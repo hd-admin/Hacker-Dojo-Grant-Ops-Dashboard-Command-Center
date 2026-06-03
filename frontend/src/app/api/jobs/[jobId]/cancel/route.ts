@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { revalidateAfterMutation } from '@/lib/revalidate';
@@ -7,6 +8,10 @@ import { cancelQueuedJob } from '@/server/grant-ops/job-queue-service';
 
 export const dynamic = 'force-dynamic';
 
+const paramsSchema = z.object({
+  jobId: z.string().min(1),
+});
+
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> },
@@ -14,6 +19,12 @@ export async function POST(
   await connection();
   try {
     const { jobId } = await params;
+    if (!paramsSchema.safeParse({ jobId }).success) {
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Invalid job ID'),
+        { status: 400 },
+      );
+    }
     const deps = getDependencies();
 
     const job = await deps.repository.getJobQueueItem(jobId);

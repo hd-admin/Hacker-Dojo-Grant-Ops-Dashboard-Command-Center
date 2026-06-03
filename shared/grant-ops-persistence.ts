@@ -9,7 +9,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {
-  clearDatabase,
+  truncateDatabase,
   getBootstrappedDatabase,
   getSqliteState,
   readAuditEvents as readAuditEventsFromSqlite,
@@ -308,7 +308,7 @@ export async function copyPersistedData(
 export async function resetPersistentStateForTests(): Promise<void> {
   invalidateCache();
   const state = getSqliteState();
-  await clearDatabase(state);
+  await truncateDatabase(state);
   await saveProfile({ ...testProfile });
   await saveOpencodeSettings({ ...defaultOpencodeSettings });
   await writeGrantsToSqlite(state, testFixtureGrants);

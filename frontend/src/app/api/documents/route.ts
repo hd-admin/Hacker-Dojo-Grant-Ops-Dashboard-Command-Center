@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { revalidateAfterMutation } from '@/lib/revalidate';
@@ -30,11 +31,17 @@ function parseBoolean(value: FormDataEntryValue | null): boolean | undefined {
   return undefined;
 }
 
+const docQuerySchema = z.object({
+  q: z.string().optional(),
+});
+
 // GET: List all documents, with optional search
 export async function GET(request: NextRequest) {
   await connection();
   try {
-    const searchQuery = new URL(request.url).searchParams.get('q');
+    const rawParams = Object.fromEntries(new URL(request.url).searchParams.entries());
+    const parsed = docQuerySchema.safeParse(rawParams);
+    const searchQuery = parsed.success ? parsed.data.q : undefined;
 
     if (searchQuery) {
       const results = await documentService.searchDocuments(searchQuery);
@@ -163,6 +170,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
+const patchBodySchema = z.object({
+  id: z.string().min(1),
+  name: z.string().optional(),
+  type: z.string().optional(),
+  lastUsed: z.string().optional(),
+  version: z.string().optional(),
+  audited: z.boolean().optional(),
+  classification: z.string().optional(),
+});
+
 // PATCH: Update document metadata
 export async function PATCH(request: NextRequest) {
   await connection();
@@ -170,20 +187,18 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const deps = getDependencies();
 
-    if (!body || !body.id) {
+    const parsed = patchBodySchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        createErrorResponse('AGENT_INVALID_JSON', 'Document ID is required'),
+        createErrorResponse('AGENT_INVALID_JSON', 'Invalid document update payload'),
         { status: 400 },
       );
     }
 
-    const updates: Partial<DocumentMetadata> = {};
-    if (body.name !== undefined) updates.name = body.name;
-    if (body.type !== undefined) updates.type = body.type;
-    if (body.lastUsed !== undefined) updates.lastUsed = body.lastUsed;
-    if (body.version !== undefined) updates.version = body.version;
-    if (body.audited !== undefined) updates.audited = body.audited;
-    if (body.classification !== undefined) updates.classification = body.classification;
+    const { id, ...rest } = parsed.data;
+    const updates: Partial<DocumentMetadata> = Object.fromEntries(
+      Object.entries(rest).filter(([, v]) => v !== undefined),
+    );
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json(
@@ -192,7 +207,7 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    await deps.repository.updateDocument(body.id, updates);
+    await deps.repository.updateDocument(id, updates);
     revalidateAfterMutation();
     return NextResponse.json({ success: true });
   } catch (error) {
@@ -204,20 +219,25 @@ export async function PATCH(request: NextRequest) {
   }
 }
 
+const deleteBodySchema = z.object({
+  id: z.string().min(1),
+});
+
 // DELETE: Remove a document
 export async function DELETE(request: NextRequest) {
   await connection();
   try {
     const body = await request.json().catch(() => null);
 
-    if (!body || !body.id) {
+    const parsed = deleteBodySchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
         createErrorResponse('AGENT_INVALID_JSON', 'Document ID is required'),
         { status: 400 },
       );
     }
 
-    const success = await documentService.deleteDocument(body.id);
+    const success = await documentService.deleteDocument(parsed.data.id);
     if (!success) {
       return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Document not found'), {
         status: 404,

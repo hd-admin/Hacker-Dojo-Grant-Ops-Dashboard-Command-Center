@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse, connection } from 'next/server';
+import { z } from 'zod';
 import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { revalidateAfterMutation } from '@/lib/revalidate';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 
 export const dynamic = 'force-dynamic';
+
+const paramsSchema = z.object({
+  sourceId: z.string().min(1),
+});
 
 export async function POST(
   request: NextRequest,
@@ -13,6 +18,12 @@ export async function POST(
   await connection();
   try {
     const { sourceId } = await params;
+    if (!paramsSchema.safeParse({ sourceId }).success) {
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Invalid source ID'),
+        { status: 400 },
+      );
+    }
     const deps = getDependencies();
 
     const source = (await deps.repository.getSources()).find((item) => item.id === sourceId);
