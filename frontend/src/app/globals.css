@@ -42,7 +42,17 @@
   --info-bg-strong: rgba(123, 163, 184, 0.15);
   --deadline-rolling-bg: rgba(205, 156, 101, 0.12);
   --overlay-bg: rgba(12, 10, 8, 0.6);
+  --overlay-bg-strong: rgba(12, 10, 8, 0.7);
+  --overlay-bg-heavy: rgba(12, 10, 8, 0.8);
   --draft-preview-bg: rgba(0, 0, 0, 0.12);
+
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 20px 60px rgba(0, 0, 0, 0.5);
+  --shadow-drawer: -20px 0 48px rgba(0, 0, 0, 0.35);
+  --shadow-dialog: 0 24px 64px rgba(0, 0, 0, 0.45);
+  --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-floating: 0 6px 20px rgba(0, 0, 0, 0.25);
 }
 
 * {
@@ -474,7 +484,7 @@ textarea:focus-visible {
 
 .kpi-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
   border-color: var(--border-light);
 }
 
@@ -932,7 +942,7 @@ textarea:focus-visible {
   height: 100dvh;
   background: var(--bg-2);
   border-left: 1px solid var(--border);
-  box-shadow: -20px 0 48px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-drawer);
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
   z-index: 300;
@@ -949,7 +959,7 @@ textarea:focus-visible {
 .funder-detail-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(12, 10, 8, 0.6);
+  background: var(--overlay-bg);
   backdrop-filter: blur(2px);
   opacity: 0;
   pointer-events: none;
@@ -972,7 +982,7 @@ textarea:focus-visible {
   background: var(--bg-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+  box-shadow: var(--shadow-dialog);
   z-index: 300;
   display: flex;
   flex-direction: column;
@@ -1033,7 +1043,7 @@ textarea:focus-visible {
 
 .funder-detail-tags .tag {
   padding: 2px 8px;
-  background: rgba(212, 169, 67, 0.06);
+  background: var(--accent-bg-dim);
   color: var(--accent);
   border-radius: var(--radius);
   font-size: var(--text-xs);
@@ -1145,7 +1155,7 @@ textarea:focus-visible {
 }
 
 .saved-search-badge.has-results {
-  background: rgba(212, 169, 67, 0.06);
+  background: var(--accent-bg-dim);
   color: var(--accent);
 }
 
@@ -1363,7 +1373,7 @@ textarea:focus-visible {
 .board-card:hover {
   border-color: var(--accent-dim);
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-card);
 }
 
 .board-card.dragging {
@@ -1372,7 +1382,7 @@ textarea:focus-visible {
 
 .board-col.drag-over {
   border-color: var(--accent);
-  background: rgba(212, 169, 67, 0.05);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
 .board-card-funder {
@@ -1557,7 +1567,7 @@ textarea:focus-visible {
   font-size: 10px;
   padding: 4px 10px;
   border-radius: 12px;
-  background: rgba(212, 169, 67, 0.1);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
   color: var(--accent);
   border: 1px solid var(--accent-dim);
 }
@@ -1641,13 +1651,13 @@ textarea:focus-visible {
 
 .card-interactive:hover {
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-floating);
   border-color: var(--accent-dim);
 }
 
 .card-interactive:focus-visible {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-md);
 }
 
 /* === GRANT DRAWER === */
@@ -1793,7 +1803,11 @@ textarea:focus-visible {
 
 .fit-row-bar > div {
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), rgba(212, 169, 67, 0.45));
+  background: linear-gradient(
+    90deg,
+    var(--accent),
+    color-mix(in srgb, var(--accent) 45%, transparent)
+  );
   border-radius: inherit;
 }
 
@@ -1816,13 +1830,13 @@ textarea:focus-visible {
   grid-template-columns: auto 1fr;
   gap: 10px;
   padding: 10px 12px;
-  background: rgba(0, 0, 0, 0.1);
+  background: color-mix(in srgb, var(--bg) 10%, transparent);
   border: 1px solid var(--border);
   border-radius: var(--radius);
 }
 
 .checklist-item.done {
-  border-color: rgba(138, 171, 111, 0.45);
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
 }
 
 .drawer-list-title {
@@ -2129,7 +2143,7 @@ textarea:focus-visible {
   align-items: center;
   gap: 0.25rem;
   padding: 0.25rem 0.5rem;
-  background: rgba(138, 171, 111, 0.2);
+  background: color-mix(in srgb, var(--success) 20%, transparent);
   border-radius: 0.25rem;
   font-size: 0.75rem;
   color: var(--success);
@@ -2199,21 +2213,21 @@ textarea:focus-visible {
 }
 
 .health-banner.degraded {
-  background: rgba(224, 137, 74, 0.08);
+  background: color-mix(in srgb, var(--warning) 8%, transparent);
   color: var(--warning);
-  border-bottom-color: rgba(224, 137, 74, 0.3);
+  border-bottom-color: color-mix(in srgb, var(--warning) 30%, transparent);
 }
 
 .health-banner.offline {
-  background: rgba(198, 107, 90, 0.08);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
   color: var(--danger);
-  border-bottom-color: rgba(198, 107, 90, 0.3);
+  border-bottom-color: color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 .health-banner.online {
-  background: rgba(138, 171, 111, 0.06);
+  background: color-mix(in srgb, var(--success) 6%, transparent);
   color: var(--success);
-  border-bottom-color: rgba(138, 171, 111, 0.2);
+  border-bottom-color: color-mix(in srgb, var(--success) 20%, transparent);
 }
 
 .health-banner-icon {
@@ -2252,9 +2266,9 @@ textarea:focus-visible {
   font-size: 10px;
   padding: 3px 8px;
   border-radius: 10px;
-  background: rgba(224, 137, 74, 0.12);
+  background: var(--warning-bg);
   color: var(--warning);
-  border: 1px solid rgba(224, 137, 74, 0.3);
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, transparent);
 }
 
 .staleness-badge::before {
@@ -2266,7 +2280,7 @@ textarea:focus-visible {
 .safe-quit-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(12, 10, 8, 0.7);
+  background: var(--overlay-bg-strong);
   backdrop-filter: blur(2px);
   display: flex;
   align-items: center;
@@ -2281,7 +2295,7 @@ textarea:focus-visible {
   padding: 28px 32px;
   max-width: 480px;
   width: 90vw;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
 }
 
 .safe-quit-dialog h3 {
@@ -2544,13 +2558,13 @@ input[type='radio'] {
 }
 
 .settings-error-box.danger {
-  background: rgba(198, 107, 90, 0.06);
-  border: 1px solid rgba(198, 107, 90, 0.15);
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 15%, transparent);
 }
 
 .settings-error-box.warning {
-  background: rgba(224, 137, 74, 0.06);
-  border: 1px solid rgba(224, 137, 74, 0.15);
+  background: color-mix(in srgb, var(--warning) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 15%, transparent);
 }
 
 .settings-error-label {
@@ -2587,10 +2601,10 @@ input[type='radio'] {
   font-family: var(--mono);
   font-size: 10px;
   padding: 2px 8px;
-  background: rgba(123, 163, 184, 0.12);
+  background: var(--info-bg);
   color: var(--info);
   border-radius: 10px;
-  border: 1px solid rgba(123, 163, 184, 0.2);
+  border: 1px solid var(--info-border);
 }
 
 .settings-failure-badge {
@@ -2603,17 +2617,17 @@ input[type='radio'] {
 }
 
 .settings-failure-badge.resolved {
-  background: rgba(138, 171, 111, 0.12);
+  background: var(--success-bg);
   color: var(--success);
 }
 
 .settings-failure-badge.unresolved {
-  background: rgba(198, 107, 90, 0.12);
+  background: var(--danger-bg);
   color: var(--danger);
 }
 
 .settings-failure-badge.root-cause {
-  background: rgba(123, 163, 184, 0.1);
+  background: color-mix(in srgb, var(--info) 10%, transparent);
   color: var(--info);
 }
 
@@ -2652,13 +2666,13 @@ input[type='radio'] {
 .form-input.input-error,
 input.input-error {
   border-color: var(--danger);
-  background: rgba(198, 107, 90, 0.05);
+  background: color-mix(in srgb, var(--danger) 5%, transparent);
 }
 
 .form-input.input-error:focus,
 input.input-error:focus {
   border-color: var(--danger);
-  box-shadow: 0 0 0 1px rgba(198, 107, 90, 0.3);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--danger) 30%, transparent);
 }
 
 .form-input.input-success,
@@ -2669,13 +2683,13 @@ input.input-success {
 .form-input.input-success:focus,
 input.input-success:focus {
   border-color: var(--success);
-  box-shadow: 0 0 0 1px rgba(138, 171, 111, 0.3);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--success) 30%, transparent);
 }
 
 .kpi-card.card-interactive:hover,
 .setting-card.card-interactive:hover {
   border-color: var(--accent-dim);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 .nav-item:disabled {
@@ -2800,16 +2814,16 @@ input.input-success:focus {
   font-family: var(--mono);
   font-size: 10px;
   padding: 2px 8px;
-  background: rgba(123, 163, 184, 0.12);
+  background: var(--info-bg);
   color: var(--info);
   border-radius: 10px;
-  border: 1px solid rgba(123, 163, 184, 0.2);
+  border: 1px solid var(--info-border);
 }
 
 /* Error and warning blocks */
 .settings-error-block {
-  background: rgba(198, 107, 90, 0.06);
-  border: 1px solid rgba(198, 107, 90, 0.15);
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 15%, transparent);
   border-radius: var(--radius);
   padding: 10px 14px;
   margin-bottom: 16px;
@@ -2832,8 +2846,8 @@ input.input-success:focus {
 }
 
 .settings-warning-block {
-  background: rgba(224, 137, 74, 0.06);
-  border: 1px solid rgba(224, 137, 74, 0.15);
+  background: color-mix(in srgb, var(--warning) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 15%, transparent);
   border-radius: var(--radius);
   padding: 10px 14px;
   margin-bottom: 16px;
@@ -2909,13 +2923,13 @@ input.input-success:focus {
 }
 
 .settings-test-result-success {
-  background: rgba(138, 171, 111, 0.06);
-  border: 1px solid rgba(138, 171, 111, 0.15);
+  background: color-mix(in srgb, var(--success) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 15%, transparent);
 }
 
 .settings-test-result-failed {
-  background: rgba(198, 107, 90, 0.06);
-  border: 1px solid rgba(198, 107, 90, 0.15);
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 15%, transparent);
 }
 
 .settings-test-result-title {
@@ -2954,13 +2968,13 @@ input.input-success:focus {
 }
 
 .settings-failure-resolved {
-  background: rgba(138, 171, 111, 0.04);
-  border: 1px solid rgba(138, 171, 111, 0.18);
+  background: color-mix(in srgb, var(--success) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 18%, transparent);
 }
 
 .settings-failure-unresolved {
-  background: rgba(198, 107, 90, 0.04);
-  border: 1px solid rgba(198, 107, 90, 0.18);
+  background: color-mix(in srgb, var(--danger) 4%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 18%, transparent);
 }
 
 .settings-failure-entry-header {
@@ -2986,17 +3000,17 @@ input.input-success:focus {
 }
 
 .settings-failure-badge-resolved {
-  background: rgba(138, 171, 111, 0.12);
+  background: var(--success-bg);
   color: var(--success);
 }
 
 .settings-failure-badge-mode {
-  background: rgba(198, 107, 90, 0.12);
+  background: var(--danger-bg);
   color: var(--danger);
 }
 
 .settings-failure-badge-category {
-  background: rgba(123, 163, 184, 0.1);
+  background: color-mix(in srgb, var(--info) 10%, transparent);
   color: var(--info);
 }
 
@@ -3079,18 +3093,18 @@ input.input-success:focus {
 
 /* Dynamic status-specific guidance blocks */
 .settings-status-ok {
-  background: rgba(138, 171, 111, 0.08);
-  border: 1px solid rgba(138, 171, 111, 0.2);
+  background: color-mix(in srgb, var(--success) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--success) 20%, transparent);
 }
 
 .settings-status-warn {
-  background: rgba(224, 137, 74, 0.08);
-  border: 1px solid rgba(224, 137, 74, 0.2);
+  background: color-mix(in srgb, var(--warning) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 20%, transparent);
 }
 
 .settings-status-error {
-  background: rgba(198, 107, 90, 0.08);
-  border: 1px solid rgba(198, 107, 90, 0.2);
+  background: color-mix(in srgb, var(--danger) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--danger) 20%, transparent);
 }
 
 /* Responsive settings grid */
@@ -3246,7 +3260,7 @@ textarea:focus:not(:focus-visible) {
 }
 
 .settings-backup-warning {
-  background: rgba(224, 137, 74, 0.1);
+  background: color-mix(in srgb, var(--warning) 10%, transparent);
   border: 1px solid var(--warning);
   border-radius: var(--radius);
   padding: 10px 16px;
@@ -3268,7 +3282,7 @@ textarea:focus:not(:focus-visible) {
 .lockscreen-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(28, 26, 23, 0.92);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
   backdrop-filter: blur(8px);
 }
 .lockscreen-panel {
@@ -3474,7 +3488,7 @@ button.pipeline-list-row:hover {
 }
 .source-row-enhanced:hover {
   border-color: var(--border-light);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Job card hover */
@@ -3483,7 +3497,7 @@ button.pipeline-list-row:hover {
 }
 .job-card:hover {
   border-color: var(--border-light);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 /* Nav item enhanced transition */
@@ -3518,7 +3532,7 @@ button.pipeline-list-row:hover {
 }
 .discovery-review-card:hover {
   border-color: var(--border-light);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-sm);
 }
 
 /* === RESPONSIVE: 1024px MINIMUM === */
@@ -3671,7 +3685,7 @@ button.pipeline-list-row:hover {
 .operator-prompt-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(12, 10, 8, 0.8);
+  background: var(--overlay-bg-heavy);
   backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
@@ -3686,7 +3700,7 @@ button.pipeline-list-row:hover {
   padding: 36px 40px;
   max-width: 480px;
   width: 90vw;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: var(--shadow-lg);
 }
 
 .operator-prompt-dialog h2 {
@@ -3824,7 +3838,7 @@ button.pipeline-list-row:hover {
   color: var(--danger);
   margin-top: 8px;
   padding: 8px;
-  background: rgba(198, 107, 90, 0.1);
+  background: color-mix(in srgb, var(--danger) 10%, transparent);
   border-radius: var(--radius);
 }
 

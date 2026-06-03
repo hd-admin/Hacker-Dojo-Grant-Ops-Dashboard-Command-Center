@@ -4,8 +4,10 @@
  * Tests for retry, cancel, progress, and classification operations.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { JobQueueItem } from '../../../../shared/types';
+import type { TempDataDirResult } from '../../../../shared/grant-ops-persistence';
+import { withTempDataDir } from '../../../../shared/grant-ops-persistence';
 import {
   cancelQueuedJob,
   classifyJobFailureCategory,
@@ -46,6 +48,16 @@ function createRunningJob(id: string): JobQueueItem {
 }
 
 describe('job-queue-service', () => {
+  let tempDataDir: TempDataDirResult | null = null;
+
+  beforeAll(async () => {
+    tempDataDir = await withTempDataDir();
+  });
+
+  afterAll(async () => {
+    await tempDataDir?.cleanup();
+  });
+
   afterEach(() => {
     resetDependencies();
   });

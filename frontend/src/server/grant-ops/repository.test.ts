@@ -6,11 +6,22 @@
  * persistence adapter.
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { afterAll, beforeAll, describe, it, expect, beforeEach } from 'vitest';
 import * as repository from './repository';
-import { invalidateCache } from '../../../../shared/grant-ops-persistence';
+import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import type { TempDataDirResult } from '../../../../shared/grant-ops-persistence';
 
 describe('Repository', () => {
+  let tempDataDir: TempDataDirResult | null = null;
+
+  beforeAll(async () => {
+    tempDataDir = await withTempDataDir();
+  });
+
+  afterAll(async () => {
+    await tempDataDir?.cleanup();
+  });
+
   beforeEach(() => {
     invalidateCache();
   });
