@@ -23,7 +23,10 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
     try {
       const [candidatesData, grantsData] = await Promise.all([
         client.duplicates.getAll().catch(() => []) as Promise<DuplicateCandidate[]>,
-        client.grants.getAll().catch(() => []) as Promise<Grant[]>,
+        client.grants
+          .getAll()
+          .then((d) => d.items)
+          .catch(() => []) as Promise<Grant[]>,
       ]);
       setCandidates(Array.isArray(candidatesData) ? candidatesData : []);
       setGrants(Array.isArray(grantsData) ? grantsData : []);

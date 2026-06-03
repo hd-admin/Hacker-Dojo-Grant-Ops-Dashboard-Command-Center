@@ -202,7 +202,7 @@ export function DiscoveryView({
           client.sources.getAll(),
           client.research.getRuns(),
         ]);
-        setGrants(grantsData);
+        setGrants(grantsData.items);
         setSources(sourcesData);
         setSourcesCrawled(runsData.latestRun?.sourcesCrawled ?? 0);
       } catch (_error) {
@@ -286,7 +286,10 @@ export function DiscoveryView({
     setManualNotes('');
     setManualEligibility('');
     setShowManualIntake(false);
-    await Promise.all([client.grants.getAll().then(setGrants), onRefreshAppState?.()]);
+    await Promise.all([
+      client.grants.getAll().then((d) => setGrants(d.items)),
+      onRefreshAppState?.(),
+    ]);
   };
 
   const handleAddSource = async (e: React.FormEvent) => {
@@ -304,7 +307,7 @@ export function DiscoveryView({
       setNewSourceUrl('');
       setShowAddSourceForm(false);
       await Promise.all([
-        client.grants.getAll().then(setGrants),
+        client.grants.getAll().then((d) => setGrants(d.items)),
         client.sources.getAll().then(setSources),
         onRefreshAppState?.(),
       ]);

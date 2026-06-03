@@ -84,7 +84,7 @@ describe('grant-ops-client', () => {
   describe('API calls via fetch', () => {
     it('constructs the correct URL for grants.getAll', async () => {
       mockFetch.mockResolvedValueOnce(
-        new Response(JSON.stringify([]), {
+        new Response(JSON.stringify({ items: [], page: 1, pageSize: 25, total: 0 }), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         }),
@@ -95,6 +95,21 @@ describe('grant-ops-client', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
       const fetchUrl = mockFetch.mock.calls[0]?.[0] as string;
       expect(fetchUrl).toBe('/api/grants');
+    });
+
+    it('constructs the correct URL for grants.getAll with pagination params', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ items: [], page: 2, pageSize: 10, total: 30 }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await client.grants.getAll({ page: 2, pageSize: 10 });
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const fetchUrl = mockFetch.mock.calls[0]?.[0] as string;
+      expect(fetchUrl).toBe('/api/grants?page=2&pageSize=10');
     });
 
     it('constructs the correct URL for grants.getById with encoded grantId', async () => {

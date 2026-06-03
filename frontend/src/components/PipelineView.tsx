@@ -262,7 +262,7 @@ export function PipelineView({
       });
       if (!response.ok) throw new Error('Failed to update status');
       const data = await client.grants.getAll();
-      setGrants(data);
+      setGrants(data.items);
       setMoveMenuOpen(null);
     } catch (_error) {
       setError('Error moving grant');
@@ -288,7 +288,7 @@ export function PipelineView({
       }
 
       const data = await client.grants.getAll();
-      setGrants(data);
+      setGrants(data.items);
       setDeclineModalOpen(false);
       setDeclineGrantId(null);
       setLessonsLearned('');
@@ -312,7 +312,7 @@ export function PipelineView({
     async function load() {
       try {
         const data = await client.grants.getAll();
-        setGrants(data);
+        setGrants(data.items);
       } catch (_error) {
         setError('Error loading grants');
         setGrants([]);

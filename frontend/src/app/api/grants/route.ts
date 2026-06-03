@@ -6,6 +6,11 @@ import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { Grant } from '../../../../../shared/types';
 export const dynamic = 'force-dynamic';
 
+const querySchema = z.object({
+  page: z.coerce.number().int().positive().default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(25),
+});
+
 const manualGrantSchema = z.object({
   title: z.string().min(1),
   funder: z.string().min(1),
@@ -22,6 +27,16 @@ export async function GET(request: NextRequest) {
   try {
     const deps = getDependencies();
     const { searchParams } = new URL(request.url);
+
+    const rawParams = Object.fromEntries(searchParams.entries());
+    const parsed = querySchema.safeParse(rawParams);
+    if (!parsed.success) {
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Invalid pagination parameters'),
+        { status: 400 },
+      );
+    }
+    const { page, pageSize } = parsed.data;
 
     const search = searchParams.get('search');
     const status = searchParams.get('status');
@@ -48,7 +63,6 @@ export async function GET(request: NextRequest) {
 				JOIN grants_v2 g ON fts.grantId = g.id
 				WHERE grants_fts MATCH ? AND g.deletedAt IS NULL
 				ORDER BY bm25(grants_fts)
-				LIMIT 500
 			`;
       const rows = db.prepare(sql).all(ftsQuery) as Array<Record<string, unknown>>;
 
@@ -121,7 +135,11 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    return NextResponse.json(sortedGrants);
+    const total = sortedGrants.length;
+    const start = (page - 1) * pageSize;
+    const items = sortedGrants.slice(start, start + pageSize);
+
+    return NextResponse.json({ items, page, pageSize, total });
   } catch (error) {
     logger.error({ err: error }, 'Error getting grants');
     return NextResponse.json({ error: 'Failed to get grants', code: 'DB_ERROR' }, { status: 500 });

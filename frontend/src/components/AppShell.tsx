@@ -305,7 +305,7 @@ export function AppShell() {
       client.duplicates.getAll().catch(() => []),
     ]);
 
-    setGrants(grantsData);
+    setGrants(grantsData?.items ?? []);
     setProfile(profileData);
     setNotifications(notificationsData);
     setTasks(tasksData);

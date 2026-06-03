@@ -153,20 +153,24 @@ describe('Grants API Route', () => {
   });
 
   describe('GET /api/grants', () => {
-    it('returns grants through the route handler', async () => {
-      // Create mock request with default sortBy=fit
+    it('returns grants through the route handler with pagination shape', async () => {
       const { NextRequest } = require('next/server');
       const mockRequest = new NextRequest('http://localhost:3000/api/grants');
 
       const response = await GET(mockRequest);
       const data = await (response as NextResponse).json();
 
-      // Verify the handler called getDependencies
       expect(getDependencies).toHaveBeenCalled();
 
-      // Verify the grants are returned
       expect(data).toBeDefined();
-      expect(data.length).toBe(4);
+      expect(data).toHaveProperty('items');
+      expect(data).toHaveProperty('page');
+      expect(data).toHaveProperty('pageSize');
+      expect(data).toHaveProperty('total');
+      expect(data.page).toBe(1);
+      expect(data.pageSize).toBe(25);
+      expect(data.total).toBe(4);
+      expect(data.items.length).toBe(4);
     });
 
     it('returns grants with required fields from route', async () => {
@@ -177,10 +181,9 @@ describe('Grants API Route', () => {
       const data = await (response as NextResponse).json();
 
       expect(data).toBeDefined();
-      expect(data.length).toBe(4);
+      expect(data.items.length).toBe(4);
 
-      // Verify each grant has required fields
-      for (const grant of data) {
+      for (const grant of data.items) {
         expect(grant).toHaveProperty('id');
         expect(grant).toHaveProperty('title');
         expect(grant).toHaveProperty('funder');
@@ -200,14 +203,11 @@ describe('Grants API Route', () => {
       const response = await GET(mockRequest);
       const data = await (response as NextResponse).json();
 
-      // Mock data order: dell-equality (76), google-cs (79), svcf-community (82), nsf-tech (88)
-      // Expected sorted order by fit descending: nsf-tech (88), svcf-community (82), google-cs (79), dell-equality (76)
       const expectedOrder = ['nsf-tech', 'svcf-community', 'google-cs', 'dell-equality'];
-      const actualOrder = data.map((g: { id: string }) => g.id);
+      const actualOrder = data.items.map((g: { id: string }) => g.id);
       expect(actualOrder).toEqual(expectedOrder);
 
-      // Also verify fit scores are in descending order
-      const fitScores = data.map((g: { fit: number }) => g.fit);
+      const fitScores = data.items.map((g: { fit: number }) => g.fit);
       expect(fitScores).toEqual([88, 82, 79, 76]);
     });
 
@@ -218,12 +218,10 @@ describe('Grants API Route', () => {
       const response = await GET(mockRequest);
       const data = await (response as NextResponse).json();
 
-      // Expected order by daysOut: google-cs (10d), nsf-tech (24d), dell-equality (54d), svcf-community (Rolling)
       const expectedOrder = ['google-cs', 'nsf-tech', 'dell-equality', 'svcf-community'];
-      const actualOrder = data.map((g: { id: string }) => g.id);
+      const actualOrder = data.items.map((g: { id: string }) => g.id);
       expect(actualOrder).toEqual(expectedOrder);
 
-      // Verify Rolling is last
       const rollingIndex = actualOrder.indexOf('svcf-community');
       expect(rollingIndex).toBe(actualOrder.length - 1);
     });
@@ -235,14 +233,100 @@ describe('Grants API Route', () => {
       const response = await GET(mockRequest);
       const data = await (response as NextResponse).json();
 
-      // Expected order by awardSort descending: nsf-tech ($350k), dell-equality ($150k), google-cs ($100k), svcf-community ($75k)
       const expectedOrder = ['nsf-tech', 'dell-equality', 'google-cs', 'svcf-community'];
-      const actualOrder = data.map((g: { id: string }) => g.id);
+      const actualOrder = data.items.map((g: { id: string }) => g.id);
       expect(actualOrder).toEqual(expectedOrder);
 
-      // Verify award amounts are in descending order
-      const awardAmounts = data.map((g: { awardSort: number }) => g.awardSort);
+      const awardAmounts = data.items.map((g: { awardSort: number }) => g.awardSort);
       expect(awardAmounts).toEqual([350000, 150000, 100000, 75000]);
+    });
+
+    it('enforces default pageSize=25', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants');
+
+      const response = await GET(mockRequest);
+      const data = await (response as NextResponse).json();
+
+      expect(data.pageSize).toBe(25);
+    });
+
+    it('respects custom pageSize parameter', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants?pageSize=2');
+
+      const response = await GET(mockRequest);
+      const data = await (response as NextResponse).json();
+
+      expect(data.pageSize).toBe(2);
+      expect(data.page).toBe(1);
+      expect(data.total).toBe(4);
+      expect(data.items.length).toBe(2);
+    });
+
+    it('paginates with page and pageSize', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants?page=2&pageSize=2');
+
+      const response = await GET(mockRequest);
+      const data = await (response as NextResponse).json();
+
+      expect(data.page).toBe(2);
+      expect(data.pageSize).toBe(2);
+      expect(data.total).toBe(4);
+      expect(data.items.length).toBe(2);
+
+      const firstPageRequest = new NextRequest(
+        'http://localhost:3000/api/grants?page=1&pageSize=2',
+      );
+      const firstResponse = await GET(firstPageRequest);
+      const firstData = await (firstResponse as NextResponse).json();
+
+      const firstPageIds = firstData.items.map((g: { id: string }) => g.id);
+      const secondPageIds = data.items.map((g: { id: string }) => g.id);
+      expect(firstPageIds).not.toEqual(secondPageIds);
+    });
+
+    it('returns empty items when page exceeds data range', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants?page=3&pageSize=10');
+
+      const response = await GET(mockRequest);
+      const data = await (response as NextResponse).json();
+
+      expect(data.page).toBe(3);
+      expect(data.total).toBe(4);
+      expect(data.items.length).toBe(0);
+    });
+
+    it('returns 400 for pageSize exceeding max 100', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants?pageSize=101');
+
+      const response = await GET(mockRequest);
+      expect(response.status).toBe(400);
+
+      const data = await (response as NextResponse).json();
+      expect(data.code).toBe('VALIDATION_ERROR');
+    });
+
+    it('returns 400 for invalid page value', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants?page=0');
+
+      const response = await GET(mockRequest);
+      expect(response.status).toBe(400);
+    });
+
+    it('returns correct total count with pagination', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants?pageSize=1');
+
+      const response = await GET(mockRequest);
+      const data = await (response as NextResponse).json();
+
+      expect(data.total).toBe(4);
+      expect(data.items.length).toBe(1);
     });
   });
 });

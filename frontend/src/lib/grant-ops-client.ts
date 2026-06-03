@@ -172,8 +172,22 @@ interface GrantOverrideRequest {
   overrideType: 'score' | 'category' | 'task' | 'status';
 }
 
+interface PaginatedGrantsResponse {
+  items: Grant[];
+  page: number;
+  pageSize: number;
+  total: number;
+}
+
 export const grantsApi = {
-  getAll: () => apiFetch<Grant[]>('/api/grants'),
+  getAll: (params?: { page?: number; pageSize?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', String(params.page));
+    if (params?.pageSize) searchParams.set('pageSize', String(params.pageSize));
+    const qs = searchParams.toString();
+    const url = qs ? `/api/grants?${qs}` : '/api/grants';
+    return apiFetch<PaginatedGrantsResponse>(url);
+  },
 
   getById: (grantId: string) =>
     apiFetch<GrantDetailResponse>(`/api/grants/${encodeURIComponent(grantId)}`),
