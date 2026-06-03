@@ -12,7 +12,7 @@ export const opencodeFailureMessages: Record<OpencodeFailureMode, FailureMessage
     title: 'Opencode not installed',
     description:
       'The opencode binary was not found on PATH or at the configured path. The grant generation system cannot run without it.',
-    action: 'Install opencode or verify the binary path in Org Profile settings.',
+    action: 'Install opencode and ensure it is on PATH.'
   },
   'config-error': {
     title: 'Opencode configuration error',
@@ -187,8 +187,8 @@ export const apiErrorMessages: Record<string, FailureMessage> = {
 export const jobFailureMessages: Record<JobFailureCategory, FailureMessage> = {
   connectivity: {
     title: 'Connection error',
-    description: 'Cannot reach opencode — check path and settings in Org Profile.',
-    action: 'Verify opencode path in Settings.',
+    description: 'Cannot reach opencode — ensure it is installed and on PATH.',
+    action: 'Install opencode and ensure it is on PATH.',
   },
   timeout: {
     title: 'Operation timed out',

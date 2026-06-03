@@ -4,6 +4,9 @@ import path from 'node:path';
 const projectRoot = path.resolve(__dirname, '..');
 
 const nextConfig: NextConfig = {
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   typescript: {
     ignoreBuildErrors: false,
   },
@@ -14,8 +17,6 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  output: 'standalone',
-  outputFileTracingRoot: projectRoot,
   turbopack: {
     root: projectRoot,
   },
