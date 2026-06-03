@@ -5,6 +5,9 @@ import { ToastProvider } from '@/components/ToastProvider';
 export const metadata: Metadata = {
   title: 'Hacker Dojo · Grant Operations Center',
   description: 'Grant management and tracking for Hacker Dojo',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
