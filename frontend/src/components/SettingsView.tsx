@@ -21,16 +21,16 @@ const opencodeStatusGuidance: Record<
   'not-installed': {
     title: 'Opencode is not installed',
     description:
-      'The opencode binary was not found on PATH or at the configured path. Grant generation and AI-powered features cannot run without it.',
+      'The opencode binary was not found on PATH. Grant generation and AI-powered features cannot run without it.',
     action:
-      'Install opencode from https://opencode.ai or verify the binary path below and test the connection.',
+      'Install opencode from https://opencode.ai and ensure it is on PATH.',
   },
   'not-reachable': {
     title: 'Opencode cannot be reached',
     description:
       'The opencode binary was found but is not responding. It may be installed incorrectly or the binary may not be executable.',
     action:
-      'Verify the binary path points to a working opencode installation. Check that the file is executable (chmod +x on macOS/Linux).',
+      'Verify that opencode is properly installed and executable (chmod +x on macOS/Linux).',
   },
   incompatible: {
     title: 'Opencode version is incompatible',

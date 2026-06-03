@@ -11,6 +11,6 @@
     "**/*.test.ts",
     "**/*.test.tsx"
   ],
-  "ignore": ["frontend/next-env.d.ts", "frontend/src/types/**"],
+  "ignore": ["frontend/next-env.d.ts", "frontend/src/types/**", "frontend/src/middleware.ts"],
   "ignoreDependencies": ["pino-pretty", "pino-roll", "node-gyp"]
 }

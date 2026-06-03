@@ -153,7 +153,7 @@ export function classifyOpencodeError(
 ): OpencodeFailureMode {
   const combined = [errorMessage, stderr].filter(Boolean).join(' ').toLowerCase();
 
-  // Install-missing: binary not found on PATH or at configured path
+  // Install-missing: binary not found on PATH
   if (/command not found|no such file|enoent|not installed/i.test(combined)) {
     return 'install-missing';
   }

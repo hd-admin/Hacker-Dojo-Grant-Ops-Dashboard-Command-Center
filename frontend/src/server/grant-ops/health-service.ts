@@ -75,7 +75,7 @@ function classifyHandshakeError(message: string, output?: string): string {
   }
 
   if (/enoent|no such file|command not found|not installed/i.test(lower)) {
-    return 'Binary not found at configured path';
+    return 'Binary not found on PATH';
   }
 
   return `Handshake failed: ${message}`;
@@ -239,7 +239,7 @@ export async function checkOpencode(
       ) {
         return {
           opencode: 'not-installed',
-          opencodeError: 'Binary not found at configured path',
+          opencodeError: 'Binary not found on PATH',
         };
       }
       if (message.toLowerCase().includes('eacces') || message.toLowerCase().includes('timed out')) {
