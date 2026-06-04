@@ -50,13 +50,14 @@ fi
 async function openMatchedGrantWithoutDraft(page: Page, request: APIRequestContext) {
   const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
   expect(grantsResponse.ok()).toBeTruthy();
+  const grantsData = await grantsResponse.json();
   const grants: Array<{
     id: string;
     title: string;
     fit: number;
     status: string;
     draftContent?: string;
-  }> = await grantsResponse.json();
+  }> = grantsData.items || grantsData;
 
   const targetGrant = grants.find((grant) => grant.status === 'matched' && !grant.draftContent);
   expect(targetGrant).toBeDefined();
@@ -107,7 +108,7 @@ test('document-grounded-drafting: generate, revise, approve, and submit through 
   await page.getByRole('button', { name: 'Save revision' }).click();
   await expect(page.locator('.drawer')).toContainText('Last revision note:');
 
-  await page.getByRole('button', { name: 'Approve & lock' }).click();
+  await page.getByRole('button', { name: 'Approve and lock' }).click();
   await expect(page.getByRole('button', { name: 'Submit' }).first()).toBeVisible();
 
   await page.locator('.drawer-actions').getByRole('button', { name: 'Submit' }).click();
@@ -123,7 +124,7 @@ test('document-grounded-drafting: generate, revise, approve, and submit through 
   await page
     .locator('.drawer-section')
     .filter({ hasText: 'Submit grant' })
-    .getByRole('button', { name: 'Submit' })
+    .getByRole('button', { name: 'Confirm submission' })
     .click();
 
   await page.click('[data-view="notifications"]');

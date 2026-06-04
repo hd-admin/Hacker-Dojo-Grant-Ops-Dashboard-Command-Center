@@ -14,12 +14,17 @@ describe('/api/logs/app route', () => {
     if (!fs.existsSync(logDir)) {
       fs.mkdirSync(logDir, { recursive: true });
     }
+    // Clean up any leftover log files from previous tests to ensure isolation
+    const files = fs.readdirSync(logDir).filter((f) => f.endsWith('.log') || fs.lstatSync(path.join(logDir, f)).isSymbolicLink());
+    for (const file of files) {
+      fs.unlinkSync(path.join(logDir, file));
+    }
   });
 
   afterEach(() => {
-    // Clean up test log files
+    // Clean up all log files to prevent interference from other tests
     if (fs.existsSync(logDir)) {
-      const files = fs.readdirSync(logDir).filter((f) => f.startsWith('app') && f.endsWith('.log'));
+      const files = fs.readdirSync(logDir).filter((f) => f.endsWith('.log'));
       for (const file of files) {
         fs.unlinkSync(path.join(logDir, file));
       }

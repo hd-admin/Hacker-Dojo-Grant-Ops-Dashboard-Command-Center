@@ -546,7 +546,7 @@ export function AppShell() {
   }
 
   return (
-    <div className="app">
+    <div className="app" data-testid="app-shell">
       {/* Skip-to-content link for keyboard users */}
       <button
         type="button"

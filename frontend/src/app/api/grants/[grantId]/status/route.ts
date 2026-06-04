@@ -47,6 +47,7 @@ export async function PATCH(
       return NextResponse.json(
         {
           error: 'Invalid grant status payload',
+          code: 'VALIDATION_ERROR',
           issues: parsed.error.flatten(),
         },
         { status: 400 },

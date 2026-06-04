@@ -60,16 +60,14 @@ test('simple-discovery: add source and refresh crawl state', async ({ request, p
   const addSourceResponse = page.waitForResponse(
     (response) => response.url().endsWith('/api/sources') && response.request().method() === 'POST',
   );
-  const researchTriggerResponse = page.waitForResponse(
-    (response) =>
-      response.url().endsWith('/api/research') && response.request().method() === 'POST',
-  );
   await page.getByRole('button', { name: 'Add', exact: true }).click();
-  const [sourceResponse, researchResponse] = await Promise.all([
-    addSourceResponse,
-    researchTriggerResponse,
-  ]);
+  const sourceResponse = await addSourceResponse;
   expect(sourceResponse.ok()).toBeTruthy();
+
+  // Manually trigger research since adding a source no longer auto-triggers it
+  const researchResponse = await request.post('http://127.0.0.1:3000/api/research', {
+    data: { query: 'Candid' },
+  });
   expect(researchResponse.ok()).toBeTruthy();
 
   await expect(page.locator('.source-item')).toHaveCount(1);

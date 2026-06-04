@@ -10,7 +10,7 @@
  */
 
 import { test, expect, type APIRequestContext } from '@playwright/test';
-import { resetAppState } from './test-utils';
+import { resetAppState, configureOpencodeThroughSettingsView } from './test-utils';
 
 const BASE_URL = 'http://127.0.0.1:3000';
 
@@ -40,12 +40,15 @@ async function pollJobCompletion(
 }
 
 test.describe('Full Workflow E2E', () => {
+  test.beforeEach(async ({ page, request }) => {
+    await resetAppState(request);
+    const stubPath = process.env.OPENCODE_STUB_PATH || './tests/e2e/opencode-stub.sh';
+    await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
+  });
+
   test('complete discovery-to-award lifecycle (16 steps)', async ({ page, request }) => {
     test.setTimeout(30000);
     const workflowStart = Date.now();
-
-    // Reset state for clean start
-    await resetAppState(request);
 
     // ── Step 1: Add source via API ──────────────────────────────────
     const sourceRes = await request.post(`${BASE_URL}/api/sources`, {
@@ -67,7 +70,8 @@ test.describe('Full Workflow E2E', () => {
       data: { sourceId },
     });
     expect(crawlRes.ok()).toBeTruthy();
-    const { jobId: crawlJobId } = await crawlRes.json();
+    const crawlData = await crawlRes.json();
+    const crawlJobId = crawlData.job?.id || crawlData.jobId;
     expect(crawlJobId).toBeDefined();
 
     // Wait for crawl job to complete (stub writes CrawlArtifact immediately)
@@ -77,7 +81,8 @@ test.describe('Full Workflow E2E', () => {
     // ── Step 3: Grants ingested into SQLite ────────────────────────
     const grantsRes1 = await request.get(`${BASE_URL}/api/grants`);
     expect(grantsRes1.ok()).toBeTruthy();
-    const grants1 = await grantsRes1.json();
+    const grants1Data = await grantsRes1.json();
+    const grants1 = grants1Data.items || grants1Data;
     // With stub data, there should be at least 1 grant from the crawl
     // (or from seeded funders). We verify the API returns valid data.
     expect(grants1).toBeDefined();
@@ -91,8 +96,8 @@ test.describe('Full Workflow E2E', () => {
     // ── Step 5: Grant added to pipeline ────────────────────────────
     // Find a grant and move it to pipeline
     const allGrantsRes = await request.get(`${BASE_URL}/api/grants`);
-    const allGrants = await allGrantsRes.json();
-    const grantsArr = Array.isArray(allGrants) ? allGrants : (allGrants.grants ?? []);
+    const allGrantsData = await allGrantsRes.json();
+    const grantsArr = allGrantsData.items || allGrantsData;
     if (grantsArr.length > 0) {
       const firstGrant = grantsArr[0];
       const grantId: string = firstGrant.id;
@@ -229,14 +234,14 @@ test.describe('Full Workflow E2E', () => {
   });
 
   test('job lifecycle API — research job with mocked agent', async ({ request }) => {
-    await resetAppState(request);
-
     // Start a research job
     const startRes = await request.post(`${BASE_URL}/api/research`, {
       data: { query: 'test grants for makerspaces' },
     });
     expect(startRes.ok()).toBeTruthy();
-    const { jobId } = await startRes.json();
+    const { job } = await startRes.json();
+    expect(job).toBeDefined();
+    const jobId = job.id;
     expect(jobId).toBeDefined();
 
     // Poll until completion
@@ -246,9 +251,9 @@ test.describe('Full Workflow E2E', () => {
     // Check job details
     const jobRes = await request.get(`${BASE_URL}/api/jobs/${encodeURIComponent(jobId)}`);
     expect(jobRes.ok()).toBeTruthy();
-    const job = await jobRes.json();
-    expect(job).toHaveProperty('status', 'completed');
-    expect(job).toHaveProperty('progress', 100);
+    const completedJob = await jobRes.json();
+    expect(completedJob).toHaveProperty('status', 'completed');
+    expect(completedJob).toHaveProperty('progress', 100);
 
     // List all jobs
     const allJobsRes = await request.get(`${BASE_URL}/api/jobs`);
@@ -256,12 +261,10 @@ test.describe('Full Workflow E2E', () => {
   });
 
   test('pipeline state validation — invalid transition rejected', async ({ request }) => {
-    await resetAppState(request);
-
     const grantsRes = await request.get(`${BASE_URL}/api/grants`);
     expect(grantsRes.ok()).toBeTruthy();
-    const grants = await grantsRes.json();
-    const grantsArr = Array.isArray(grants) ? grants : (grants.grants ?? []);
+    const grantsData = await grantsRes.json();
+    const grantsArr = grantsData.items || grantsData;
 
     if (grantsArr.length > 0) {
       const firstGrant = grantsArr[0];
@@ -276,8 +279,6 @@ test.describe('Full Workflow E2E', () => {
   });
 
   test('submission blocking — returns reasons when blocked', async ({ request }) => {
-    await resetAppState(request);
-
     const grantsRes = await request.get(`${BASE_URL}/api/grants`);
     const grants = await grantsRes.json();
     const grantsArr = Array.isArray(grants) ? grants : (grants.grants ?? []);
@@ -296,14 +297,12 @@ test.describe('Full Workflow E2E', () => {
   });
 
   test('crawl job produces grants via mocked agent', async ({ request }) => {
-    await resetAppState(request);
-
     // Add a source
     const srcRes = await request.post(`${BASE_URL}/api/sources`, {
       data: {
         url: 'https://grants.gov',
         name: 'Grants.gov',
-        type: 'federal',
+        type: 'website',
         category: 'government',
         intervalHours: 24,
         reviewStatus: 'approved',
@@ -318,7 +317,8 @@ test.describe('Full Workflow E2E', () => {
       data: { sourceId: srcId },
     });
     expect(crawlRes.ok()).toBeTruthy();
-    const { jobId } = await crawlRes.json();
+    const crawlData = await crawlRes.json();
+    const jobId = crawlData.job?.id || crawlData.jobId;
     expect(jobId).toBeDefined();
 
     // Wait for completion
@@ -331,8 +331,6 @@ test.describe('Full Workflow E2E', () => {
   });
 
   test('peer discovery job completes with mocked agent', async ({ request }) => {
-    await resetAppState(request);
-
     const peerRes = await request.post(`${BASE_URL}/api/peer-discovery`, {
       data: { query: 'makerspaces and hackerspaces in California' },
     });
@@ -349,8 +347,6 @@ test.describe('Full Workflow E2E', () => {
   });
 
   test('funder insights job completes with mocked agent', async ({ request }) => {
-    await resetAppState(request);
-
     const insightsRes = await request.post(`${BASE_URL}/api/funder-insights`, {
       data: { funderId: 'funder-knight' },
     });
@@ -366,8 +362,6 @@ test.describe('Full Workflow E2E', () => {
   });
 
   test('eligibility vetting job completes with mocked agent', async ({ request }) => {
-    await resetAppState(request);
-
     const vetRes = await request.post(`${BASE_URL}/api/eligibility-vetting`, {
       data: { grantId: 'grant-stub' },
     });
@@ -383,8 +377,6 @@ test.describe('Full Workflow E2E', () => {
   });
 
   test('budget import job completes with mocked agent', async ({ request }) => {
-    await resetAppState(request);
-
     const budgetRes = await request.post(`${BASE_URL}/api/budget-import/start`, {
       data: { awardId: 'award-stub', documentPath: 'budget.xlsx' },
     });

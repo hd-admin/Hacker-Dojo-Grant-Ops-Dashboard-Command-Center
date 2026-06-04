@@ -6,14 +6,7 @@ import { configureOpencodeThroughSettingsView, resetAppState } from './test-util
 const opencodeStubPath = path.join(process.cwd(), 'tests/e2e/opencode-stub.sh');
 
 async function ensureOpencodeStub(): Promise<string> {
-  const script = `#!/bin/sh
-set -eu
-
-cat <<'EOF'
-OpenCode 0.1.0-stub
-EOF
-`;
-  await fs.writeFile(opencodeStubPath, script, 'utf8');
+  // Ensure the existing stub script is executable
   await fs.chmod(opencodeStubPath, 0o755);
   return opencodeStubPath;
 }
@@ -84,13 +77,14 @@ test.describe('Grant Operations Center smoke', () => {
 
     const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
     expect(grantsResponse.ok()).toBeTruthy();
+    const grantsData = await grantsResponse.json();
     const grants: Array<{
       id: string;
       title: string;
       status: string;
       draftContent?: string;
       fit: number;
-    }> = await grantsResponse.json();
+    }> = grantsData.items || grantsData;
     const targetGrant = grants.find((grant) => grant.id === targetGrantId);
     expect(targetGrant).toBeDefined();
     if (!targetGrant) {
@@ -100,8 +94,17 @@ test.describe('Grant Operations Center smoke', () => {
     const selectedIndex = sortedGrants.findIndex((grant) => grant.id === targetGrant.id);
     expect(selectedIndex).toBeGreaterThan(-1);
 
+    // Refresh so the discovery view picks up the newly seeded grant
+    await page.reload();
+    await page.waitForSelector('.app', { timeout: 60000 });
+
     await page.click('[data-view="discovery"]');
-    await page.locator('.grants-row:not(.header)').nth(selectedIndex).click();
+    await page.waitForSelector('.grants-row:not(.header)', { timeout: 10000 });
+    // Find the specific grant row by title instead of relying on sort order
+    const grantRow = page.locator('.grants-row:not(.header)').filter({ hasText: targetGrant.title });
+    await expect(grantRow).toBeVisible({ timeout: 5000 });
+    // Click the title cell to avoid the nested "View funder details" button
+    await grantRow.locator('div').first().click();
 
     await expect(page.locator('.drawer-title')).toHaveText(targetGrant.title);
     await expect(page.locator('.drawer')).toContainText('Funder summary (agent-generated)');
@@ -109,7 +112,7 @@ test.describe('Grant Operations Center smoke', () => {
     await expect(page.locator('.drawer')).toContainText('Drafted Letter of Intent — preview');
     await expect(page.locator('button:has-text("Generate draft")')).toBeVisible();
     await expect(page.locator('button:has-text("Open in editor")')).toBeVisible();
-    await expect(page.locator('.drawer-actions button:has-text("Approve & lock")')).toHaveCount(0);
+    await expect(page.locator('.drawer-actions button:has-text("Approve and lock")')).toHaveCount(0);
     await expect(page.locator('.drawer-actions button:has-text("Submit")')).toHaveCount(0);
   });
 
@@ -135,7 +138,9 @@ test.describe('Grant Operations Center smoke', () => {
       data: { query: '__force_failure_test__' },
     });
     expect(startRes.ok()).toBeTruthy();
-    const { jobId } = await startRes.json();
+    const { job } = await startRes.json();
+    expect(job).toBeDefined();
+    const jobId = job.id;
     expect(jobId).toBeDefined();
 
     // Navigate to jobs view
@@ -162,7 +167,9 @@ test.describe('Grant Operations Center smoke', () => {
       data: { query: 'test query for badge count' },
     });
     expect(startRes.ok()).toBeTruthy();
-    const { jobId } = await startRes.json();
+    const { job } = await startRes.json();
+    expect(job).toBeDefined();
+    const jobId = job.id;
     expect(jobId).toBeDefined();
 
     // Navigate to jobs view to trigger active jobs load
@@ -197,7 +204,8 @@ test.describe('Grant Operations Center smoke', () => {
   test('grant updates persist through the API', async ({ request }) => {
     const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
     expect(grantsResponse.ok()).toBeTruthy();
-    const grants: Array<{ id: string; status: string }> = await grantsResponse.json();
+    const grantsData = await grantsResponse.json();
+    const grants: Array<{ id: string; status: string }> = grantsData.items || grantsData;
     const firstGrant = grants[0];
     expect(firstGrant).toBeDefined();
 

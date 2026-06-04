@@ -431,6 +431,11 @@ describe('log level filtering', () => {
     if (!fs.existsSync(logDir)) {
       fs.mkdirSync(logDir, { recursive: true });
     }
+    // Clean up any leftover log files from previous tests to ensure isolation
+    const existingFiles = fs.readdirSync(logDir).filter((f: string) => f.endsWith('.log') || fs.lstatSync(path.join(logDir, f)).isSymbolicLink());
+    for (const file of existingFiles) {
+      fs.unlinkSync(path.join(logDir, file));
+    }
 
     const logFile = path.join(logDir, 'app-test-level.log');
     const mixedLines = [

@@ -1,7 +1,17 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import { logger, getSessionLogPath } from '@/lib/logger';
+import fs from 'node:fs';
+import path from 'node:path';
+
+const LOG_DIR = path.join(process.cwd(), '.grant-ops-data', 'logs');
 
 describe('logger', () => {
+  beforeAll(() => {
+    if (!fs.existsSync(LOG_DIR)) {
+      fs.mkdirSync(LOG_DIR, { recursive: true });
+    }
+  });
+
   describe('exports', () => {
     it('exports the logger as a callable function with log-level methods', () => {
       expect(logger).toBeDefined();
@@ -22,6 +32,45 @@ describe('logger', () => {
 
     it('exports getSessionLogPath as a function', () => {
       expect(typeof getSessionLogPath).toBe('function');
+    });
+  });
+
+  describe('log rotation', () => {
+    it('writes log entries that appear in the rotated log file', async () => {
+      const testMessage = `rotation-test-${Date.now()}`;
+      logger.info(testMessage);
+
+      // Wait for transport to flush (pino-roll uses SonicBoom which flushes asynchronously)
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+      // pino-roll creates numbered log files (e.g., app.1.log)
+      const files = fs.readdirSync(LOG_DIR);
+      const logFiles = files.filter(
+        (f) => f.startsWith('app.') && f.endsWith('.log'),
+      );
+      expect(logFiles.length).toBeGreaterThan(0);
+
+      // Search all log files for the test message
+      let found = false;
+      let allContent = '';
+      for (const logFile of logFiles) {
+        const content = fs.readFileSync(path.join(LOG_DIR, logFile), 'utf-8');
+        allContent += content;
+        if (content.includes(testMessage)) {
+          found = true;
+          break;
+        }
+      }
+
+      expect(found, `Test message not found in any log file. Files: ${logFiles.join(', ')}. Content: ${allContent}`).toBe(true);
+    });
+
+    it('creates a symlink to the current log file when symlink option is enabled', async () => {
+      // pino-roll creates current.log symlink; allow time for it
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      const currentLogPath = path.join(LOG_DIR, 'current.log');
+      expect(fs.existsSync(currentLogPath)).toBe(true);
     });
   });
 

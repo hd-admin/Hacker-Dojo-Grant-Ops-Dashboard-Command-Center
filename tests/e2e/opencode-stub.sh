@@ -2,6 +2,13 @@
 set -eu
 
 all_args="$*"
+
+# Force failure for retry E2E test
+if echo "$all_args" | grep -q "__force_failure_test__"; then
+  echo "Forced failure for testing retry behavior" >&2
+  exit 1
+fi
+
 json_output=0
 case "$all_args" in
 	*"Research grants for the following organization:"*|*"--output-format json"*|*"--format json"*)

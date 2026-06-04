@@ -51,8 +51,8 @@ test.describe('Accessibility', () => {
 
   test('Escape closes grant drawer', async ({ page, request }) => {
     const grantsRes = await request.get(`${BASE_URL}/api/grants`);
-    const grants = await grantsRes.json();
-    const grantsArr = Array.isArray(grants) ? grants : (grants.grants ?? []);
+    const grantsData = await grantsRes.json();
+    const grantsArr = grantsData.items || grantsData;
 
     if (grantsArr.length === 0) {
       test.skip();

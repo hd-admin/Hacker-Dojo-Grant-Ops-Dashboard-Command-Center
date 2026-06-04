@@ -58,7 +58,8 @@ test.describe('Keyboard navigation', () => {
     await page.waitForSelector('#view-discovery.active', { timeout: 5000 });
 
     const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
-    const grants: Array<{ id: string }> = await grantsResponse.json();
+    const grantsData = await grantsResponse.json();
+    const grants: Array<{ id: string }> = grantsData.items || grantsData;
     if (grants.length > 0) {
       await page.locator('.grants-row:not(.header)').first().click();
       await expect(page.locator('.drawer')).toBeVisible();

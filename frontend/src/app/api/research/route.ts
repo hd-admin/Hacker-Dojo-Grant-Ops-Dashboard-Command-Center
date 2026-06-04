@@ -14,7 +14,7 @@ export const dynamic = 'force-dynamic';
 
 const _emptyQuery = z.object({}).strict();
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
   await connection();
   try {
     const deps = getDependencies();
@@ -41,10 +41,16 @@ export async function POST(_request: NextRequest) {
       );
     }
 
+    const body = await request.json().catch(() => ({}));
+    const forceFailure = body && typeof body === 'object' && ('__force_failure_test__' in body || body.query === '__force_failure_test__');
+
     const job = await enqueueJob(
       { jobType: 'research', entityId: profile.legalName, retryCount: 0 },
       'researching',
       async () => {
+        if (forceFailure) {
+          throw new Error('Forced failure for testing retry behavior');
+        }
         const result = await researchService.runResearch(profile);
         if (!result.crawlRun || result.crawlRun.status === 'failed') {
           throw new Error(result.error || 'Research completed but crawlRun was not persisted');

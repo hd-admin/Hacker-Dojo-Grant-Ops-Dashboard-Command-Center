@@ -5,14 +5,16 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { resetAppState } from './test-utils';
+import { resetAppState, configureOpencodeThroughSettingsView } from './test-utils';
 
 const BASE_URL = 'http://127.0.0.1:3000';
 const MAX_CONCURRENT = 3;
 
 test.describe('Concurrent Jobs', () => {
-  test.beforeEach(async ({ request }) => {
+  test.beforeEach(async ({ page, request }) => {
     await resetAppState(request);
+    const stubPath = process.env.OPENCODE_STUB_PATH || './tests/e2e/opencode-stub.sh';
+    await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
   });
 
   test('multiple jobs can be queued and run concurrently', async ({ request }) => {
@@ -24,7 +26,9 @@ test.describe('Concurrent Jobs', () => {
         data: { query: `concurrent test query ${i}` },
       });
       expect(res.ok()).toBeTruthy();
-      const { jobId } = await res.json();
+      const { job } = await res.json();
+      expect(job).toBeDefined();
+      const jobId = job.id;
       expect(jobId).toBeDefined();
       jobIds.push(jobId);
     }

@@ -5,13 +5,15 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { resetAppState } from './test-utils';
+import { resetAppState, configureOpencodeThroughSettingsView } from './test-utils';
 
 const BASE_URL = 'http://127.0.0.1:3000';
 
 test.describe('Polling Edge Cases', () => {
-  test.beforeEach(async ({ request }) => {
+  test.beforeEach(async ({ page, request }) => {
     await resetAppState(request);
+    const stubPath = process.env.OPENCODE_STUB_PATH || './tests/e2e/opencode-stub.sh';
+    await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
   });
 
   test('tab switch and return refreshes job status', async ({ page, request }) => {
@@ -20,14 +22,15 @@ test.describe('Polling Edge Cases', () => {
       data: { query: 'test query' },
     });
     expect(startRes.ok()).toBeTruthy();
-    const { jobId } = await startRes.json();
+    const startBody = await startRes.json();
+    const jobId = startBody.job.id;
 
     await page.goto('/');
     await expect(page.locator('[data-testid="app-shell"]')).toBeVisible({ timeout: 5000 });
 
     // Navigate to a view that shows job progress
     await page.click('[data-testid="nav-discovery"]');
-    await expect(page.locator('[data-testid="discovery-view"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#view-discovery')).toBeVisible({ timeout: 5000 });
 
     // Wait for initial poll
     await page.waitForTimeout(2500);

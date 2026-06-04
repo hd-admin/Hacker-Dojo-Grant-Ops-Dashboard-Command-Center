@@ -4,6 +4,7 @@ import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { revalidateAfterMutation } from '@/lib/revalidate';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import { getJobProgress } from '@/server/grant-ops/job-queue-service';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,8 +25,7 @@ export async function GET(
         { status: 400 },
       );
     }
-    const deps = getDependencies();
-    const job = await deps.repository.getJobQueueItem(jobId);
+    const job = await getJobProgress(jobId);
     if (!job) {
       return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Job not found'), {
         status: 404,

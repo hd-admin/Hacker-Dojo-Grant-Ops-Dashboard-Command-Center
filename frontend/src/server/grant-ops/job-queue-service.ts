@@ -64,6 +64,7 @@ export async function executeQueuedJob(
   stage: string,
   runner: JobRunner,
 ): Promise<void> {
+  logger.debug(`executeQueuedJob start ${jobId}`);
   const deps = getDependencies();
   await deps.repository.updateJobQueueItem(jobId, {
     status: 'running',
@@ -71,6 +72,7 @@ export async function executeQueuedJob(
     startedAt: now(),
     lastUpdate: now(),
   });
+  logger.debug(`executeQueuedJob updated to running ${jobId}`);
 
   const MAX_AUTO_RETRIES = 3;
   const MAX_TOTAL_DELAY_MS = 2 * 60 * 1000;
@@ -125,6 +127,7 @@ export async function executeQueuedJob(
 
   // All retries exhausted — mark as failed
   const message = lastError instanceof Error ? lastError.message : 'Job failed';
+  logger.debug(`executeQueuedJob marking failed ${jobId}: ${message}`);
   await deps.repository.updateJobQueueItem(jobId, {
     status: 'failed',
     stage: 'failed',

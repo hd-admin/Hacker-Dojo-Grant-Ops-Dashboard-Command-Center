@@ -28,7 +28,9 @@ test.describe('Agent Failure Propagation', () => {
       return;
     }
 
-    const { jobId } = await res.json();
+    const { job } = await res.json();
+    expect(job).toBeDefined();
+    const jobId = job.id;
     expect(jobId).toBeDefined();
 
     await page.goto('/');
@@ -55,8 +57,8 @@ test.describe('Agent Failure Propagation', () => {
     await resetAppState(request);
 
     const grantsRes = await request.get(`${BASE_URL}/api/grants`);
-    const grants = await grantsRes.json();
-    const grantsArr = Array.isArray(grants) ? grants : (grants.grants ?? []);
+    const grantsData = await grantsRes.json();
+    const grantsArr = grantsData.items || grantsData;
 
     if (grantsArr.length === 0) {
       test.skip();
@@ -64,7 +66,7 @@ test.describe('Agent Failure Propagation', () => {
     }
 
     const firstGrant = grantsArr[0];
-    const res = await request.put(
+    const res = await request.patch(
       `${BASE_URL}/api/grants/${encodeURIComponent(firstGrant.id)}/status`,
       { data: { status: 'invalid-status-xyz' } },
     );
