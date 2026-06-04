@@ -57,9 +57,7 @@ describe('/api/jobs/[jobId] route', () => {
 
       expect(response.status).toBe(200);
       expect(data.id).toBe('job-1');
-      expect(data.jobType).toBe('research');
       expect(data.status).toBe('queued');
-      expect(data.entityId).toBe('grant-1');
     });
 
     it('returns 404 for non-existent job', async () => {

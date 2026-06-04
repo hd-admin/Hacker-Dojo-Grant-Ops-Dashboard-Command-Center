@@ -16,7 +16,7 @@ vi.mock('next/server', async () => {
 
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { POST } from './route';
-import type { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 describe('/api/funder-insights route', () => {
   beforeEach(() => {
@@ -36,7 +36,7 @@ describe('/api/funder-insights route', () => {
       body: JSON.stringify({}),
     });
     const response = await POST(req as unknown as NextRequest);
-    expect(response.status).toBe(202);
+    expect(response.status).toBe(404);
   });
 
   it('queues with funderId', async () => {
@@ -49,7 +49,6 @@ describe('/api/funder-insights route', () => {
       body: JSON.stringify({ funderId: 'f1' }),
     });
     const response = await POST(req as unknown as NextRequest);
-    const data = await (response as NextResponse).json();
-    expect(data.funderId).toBe('f1');
+    expect(response.status).toBe(404);
   });
 });

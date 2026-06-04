@@ -773,6 +773,7 @@ export function AppShell() {
         </div>
         <div
           id="view-discovery"
+          data-testid="discovery-view"
           className={`view ${activeView === 'discovery' ? 'active' : ''}`}
           role="tabpanel"
           aria-label="Discovery"
@@ -786,6 +787,7 @@ export function AppShell() {
         </div>
         <div
           id="view-pipeline"
+          data-testid="pipeline-view"
           className={`view ${activeView === 'pipeline' ? 'active' : ''}`}
           role="tabpanel"
           aria-label="Pipeline"
@@ -834,6 +836,7 @@ export function AppShell() {
         </div>
         <div
           id="view-post-award"
+          data-testid="post-award-view"
           className={`view ${activeView === 'post-award' ? 'active' : ''}`}
           role="tabpanel"
           aria-label="Post-Award Management"

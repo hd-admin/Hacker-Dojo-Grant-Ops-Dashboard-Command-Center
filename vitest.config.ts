@@ -17,11 +17,12 @@ export default defineConfig({
     env: { NODE_ENV: 'test', TMPDIR: '/home/mistlight/tmp-vitest' },
     setupFiles: [path.resolve(__dirname, './tests/vitest-setup.ts')],
     testTimeout: 30000,
+    hookTimeout: 30000,
     fileParallelism: false,
-    pool: 'forks',
+    pool: 'threads',
     poolOptions: {
-      forks: {
-        singleFork: true,
+      threads: {
+        singleThread: true,
       },
     },
   },

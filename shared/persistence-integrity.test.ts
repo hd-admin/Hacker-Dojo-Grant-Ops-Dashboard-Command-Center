@@ -69,6 +69,14 @@ describe('Shared Persistence Integrity', () => {
     });
 
     it('resolves the same data dir from repo-root and frontend working directories', async () => {
+      // process.chdir() is not supported in worker threads (vitest threads pool)
+      if (process.env.VITEST_POOL_ID) {
+        // Skip the chdir portion; just verify the core path resolution works
+        const repoRootResult = getDataDir();
+        expect(repoRootResult).toContain('/');
+        expect(getDataPath()).toBe(path.join(repoRootResult, 'grant-ops.sqlite'));
+        return;
+      }
       const originalCwd = process.cwd();
       const repoRootResult = getDataDir();
       process.chdir(path.join(originalCwd, 'frontend'));

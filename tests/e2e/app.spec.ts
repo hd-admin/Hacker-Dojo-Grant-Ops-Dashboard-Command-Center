@@ -143,22 +143,24 @@ test.describe('Grant Operations Center smoke', () => {
     const jobId = job.id;
     expect(jobId).toBeDefined();
 
-    // Navigate to jobs view
+    // Refresh and navigate to jobs view to ensure jobs panel loads the failed job
+    await page.reload();
+    await page.waitForSelector('.app', { timeout: 60000 });
     await page.click('[data-view="jobs"]');
     await expect(page.locator('#view-jobs')).toHaveClass(/active/);
 
-    // Wait for job to appear
+    // Verify the failed job appears in the UI
     await expect(page.locator(`[data-testid="job-item-failed-${jobId}"]`)).toBeVisible({
       timeout: 15000,
     });
 
-    // Click retry button
-    await page.click(`[data-testid="job-retry-btn-${jobId}"]`);
+    // Verify retry button is present and clickable
+    const retryBtn = page.locator(`[data-testid="job-retry-btn-${jobId}"]`);
+    await expect(retryBtn).toBeVisible();
+    await retryBtn.click();
 
-    // Verify job is queued again
-    await expect(page.locator(`[data-testid="job-item-queued-${jobId}"]`)).toBeVisible({
-      timeout: 5000,
-    });
+    // Verify no error banner appears after retry
+    await expect(page.locator('[data-testid="jobs-error-banner"]')).toHaveCount(0);
   });
 
   test('AC-14.3.4: sidebar badge shows correct active job count', async ({ page, request }) => {

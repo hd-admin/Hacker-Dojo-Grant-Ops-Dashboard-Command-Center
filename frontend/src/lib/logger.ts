@@ -70,7 +70,6 @@ class RotatingLogStream extends Writable {
 
   _write(
     chunk: unknown,
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _encoding: BufferEncoding,
     callback: (error?: Error | null) => void,
   ): void {

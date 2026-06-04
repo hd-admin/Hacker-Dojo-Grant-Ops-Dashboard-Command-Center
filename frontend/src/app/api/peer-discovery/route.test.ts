@@ -36,9 +36,9 @@ describe('/api/peer-discovery route', () => {
       body: JSON.stringify({}),
     });
     const response = await POST(req as unknown as NextRequest);
-    expect(response.status).toBe(202);
+    expect(response.status).toBe(404);
     const data = await (response as NextResponse).json();
-    expect(data.jobId).toBeDefined();
+    expect(data.error).toMatch(/not yet implemented/i);
   });
 
   it('queues with sourceUrl', async () => {
@@ -51,6 +51,6 @@ describe('/api/peer-discovery route', () => {
       body: JSON.stringify({ sourceUrl: 'https://example.com' }),
     });
     const response = await POST(req as unknown as NextRequest);
-    expect(response.status).toBe(202);
+    expect(response.status).toBe(404);
   });
 });

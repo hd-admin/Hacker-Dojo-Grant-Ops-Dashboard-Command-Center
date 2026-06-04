@@ -17,7 +17,7 @@ export default defineConfig({
   webServer: {
     command: 'bash ./playwright-start.sh',
     url: 'http://127.0.0.1:3000',
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 300000,
     stdout: 'pipe',
     stderr: 'pipe',
