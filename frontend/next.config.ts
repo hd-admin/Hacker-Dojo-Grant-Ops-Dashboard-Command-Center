@@ -18,9 +18,6 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
-  turbopack: {
-    root: projectRoot,
-  },
   images: {
     unoptimized: true,
   },

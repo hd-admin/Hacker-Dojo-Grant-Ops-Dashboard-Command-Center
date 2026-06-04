@@ -159,6 +159,11 @@ test.describe('Grant Operations Center smoke', () => {
     await expect(retryBtn).toBeVisible();
     await retryBtn.click();
 
+    // Verify the original failed job still shows as failed, and a new queued job appears
+    await expect(page.locator(`[data-testid="job-item-failed-${jobId}"]`)).toBeVisible();
+    const newJobItem = page.locator('[data-testid^="job-item-queued-"], [data-testid^="job-item-running-"]');
+    await expect(newJobItem.first()).toBeVisible({ timeout: 10000 });
+
     // Verify no error banner appears after retry
     await expect(page.locator('[data-testid="jobs-error-banner"]')).toHaveCount(0);
   });

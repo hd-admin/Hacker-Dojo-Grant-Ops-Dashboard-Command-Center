@@ -187,37 +187,14 @@ test.describe('Full Workflow E2E', () => {
     expect(uploadRes.status()).toBeLessThan(500);
 
     // ── Step 14: Award letter upload -> extract agent mocked ───────
-    const awardContent = Buffer.from('award letter content', 'utf-8');
-    const awardUploadRes = await request.post(`${BASE_URL}/api/documents`, {
-      multipart: {
-        file: {
-          name: 'award-letter.txt',
-          mimeType: 'text/plain',
-          buffer: awardContent,
-        },
-      },
+    const extractRes = await request.post(`${BASE_URL}/api/extract/start`, {
+      data: { documentRef: 'award-letter.txt', grantId: 'grant-stub' },
     });
-    if (awardUploadRes.ok()) {
-      const extractRes = await request.post(`${BASE_URL}/api/extract/start`, {
-        data: { documentPath: 'award-letter.txt', grantId: 'grant-stub' },
-      });
-      if (extractRes.ok()) {
-        const extractData = await extractRes.json();
-        if (extractData.jobId) {
-          // Extract endpoint is a stub that returns a jobId without queuing a real job
-          // Skip polling since the job won't exist in the queue
-          const jobCheckRes = await request.get(
-            `${BASE_URL}/api/jobs/${encodeURIComponent(extractData.jobId)}`,
-          );
-          if (jobCheckRes.ok()) {
-            await pollJobCompletion(request, extractData.jobId, 10000);
-          }
-        }
-      } else {
-        // Some endpoints may not exist yet — verify we get a reasonable error
-        expect(extractRes.status()).toBeLessThan(500);
-      }
-    }
+    expect(extractRes.ok()).toBeTruthy();
+    const extractData = await extractRes.json();
+    expect(extractData.jobId).toBeDefined();
+    const extractResult = await pollJobCompletion(request, extractData.jobId, 10000);
+    expect(extractResult.status).toBe('completed');
 
     // ── Step 15: Award data ingested -> spend-down tracking created ─
     const awardsRes = await request.get(`${BASE_URL}/api/awards`);
@@ -228,15 +205,10 @@ test.describe('Full Workflow E2E', () => {
     await page.goto('/');
     await page.waitForSelector('[data-testid="app-shell"]', { timeout: 10000 });
     await page.click('[data-testid="nav-post-award"]');
-    // Verify the post-award view loads (may show empty state)
-    try {
-      await expect(page.locator('[data-testid="post-award-view"]')).toBeVisible({
-        timeout: 5000,
-      });
-    } catch {
-      // Post-award view may not exist yet — verify page loaded
-      await expect(page.locator('[data-testid="app-shell"]')).toBeVisible();
-    }
+    // Verify the post-award view renders
+    await expect(page.locator('[data-testid="post-award-view"]')).toBeVisible({
+      timeout: 5000,
+    });
 
     // AC-14.1.2: Full workflow must complete within 30 seconds
     const workflowElapsed = Date.now() - workflowStart;
@@ -344,46 +316,33 @@ test.describe('Full Workflow E2E', () => {
     const peerRes = await request.post(`${BASE_URL}/api/peer-discovery`, {
       data: { query: 'makerspaces and hackerspaces in California' },
     });
-    // May return 404 if endpoint not yet implemented
-    if (peerRes.status() === 404) {
-      return; // Skip if not yet implemented
-    }
     expect(peerRes.ok()).toBeTruthy();
-    const { jobId } = await peerRes.json();
-    if (jobId) {
-      const result = await pollJobCompletion(request, jobId, 10000);
-      expect(result.status).toBe('completed');
-    }
+    const peerData = await peerRes.json();
+    expect(peerData.job.id).toBeDefined();
+    const result = await pollJobCompletion(request, peerData.job.id, 10000);
+    expect(result.status).toBe('completed');
   });
 
   test('funder insights job completes with mocked agent', async ({ request }) => {
     const insightsRes = await request.post(`${BASE_URL}/api/funder-insights`, {
       data: { funderId: 'funder-knight' },
     });
-    if (insightsRes.status() === 404) {
-      return; // Skip if not yet implemented
-    }
     expect(insightsRes.ok()).toBeTruthy();
-    const { jobId } = await insightsRes.json();
-    if (jobId) {
-      const result = await pollJobCompletion(request, jobId, 10000);
-      expect(result.status).toBe('completed');
-    }
+    const insightsData = await insightsRes.json();
+    expect(insightsData.job.id).toBeDefined();
+    const result = await pollJobCompletion(request, insightsData.job.id, 10000);
+    expect(result.status).toBe('completed');
   });
 
   test('eligibility vetting job completes with mocked agent', async ({ request }) => {
     const vetRes = await request.post(`${BASE_URL}/api/eligibility-vetting`, {
       data: { grantId: 'grant-stub' },
     });
-    if (vetRes.status() === 404) {
-      return; // Skip if not yet implemented
-    }
     expect(vetRes.ok()).toBeTruthy();
-    const { jobId } = await vetRes.json();
-    if (jobId) {
-      const result = await pollJobCompletion(request, jobId, 10000);
-      expect(result.status).toBe('completed');
-    }
+    const vetData = await vetRes.json();
+    expect(vetData.job.id).toBeDefined();
+    const result = await pollJobCompletion(request, vetData.job.id, 10000);
+    expect(result.status).toBe('completed');
   });
 
   test('budget import job completes with mocked agent', async ({ request }) => {
