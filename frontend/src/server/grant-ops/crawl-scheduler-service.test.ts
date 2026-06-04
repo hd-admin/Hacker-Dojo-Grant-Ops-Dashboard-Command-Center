@@ -1,5 +1,6 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
 import { saveCrawlSchedule, loadCrawlSchedules } from '../../../../shared/grant-ops-persistence';
 import { defaultProfile } from '../../../../shared/seed-data';
 import * as repository from './repository';
@@ -31,9 +32,20 @@ vi.mock('./research-service', () => ({ runResearch: runResearchMock }));
 
 describe('crawl-scheduler-service', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+  let state: ReturnType<typeof getSqliteState>;
+
+  beforeAll(async () => {
+    tempDataDir = await withTempDataDir();
+    state = getSqliteState();
+  });
+
+  afterAll(async () => {
+    await tempDataDir.cleanup();
+    invalidateCache();
+  });
 
   beforeEach(async () => {
-    tempDataDir = await withTempDataDir();
+    await truncateDatabase(state);
     invalidateCache();
     runResearchMock.mockReset();
     runResearchMock.mockResolvedValue({
@@ -49,11 +61,6 @@ describe('crawl-scheduler-service', () => {
       grantsFound: 0,
       grantsMatched: 0,
     });
-  });
-
-  afterEach(async () => {
-    await tempDataDir.cleanup();
-    invalidateCache();
   });
 
   it('upserts schedules with the expected next run time', async () => {

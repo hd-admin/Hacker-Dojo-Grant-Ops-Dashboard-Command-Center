@@ -9,8 +9,42 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
+const keywordClusterSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  keywords: z.array(z.string()),
+  weight: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const regionSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const populationSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+const strategicPrioritySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional(),
+  weight: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
 const themeSchema = z.object({
-  keywordClusters: z.array(z.any()).optional(),
+  keywordClusters: z.array(keywordClusterSchema).optional(),
   themes: z
     .array(
       z.object({
@@ -25,9 +59,9 @@ const themeSchema = z.object({
       }),
     )
     .optional(),
-  regions: z.array(z.any()).optional(),
-  populations: z.array(z.any()).optional(),
-  strategicPriorities: z.array(z.any()).optional(),
+  regions: z.array(regionSchema).optional(),
+  populations: z.array(populationSchema).optional(),
+  strategicPriorities: z.array(strategicPrioritySchema).optional(),
 });
 
 const DEFAULT_THEMES: ThemesData = {

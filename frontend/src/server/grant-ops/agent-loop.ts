@@ -155,6 +155,14 @@ export interface AgentLoopDeps {
 
 let activeJobs = 0;
 
+/**
+ * Reset the active jobs counter. Used by test suite isolation.
+ * @public
+ */
+export function resetActiveJobs(): void {
+  activeJobs = 0;
+}
+
 export async function executeAgentJob(job: AgentJob, deps: AgentLoopDeps): Promise<void> {
   // Concurrent job gate
   if (activeJobs >= MAX_CONCURRENT_JOBS) {
@@ -302,13 +310,17 @@ export async function executeAgentJob(job: AgentJob, deps: AgentLoopDeps): Promi
       }
 
       const result = await new Promise<'completed' | 'timeout' | 'killed'>((resolve) => {
-        const timer = setTimeout(() => resolve('timeout'), timeoutMs);
+        const timer = setTimeout(() => {
+          clearInterval(cancelChecker);
+          resolve('timeout');
+        }, timeoutMs);
+        let sigkillTimer: ReturnType<typeof setTimeout> | null = null;
         const cancelChecker = setInterval(() => {
           if (job.status === 'cancelled') {
             clearInterval(cancelChecker);
             clearTimeout(timer);
             proc.kill('SIGTERM');
-            setTimeout(() => {
+            sigkillTimer = setTimeout(() => {
               proc.kill('SIGKILL');
               resolve('killed');
             }, 5000);
@@ -318,12 +330,14 @@ export async function executeAgentJob(job: AgentJob, deps: AgentLoopDeps): Promi
         proc.on('exit', () => {
           clearTimeout(timer);
           clearInterval(cancelChecker);
+          if (sigkillTimer) clearTimeout(sigkillTimer);
           resolve('completed');
         });
 
         proc.on('error', () => {
           clearTimeout(timer);
           clearInterval(cancelChecker);
+          if (sigkillTimer) clearTimeout(sigkillTimer);
           resolve('completed');
         });
       });
@@ -332,7 +346,11 @@ export async function executeAgentJob(job: AgentJob, deps: AgentLoopDeps): Promi
 
       if (result === 'timeout') {
         proc.kill('SIGTERM');
-        setTimeout(() => proc.kill('SIGKILL'), 5000);
+        const _sigkillTimer = setTimeout(() => proc.kill('SIGKILL'), 5000);
+        // In tests the proc may be a mock; avoid leaking the timer by unref-ing.
+        if (typeof _sigkillTimer === 'object' && 'unref' in _sigkillTimer) {
+          _sigkillTimer.unref();
+        }
         retryFeedback = `Previous attempt timed out after ${timeoutMs / 1000}s.`;
         updateProgress('retrying', 0, 'timeout', attempt - 1, retryFeedback);
         continue;

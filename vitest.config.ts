@@ -18,6 +18,12 @@ export default defineConfig({
     setupFiles: [path.resolve(__dirname, './tests/vitest-setup.ts')],
     testTimeout: 30000,
     fileParallelism: false,
+    pool: 'forks',
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
+    },
   },
   resolve: {
     alias: {

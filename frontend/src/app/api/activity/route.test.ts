@@ -5,10 +5,10 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../../../../shared/grant-ops-sqlite', () => ({
-  getSqliteState: vi.fn(() => ({})),
-  readAuditEvents: vi.fn(() => []),
-}));
+// Note: we do NOT mock grant-ops-sqlite here because vi.mock is hoisted and
+// cached globally, which breaks other test files. Instead, we spy on the
+// dynamically imported functions inside each test.
+
 
 vi.mock('next/server', async () => {
   const actual = await vi.importActual<typeof import('next/server')>('next/server');
@@ -39,7 +39,7 @@ describe('/api/activity route', () => {
   });
 
   it('returns paginated activity events', async () => {
-    const { readAuditEvents } = await import('../../../../../shared/grant-ops-sqlite');
+    const sqlite = await import('../../../../../shared/grant-ops-sqlite');
     const mockEvents = [
       {
         id: 'evt-1',
@@ -60,7 +60,7 @@ describe('/api/activity route', () => {
         details: {},
       },
     ];
-    (readAuditEvents as ReturnType<typeof vi.fn>).mockReturnValue(mockEvents);
+    const readAuditEventsSpy = vi.spyOn(sqlite, 'readAuditEvents').mockReturnValue(mockEvents);
 
     const mockReq = {
       url: 'http://localhost:3000/api/activity?page=1&pageSize=10',
@@ -73,10 +73,11 @@ describe('/api/activity route', () => {
     expect(data.total).toBe(2);
     expect(data.page).toBe(1);
     expect(data.pageSize).toBe(10);
+    readAuditEventsSpy.mockRestore();
   });
 
   it('filters by entityType', async () => {
-    const { readAuditEvents } = await import('../../../../../shared/grant-ops-sqlite');
+    const sqlite = await import('../../../../../shared/grant-ops-sqlite');
     const mockEvents = [
       {
         id: 'evt-1',
@@ -97,7 +98,7 @@ describe('/api/activity route', () => {
         details: {},
       },
     ];
-    (readAuditEvents as ReturnType<typeof vi.fn>).mockReturnValue(mockEvents);
+    const readAuditEventsSpy = vi.spyOn(sqlite, 'readAuditEvents').mockReturnValue(mockEvents);
 
     const mockReq = {
       url: 'http://localhost:3000/api/activity?entityType=source',
@@ -108,11 +109,12 @@ describe('/api/activity route', () => {
     expect(response.status).toBe(200);
     expect(data.events.length).toBe(1);
     expect(data.events[0].entityType).toBe('source');
+    readAuditEventsSpy.mockRestore();
   });
 
   it('returns 400 for invalid page parameter', async () => {
-    const { readAuditEvents } = await import('../../../../../shared/grant-ops-sqlite');
-    (readAuditEvents as ReturnType<typeof vi.fn>).mockReturnValue([]);
+    const sqlite = await import('../../../../../shared/grant-ops-sqlite');
+    const readAuditEventsSpy = vi.spyOn(sqlite, 'readAuditEvents').mockReturnValue([]);
 
     const mockReq = {
       url: 'http://localhost:3000/api/activity?page=-1',
@@ -123,11 +125,12 @@ describe('/api/activity route', () => {
     expect(response.status).toBe(400);
     expect(data.error).toBeTruthy();
     expect(data.code).toBe('VALIDATION_ERROR');
+    readAuditEventsSpy.mockRestore();
   });
 
   it('returns empty events when none exist', async () => {
-    const { readAuditEvents } = await import('../../../../../shared/grant-ops-sqlite');
-    (readAuditEvents as ReturnType<typeof vi.fn>).mockReturnValue([]);
+    const sqlite = await import('../../../../../shared/grant-ops-sqlite');
+    const readAuditEventsSpy = vi.spyOn(sqlite, 'readAuditEvents').mockReturnValue([]);
 
     const mockReq = {
       url: 'http://localhost:3000/api/activity',
@@ -138,5 +141,6 @@ describe('/api/activity route', () => {
     expect(response.status).toBe(200);
     expect(data.events).toEqual([]);
     expect(data.total).toBe(0);
+    readAuditEventsSpy.mockRestore();
   });
 });

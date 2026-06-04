@@ -5,11 +5,13 @@
  * and follow-up generation.
  */
 
-import { afterEach, beforeEach, describe, it, expect } from 'vitest';
-import { withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { afterAll, beforeAll, beforeEach, describe, it, expect } from 'vitest';
+import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
 import type { Grant, ApprovalRecord, OrganizationProfile } from '../../../../shared/types';
 import * as repository from './repository';
 import * as submissionService from './submission-service';
+import { resetDependencies } from './dependencies';
 
 const mockGrant: Grant = {
   id: 'test-grant-1',
@@ -31,12 +33,28 @@ const mockGrant: Grant = {
 
 describe('SubmissionService', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>> | null = null;
+  let state: ReturnType<typeof getSqliteState> | null = null;
 
-  afterEach(async () => {
+  beforeAll(async () => {
+    tempDataDir = await withTempDataDir();
+    state = getSqliteState();
+  });
+
+  afterAll(async () => {
     if (tempDataDir) {
       await tempDataDir.cleanup();
       tempDataDir = null;
     }
+    state = null;
+    resetDependencies();
+  });
+
+  beforeEach(async () => {
+    if (state) {
+      await truncateDatabase(state);
+      invalidateCache();
+    }
+    resetDependencies();
   });
 
   describe('canSubmit', () => {
@@ -47,7 +65,6 @@ describe('SubmissionService', () => {
     });
 
     it('returns true when a grant has approval and no submission record', async () => {
-      tempDataDir = await withTempDataDir();
       const grant: Grant = {
         ...mockGrant,
         id: `approved-${Date.now()}`,
@@ -76,7 +93,6 @@ describe('SubmissionService', () => {
     });
 
     it('returns false when a submission already exists', async () => {
-      tempDataDir = await withTempDataDir();
       const grant: Grant = {
         ...mockGrant,
         id: `submitted-${Date.now()}`,
@@ -171,10 +187,6 @@ describe('SubmissionService', () => {
   });
 
   describe('notification HTML escaping', () => {
-    beforeEach(async () => {
-      tempDataDir = await withTempDataDir();
-    });
-
     it('escapes HTML special characters in grant.funder, grant.title, confirmationId, and notifyEmail in email submission notification', async () => {
       const htmlGrant: Grant = {
         ...mockGrant,

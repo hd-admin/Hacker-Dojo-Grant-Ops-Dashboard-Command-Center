@@ -9,8 +9,9 @@
  * Uses isolated test data directory for proper test isolation.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
 import type { OrganizationProfile } from '../../../../shared/types';
 import { createDependencies, resetDependencies, setDependencies } from './dependencies';
 import * as repository from './repository';
@@ -44,19 +45,23 @@ const mockProfile: OrganizationProfile = {
 };
 
 describe('ResearchService', () => {
-  // Use isolated temp directory for each test
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+  let state: ReturnType<typeof getSqliteState>;
 
-  beforeEach(async () => {
-    // Use isolated temp directory instead of backup/restore
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
+    state = getSqliteState();
   });
 
-  afterEach(async () => {
-    // Cleanup temp directory
-    resetDependencies();
-    invalidateCache();
+  afterAll(async () => {
     await tempDataDir.cleanup();
+    resetDependencies();
+  });
+
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
+    resetDependencies();
   });
 
   describe('runResearch with zero sources', () => {
@@ -495,13 +500,19 @@ describe('ResearchService', () => {
 
 describe('auto-draft triggering', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
-  beforeEach(async () => {
+  let state: ReturnType<typeof getSqliteState>;
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
+    state = getSqliteState();
   });
-  afterEach(async () => {
-    resetDependencies();
-    invalidateCache();
+  afterAll(async () => {
     await tempDataDir.cleanup();
+    resetDependencies();
+  });
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
+    resetDependencies();
   });
 
   it('does not auto-draft during research, grants remain matched', async () => {
@@ -644,13 +655,19 @@ describe('auto-draft triggering', () => {
 
 describe('per-grant and summary notifications during research', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
-  beforeEach(async () => {
+  let state: ReturnType<typeof getSqliteState>;
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
+    state = getSqliteState();
   });
-  afterEach(async () => {
-    resetDependencies();
-    invalidateCache();
+  afterAll(async () => {
     await tempDataDir.cleanup();
+    resetDependencies();
+  });
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
+    resetDependencies();
   });
 
   it('emits accent notification with escaped strong title, award, and fit for each new matching grant AND suppresses auto-draft notification', async () => {
@@ -705,13 +722,19 @@ describe('per-grant and summary notifications during research', () => {
 
 describe('notification emission', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
-  beforeEach(async () => {
+  let state: ReturnType<typeof getSqliteState>;
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
+    state = getSqliteState();
   });
-  afterEach(async () => {
-    resetDependencies();
-    invalidateCache();
+  afterAll(async () => {
     await tempDataDir.cleanup();
+    resetDependencies();
+  });
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
+    resetDependencies();
   });
   it('emits a notification after runResearch completes', async () => {
     await sourceService.addSource({
@@ -731,8 +754,19 @@ describe('notification emission', () => {
 
 describe('PATH-fallback: no early isConfigured throw', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
-  beforeEach(async () => {
+  let state: ReturnType<typeof getSqliteState>;
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
+    state = getSqliteState();
+  });
+  afterAll(async () => {
+    await tempDataDir.cleanup();
+    resetDependencies();
+  });
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
+    resetDependencies();
     setDependencies(
       createDependencies({
         createOpencodeAdapter: () => ({
@@ -759,11 +793,6 @@ describe('PATH-fallback: no early isConfigured throw', () => {
         }),
       }),
     );
-  });
-  afterEach(async () => {
-    resetDependencies();
-    invalidateCache();
-    await tempDataDir.cleanup();
   });
 
   it('proceeds without early throw when settings are present (isConfigured check delegated to adapter)', async () => {

@@ -21,6 +21,22 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const rawParams = Object.fromEntries(searchParams.entries());
+    const rawQuery = rawParams.query;
+
+    if (!rawQuery || rawQuery.trim().length === 0) {
+      return NextResponse.json(
+        { error: 'QUERY_REQUIRED', message: 'A search query is required (1-500 characters)' },
+        { status: 400 },
+      );
+    }
+
+    if (rawQuery.length > 500) {
+      return NextResponse.json(
+        { error: 'QUERY_TOO_LONG', message: 'Search query must be 500 characters or fewer' },
+        { status: 400 },
+      );
+    }
+
     const parsed = querySchema.safeParse(rawParams);
     if (!parsed.success) {
       return NextResponse.json(

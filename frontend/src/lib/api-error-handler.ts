@@ -16,7 +16,8 @@ export type ApiErrorCode =
   | 'STORAGE_UNAVAILABLE'
   | 'RESET_FAILED'
   | 'VALIDATION_ERROR'
-  | 'INTERNAL_ERROR';
+  | 'INTERNAL_ERROR'
+  | 'OPENCODE_NOT_CONFIGURED';
 
 export interface ApiErrorResponse {
   error: string;

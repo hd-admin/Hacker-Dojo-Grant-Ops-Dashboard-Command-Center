@@ -4,11 +4,12 @@
  * Tests backup creation, checksum verification, and restore flow.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import AdmZip from 'adm-zip';
 import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
 import * as repository from '../../server/grant-ops/repository';
 import type { Grant } from '../../../../shared/types';
 import { defaultProfile } from '../../../../shared/seed-data';
@@ -46,17 +47,24 @@ function createGrant(id: string): Grant {
 
 describe('backup-service', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+  let state: ReturnType<typeof getSqliteState>;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
-    invalidateCache();
+    state = getSqliteState();
     setDependencies(createDependencies());
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     resetDependencies();
     await tempDataDir.cleanup();
     invalidateCache();
+  });
+
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
+    setDependencies(createDependencies());
   });
 
   describe('exportBackupSnapshot', () => {

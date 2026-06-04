@@ -152,7 +152,7 @@ let root: ReturnType<typeof createRoot>;
 describe('DuplicatesView', () => {
   beforeEach(() => {
     getAll.mockResolvedValue(mockCandidates);
-    getGrants.mockResolvedValue(mockGrants);
+    getGrants.mockResolvedValue({ items: mockGrants });
     resolve.mockImplementation(async () => ({ ...mockCandidates[0]!, status: 'kept-separate' }));
     container = document.createElement('div');
     document.body.appendChild(container);
@@ -177,7 +177,7 @@ describe('DuplicatesView', () => {
 
   it('renders empty state when no candidates', async () => {
     getAll.mockResolvedValue([]);
-    getGrants.mockResolvedValue([]);
+    getGrants.mockResolvedValue({ items: [] });
 
     root.render(React.createElement(DuplicatesView, { onGrantSelect: vi.fn() }));
     await new Promise((r) => setTimeout(r, 100));

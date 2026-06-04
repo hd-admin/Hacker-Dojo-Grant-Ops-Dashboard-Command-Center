@@ -34,7 +34,7 @@ describe('POST /api/budget-import', () => {
     const res = await POST(req);
     expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.error).toContain('No file provided');
+    expect(json.error).toContain('A file upload is required');
   });
 
   it('rejects empty file', async () => {

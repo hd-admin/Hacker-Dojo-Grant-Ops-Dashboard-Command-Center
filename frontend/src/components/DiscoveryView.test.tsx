@@ -91,7 +91,7 @@ const mockSources: Source[] = [
 describe('DiscoveryView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetAllGrants.mockResolvedValue([]);
+    mockGetAllGrants.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 25 });
     mockGetAllSources.mockResolvedValue([]);
     mockGetRuns.mockResolvedValue({ latestRun: null, allRuns: [] });
     window.localStorage.clear();
@@ -125,7 +125,7 @@ describe('DiscoveryView', () => {
   });
 
   it('renders grant list when grants are provided', async () => {
-    mockGetAllGrants.mockResolvedValue(mockGrants);
+    mockGetAllGrants.mockResolvedValue({ items: mockGrants, total: mockGrants.length, page: 1, pageSize: 25 });
     mockGetAllSources.mockResolvedValue(mockSources);
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -150,7 +150,7 @@ describe('DiscoveryView', () => {
   });
 
   it('filters grants by search query', { timeout: 10000 }, async () => {
-    mockGetAllGrants.mockResolvedValue(mockGrants);
+    mockGetAllGrants.mockResolvedValue({ items: mockGrants, total: mockGrants.length, page: 1, pageSize: 25 });
     mockGetAllSources.mockResolvedValue(mockSources);
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -184,7 +184,7 @@ describe('DiscoveryView', () => {
   });
 
   it('shows filter empty state when no grants match', { timeout: 10000 }, async () => {
-    mockGetAllGrants.mockResolvedValue(mockGrants);
+    mockGetAllGrants.mockResolvedValue({ items: mockGrants, total: mockGrants.length, page: 1, pageSize: 25 });
     mockGetAllSources.mockResolvedValue(mockSources);
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -219,7 +219,7 @@ describe('DiscoveryView', () => {
   });
 
   it('opens FunderDetail dialog when funder name is clicked', { timeout: 10000 }, async () => {
-    mockGetAllGrants.mockResolvedValue(mockGrants);
+    mockGetAllGrants.mockResolvedValue({ items: mockGrants, total: mockGrants.length, page: 1, pageSize: 25 });
     mockGetAllSources.mockResolvedValue(mockSources);
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -258,7 +258,7 @@ describe('DiscoveryView', () => {
   });
 
   it('closes FunderDetail dialog when overlay backdrop is clicked', async () => {
-    mockGetAllGrants.mockResolvedValue(mockGrants);
+    mockGetAllGrants.mockResolvedValue({ items: mockGrants, total: mockGrants.length, page: 1, pageSize: 25 });
     mockGetAllSources.mockResolvedValue(mockSources);
     const container = document.createElement('div');
     document.body.appendChild(container);

@@ -4,8 +4,9 @@
  * Tests the drafting workflow using isolated test data directory.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
 import type { Grant, OrganizationProfile } from '../../../../shared/types';
 import * as draftingService from './drafting-service';
 import * as repository from './repository';
@@ -54,17 +55,21 @@ const mockProfile: OrganizationProfile = {
 };
 
 describe('DraftingService', () => {
-  // Use isolated temp directory for each test
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+  let state: ReturnType<typeof getSqliteState>;
 
-  beforeEach(async () => {
-    // Use isolated temp directory instead of backup/restore
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
+    state = getSqliteState();
   });
 
-  afterEach(async () => {
-    // Cleanup temp directory
+  afterAll(async () => {
     await tempDataDir.cleanup();
+  });
+
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
   });
 
   describe('generateDraft', () => {
@@ -254,11 +259,17 @@ describe('DraftingService', () => {
 
 describe('notification emission', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
-  beforeEach(async () => {
+  let state: ReturnType<typeof getSqliteState>;
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
+    state = getSqliteState();
   });
-  afterEach(async () => {
+  afterAll(async () => {
     await tempDataDir.cleanup();
+  });
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
   });
   it('emits a notification after generateDraft completes', async () => {
     const mockGrant = createMockGrant('notif-test-' + Date.now());
@@ -273,11 +284,17 @@ describe('notification emission', () => {
 
 describe('drafting stage progress reporting', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
-  beforeEach(async () => {
+  let state: ReturnType<typeof getSqliteState>;
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
+    state = getSqliteState();
   });
-  afterEach(async () => {
+  afterAll(async () => {
     await tempDataDir.cleanup();
+  });
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
   });
 
   it('sets preparing stage before opencode adapter is called', async () => {
@@ -310,11 +327,17 @@ describe('drafting stage progress reporting', () => {
 
 describe('PATH-fallback: no early isConfigured throw', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
-  beforeEach(async () => {
+  let state: ReturnType<typeof getSqliteState>;
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
+    state = getSqliteState();
   });
-  afterEach(async () => {
+  afterAll(async () => {
     await tempDataDir.cleanup();
+  });
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
   });
 
   it('proceeds without early throw when settings are present (isConfigured check delegated to adapter)', async () => {

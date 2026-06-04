@@ -166,7 +166,6 @@ export function invalidateCache(): void {
   const dataDir = getDATA_DIR();
   dataCache.delete(dataDir);
   grantsCache.delete(dataDir);
-  resetSqliteCache(dataDir);
 }
 
 /**
@@ -278,12 +277,14 @@ export async function withTempDataDir(): Promise<TempDataDirResult> {
   return {
     dataDir: tempDir,
     cleanup: async () => {
+      resetSqliteCache(tempDir);
+      dataCache.delete(tempDir);
+      grantsCache.delete(tempDir);
       if (originalDataDir === undefined) {
         delete process.env.DATA_DIR;
       } else {
         process.env.DATA_DIR = originalDataDir;
       }
-      invalidateCache();
       await fs.rm(tempDir, { recursive: true, force: true });
     },
   };

@@ -167,16 +167,24 @@ describe('AC-14.5.4: cleanup skips active job files', () => {
     });
 
     // Mock job queue to return active job
-    vi.doMock('../../../../shared/grant-ops-sqlite', () => ({
-      resolveDataDir: () => dataDir,
-      getSqliteState: vi.fn(),
-      readJobQueue: vi.fn().mockReturnValue([{ id: activeJobId, status: 'running' }]),
-    }));
+    vi.doMock('../../../../shared/grant-ops-sqlite', async () => {
+      const actual = await vi.importActual<typeof import('../../../../shared/grant-ops-sqlite')>('../../../../shared/grant-ops-sqlite');
+      return {
+        ...actual,
+        resolveDataDir: () => dataDir,
+        getSqliteState: vi.fn(),
+        readJobQueue: vi.fn().mockReturnValue([{ id: activeJobId, status: 'running' }]),
+      };
+    });
 
     const stats = cleanupTmpDir(dataDir);
 
     // Should not throw; may delete oldFile but skip activeFile
     expect(stats).toBeDefined();
     expect(typeof stats.deletedFiles).toBe('number');
+
+    // Clean up the dynamic mock so it doesn't leak to other tests
+    vi.doUnmock('../../../../shared/grant-ops-sqlite');
+    vi.resetModules();
   });
 });

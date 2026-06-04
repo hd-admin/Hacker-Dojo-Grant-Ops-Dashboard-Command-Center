@@ -5,8 +5,9 @@
  * and submission-blocking logic.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { withTempDataDir, invalidateCache } from '../../../../shared/grant-ops-persistence';
+import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
 import { setDependencies, resetDependencies, createDependencies } from './dependencies';
 import type { Dependencies, Clock } from './dependencies';
 import type { Grant, Task, TaskStatus, AuditEvent } from '../../../../shared/types';
@@ -34,23 +35,41 @@ function createFixedClock(isoString: string): Clock {
 
 describe('TaskService', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>> | null = null;
+  let state: ReturnType<typeof getSqliteState> | null = null;
 
-  afterEach(async () => {
+  beforeAll(async () => {
+    tempDataDir = await withTempDataDir();
+    state = getSqliteState();
+  });
+
+  afterAll(async () => {
     if (tempDataDir) {
       await tempDataDir.cleanup();
       tempDataDir = null;
     }
+    state = null;
+    resetDependencies();
+  });
+
+  beforeEach(async () => {
+    if (state) {
+      await truncateDatabase(state);
+    }
+    invalidateCache();
     resetDependencies();
   });
 
   // ==================== Requirement Extraction ====================
 
   describe('extractRequirementsFromGrant', () => {
-    it('extracts draft requirement when grant is in matched status', async () => {
-      tempDataDir = await withTempDataDir();
+    // extractRequirementsFromGrant is a pure function that only uses idGenerator.
+    // No DB access needed - skip withTempDataDir to avoid schema initialization overhead.
+    beforeEach(() => {
       const deps = createDependencies();
       setDependencies(deps);
+    });
 
+    it('extracts draft requirement when grant is in matched status', () => {
       const tasks = taskService.extractRequirementsFromGrant(mockGrant, 'draft');
 
       expect(tasks).toHaveLength(1);
@@ -59,11 +78,7 @@ describe('TaskService', () => {
       expect(tasks[0]!.taskStatus).toBe('blocked');
     });
 
-    it('extracts review requirement from a draft grant', async () => {
-      tempDataDir = await withTempDataDir();
-      const deps = createDependencies();
-      setDependencies(deps);
-
+    it('extracts review requirement from a draft grant', () => {
       const draftGrant: Grant = { ...mockGrant, status: 'draft' };
       const tasks = taskService.extractRequirementsFromGrant(draftGrant, 'review');
 
@@ -72,11 +87,7 @@ describe('TaskService', () => {
       expect(tasks[0]!.responsibilityTag).toBe('review');
     });
 
-    it('extracts finance verification from review grant', async () => {
-      tempDataDir = await withTempDataDir();
-      const deps = createDependencies();
-      setDependencies(deps);
-
+    it('extracts finance verification from review grant', () => {
       const reviewGrant: Grant = { ...mockGrant, status: 'review' };
       const tasks = taskService.extractRequirementsFromGrant(reviewGrant, 'finance');
 
@@ -87,11 +98,7 @@ describe('TaskService', () => {
       expect(tasks[0]!.responsibilityTag).toBe('finance');
     });
 
-    it('extracts follow-up requirement from a draft grant', async () => {
-      tempDataDir = await withTempDataDir();
-      const deps = createDependencies();
-      setDependencies(deps);
-
+    it('extracts follow-up requirement from a draft grant', () => {
       const draftGrant: Grant = { ...mockGrant, status: 'draft' };
       const tasks = taskService.extractRequirementsFromGrant(draftGrant, 'follow-up');
 
@@ -100,11 +107,7 @@ describe('TaskService', () => {
       expect(tasks[0]!.responsibilityTag).toBe('follow-up');
     });
 
-    it('extracts maintenance requirement for awarded grant', async () => {
-      tempDataDir = await withTempDataDir();
-      const deps = createDependencies();
-      setDependencies(deps);
-
+    it('extracts maintenance requirement for awarded grant', () => {
       const awardedGrant: Grant = { ...mockGrant, status: 'awarded' };
       const tasks = taskService.extractRequirementsFromGrant(awardedGrant, 'maintenance');
 
@@ -113,21 +116,13 @@ describe('TaskService', () => {
       expect(tasks[0]!.responsibilityTag).toBe('follow-up');
     });
 
-    it('marks extracted tasks as blocking submission when required', async () => {
-      tempDataDir = await withTempDataDir();
-      const deps = createDependencies();
-      setDependencies(deps);
-
+    it('marks extracted tasks as blocking submission when required', () => {
       const tasks = taskService.extractRequirementsFromGrant(mockGrant, 'draft', true);
 
       expect(tasks[0]!.blockSubmission).toBe(true);
     });
 
-    it('includes grantId in extracted tasks', async () => {
-      tempDataDir = await withTempDataDir();
-      const deps = createDependencies();
-      setDependencies(deps);
-
+    it('includes grantId in extracted tasks', () => {
       const tasks = taskService.extractRequirementsFromGrant(mockGrant, 'program');
 
       expect(tasks[0]!.grantId).toBe(mockGrant.id);
@@ -137,12 +132,18 @@ describe('TaskService', () => {
   // ==================== Manual Task Creation ====================
 
   describe('createTask', () => {
-    it('creates a task with required fields', async () => {
-      tempDataDir = await withTempDataDir();
+    let deps: Dependencies;
 
-      const fixedClock = createFixedClock('2026-06-01T00:00:00Z');
-      const deps = createDependencies({ clock: fixedClock });
+    beforeEach(() => {
+      deps = createDependencies();
       setDependencies(deps);
+    });
+
+    it('creates a task with required fields', async () => {
+      const fixedClock = createFixedClock('2026-06-01T00:00:00Z');
+      // Re-create deps with custom clock for this test only
+      const clockDeps = createDependencies({ clock: fixedClock });
+      setDependencies(clockDeps);
 
       const result = await taskService.createTask({
         text: 'Write project proposal',
@@ -158,14 +159,11 @@ describe('TaskService', () => {
       expect(result.task!.completed).toBe(false);
       expect(result.task!.id).toBeDefined();
       expect(result.task!.id.startsWith('task-')).toBe(true);
+      // Restore shared deps
+      setDependencies(deps);
     });
 
     it('creates a task with due date', async () => {
-      tempDataDir = await withTempDataDir();
-
-      const deps = createDependencies();
-      setDependencies(deps);
-
       const result = await taskService.createTask({
         text: 'Review tax forms',
         responsibilityTag: 'finance',
@@ -177,11 +175,6 @@ describe('TaskService', () => {
     });
 
     it('creates a task with dependencies', async () => {
-      tempDataDir = await withTempDataDir();
-
-      const deps = createDependencies();
-      setDependencies(deps);
-
       const result = await taskService.createTask({
         text: 'Submit final package',
         responsibilityTag: 'program',
@@ -193,11 +186,6 @@ describe('TaskService', () => {
     });
 
     it('creates a task that blocks submission', async () => {
-      tempDataDir = await withTempDataDir();
-
-      const deps = createDependencies();
-      setDependencies(deps);
-
       const result = await taskService.createTask({
         text: 'Final sign-off',
         responsibilityTag: 'review',
@@ -209,11 +197,6 @@ describe('TaskService', () => {
     });
 
     it('persists the created task to the repository', async () => {
-      tempDataDir = await withTempDataDir();
-
-      const deps = createDependencies();
-      setDependencies(deps);
-
       const result = await taskService.createTask({
         text: 'Check grant compliance',
         responsibilityTag: 'finance',
@@ -227,11 +210,6 @@ describe('TaskService', () => {
     });
 
     it('creates audit event for task creation', async () => {
-      tempDataDir = await withTempDataDir();
-
-      const deps = createDependencies();
-      setDependencies(deps);
-
       const result = await taskService.createTask({
         text: 'Audit tracked task',
         responsibilityTag: 'program',
@@ -268,8 +246,7 @@ describe('TaskService', () => {
       return { ...result.task, taskStatus: status, completed: status === 'completed' };
     };
 
-    beforeEach(async () => {
-      tempDataDir = await withTempDataDir();
+    beforeEach(() => {
       deps = createDependencies();
       setDependencies(deps);
     });
@@ -385,8 +362,7 @@ describe('TaskService', () => {
   describe('dependency tracking', () => {
     let deps: Dependencies;
 
-    beforeEach(async () => {
-      tempDataDir = await withTempDataDir();
+    beforeEach(() => {
       deps = createDependencies();
       setDependencies(deps);
     });
@@ -464,8 +440,7 @@ describe('TaskService', () => {
   describe('completion evidence', () => {
     let deps: Dependencies;
 
-    beforeEach(async () => {
-      tempDataDir = await withTempDataDir();
+    beforeEach(() => {
       deps = createDependencies();
       setDependencies(deps);
     });
@@ -507,8 +482,7 @@ describe('TaskService', () => {
   describe('submission blocking', () => {
     let deps: Dependencies;
 
-    beforeEach(async () => {
-      tempDataDir = await withTempDataDir();
+    beforeEach(() => {
       deps = createDependencies();
       setDependencies(deps);
     });
@@ -610,20 +584,17 @@ describe('TaskService', () => {
   // ==================== Task Listing ====================
 
   describe('getTasks', () => {
-    it('returns empty array when no tasks exist', async () => {
-      tempDataDir = await withTempDataDir();
+    beforeEach(() => {
       const deps = createDependencies();
       setDependencies(deps);
+    });
 
+    it('returns empty array when no tasks exist', async () => {
       const tasks = await taskService.getTasks();
       expect(tasks).toEqual([]);
     });
 
     it('returns all tasks sorted by creation', async () => {
-      tempDataDir = await withTempDataDir();
-      const deps = createDependencies();
-      setDependencies(deps);
-
       await taskService.createTask({ text: 'Task 1', responsibilityTag: 'program' });
       await taskService.createTask({ text: 'Task 2', responsibilityTag: 'finance' });
 

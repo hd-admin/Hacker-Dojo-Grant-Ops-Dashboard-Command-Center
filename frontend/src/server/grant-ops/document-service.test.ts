@@ -5,8 +5,10 @@
  * document search, and document lifecycle operations.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
+import { resetDependencies } from './dependencies';
 import type { DocumentMetadata } from '../../../../shared/types';
 import * as repository from './repository';
 import * as documentService from './document-service';
@@ -29,20 +31,31 @@ function makeDoc(overrides: Partial<DocumentMetadata> = {}): DocumentMetadata {
 
 describe('DocumentService', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>> | null = null;
+  let state: ReturnType<typeof getSqliteState> | null = null;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
-    invalidateCache();
+    state = getSqliteState();
     documentService.clearSearchIndex();
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     if (tempDataDir) {
       await tempDataDir.cleanup();
       tempDataDir = null;
     }
+    state = null;
     invalidateCache();
+    resetDependencies();
     documentService.clearSearchIndex();
+  });
+
+  beforeEach(async () => {
+    if (state) {
+      await truncateDatabase(state);
+      invalidateCache();
+    }
+    resetDependencies();
   });
 
   describe('listDocuments', () => {

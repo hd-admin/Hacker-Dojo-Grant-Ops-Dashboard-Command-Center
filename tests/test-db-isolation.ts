@@ -42,6 +42,9 @@ export async function cleanupTestDataDir(): Promise<void> {
   if (!dir) return;
   try {
     resetSqliteCache(dir);
+    const state = getSqliteState(dir);
+    await clearDatabase(state);
+    await new Promise((resolve) => setTimeout(resolve, 100));
   } catch {
     // best effort cleanup
   }

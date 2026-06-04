@@ -34,7 +34,7 @@ export async function POST(_request: NextRequest) {
     if (!settings?.isConfigured) {
       return NextResponse.json(
         createErrorResponse(
-          'AGENT_QUALITY_FAILED',
+          'OPENCODE_NOT_CONFIGURED',
           'Opencode is not configured. Please set up Opencode settings in the application before running research.',
         ),
         { status: 400 },

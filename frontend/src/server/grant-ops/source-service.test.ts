@@ -1,18 +1,27 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
+import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
 import { resetDependencies } from './dependencies';
 import * as sourceService from './source-service';
 
 describe('SourceService', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+  let state: ReturnType<typeof getSqliteState>;
 
-  beforeEach(async () => {
+  beforeAll(async () => {
     tempDataDir = await withTempDataDir();
+    state = getSqliteState();
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     resetDependencies();
     await tempDataDir.cleanup();
+  });
+
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
+    resetDependencies();
   });
 
   describe('Happy path', () => {

@@ -187,6 +187,13 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const deps = getDependencies();
 
+    if (!body || typeof body !== 'object' || !('id' in body) || !body.id) {
+      return NextResponse.json(
+        createErrorResponse('AGENT_INVALID_JSON', 'Document ID is required'),
+        { status: 400 },
+      );
+    }
+
     const parsed = patchBodySchema.safeParse(body);
     if (!parsed.success) {
       return NextResponse.json(

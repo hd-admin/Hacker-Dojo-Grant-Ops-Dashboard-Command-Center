@@ -12,12 +12,11 @@ vi.mock('@/server/grant-ops/dependencies', () => ({
   createDependencies: vi.fn(),
 }));
 
-vi.mock('../../../../../shared/grant-ops-sqlite', () => ({
-  getSqliteState: vi.fn(() => ({})),
-  readSnippets: vi.fn(() => []),
-  writeSnippet: vi.fn(),
-  deleteSnippet: vi.fn(),
-}));
+// Note: we do NOT mock grant-ops-sqlite here because vi.mock is hoisted and
+// cached globally, which breaks other test files. Instead, we spy on the
+// dynamically imported functions inside each test.
+
+
 
 vi.mock('next/server', async () => {
   const actual = await vi.importActual<typeof import('next/server')>('next/server');
@@ -60,8 +59,8 @@ describe('/api/snippets route', () => {
 
   describe('GET', () => {
     it('returns snippets via the grant-ops-sqlite module', async () => {
-      const { readSnippets } = await import('../../../../../shared/grant-ops-sqlite');
-      (readSnippets as ReturnType<typeof vi.fn>).mockReturnValue([
+      const sqlite = await import('../../../../../shared/grant-ops-sqlite');
+      const readSnippetsSpy = vi.spyOn(sqlite, 'readSnippets').mockReturnValue([
         {
           id: 'snip-1',
           grantId: 'g1',
@@ -80,6 +79,7 @@ describe('/api/snippets route', () => {
       expect(data.snippets).toBeDefined();
       expect(data.snippets.length).toBe(1);
       expect(data.snippets[0].title).toBe('Boilerplate');
+      readSnippetsSpy.mockRestore();
     });
 
     it('returns empty snippets array', async () => {

@@ -74,15 +74,48 @@ import '@testing-library/jest-dom/vitest';
     const iso = req('./test-db-isolation') as typeof import('./test-db-isolation');
     if (typeof iso.createTestDataDir !== 'function') return;
 
-    const { createTestDataDir, cleanupTestDataDir } = iso;
+    const { createTestDataDir } = iso;
 
-    beforeAll(() => {
+    // Reset global dependencies state from previous test files.
+    // This prevents stale setDependencies() state from one file
+    // leaking into the next file, which causes hangs when the
+    // stale deps reference a cleaned-up DATA_DIR.
+    let resetDeps: (() => void) | null = null;
+    let resetActiveJobs: (() => void) | null = null;
+    try {
+      const depsMod = req('../frontend/src/server/grant-ops/dependencies') as {
+        resetDependencies: () => void;
+      };
+      if (typeof depsMod.resetDependencies === 'function') {
+        resetDeps = depsMod.resetDependencies;
+      }
+    } catch {
+      // dependencies module unavailable (e.g. jsdom) — skip
+    }
+    try {
+      const agentLoopMod = req('../frontend/src/server/grant-ops/agent-loop') as {
+        resetActiveJobs: () => void;
+      };
+      if (typeof agentLoopMod.resetActiveJobs === 'function') {
+        resetActiveJobs = agentLoopMod.resetActiveJobs;
+      }
+    } catch {
+      // agent-loop module unavailable (e.g. jsdom) — skip
+    }
+
+    beforeEach(() => {
       createTestDataDir();
+      if (resetDeps) resetDeps();
+      if (resetActiveJobs) resetActiveJobs();
     });
 
-    afterAll(async () => {
-      await cleanupTestDataDir();
-    });
+    // Per-file afterAll cleanup is intentionally omitted.
+    // Keeping the SQLite database open and initialized across test files
+    // avoids repeated schema creation, migration runs, and re-seeding —
+    // the primary cause of the full-suite timeout. Each test file is
+    // responsible for setting up the data it needs. Connections are
+    // closed on process exit via the SIGINT/SIGTERM handler in
+    // shared/grant-ops-sqlite.ts.
   } catch {
     // jsdom or module unavailable — skip isolation hooks
   }
