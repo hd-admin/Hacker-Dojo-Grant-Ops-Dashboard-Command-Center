@@ -108,6 +108,47 @@ export function CalendarView({
     return events.filter((e) => e.date.startsWith(dateStr));
   };
 
+  // Week view helpers
+  const getStartOfWeek = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    d.setDate(d.getDate() - day);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  };
+
+  const getEndOfWeek = (date: Date): Date => {
+    const d = new Date(date);
+    const day = d.getDay();
+    d.setDate(d.getDate() + (6 - day));
+    d.setHours(23, 59, 59, 999);
+    return d;
+  };
+
+  const formatDate = (date: Date): string => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+  };
+
+  const weekStart = getStartOfWeek(currentDate);
+  const weekEnd = getEndOfWeek(currentDate);
+
+  const prevWeek = () => {
+    const d = new Date(currentDate);
+    d.setDate(d.getDate() - 7);
+    setCurrentDate(d);
+  };
+
+  const nextWeek = () => {
+    const d = new Date(currentDate);
+    d.setDate(d.getDate() + 7);
+    setCurrentDate(d);
+  };
+
+  const getEventsForWeekDay = (date: Date) => {
+    const dateStr = formatDate(date);
+    return events.filter((e) => e.date === dateStr);
+  };
+
   return (
     <div className="calendar-view" data-testid="calendar-view">
       <div className="header">
@@ -152,54 +193,92 @@ export function CalendarView({
         <button
           type="button"
           className="btn btn-ghost btn-sm"
-          onClick={prevMonth}
-          aria-label="Previous month"
+          onClick={viewMode === 'month' ? prevMonth : prevWeek}
+          aria-label={viewMode === 'month' ? 'Previous month' : 'Previous week'}
         >
           ←
         </button>
         <span className="calendar-month-label">
-          {MONTHS[month]} {year}
+          {viewMode === 'month'
+            ? `${MONTHS[month]} ${year}`
+            : `${MONTHS[weekStart.getMonth()]} ${weekStart.getDate()} – ${MONTHS[weekEnd.getMonth()]} ${weekEnd.getDate()}, ${weekEnd.getFullYear()}`}
         </span>
         <button
           type="button"
           className="btn btn-ghost btn-sm"
-          onClick={nextMonth}
-          aria-label="Next month"
+          onClick={viewMode === 'month' ? nextMonth : nextWeek}
+          aria-label={viewMode === 'month' ? 'Next month' : 'Next week'}
         >
           →
         </button>
       </div>
 
-      <div className="calendar-grid" role="grid" aria-label="Monthly calendar">
-        {DAYS.map((d) => (
-          <div key={d} className="calendar-day-header" role="columnheader">
-            {d}
-          </div>
-        ))}
-        {Array.from({ length: firstDay }).map((_, i) => (
-          <div key={`empty-start-${i}`} className="calendar-day calendar-day-empty" />
-        ))}
-        {Array.from({ length: daysInMonth }).map((_, i) => {
-          const day = i + 1;
-          const dayEvents = getEventsForDay(day);
-          return (
-            <div key={day} className="calendar-day" role="gridcell">
-              <span className="calendar-day-number">{day}</span>
-              {dayEvents.map((evt, j) => (
-                <div
-                  key={j}
-                  className="calendar-event"
-                  style={{ background: getUrgencyColor(evt.urgency) }}
-                  title={`${evt.title}${evt.confidence && evt.confidence !== 'exact' ? ` (${evt.confidence})` : ''}`}
-                >
-                  {evt.type === 'grant_deadline' ? '📅' : evt.type === 'report_due' ? '📋' : '✅'}{' '}
-                  {evt.title.slice(0, 20)}
-                </div>
-              ))}
+      {viewMode === 'month' ? (
+        <div className="calendar-grid" role="grid" aria-label="Monthly calendar">
+          {DAYS.map((d) => (
+            <div key={d} className="calendar-day-header" role="columnheader">
+              {d}
             </div>
-          );
-        })}
-      </div>
+          ))}
+          {Array.from({ length: firstDay }).map((_, i) => (
+            <div key={`empty-start-${i}`} className="calendar-day calendar-day-empty" />
+          ))}
+          {Array.from({ length: daysInMonth }).map((_, i) => {
+            const day = i + 1;
+            const dayEvents = getEventsForDay(day);
+            return (
+              <div key={day} className="calendar-day" role="gridcell">
+                <span className="calendar-day-number">{day}</span>
+                {dayEvents.map((evt, j) => (
+                  <div
+                    key={j}
+                    className="calendar-event"
+                    style={{ background: getUrgencyColor(evt.urgency) }}
+                    title={`${evt.title}${evt.confidence && evt.confidence !== 'exact' ? ` (${evt.confidence})` : ''}`}
+                  >
+                    {evt.type === 'grant_deadline' ? '📅' : evt.type === 'report_due' ? '📋' : '✅'}{' '}
+                    {evt.title.slice(0, 20)}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="calendar-week-grid" role="grid" aria-label="Weekly calendar">
+          {DAYS.map((dayName, i) => {
+            const date = new Date(weekStart);
+            date.setDate(date.getDate() + i);
+            const dayEvents = getEventsForWeekDay(date);
+            const isToday = formatDate(date) === formatDate(new Date());
+            return (
+              <div key={dayName} className="calendar-week-day" role="gridcell">
+                <div className={`calendar-week-day-header ${isToday ? 'calendar-week-day-today' : ''}`}>
+                  <span className="calendar-week-day-name">{dayName}</span>
+                  <span className="calendar-week-day-number">{date.getDate()}</span>
+                </div>
+                <div className="calendar-week-day-events">
+                  {dayEvents.length === 0 ? (
+                    <span className="calendar-week-no-events">No events</span>
+                  ) : (
+                    dayEvents.map((evt, j) => (
+                      <div
+                        key={j}
+                        className="calendar-event"
+                        style={{ background: getUrgencyColor(evt.urgency) }}
+                        title={`${evt.title}${evt.confidence && evt.confidence !== 'exact' ? ` (${evt.confidence})` : ''}`}
+                      >
+                        {evt.type === 'grant_deadline' ? '📅' : evt.type === 'report_due' ? '📋' : '✅'}{' '}
+                        {evt.title.slice(0, 30)}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="calendar-upcoming">
         <h3>Upcoming Deadlines</h3>

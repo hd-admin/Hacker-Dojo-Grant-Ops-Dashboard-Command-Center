@@ -31,7 +31,6 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
       setCandidates(Array.isArray(candidatesData) ? candidatesData : []);
       setGrants(Array.isArray(grantsData) ? grantsData : []);
     } catch (err) {
-      setError('Error loading duplicates');
       setError(err instanceof Error ? err.message : 'Failed to load duplicate candidates');
       setCandidates([]);
       setGrants([]);
@@ -78,7 +77,6 @@ export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesV
         await loadData();
         await onRefreshAppState?.();
       } catch (err) {
-        setError('Error resolving duplicate ${candidateId}');
         setError(err instanceof Error ? err.message : 'Resolution failed');
       } finally {
         setActionLoading((prev) => {

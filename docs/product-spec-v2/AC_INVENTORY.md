@@ -67,12 +67,12 @@ All ACs implemented and tested:
 ### 4. Crawler (12 ACs) — PASS
 
 - **AC-4.1.1** to **AC-4.1.5**: Agent loop pattern, prompt contents, deduplication, request delay/respect robots, soft delete — implemented in crawl routes and agent loop
-- **AC-4.2.1** to **AC-4.2.4**: Interval hours, scheduler, manual crawl, crawl_runs record — `scheduled-crawl/route.ts`, `crawl/start/route.ts`
+- **AC-4.2.1** to **AC-4.2.4**: Interval hours, scheduler, manual crawl, crawl_runs record — `frontend/src/app/api/crawl/scheduled/route.ts`, `frontend/src/app/api/crawl/start/route.ts`
 - **AC-4.3.1** to **AC-4.3.3**: Freshness indicators, JobProgress, per-source state — Dashboard and Sources views
 
 ### 5. Matching & Scoring (6 ACs) — PASS
 
-- **AC-5.1.1** to **AC-5.1.3**: Fit score with 5 dimensions, prompt contents, recalculation on profile change — `match/route.ts`, `prompt-templates.ts`
+- **AC-5.1.1** to **AC-5.1.3**: Fit score with 5 dimensions, prompt contents, recalculation on profile change — `frontend/src/app/api/match/start/route.ts`, `frontend/src/server/grant-ops/prompt-templates.ts`
 - **AC-5.2.1** to **AC-5.2.3**: Score display with color bars, dimension breakdown, rationale — Discovery view and grant drawer
 
 ### 6. Draft Generation (8 ACs) — PASS

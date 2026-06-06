@@ -256,4 +256,29 @@ describe('DuplicatesView', () => {
     grantLink?.click();
     expect(onGrantSelect).toHaveBeenCalledWith('grant-1');
   });
+
+  it('displays server error message when resolve fails', async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({ error: 'Server error: cannot merge' }),
+    } as Response);
+
+    root.render(React.createElement(DuplicatesView, { onGrantSelect: vi.fn() }));
+    await new Promise((r) => setTimeout(r, 100));
+
+    const mergeBtn = getByRole(container, 'button', { name: 'Merge' });
+    expect(mergeBtn).not.toBeNull();
+
+    await act(async () => {
+      mergeBtn!.click();
+      await new Promise((r) => setTimeout(r, 100));
+    });
+
+    const errorBanner = container.querySelector('[data-testid="duplicates-error-banner"]');
+    expect(errorBanner).not.toBeNull();
+    expect(errorBanner!.textContent).toContain('Server error: cannot merge');
+
+    global.fetch = originalFetch;
+  });
 });

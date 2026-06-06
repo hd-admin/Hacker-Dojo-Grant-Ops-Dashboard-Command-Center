@@ -491,7 +491,9 @@ export function AppShell() {
     if ('key' in e && e.key !== 'Enter' && e.key !== ' ') return;
     e.preventDefault();
     mainRef.current?.focus();
-    mainRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (typeof mainRef.current?.scrollIntoView === 'function') {
+      mainRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   // ============ Operator Name Prompt ============
@@ -548,15 +550,15 @@ export function AppShell() {
   return (
     <div className="app" data-testid="app-shell">
       {/* Skip-to-content link for keyboard users */}
-      <button
-        type="button"
+      <a
+        href="#main-content"
         className="skip-to-content"
         data-testid="skip-link"
         onClick={handleSkipToContent}
         onKeyDown={handleSkipToContent}
       >
         Skip to main content
-      </button>
+      </a>
 
       {/* Sidebar */}
       {/* biome-ignore lint/a11y/useSemanticElements: <explanation>sidebar layout uses aside for complementary content */}

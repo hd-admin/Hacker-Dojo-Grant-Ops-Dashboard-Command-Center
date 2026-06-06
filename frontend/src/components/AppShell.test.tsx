@@ -653,3 +653,36 @@ describe('AppShell navigation', () => {
     expect(duplicatesPanel).not.toBeNull();
   });
 });
+
+describe('AppShell accessibility', () => {
+  it('renders a real anchor skip link as the first focusable element', async () => {
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
+    await waitFor(() => queryByRole(container, 'link', { name: 'Skip to main content' }) !== null);
+
+    const skipLink = getByRole(container, 'link', { name: 'Skip to main content' });
+    expect(skipLink).not.toBeNull();
+    expect(skipLink.tagName.toLowerCase()).toBe('a');
+    expect((skipLink as HTMLAnchorElement).getAttribute('href')).toBe('#main-content');
+
+    // Verify it is the first focusable element in the app
+    const focusableElements = container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input, textarea, select, [tabindex]:not([tabindex="-1"])',
+    );
+    expect(focusableElements[0]).toBe(skipLink);
+  });
+
+  it('moves focus to main content when skip link is clicked', async () => {
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
+    await waitFor(() => queryByRole(container, 'link', { name: 'Skip to main content' }) !== null);
+
+    const skipLink = getByRole(container, 'link', { name: 'Skip to main content' });
+    const mainContent = container.querySelector('#main-content');
+    expect(mainContent).not.toBeNull();
+
+    // Simulate click
+    skipLink.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+    await waitFor(() => document.activeElement === mainContent, 500);
+
+    expect(document.activeElement).toBe(mainContent);
+  });
+});
