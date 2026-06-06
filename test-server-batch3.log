@@ -1,0 +1,67 @@
+=== frontend/src/server/grant-ops/profile-service.test.ts ===
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /home/mistlight/Hacker-Dojo-Grant-Ops-Dashboard-Command-Center
+
+ ✓ frontend/src/server/grant-ops/profile-service.test.ts (23 tests) 8596ms
+   ✓ ProfileService > getProfile > returns the same hardcoded profile even when a persisted one exists 2904ms
+   ✓ ProfileService > profile persistence > persists profile fields via repository 3520ms
+   ✓ ProfileService > getMissingRequiredFields > returns empty array when all required fields are filled 2155ms
+
+ Test Files  1 passed (1)
+      Tests  23 passed (23)
+   Start at  07:20:51
+   Duration  9.08s (transform 166ms, setup 103ms, collect 160ms, tests 8.60s, environment 0ms, prepare 62ms)
+
+EXIT:0
+
+=== frontend/src/server/grant-ops/prompt-templates.test.ts ===
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /home/mistlight/Hacker-Dojo-Grant-Ops-Dashboard-Command-Center
+
+ ✓ frontend/src/server/grant-ops/prompt-templates.test.ts (56 tests) 13ms
+
+ Test Files  1 passed (1)
+      Tests  56 passed (56)
+   Start at  07:21:01
+   Duration  445ms (transform 82ms, setup 97ms, collect 52ms, tests 13ms, environment 0ms, prepare 83ms)
+
+EXIT:0
+
+=== frontend/src/server/grant-ops/propublica-service.test.ts ===
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /home/mistlight/Hacker-Dojo-Grant-Ops-Dashboard-Command-Center
+
+ ✓ frontend/src/server/grant-ops/propublica-service.test.ts (10 tests) 5835ms
+   ✓ ensureProPublicaSourceRegistered > creates ProPublica source when none exists 3644ms
+   ✓ ensureProPublicaSourceRegistered > is idempotent when ProPublica already registered 2173ms
+
+ Test Files  1 passed (1)
+      Tests  10 passed (10)
+   Start at  07:21:02
+   Duration  6.78s (transform 200ms, setup 92ms, collect 230ms, tests 5.84s, environment 0ms, prepare 77ms)
+
+EXIT:0
+
+=== frontend/src/server/grant-ops/repository.test.ts ===
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /home/mistlight/Hacker-Dojo-Grant-Ops-Dashboard-Command-Center
+
+ ✓ frontend/src/server/grant-ops/repository.test.ts (13 tests) 1723ms
+   ✓ Repository > Sources > getSources returns empty array initially 1045ms
+
+ Test Files  1 passed (1)
+      Tests  13 passed (13)
+   Start at  07:21:10
+   Duration  2.17s (transform 145ms, setup 96ms, collect 136ms, tests 1.72s, environment 0ms, prepare 65ms)
+
+EXIT:0
+
+=== frontend/src/server/grant-ops/research-service.test.ts ===
+[33mThe CJS build of Vite's Node API is deprecated. See https://vite.dev/guide/troubleshooting.html#vite-cjs-node-api-deprecated for more details.[39m
+
+ RUN  v2.1.9 /home/mistlight/Hacker-Dojo-Grant-Ops-Dashboard-Command-Center
+

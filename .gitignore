@@ -65,3 +65,14 @@ wt-*/
 
 tmp_*
 vendor/
+*.sqlite-journal
+.grant-ops-data-*/
+.build-*.log
+.build-*.txt
+.lint-*.log
+.lint-*.txt
+.test-*.log
+.test-*.txt
+.knip.log
+.knip-*.txt
+test-*-batches.log
