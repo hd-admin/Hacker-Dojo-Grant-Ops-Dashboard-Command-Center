@@ -71,6 +71,9 @@ describe('CalendarView', () => {
     weekButton.click();
     await new Promise((r) => setTimeout(r, 100));
 
+    const monthGrid = container.querySelector('[aria-label="Monthly calendar"]');
+    expect(monthGrid).toBeNull();
+
     const weekGrid = container.querySelector('[aria-label="Weekly calendar"]');
     expect(weekGrid).not.toBeNull();
 
@@ -121,6 +124,20 @@ describe('CalendarView', () => {
 
     const nextButton = getByLabelText(container, 'Next week');
     expect(nextButton).not.toBeNull();
+
+    const label = container.querySelector('.calendar-month-label');
+    expect(label).not.toBeNull();
+    const initialRange = label!.textContent;
+
+    (nextButton as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 100));
+    const nextRange = container.querySelector('.calendar-month-label')!.textContent;
+    expect(nextRange).not.toBe(initialRange);
+
+    (prevButton as HTMLElement).click();
+    await new Promise((r) => setTimeout(r, 100));
+    const prevRange = container.querySelector('.calendar-month-label')!.textContent;
+    expect(prevRange).toBe(initialRange);
 
     root.unmount();
     container.remove();
