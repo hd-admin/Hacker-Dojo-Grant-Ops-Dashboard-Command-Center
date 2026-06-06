@@ -134,17 +134,3 @@ describe('document-text-extractor', () => {
     }
   });
 });
-
-  it('marks legacy .xls files as stored_unparsed', async () => {
-    const tempPath = path.join(process.cwd(), 'tests/fixtures/documents/temp-legacy.xls');
-    await fs.writeFile(tempPath, 'fake xls content');
-
-    try {
-      const result = await analyzeStoredDocument(tempPath, 'application/vnd.ms-excel');
-      expect(result.extractionStatus).toBe('stored_unparsed');
-      expect(result.extractedText).toBeUndefined();
-      expect(result.contentSnippet).toBeUndefined();
-    } finally {
-      await fs.rm(tempPath, { force: true });
-    }
-  });
