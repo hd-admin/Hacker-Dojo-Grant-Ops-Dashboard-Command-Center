@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -10,7 +11,7 @@ interface DuplicatesViewProps {
   onRefreshAppState?: () => Promise<void> | void;
 }
 
-export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesViewProps) {
+export function DuplicatesView({ onGrantSelect, onRefreshAppState }: DuplicatesViewProps): JSX.Element {
   const [candidates, setCandidates] = useState<DuplicateCandidate[]>([]);
   const [grants, setGrants] = useState<Grant[]>([]);
   const [loading, setLoading] = useState(true);

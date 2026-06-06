@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React from 'react';
@@ -10,7 +11,7 @@ interface GrantDrawerHeaderProps {
   onClose: () => void;
 }
 
-export function GrantDrawerHeader({ grant, onClose }: GrantDrawerHeaderProps) {
+export function GrantDrawerHeader({ grant, onClose }: GrantDrawerHeaderProps): JSX.Element {
   return (
     <div className="drawer-header">
       <button type="button" className="drawer-close" onClick={onClose} aria-label="Close">

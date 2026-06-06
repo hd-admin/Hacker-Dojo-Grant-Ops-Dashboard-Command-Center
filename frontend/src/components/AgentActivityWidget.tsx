@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -11,7 +12,7 @@ interface ActivityEvent {
   metadata?: string;
 }
 
-export function AgentActivityWidget() {
+export function AgentActivityWidget(): JSX.Element {
   const [events, setEvents] = useState<ActivityEvent[]>([]);
   const [loading, setLoading] = useState(true);
 

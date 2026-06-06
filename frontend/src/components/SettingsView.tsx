@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -264,7 +265,7 @@ interface SettingsViewProps {
   initiallyEditing?: boolean;
 }
 
-export function SettingsView({ onRefreshAppState }: SettingsViewProps) {
+export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Element {
   const [profile, setProfile] = useState<OrganizationProfile | null>(null);
   const [documents, setDocuments] = useState<DocumentMetadata[]>([]);
   const [loading, setLoading] = useState(true);

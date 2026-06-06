@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useCallback, useState } from 'react';
@@ -8,9 +9,9 @@ export interface GroundingReviewProps {
   onReviewComplete?: (complete: boolean) => void;
 }
 
-export type ConfidenceLevel = 'strong' | 'weak' | 'unsupported';
+type ConfidenceLevel = 'strong' | 'weak' | 'unsupported';
 
-export interface GroundingSectionState {
+interface GroundingSectionState {
   sectionTitle: string;
   evidence: string[];
   isGrounded: boolean;
@@ -69,7 +70,7 @@ function parseEvidenceForDisplay(evidence: string[]): {
   });
 }
 
-export function GroundingReview({ draftArtifact, onReviewComplete }: GroundingReviewProps) {
+export function GroundingReview({ draftArtifact, onReviewComplete }: GroundingReviewProps): JSX.Element {
   const sections: GroundingSectionState[] = (draftArtifact.groundingSections || []).map(
     (section) => ({
       sectionTitle: section.sectionTitle,

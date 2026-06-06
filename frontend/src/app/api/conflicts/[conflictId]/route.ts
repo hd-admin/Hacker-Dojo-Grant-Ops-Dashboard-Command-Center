@@ -13,7 +13,7 @@ const bodySchema = z.object({
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ conflictId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { conflictId } = await params;

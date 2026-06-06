@@ -17,7 +17,7 @@ const bodySchema = z.object({
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { grantId } = await params;
@@ -35,7 +35,7 @@ export async function GET(
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { grantId } = await params;

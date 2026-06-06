@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -23,7 +24,7 @@ function formatRelativeTime(iso: string): string {
   return `${months}mo ago`;
 }
 
-export function SavedSearchesPanel({ currentSearchQuery, onRunSearch }: SavedSearchesPanelProps) {
+export function SavedSearchesPanel({ currentSearchQuery, onRunSearch }: SavedSearchesPanelProps): JSX.Element {
   const [searches, setSearches] = useState<SavedSearch[]>([]);
   const [collapsed, setCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);

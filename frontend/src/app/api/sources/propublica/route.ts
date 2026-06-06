@@ -16,7 +16,7 @@ const querySchema = z.object({
   query: z.string().min(1).max(500),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const { searchParams } = new URL(request.url);

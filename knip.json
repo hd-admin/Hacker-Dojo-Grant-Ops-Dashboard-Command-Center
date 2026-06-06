@@ -3,6 +3,7 @@
     "frontend/src/app/**/page.tsx",
     "frontend/src/app/**/layout.tsx",
     "frontend/src/app/**/route.ts",
+    "frontend/src/app/**/not-found.tsx",
     "frontend/next.config.ts",
     "playwright.no-webserver.config.ts",
     "frontend/src/server/grant-ops/repository.ts",

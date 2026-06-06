@@ -17,7 +17,7 @@ interface InterruptResult {
   reason?: string;
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json().catch(() => null);

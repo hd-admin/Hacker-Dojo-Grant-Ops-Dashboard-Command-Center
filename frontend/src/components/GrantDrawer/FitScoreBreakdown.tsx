@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React from 'react';
 import type { FitScoreBreakdown as FitScoreBreakdownType } from '../../../../shared/types';
 import styles from './FitScoreBreakdown.module.css';
@@ -6,7 +7,7 @@ interface FitScoreBreakdownProps {
   fitBreakdown: FitScoreBreakdownType;
 }
 
-export function FitScoreBreakdown({ fitBreakdown }: FitScoreBreakdownProps) {
+export function FitScoreBreakdown({ fitBreakdown }: FitScoreBreakdownProps): JSX.Element {
   return (
     <div className="drawer-section">
       <h3>Why it fits</h3>

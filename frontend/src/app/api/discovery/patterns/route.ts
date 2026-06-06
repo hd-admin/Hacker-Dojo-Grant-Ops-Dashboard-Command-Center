@@ -12,7 +12,7 @@ const patternSchema = z.object({
   evidence: z.string().min(1),
 });
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await req.json();
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function GET(_req: NextRequest) {
+export async function GET(_req: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const deps = getDependencies();

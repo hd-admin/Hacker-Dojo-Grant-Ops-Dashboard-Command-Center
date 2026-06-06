@@ -11,7 +11,7 @@ const querySchema = z.object({
   trigger: z.enum(['true', 'false']).optional(),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const { searchParams } = new URL(request.url);
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST() {
+export async function POST(): Promise<NextResponse> {
   await connection();
   try {
     const triggered = await checkAndRunDue();

@@ -37,7 +37,7 @@ const grantDetailUpdateSchema = z
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { grantId } = await params;
@@ -61,7 +61,7 @@ export async function GET(
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { grantId } = await params;

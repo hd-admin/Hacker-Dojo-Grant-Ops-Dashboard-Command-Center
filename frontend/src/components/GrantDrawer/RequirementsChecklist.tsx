@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React from 'react';
 import type { ChecklistItem as ChecklistItemType } from '../../../../shared/types';
 
@@ -5,7 +6,7 @@ interface RequirementsChecklistProps {
   checklist: ChecklistItemType[];
 }
 
-export function RequirementsChecklist({ checklist }: RequirementsChecklistProps) {
+export function RequirementsChecklist({ checklist }: RequirementsChecklistProps): JSX.Element {
   return (
     <div className="drawer-section">
       <h3>Requirements checklist</h3>

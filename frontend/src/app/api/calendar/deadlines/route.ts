@@ -6,7 +6,7 @@ import { getDependencies } from '@/server/grant-ops/dependencies';
 
 const _emptyQuery = z.object({}).strict();
 
-export async function GET(_request: NextRequest) {
+export async function GET(_request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const deps = getDependencies();

@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useState, useRef, useCallback } from 'react';
@@ -25,7 +26,7 @@ interface BudgetImportViewProps {
   onConfirm?: (categories: Array<{ category: string; amount: number }>) => void;
 }
 
-export function BudgetImportView({ awardId, onUpload, onConfirm }: BudgetImportViewProps) {
+export function BudgetImportView({ awardId, onUpload, onConfirm }: BudgetImportViewProps): JSX.Element {
   const [preview, setPreview] = useState<BudgetImportPreview | null>(null);
   const [fileName, setFileName] = useState<string>('');
   const [loading, setLoading] = useState(false);

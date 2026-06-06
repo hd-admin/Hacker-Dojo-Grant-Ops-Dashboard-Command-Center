@@ -36,7 +36,7 @@ const docQuerySchema = z.object({
 });
 
 // GET: List all documents, with optional search
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const rawParams = Object.fromEntries(new URL(request.url).searchParams.entries());
@@ -60,7 +60,7 @@ export async function GET(request: NextRequest) {
 }
 
 // POST: Upload a real document payload via multipart/form-data
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const formData = await request.formData();
@@ -181,7 +181,7 @@ const patchBodySchema = z.object({
 });
 
 // PATCH: Update document metadata
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json().catch(() => null);
@@ -231,7 +231,7 @@ const deleteBodySchema = z.object({
 });
 
 // DELETE: Remove a document
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json().catch(() => null);

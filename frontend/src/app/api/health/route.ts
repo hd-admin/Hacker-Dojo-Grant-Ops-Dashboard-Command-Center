@@ -7,7 +7,7 @@ import { ensureProPublicaSourceRegistered } from '@/server/grant-ops/propublica-
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   try {
     await connection();
     const deps = getDependencies();

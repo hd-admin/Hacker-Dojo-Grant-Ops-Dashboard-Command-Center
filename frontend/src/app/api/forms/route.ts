@@ -22,7 +22,7 @@ const formSchema = z.object({
   updatedAt: z.string().optional(),
 });
 
-export async function GET(_req: NextRequest) {
+export async function GET(_req: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const deps = getDependencies();
@@ -36,7 +36,7 @@ export async function GET(_req: NextRequest) {
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await req.json();
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-export async function PUT(req: NextRequest) {
+export async function PUT(req: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await req.json();
@@ -93,7 +93,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(req: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const { searchParams } = new URL(req.url);

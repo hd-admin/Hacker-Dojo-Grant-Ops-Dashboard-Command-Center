@@ -15,7 +15,7 @@ const paramsSchema = z.object({
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { jobId } = await params;

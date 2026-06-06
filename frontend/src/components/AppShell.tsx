@@ -1,5 +1,6 @@
 'use client';
 
+import type { JSX } from 'react';
 import type {
   CrawlStatus,
   Grant,
@@ -152,7 +153,7 @@ function readWorkingContext(): {
   }
 }
 
-export function AppShell() {
+export function AppShell(): JSX.Element {
   const { addToast } = useToast();
   const [activeView, setActiveView] = useState<ViewType>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);

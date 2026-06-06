@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useCallback, useEffect, useRef } from 'react';
@@ -16,7 +17,7 @@ function getFocusableElements(container: HTMLElement): HTMLElement[] {
   return Array.from(container.querySelectorAll<HTMLElement>(selector));
 }
 
-export function GrantDrawerShell({ grantId, loading, onClose, children }: GrantDrawerShellProps) {
+export function GrantDrawerShell({ grantId, loading, onClose, children }: GrantDrawerShellProps): JSX.Element | null {
   const drawerRef = useRef<HTMLDivElement>(null);
   const previousActiveElementRef = useRef<HTMLElement | null>(null);
 

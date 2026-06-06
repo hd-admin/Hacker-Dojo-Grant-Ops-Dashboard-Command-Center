@@ -72,7 +72,7 @@ const DEFAULT_THEMES: ThemesData = {
   strategicPriorities: [],
 };
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   await connection();
   try {
     const data = await loadThemesData().catch(() => DEFAULT_THEMES);
@@ -82,7 +82,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: NextRequest) {
+export async function PUT(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const raw = await request.json().catch(() => null);

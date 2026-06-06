@@ -18,7 +18,7 @@ const configureSchema = z.object({
   timeoutMs: z.number().int().positive().optional(),
 });
 
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<NextResponse> {
   try {
     await connection();
     const body = await request.json().catch(() => null);

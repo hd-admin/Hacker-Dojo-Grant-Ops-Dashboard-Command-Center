@@ -11,13 +11,19 @@ const querySchema = z.object({
   format: z.enum(['json', 'zip']).optional().default('json'),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const deps = getDependencies();
     const rawParams = Object.fromEntries(new URL(request.url).searchParams.entries());
     const parsed = querySchema.safeParse(rawParams);
-    const format = parsed.success ? parsed.data.format : 'json';
+    if (!parsed.success) {
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Invalid query parameters'),
+        { status: 400 },
+      );
+    }
+    const format = parsed.data.format;
     const snapshot = await deps.backup.exportBackupSnapshot();
     await deps.backup.recordBackupVerification(snapshot);
 

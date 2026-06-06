@@ -32,7 +32,7 @@ const statusSchema = z.object({
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { grantId } = await params;

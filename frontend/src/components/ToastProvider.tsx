@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
@@ -26,7 +27,7 @@ export function useToast(): ToastContextValue {
   return context;
 }
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+export function ToastProvider({ children }: { children: React.ReactNode }): JSX.Element {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const removeToast = useCallback((id: string) => {

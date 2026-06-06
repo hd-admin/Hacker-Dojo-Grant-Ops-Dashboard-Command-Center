@@ -7,14 +7,20 @@ import ical, { ICalAlarmType } from 'ical-generator';
 import fs from 'node:fs';
 import path from 'node:path';
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const { searchParams } = new URL(request.url);
     const rawParams = Object.fromEntries(searchParams.entries());
     const scopeSchema = z.object({ scope: z.enum(['all', 'grants', 'reports']).optional().default('all') });
     const parsed = scopeSchema.safeParse(rawParams);
-    const scope = parsed.success ? parsed.data.scope : 'all';
+    if (!parsed.success) {
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Invalid query parameters'),
+        { status: 400 },
+      );
+    }
+    const scope = parsed.data.scope;
     const deps = getDependencies();
 
     const calendar = ical({

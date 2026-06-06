@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 // This component must remain a Client Component because it uses:
@@ -18,7 +19,7 @@ interface ComplianceCalendarProps {
   awardId?: string;
 }
 
-export function ComplianceCalendar({ awardId }: ComplianceCalendarProps) {
+export function ComplianceCalendar({ awardId }: ComplianceCalendarProps): JSX.Element {
   const [items, setItems] = useState<ComplianceItem[]>([]);
   const [loading, setLoading] = useState(true);
 

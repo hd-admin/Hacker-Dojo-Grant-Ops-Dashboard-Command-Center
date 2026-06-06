@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -8,7 +9,7 @@ interface HealthStatus {
   crawlerStatus: string;
 }
 
-export function SystemStatusPanel() {
+export function SystemStatusPanel(): JSX.Element {
   const [status, setStatus] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
 

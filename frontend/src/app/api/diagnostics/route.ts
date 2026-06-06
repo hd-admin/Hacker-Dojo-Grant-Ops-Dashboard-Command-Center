@@ -6,7 +6,7 @@ import { getHealth } from '@/server/grant-ops/health-service';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   await connection();
   try {
     const deps = getDependencies();

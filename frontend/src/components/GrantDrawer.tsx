@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -33,7 +34,7 @@ interface GrantDrawerProps {
   onRefreshAppState?: () => Promise<void> | void;
 }
 
-export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawerProps) {
+export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawerProps): JSX.Element {
   const [detail, setDetail] = useState<GrantDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [showRevision, setShowRevision] = useState(false);

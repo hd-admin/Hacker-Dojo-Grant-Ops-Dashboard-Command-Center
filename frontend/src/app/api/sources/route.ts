@@ -16,7 +16,7 @@ const bodySchema = z.object({
   crawlAccessCategory: z.enum(['crawlable', 'manual-only', 'unsupported']).optional(),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const { searchParams } = new URL(request.url);
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const rawBody = await request.json().catch(() => null);
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const { searchParams } = new URL(request.url);

@@ -26,7 +26,7 @@ function getDb(): GrantOpsDb | undefined {
   return (globalThis as unknown as GrantOpsGlobal).__grantOpsDb;
 }
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   await connection();
   try {
     const db = getDb();
@@ -41,7 +41,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: Request): Promise<NextResponse> {
   await connection();
   try {
     const rawBody = await request.json().catch(() => null);

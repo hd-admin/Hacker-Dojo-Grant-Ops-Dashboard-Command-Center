@@ -15,7 +15,7 @@ const outreachSchema = z.object({
   followUpDate: z.string().default(''),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const { searchParams } = new URL(request.url);
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json().catch(() => null);

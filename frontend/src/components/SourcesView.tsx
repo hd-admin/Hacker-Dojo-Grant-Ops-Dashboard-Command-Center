@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
@@ -103,7 +104,7 @@ function crawlAccessLabel(cat: SourceCrawlAccessCategory): string {
   return labels[cat] ?? cat;
 }
 
-export function SourcesView({ onRefreshAppState }: SourcesViewProps) {
+export function SourcesView({ onRefreshAppState }: SourcesViewProps): JSX.Element {
   const [sources, setSources] = useState<Source[]>([]);
   const [pendingSources, setPendingSources] = useState<Source[]>([]);
   const [showDiscoverForm, setShowDiscoverForm] = useState(false);

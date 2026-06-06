@@ -19,7 +19,7 @@ const bodySchema = z.object({
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ sourceId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   const { sourceId } = await params;
   const deps = getDependencies();
@@ -41,7 +41,7 @@ export async function GET(
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ sourceId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { sourceId } = await params;
@@ -77,7 +77,7 @@ export async function PUT(
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ sourceId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { sourceId } = await params;

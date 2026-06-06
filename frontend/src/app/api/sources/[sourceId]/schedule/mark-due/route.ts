@@ -17,7 +17,7 @@ const paramsSchema = z.object({
 export async function POST(
   _request: NextRequest,
   { params }: { params: Promise<{ sourceId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   const { sourceId } = await params;
   if (!paramsSchema.safeParse({ sourceId }).success) {

@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useState } from 'react';
@@ -9,7 +10,7 @@ interface FunderDetailProps {
   onDetectPatterns?: (funderId: string) => Promise<void>;
 }
 
-export function FunderDetail({ funder, onClose, onDetectPatterns }: FunderDetailProps) {
+export function FunderDetail({ funder, onClose, onDetectPatterns }: FunderDetailProps): JSX.Element {
   const [analyzing, setAnalyzing] = useState(false);
 
   const handleDetectPatterns = async () => {

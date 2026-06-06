@@ -130,4 +130,23 @@ describe('/api/calendar/export route', () => {
     const headers = (response as Response).headers;
     expect(headers.get('Content-Type')).toBe('text/calendar');
   });
+
+  it('returns 400 for invalid scope parameter', async () => {
+    (getDependencies as ReturnType<typeof vi.fn>).mockReturnValue({
+      repository: {
+        getGrants: vi.fn().mockResolvedValue([]),
+        getAwards: vi.fn().mockResolvedValue([]),
+      },
+    });
+
+    const { NextRequest } = await import('next/server');
+    const mockReq = new (NextRequest as unknown as new (url: string) => Request)(
+      'http://localhost:3000/api/calendar/export?scope=bogus',
+    );
+    const response = await GET(mockReq as unknown as NextRequest);
+
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBeDefined();
+  });
 });

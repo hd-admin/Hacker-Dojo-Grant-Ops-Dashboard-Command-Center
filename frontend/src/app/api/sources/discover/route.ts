@@ -13,7 +13,7 @@ const bodySchema = z.object({
   prompt: z.string().min(1).max(500),
 });
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const parsed = bodySchema.safeParse(await request.json().catch(() => null));

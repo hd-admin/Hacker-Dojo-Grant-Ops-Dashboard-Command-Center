@@ -69,7 +69,7 @@ function getSettings(db: GrantOpsDb): Record<string, string> {
   return result;
 }
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   await connection();
   try {
     const db = getDb();
@@ -90,7 +90,7 @@ export async function GET() {
   }
 }
 
-export async function PUT(request: Request) {
+export async function PUT(request: Request): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json().catch(() => null);

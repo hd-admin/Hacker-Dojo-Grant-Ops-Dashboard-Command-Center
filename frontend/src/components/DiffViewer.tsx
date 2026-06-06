@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 import React from 'react';
 
 interface DiffViewerProps {
@@ -74,7 +75,7 @@ function computeDiff(oldLines: string[], newLines: string[]): DiffLine[] {
   return result;
 }
 
-export function DiffViewer({ oldText, newText }: DiffViewerProps) {
+export function DiffViewer({ oldText, newText }: DiffViewerProps): JSX.Element {
   const oldLines = oldText.split('\n');
   const newLines = newText.split('\n');
   const diff = computeDiff(oldLines, newLines);

@@ -11,7 +11,7 @@ const querySchema = z.object({
   entityType: z.string().optional(),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const deps = getDependencies();

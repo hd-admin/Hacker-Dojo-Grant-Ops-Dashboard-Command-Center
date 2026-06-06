@@ -16,7 +16,7 @@ const expenseSchema = z.object({
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ awardId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { awardId } = await params;
@@ -34,7 +34,7 @@ export async function GET(
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ awardId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { awardId } = await params;

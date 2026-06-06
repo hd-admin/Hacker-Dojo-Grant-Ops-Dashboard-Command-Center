@@ -23,7 +23,7 @@ const querySchema = z
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { jobId } = await params;

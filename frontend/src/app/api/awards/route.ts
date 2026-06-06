@@ -16,7 +16,7 @@ const awardSchema = z.object({
   notes: z.string().default(''),
 });
 
-export async function GET(_request: NextRequest) {
+export async function GET(_request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const deps = getDependencies();
@@ -30,7 +30,7 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json().catch(() => null);

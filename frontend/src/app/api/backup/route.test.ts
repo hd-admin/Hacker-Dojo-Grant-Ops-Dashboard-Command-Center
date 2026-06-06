@@ -16,6 +16,24 @@ import type { Grant } from '../../../../../shared/types';
 import { defaultOpencodeSettings, defaultProfile } from '../../../../../shared/seed-data';
 import { NextRequest } from 'next/server';
 import { GET } from './route';
+import { vi } from 'vitest';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+
+let mockZipPath: string;
+
+vi.mock('@/server/grant-ops/backup-service', async () => {
+  const actual = await vi.importActual<typeof import('@/server/grant-ops/backup-service')>('@/server/grant-ops/backup-service');
+  return {
+    ...actual,
+    createBackupZip: vi.fn().mockImplementation(async () => {
+      mockZipPath = path.join(os.tmpdir(), `test-backup-${Date.now()}.zip`);
+      await fs.writeFile(mockZipPath, Buffer.from('zipcontent'));
+      return { zipPath: mockZipPath, checksum: 'abc123' };
+    }),
+  };
+});
 
 function createMockRequest(url = 'http://localhost:3000/api/backup'): NextRequest {
   return { url, nextUrl: new URL(url) } as NextRequest;
@@ -52,6 +70,9 @@ describe('/api/backup route', () => {
     resetDependencies();
     await tempDataDir.cleanup();
     invalidateCache();
+    if (mockZipPath) {
+      await fs.unlink(mockZipPath).catch(() => {});
+    }
   });
 
   it('exports a backup snapshot with grants, profile, and settings', async () => {
@@ -92,5 +113,22 @@ describe('/api/backup route', () => {
     expect(response.status).toBe(200);
     expect(data.manifest.grantCount).toBe(0);
     expect(data.grants).toEqual([]);
+  });
+
+  it('returns 400 for invalid format parameter', async () => {
+    const response = await GET(createMockRequest('http://localhost:3000/api/backup?format=bogus'));
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data.error).toBeDefined();
+  });
+
+  it('exports a zip backup when format=zip', async () => {
+    await repository.addGrant(createGrant('grant-zip'));
+
+    const response = await GET(createMockRequest('http://localhost:3000/api/backup?format=zip'));
+    expect(response.status).toBe(200);
+    expect(response.headers.get('Content-Type')).toBe('application/zip');
+    expect(response.headers.get('Content-Disposition')).toContain('grant-ops-backup.zip');
+    expect(response.headers.get('X-Backup-Checksum')).toBe('abc123');
   });
 });

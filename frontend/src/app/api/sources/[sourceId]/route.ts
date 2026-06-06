@@ -23,7 +23,7 @@ const updateSchema = z.object({
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ sourceId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { sourceId } = await params;

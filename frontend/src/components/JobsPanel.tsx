@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
@@ -80,7 +81,7 @@ function stageDescription(stage: string | undefined): string {
   return stage;
 }
 
-export function JobsPanel({ onRefreshAppState }: JobsPanelProps) {
+export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
   const [jobs, setJobs] = useState<JobQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<JobStatus>('all');

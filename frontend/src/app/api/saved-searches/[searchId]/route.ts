@@ -18,7 +18,7 @@ const bodySchema = z.object({
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ searchId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { searchId } = await params;
@@ -52,7 +52,7 @@ export async function PUT(
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ searchId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { searchId } = await params;

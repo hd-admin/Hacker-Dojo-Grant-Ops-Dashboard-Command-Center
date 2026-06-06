@@ -24,7 +24,7 @@ const bodySchema = z.object({
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ taskId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { taskId } = await params;

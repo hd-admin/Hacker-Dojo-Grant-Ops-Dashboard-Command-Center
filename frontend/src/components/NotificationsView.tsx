@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React from 'react';
@@ -19,7 +20,7 @@ function getUrgencyDotClass(urgency?: 'info' | 'warning' | 'urgent', dot?: strin
   return `notification-dot ${dot || 'info'}`;
 }
 
-export function NotificationsView({ notifications: notificationsProp }: NotificationsViewProps) {
+export function NotificationsView({ notifications: notificationsProp }: NotificationsViewProps): JSX.Element {
   const [notifications, setNotifications] = useState<Notification[]>(notificationsProp ?? []);
   const [loading, setLoading] = useState(false);
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');

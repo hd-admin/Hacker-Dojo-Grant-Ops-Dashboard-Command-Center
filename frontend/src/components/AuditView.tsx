@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useEffect, useState } from 'react';
@@ -9,7 +10,7 @@ interface AuditViewProps {
   entityType?: string;
 }
 
-export function AuditView({ entityId, entityType }: AuditViewProps) {
+export function AuditView({ entityId, entityType }: AuditViewProps): JSX.Element {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [_error, setError] = useState<string | null>(null);

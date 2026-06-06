@@ -13,7 +13,7 @@ const bodySchema = z.object({
   filters: z.record(z.unknown()).optional(),
 });
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   await connection();
   try {
     const searches = await loadSavedSearches();
@@ -27,7 +27,7 @@ export async function GET() {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const rawBody = await request.json();

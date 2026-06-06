@@ -11,7 +11,7 @@ const bodySchema = z.object({
   grantId: z.string().optional(),
 });
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const rawBody = await request.json().catch(() => ({}));

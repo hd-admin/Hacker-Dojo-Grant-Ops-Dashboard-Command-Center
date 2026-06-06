@@ -11,7 +11,7 @@ export const runtime = 'nodejs';
 
 const _emptyBody = z.object({}).strict();
 
-export async function POST() {
+export async function POST(): Promise<NextResponse> {
   await connection();
   try {
     const grants = await loadGrants();

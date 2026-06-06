@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 
 const _emptyQuery = z.object({}).strict();
 
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   await connection();
   try {
     const profile = await profileService.getProfile();

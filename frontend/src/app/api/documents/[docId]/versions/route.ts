@@ -18,7 +18,7 @@ const MAX_VERSIONS = 50;
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ docId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   const { docId } = await params;
   const doc = await documentService.getDocument(docId);
@@ -33,7 +33,7 @@ export async function GET(
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ docId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { docId } = await params;

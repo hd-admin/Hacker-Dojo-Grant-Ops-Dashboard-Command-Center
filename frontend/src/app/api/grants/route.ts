@@ -22,7 +22,7 @@ const manualGrantSchema = z.object({
   eligibility: z.string().optional(),
 });
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const deps = getDependencies();
@@ -146,7 +146,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json().catch(() => null);

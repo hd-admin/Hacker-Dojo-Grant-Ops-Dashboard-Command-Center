@@ -1,3 +1,4 @@
+import type { JSX } from 'react';
 'use client';
 
 import React, { useCallback, useEffect, useState } from 'react';
@@ -25,7 +26,7 @@ async function saveOperatorName(name: string): Promise<void> {
   });
 }
 
-export function OperatorNamePrompt({ onComplete }: OperatorNamePromptProps) {
+export function OperatorNamePrompt({ onComplete }: OperatorNamePromptProps): JSX.Element | null {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');

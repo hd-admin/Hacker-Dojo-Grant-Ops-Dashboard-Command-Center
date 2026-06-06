@@ -15,7 +15,7 @@ const paramsSchema = z.object({
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { jobId } = await params;
@@ -43,7 +43,7 @@ export async function GET(
 export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ jobId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { jobId } = await params;

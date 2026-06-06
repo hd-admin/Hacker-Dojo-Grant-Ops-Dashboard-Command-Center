@@ -21,7 +21,7 @@ const funderUpdateSchema = z.object({
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ funderId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { funderId } = await context.params;
@@ -46,7 +46,7 @@ export async function GET(
 export async function PUT(
   request: NextRequest,
   context: { params: Promise<{ funderId: string }> },
-) {
+): Promise<NextResponse> {
   await connection();
   try {
     const { funderId } = await context.params;

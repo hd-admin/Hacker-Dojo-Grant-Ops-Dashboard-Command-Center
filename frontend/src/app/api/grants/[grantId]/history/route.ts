@@ -9,7 +9,7 @@ const paramsSchema = z.object({
   grantId: z.string().min(1),
 });
 
-export async function GET(_req: NextRequest, { params }: { params: Promise<{ grantId: string }> }) {
+export async function GET(_req: NextRequest, { params }: { params: Promise<{ grantId: string }> }): Promise<NextResponse> {
   await connection();
   try {
     const { grantId } = await params;

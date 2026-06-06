@@ -167,7 +167,7 @@ const formSchema = z.object({
   awardId: z.string().optional(),
 });
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const contentType = request.headers.get('content-type') || '';

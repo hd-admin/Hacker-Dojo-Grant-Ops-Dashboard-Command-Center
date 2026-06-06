@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 
 const _emptyBody = z.object({}).strict();
 
-export async function POST() {
+export async function POST(): Promise<NextResponse> {
   try {
     await connection();
     const deps = getDependencies();

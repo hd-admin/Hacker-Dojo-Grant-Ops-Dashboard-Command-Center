@@ -15,7 +15,7 @@ const bodySchema = z.object({
 });
 
 // GET: Get all notifications
-export async function GET() {
+export async function GET(): Promise<NextResponse> {
   await connection();
   try {
     const deps = getDependencies();
@@ -31,7 +31,7 @@ export async function GET() {
 }
 
 // POST: Add a new notification
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const rawBody = await request.json();
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 }
 
 // PATCH: Batch update notifications (replace all notifications)
-export async function PATCH(request: NextRequest) {
+export async function PATCH(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json();

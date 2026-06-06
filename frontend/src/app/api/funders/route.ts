@@ -15,7 +15,7 @@ const funderCreateSchema = z.object({
   annualGiving: z.number().optional(),
 });
 
-export async function GET(_request: NextRequest) {
+export async function GET(_request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const { loadFunderProfiles } = await import('../../../../../shared/grant-ops-persistence');
@@ -29,7 +29,7 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json().catch(() => null);
