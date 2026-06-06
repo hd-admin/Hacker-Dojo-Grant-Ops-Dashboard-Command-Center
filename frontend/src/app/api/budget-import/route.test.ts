@@ -64,15 +64,19 @@ describe('POST /api/budget-import', () => {
   });
 
   it('parses valid XLSX file', async () => {
-    const xlsx = require('xlsx');
-    const ws = xlsx.utils.aoa_to_sheet([
-      ['Category', 'Description', 'Budget'],
-      ['Personnel', 'Salaries', 50000],
-      ['Travel', 'Conference', 3000],
-    ]);
-    const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, 'Sheet1');
-    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sheet1');
+    worksheet.getRow(1).getCell(1).value = 'Category';
+    worksheet.getRow(1).getCell(2).value = 'Description';
+    worksheet.getRow(1).getCell(3).value = 'Budget';
+    worksheet.getRow(2).getCell(1).value = 'Personnel';
+    worksheet.getRow(2).getCell(2).value = 'Salaries';
+    worksheet.getRow(2).getCell(3).value = 50000;
+    worksheet.getRow(3).getCell(1).value = 'Travel';
+    worksheet.getRow(3).getCell(2).value = 'Conference';
+    worksheet.getRow(3).getCell(3).value = 3000;
+    const buffer = await workbook.xlsx.writeBuffer();
     const fd = new FormData();
     fd.append('awardId', 'award-1');
     fd.append(
@@ -149,6 +153,17 @@ describe('POST /api/budget-import', () => {
     const fd = new FormData();
     fd.append('awardId', 'award-1');
     fd.append('file', new File(['not a budget'], 'budget.pdf', { type: 'application/pdf' }));
+    const req = createMockNextRequest(fd);
+    const res = await POST(req);
+    expect(res.status).toBe(400);
+    const json = await res.json();
+    expect(json.error).toContain('Unsupported file type');
+  });
+
+  it('rejects .xls files', async () => {
+    const fd = new FormData();
+    fd.append('awardId', 'award-1');
+    fd.append('file', new File(['not a budget'], 'budget.xls', { type: 'application/vnd.ms-excel' }));
     const req = createMockNextRequest(fd);
     const res = await POST(req);
     expect(res.status).toBe(400);

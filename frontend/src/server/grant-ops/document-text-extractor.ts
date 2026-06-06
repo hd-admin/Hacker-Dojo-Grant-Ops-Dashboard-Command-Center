@@ -40,17 +40,20 @@ async function extractCsvText(buffer: Buffer): Promise<string> {
 }
 
 async function extractXlsxText(buffer: Buffer): Promise<string> {
-  const xlsx = await import('xlsx');
-  const workbook = xlsx.read(buffer, { type: 'buffer' });
+  const ExcelJS = await import('exceljs');
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer as unknown as ArrayBuffer);
   const sheets: string[] = [];
-  for (const sheetName of workbook.SheetNames) {
-    const sheet = workbook.Sheets[sheetName];
-    if (sheet) {
-      const csv = xlsx.utils.sheet_to_csv(sheet);
-      sheets.push(csv);
-    }
+  for (const worksheet of workbook.worksheets) {
+    const rows: string[] = [];
+    worksheet.eachRow((row) => {
+      const cellValues = Array.isArray(row.values) ? row.values : Object.values(row.values);
+      const cells = cellValues.slice(1).map((cell) => String(cell ?? ''));
+      rows.push(cells.join('\t'));
+    });
+    sheets.push(rows.join('\n'));
   }
-  return normalizeWhitespace(sheets.join('\n'));
+  return normalizeWhitespace(sheets.join('\n\n'));
 }
 
 export async function extractDocumentText(filePath: string): Promise<DocumentExtractionResult> {
@@ -66,7 +69,7 @@ export async function extractDocumentText(filePath: string): Promise<DocumentExt
       extractedText = await extractDocxText(buffer);
     } else if (lowerPath.endsWith('.csv')) {
       extractedText = await extractCsvText(buffer);
-    } else if (lowerPath.endsWith('.xlsx') || lowerPath.endsWith('.xls')) {
+    } else if (lowerPath.endsWith('.xlsx')) {
       extractedText = await extractXlsxText(buffer);
     } else {
       const rawText = normalizeWhitespace(buffer.toString('utf-8'));
@@ -110,8 +113,7 @@ export async function analyzeStoredDocument(
     lowerPath.endsWith('.pdf') ||
     lowerPath.endsWith('.docx') ||
     lowerPath.endsWith('.csv') ||
-    lowerPath.endsWith('.xlsx') ||
-    lowerPath.endsWith('.xls');
+    lowerPath.endsWith('.xlsx');
   const isSupportedMime = supportedMimeTypes.includes(mimeType);
 
   if (!isSupportedExtension && !isSupportedMime) {

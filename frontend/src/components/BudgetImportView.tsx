@@ -127,7 +127,7 @@ export function BudgetImportView({ awardId, onUpload, onConfirm }: BudgetImportV
         <input
           ref={fileInputRef}
           type="file"
-          accept=".csv,.xlsx,.xls"
+          accept=".csv,.xlsx"
           onChange={handleInputChange}
           className={styles.hiddenInput}
           aria-label="Select budget file"

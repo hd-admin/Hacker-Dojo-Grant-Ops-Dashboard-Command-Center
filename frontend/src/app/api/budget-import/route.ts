@@ -54,29 +54,32 @@ function parseCsvBuffer(buffer: Buffer): string[][] {
   return records;
 }
 
-function parseXlsxBuffer(buffer: Buffer): string[][] {
-  const xlsx = require('xlsx');
-  const workbook = xlsx.read(buffer, { type: 'buffer' });
-  const sheetName = workbook.SheetNames[0];
-  if (!sheetName) return [];
-  const sheet = workbook.Sheets[sheetName];
-  if (!sheet) return [];
-  const json: unknown[][] = xlsx.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-  return json.map((row) => row.map((cell) => String(cell)));
+async function parseXlsxBuffer(buffer: Buffer): Promise<string[][]> {
+  const ExcelJS = require('exceljs');
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(buffer);
+  const worksheet = workbook.worksheets[0];
+  if (!worksheet) return [];
+  const rows: string[][] = [];
+  worksheet.eachRow((row: { values: unknown[] }) => {
+    const cells = row.values.slice(1).map((cell) => String(cell ?? ''));
+    if (cells.some((c) => c.length > 0)) {
+      rows.push(cells);
+    }
+  });
+  return rows;
 }
 
-function parseBudgetFile(buffer: Buffer, mimeType: string, fileName: string): BudgetImportPreview {
+async function parseBudgetFile(buffer: Buffer, mimeType: string, fileName: string): Promise<BudgetImportPreview> {
   let rawRows: string[][];
 
   if (mimeType === 'text/csv' || fileName.toLowerCase().endsWith('.csv')) {
     rawRows = parseCsvBuffer(buffer);
   } else if (
     mimeType === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
-    mimeType === 'application/vnd.ms-excel' ||
-    fileName.toLowerCase().endsWith('.xlsx') ||
-    fileName.toLowerCase().endsWith('.xls')
+    fileName.toLowerCase().endsWith('.xlsx')
   ) {
-    rawRows = parseXlsxBuffer(buffer);
+    rawRows = await parseXlsxBuffer(buffer);
   } else {
     throw new Error('Unsupported file type. Please upload CSV or XLSX.');
   }
@@ -204,7 +207,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     }
 
-    const preview = parseBudgetFile(buffer, mimeType, fileName);
+    const preview = await parseBudgetFile(buffer, mimeType, fileName);
 
     revalidateAfterMutation();
     return NextResponse.json(

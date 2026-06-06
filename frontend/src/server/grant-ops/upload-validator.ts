@@ -22,7 +22,6 @@ const ALLOWED_EXTENSIONS = new Set([
   '.docx',
   '.doc',
   '.xlsx',
-  '.xls',
   '.csv',
   '.txt',
   '.png',
@@ -35,7 +34,7 @@ const EXTENSION_MIME_MAP: Record<string, string[]> = {
   '.docx': ['application/vnd.openxmlformats-officedocument.wordprocessingml.document'],
   '.doc': ['application/msword'],
   '.xlsx': ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
-  '.xls': ['application/vnd.ms-excel'],
+
   '.csv': ['text/csv', 'text/plain'],
   '.txt': ['text/plain'],
   '.png': ['image/png'],

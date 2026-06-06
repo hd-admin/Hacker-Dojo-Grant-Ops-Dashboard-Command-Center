@@ -557,7 +557,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
   const handleUploadDocument = () => {
     const input = document.createElement('input');
     input.type = 'file';
-    input.accept = '.pdf,.xls,.xlsx,.doc,.docx';
+    input.accept = '.pdf,.xlsx,.doc,.docx';
     input.onchange = async (event) => {
       const file = (event.target as HTMLInputElement).files?.[0];
       if (!file) return;

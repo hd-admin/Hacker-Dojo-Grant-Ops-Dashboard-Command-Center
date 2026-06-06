@@ -86,4 +86,51 @@ describe('document-text-extractor', () => {
       await fs.rm(tempPath, { force: true });
     }
   });
+
+  it('extracts text from xlsx files', async () => {
+    const tempPath = path.join(process.cwd(), 'tests/fixtures/documents/temp-test.xlsx');
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sheet1');
+    worksheet.getRow(1).getCell(1).value = 'Hello';
+    worksheet.getRow(1).getCell(2).value = 'World';
+    worksheet.getRow(2).getCell(1).value = 'Test';
+    worksheet.getRow(2).getCell(2).value = 'Data';
+    const buffer = await workbook.xlsx.writeBuffer();
+    await fs.writeFile(tempPath, Buffer.from(buffer));
+
+    try {
+      const result = await extractDocumentText(tempPath);
+      expect(result.extractionStatus).toBe('extracted');
+      expect(result.extractedText).toContain('Hello');
+      expect(result.extractedText).toContain('World');
+      expect(result.extractedText).toContain('Test');
+      expect(result.extractedText).toContain('Data');
+      expect(result.contentSnippet).toBeDefined();
+    } finally {
+      await fs.rm(tempPath, { force: true });
+    }
+  });
+
+  it('marks xlsx with valid content as extracted', async () => {
+    const tempPath = path.join(process.cwd(), 'tests/fixtures/documents/temp-minimal.xlsx');
+    const ExcelJS = require('exceljs');
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Sheet1');
+    worksheet.getRow(1).getCell(1).value = 'Minimal';
+    const buffer = await workbook.xlsx.writeBuffer();
+    await fs.writeFile(tempPath, Buffer.from(buffer));
+
+    try {
+      const result = await analyzeStoredDocument(
+        tempPath,
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      expect(result.extractionStatus).toBe('extracted');
+      expect(result.extractedText).toBeDefined();
+      expect(result.contentSnippet).toBeDefined();
+    } finally {
+      await fs.rm(tempPath, { force: true });
+    }
+  });
 });
