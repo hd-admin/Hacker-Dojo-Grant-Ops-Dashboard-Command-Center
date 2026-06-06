@@ -109,13 +109,21 @@ import '@testing-library/jest-dom/vitest';
       if (resetActiveJobs) resetActiveJobs();
     });
 
-    // Per-file afterAll cleanup is intentionally omitted.
-    // Keeping the SQLite database open and initialized across test files
-    // avoids repeated schema creation, migration runs, and re-seeding —
-    // the primary cause of the full-suite timeout. Each test file is
-    // responsible for setting up the data it needs. Connections are
-    // closed on process exit via the SIGINT/SIGTERM handler in
-    // shared/grant-ops-sqlite.ts.
+    // Close all SQLite connections after each test file to prevent
+    // better-sqlite3 native memory growth from accumulating across
+    // the 135+ test files in the full suite. The per-file overhead
+    // of reopening the DB is offset by keeping a single DATA_DIR per
+    // suite and letting each file re-open against the already-seeded DB.
+    afterAll(() => {
+      try {
+        const sqliteMod = req('../shared/grant-ops-sqlite') as typeof import('../shared/grant-ops-sqlite');
+        if (typeof sqliteMod.resetSqliteCache === 'function') {
+          sqliteMod.resetSqliteCache();
+        }
+      } catch {
+        // SQLite module unavailable in jsdom environment — skip
+      }
+    });
   } catch {
     // jsdom or module unavailable — skip isolation hooks
   }

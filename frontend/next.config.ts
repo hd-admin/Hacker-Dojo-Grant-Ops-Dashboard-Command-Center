@@ -1,8 +1,6 @@
 import type { NextConfig } from 'next';
 import path from 'node:path';
 
-const projectRoot = path.resolve(__dirname, '..');
-
 const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
@@ -22,7 +20,13 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   poweredByHeader: false,
-  outputFileTracingRoot: projectRoot,
+  outputFileTracingRoot: path.resolve(__dirname, '..'),
+  outputFileTracingExcludes: {
+    '*': [
+      'node_modules/**/@swc/**',
+      'node_modules/**/*.d.ts',
+    ],
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',

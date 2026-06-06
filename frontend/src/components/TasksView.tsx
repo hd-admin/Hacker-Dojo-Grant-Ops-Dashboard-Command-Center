@@ -256,6 +256,7 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
               <input
                 type="text"
                 placeholder="Enter new task..."
+                aria-label="New task description"
                 value={newTaskText}
                 onChange={(e) => setNewTaskText(e.target.value)}
                 disabled={isAddingTask}
@@ -285,6 +286,7 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
               <input
                 type="date"
                 placeholder="Due date"
+                aria-label="Due date"
                 value={newTaskDueDate}
                 onChange={(e) => setNewTaskDueDate(e.target.value)}
                 disabled={isAddingTask}
@@ -329,6 +331,7 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
               checked={task.completed}
               onChange={() => handleToggleTask(task.id)}
               className="task-checkbox"
+              aria-label={`Mark task ${task.text} as completed`}
             />
             <div className="task-text">
               <div>{task.text}</div>

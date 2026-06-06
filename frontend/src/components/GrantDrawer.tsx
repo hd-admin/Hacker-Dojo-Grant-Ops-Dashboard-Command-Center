@@ -612,6 +612,7 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
                     type="url"
                     className="form-input"
                     placeholder="Portal URL"
+                    aria-label="Portal URL"
                     value={portalUrl}
                     onChange={(e) => setPortalUrl(e.target.value)}
                   />
@@ -620,6 +621,7 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
                   type="text"
                   className="form-input"
                   placeholder="Confirmation ID"
+                  aria-label="Confirmation ID"
                   value={confirmationId}
                   onChange={(e) => setConfirmationId(e.target.value)}
                 />
@@ -627,6 +629,7 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
                   className="form-input"
                   rows={3}
                   placeholder="Submission notes"
+                  aria-label="Submission notes"
                   value={submitNotes}
                   onChange={(e) => setSubmitNotes(e.target.value)}
                 />

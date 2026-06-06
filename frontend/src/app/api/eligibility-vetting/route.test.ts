@@ -9,6 +9,7 @@ import {
   resetDependencies,
   setDependencies,
 } from '@/server/grant-ops/dependencies';
+import { createOpencodeAdapter } from '@/server/grant-ops/opencode-client';
 import * as repository from '@/server/grant-ops/repository';
 import { POST } from './route';
 
@@ -64,7 +65,12 @@ describe('/api/eligibility-vetting route', () => {
   beforeEach(async () => {
     tempDataDir = await withTempDataDir();
     invalidateCache();
-    setDependencies(createDependencies());
+    setDependencies(
+      createDependencies({
+        createOpencodeAdapter: (settings, _providerType) =>
+          createOpencodeAdapter(settings, 'fake'),
+      }),
+    );
     await repository.updateOrgProfile(profile);
     await repository.updateOpencodeSettings(configuredSettings);
   });

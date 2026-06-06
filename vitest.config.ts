@@ -13,6 +13,14 @@ export default defineConfig({
       'frontend/src/**/*.test.tsx',
       'shared/**/*.test.ts',
     ],
+    exclude: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/cypress/**',
+      '**/.idea/**',
+      '**/.git/**',
+      '**/.cache/**',
+    ],
     environment: 'node',
     env: { NODE_ENV: 'test', TMPDIR: '/home/mistlight/tmp-vitest' },
     setupFiles: [path.resolve(__dirname, './tests/vitest-setup.ts')],
@@ -25,6 +33,9 @@ export default defineConfig({
         singleFork: true,
       },
     },
+    // Full suite (184+ files) exceeds single-process memory limits during
+    // vitest module graph analysis. Run via scripts/run-test-batches.sh
+    // (batch size 10) to keep memory stable.
   },
   resolve: {
     alias: {
