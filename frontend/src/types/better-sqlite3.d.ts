@@ -1,6 +1,6 @@
 declare module 'better-sqlite3' {
   // Minimal type declaration for better-sqlite3
-  export default class Database {
+  class Database {
     constructor(
       filename: string,
       options?: {
@@ -10,7 +10,7 @@ declare module 'better-sqlite3' {
         verbose?: (message: string) => void;
       },
     );
-    prepare(sql: string): Statement;
+    prepare(sql: string): Database.Statement;
     exec(sql: string): void;
     close(): void;
     pragma(source: string, options?: { simple?: boolean }): unknown;
@@ -43,24 +43,28 @@ declare module 'better-sqlite3' {
     readonly readonly: boolean;
   }
 
-  export class Statement {
-    run(...params: unknown[]): { changes: number; lastInsertRowid: number | bigint };
-    get(...params: unknown[]): unknown;
-    all(...params: unknown[]): unknown[];
-    iterate(...params: unknown[]): IterableIterator<unknown>;
-    pluck(toggleState?: boolean): Statement;
-    expand(toggleState?: boolean): Statement;
-    raw(toggleState?: boolean): Statement;
-    bind(...params: unknown[]): Statement;
-    columns(): Array<{
-      name: string;
-      column: string | null;
-      table: string | null;
-      database: string | null;
-      type: string | null;
-    }>;
-    safeIntegers(toggleState?: boolean): Statement;
-    readonly source: string;
-    readonly database: Database;
+  namespace Database {
+    class Statement {
+      run(...params: unknown[]): { changes: number; lastInsertRowid: number | bigint };
+      get(...params: unknown[]): unknown;
+      all(...params: unknown[]): unknown[];
+      iterate(...params: unknown[]): IterableIterator<unknown>;
+      pluck(toggleState?: boolean): Statement;
+      expand(toggleState?: boolean): Statement;
+      raw(toggleState?: boolean): Statement;
+      bind(...params: unknown[]): Statement;
+      columns(): Array<{
+        name: string;
+        column: string | null;
+        table: string | null;
+        database: string | null;
+        type: string | null;
+      }>;
+      safeIntegers(toggleState?: boolean): Statement;
+      readonly source: string;
+      readonly database: Database;
+    }
   }
+
+  export = Database;
 }
