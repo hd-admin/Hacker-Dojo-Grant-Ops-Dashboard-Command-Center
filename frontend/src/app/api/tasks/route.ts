@@ -22,6 +22,10 @@ const bodySchema = z.object({
   blockSubmission: z.boolean().optional(),
 });
 
+const patchBodySchema = z.object({
+  tasks: z.array(bodySchema),
+});
+
 // GET: Get all tasks
 export async function GET(): Promise<NextResponse> {
   await connection();
@@ -119,16 +123,32 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json();
-    const deps = getDependencies();
-
-    if (!Array.isArray(body.tasks)) {
+    const parsed = patchBodySchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        createErrorResponse('AGENT_INVALID_JSON', 'Tasks array is required'),
+        createErrorResponse('AGENT_INVALID_JSON', 'Invalid tasks array'),
         { status: 400 },
       );
     }
 
-    await deps.repository.updateTasks(body.tasks as Task[]);
+    const deps = getDependencies();
+    const validTasks: Task[] = parsed.data.tasks.map((t) => {
+      const task: Task = {
+        id: t.id || deps.idGenerator.generateId('task'),
+        text: t.text.trim(),
+        completed: Boolean(t.completed),
+      };
+      if (t.taskStatus !== undefined) task.taskStatus = t.taskStatus;
+      if (t.responsibilityTag !== undefined) task.responsibilityTag = t.responsibilityTag;
+      if (Array.isArray(t.dependsOn)) task.dependsOn = t.dependsOn;
+      if (t.justification !== undefined) task.justification = t.justification;
+      if (t.dueDate !== undefined) task.dueDate = t.dueDate;
+      if (t.notes !== undefined) task.notes = t.notes;
+      if (t.evidence !== undefined) task.evidence = t.evidence;
+      if (t.blockSubmission === true) task.blockSubmission = true;
+      return task;
+    });
+    await deps.repository.updateTasks(validTasks);
     return NextResponse.json({ success: true });
   } catch (error) {
     logger.error({ err: error }, 'Error updating tasks');

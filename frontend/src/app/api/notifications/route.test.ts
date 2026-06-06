@@ -72,7 +72,35 @@ describe('/api/notifications route', () => {
       const response = await PATCH(request);
       expect(response.status).toBe(400);
       expect(await response.json()).toEqual({
-        error: 'Notifications array is required',
+        error: 'Invalid notifications array',
+        code: 'AGENT_INVALID_JSON',
+      });
+    });
+
+    it('PATCH rejects malformed notification items', async () => {
+      const request = new Request('http://localhost/api/notifications', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          notifications: [
+            {
+              id: 'n1',
+              text: 'Valid notification',
+              time: '1h ago',
+              dot: 'info',
+            },
+            {
+              id: 'n2',
+              text: 'Missing required fields',
+              // missing time and dot
+            },
+          ],
+        }),
+      }) as never;
+
+      const response = await PATCH(request);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({
+        error: 'Invalid notifications array',
         code: 'AGENT_INVALID_JSON',
       });
     });

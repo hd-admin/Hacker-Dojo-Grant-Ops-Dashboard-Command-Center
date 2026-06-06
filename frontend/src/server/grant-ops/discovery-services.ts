@@ -7,6 +7,11 @@ import 'server-only';
  */
 
 import { logger } from '@/lib/logger';
+import {
+  PeerDiscoveryArtifactSchema,
+  FunderInsightArtifactSchema,
+  EligibilityVettingArtifactSchema,
+} from '../../../../shared/artifact-schemas';
 import type {
   EligibilityVettingArtifact,
   FunderInsightArtifact,
@@ -30,26 +35,39 @@ export interface EligibilityVettingResult {
  * Run peer discovery analysis.
  * In production, this spawns an agent job. In tests, the adapter is mocked.
  */
-export async function runPeerDiscovery(_query?: string): Promise<PeerDiscoveryResult> {
+export async function runPeerDiscovery(query?: string): Promise<PeerDiscoveryResult> {
   const deps = getDependencies();
   const now = deps.clock.now().toISOString();
 
-  // Placeholder: real implementation would call opencode adapter
-  // For now, return a structured artifact that satisfies the schema
+  const profile = await deps.repository.getOrgProfile();
+  const settings = await deps.repository.getOpencodeSettings();
+
+  const adapter = deps.createOpencodeAdapter(
+    settings ?? {
+      binaryPath: '',
+      workingDirectory: '',
+      timeoutMs: 60000,
+      isConfigured: false,
+    },
+    'cli',
+  );
+
+  const response = await adapter.executePeerDiscovery({
+    query,
+    organizationProfile: profile?.legalName || 'Hacker Dojo',
+  });
+
+  if (!response.success || !response.content) {
+    throw new Error(`Peer discovery failed: ${response.error || 'Unknown error'}`);
+  }
+
+  const parsed = JSON.parse(response.content);
+  const validated = PeerDiscoveryArtifactSchema.parse(parsed);
+
   const artifact: PeerDiscoveryArtifact = {
-    artifactType: 'peer-discovery',
+    ...validated,
     jobId: deps.idGenerator.generateId('peer'),
     timestamp: now,
-    results: [
-      {
-        funderName: 'Mock Foundation',
-        funderType: 'foundation',
-        relevanceRationale: 'Supports community innovation hubs similar to Hacker Dojo',
-        sourceOrganization: 'Noisebridge',
-        confidence: 0.85,
-      },
-    ],
-    organizationsAnalyzed: 1,
   };
 
   logger.info('Peer discovery completed');
@@ -60,31 +78,40 @@ export async function runPeerDiscovery(_query?: string): Promise<PeerDiscoveryRe
  * Run funder insights analysis.
  * In production, this spawns an agent job. In tests, the adapter is mocked.
  */
-export async function runFunderInsights(_funderId: string): Promise<FunderInsightsResult> {
+export async function runFunderInsights(funderId: string): Promise<FunderInsightsResult> {
   const deps = getDependencies();
   const now = deps.clock.now().toISOString();
 
+  const profile = await deps.repository.getOrgProfile();
+  const settings = await deps.repository.getOpencodeSettings();
+
+  const adapter = deps.createOpencodeAdapter(
+    settings ?? {
+      binaryPath: '',
+      workingDirectory: '',
+      timeoutMs: 60000,
+      isConfigured: false,
+    },
+    'cli',
+  );
+
+  const response = await adapter.executeFunderInsights({
+    funderId,
+    organizationProfile: profile?.legalName || 'Hacker Dojo',
+  });
+
+  if (!response.success || !response.content) {
+    throw new Error(`Funder insights failed: ${response.error || 'Unknown error'}`);
+  }
+
+  const parsed = JSON.parse(response.content);
+  const validated = FunderInsightArtifactSchema.parse(parsed);
+
   const artifact: FunderInsightArtifact = {
-    artifactType: 'funder-insights',
+    ...validated,
     jobId: deps.idGenerator.generateId('fi'),
-    funderId: _funderId,
+    funderId,
     timestamp: now,
-    patterns: [
-      {
-        patternType: 'giving-trend',
-        description: 'Consistent support for STEM education initiatives',
-        confidence: 'high',
-        suggestedAction: 'Apply for upcoming STEM grant cycle',
-      },
-    ],
-    givingTrends: [
-      {
-        year: new Date().getFullYear() - 1,
-        totalGiving: 5000000,
-        grantsCount: 25,
-        averageGrantSize: 200000,
-      },
-    ],
   };
 
   logger.info('Funder insights completed');
@@ -95,35 +122,40 @@ export async function runFunderInsights(_funderId: string): Promise<FunderInsigh
  * Run eligibility vetting for a grant.
  * In production, this spawns an agent job. In tests, the adapter is mocked.
  */
-export async function runEligibilityVetting(_grantId: string): Promise<EligibilityVettingResult> {
+export async function runEligibilityVetting(grantId: string): Promise<EligibilityVettingResult> {
   const deps = getDependencies();
   const now = deps.clock.now().toISOString();
 
+  const profile = await deps.repository.getOrgProfile();
+  const settings = await deps.repository.getOpencodeSettings();
+
+  const adapter = deps.createOpencodeAdapter(
+    settings ?? {
+      binaryPath: '',
+      workingDirectory: '',
+      timeoutMs: 60000,
+      isConfigured: false,
+    },
+    'cli',
+  );
+
+  const response = await adapter.executeEligibilityVetting({
+    grantId,
+    organizationProfile: profile?.legalName || 'Hacker Dojo',
+  });
+
+  if (!response.success || !response.content) {
+    throw new Error(`Eligibility vetting failed: ${response.error || 'Unknown error'}`);
+  }
+
+  const parsed = JSON.parse(response.content);
+  const validated = EligibilityVettingArtifactSchema.parse(parsed);
+
   const artifact: EligibilityVettingArtifact = {
-    artifactType: 'eligibility-vetting',
+    ...validated,
     jobId: deps.idGenerator.generateId('ev'),
-    grantId: _grantId,
+    grantId,
     timestamp: now,
-    status: 'meets-all',
-    missingRequirements: [],
-    recommendation: 'Hacker Dojo meets all eligibility requirements for this grant.',
-    checks: [
-      {
-        requirement: 'Nonprofit status (501(c)(3))',
-        met: true,
-        detail: 'Hacker Dojo is a registered 501(c)(3) nonprofit.',
-      },
-      {
-        requirement: 'Geographic eligibility',
-        met: true,
-        detail: 'Grant is available in the Bay Area.',
-      },
-      {
-        requirement: 'Budget range fit',
-        met: true,
-        detail: 'Requested amount is within allowable range.',
-      },
-    ],
   };
 
   logger.info('Eligibility vetting completed');

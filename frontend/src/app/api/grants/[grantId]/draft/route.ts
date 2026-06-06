@@ -39,8 +39,15 @@ export async function POST(
   await connection();
   try {
     const { grantId } = await params;
-    const rawBody = await request.text();
-    const jsonBody = rawBody.trim() ? (JSON.parse(rawBody) as unknown) : {};
+    let jsonBody: unknown;
+    try {
+      const rawBody = await request.text();
+      jsonBody = rawBody.trim() ? JSON.parse(rawBody) : {};
+    } catch {
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), {
+        status: 400,
+      });
+    }
     const parsed = bodySchema.safeParse(jsonBody);
     if (!parsed.success) {
       return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid request body'), {

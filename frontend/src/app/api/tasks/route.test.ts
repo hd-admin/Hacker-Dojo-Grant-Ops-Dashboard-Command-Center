@@ -83,7 +83,23 @@ describe('/api/tasks route', () => {
     const badData = await badResponse.json();
 
     expect(badResponse.status).toBe(400);
-    expect(badData.error).toMatch(/Tasks array is required/i);
+    expect(badData.error).toMatch(/Invalid tasks array/i);
+
+    const malformedResponse = await PATCH(
+      new Request('http://localhost/api/tasks', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          tasks: [
+            { id: 'task-1', text: 'Draft proposal' },
+            { id: 'task-2' }, // missing required text
+          ],
+        }),
+      }) as never,
+    );
+    const malformedData = await malformedResponse.json();
+    expect(malformedResponse.status).toBe(400);
+    expect(malformedData.error).toMatch(/Invalid tasks array/i);
 
     const response = await PATCH(
       new Request('http://localhost/api/tasks', {

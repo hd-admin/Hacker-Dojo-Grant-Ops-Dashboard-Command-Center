@@ -17,6 +17,19 @@ const bodySchema = z.object({
   completedAt: z.string().optional(),
 });
 
+const patchBodySchema = z.object({
+  id: z.string(),
+  grantId: z.string().optional(),
+  submissionId: z.string().optional(),
+  type: z.enum(['other', 'report_due', 'progress_check', 'stipulation', 'next_steps']).optional(),
+  title: z.string().optional(),
+  description: z.string().optional(),
+  dueDate: z.string().optional(),
+  status: z.enum(['pending', 'overdue', 'completed']).optional(),
+  completedAt: z.string().optional(),
+  createdAt: z.string().optional(),
+});
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
@@ -86,25 +99,27 @@ export async function PATCH(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json();
-
-    if (!body.id) {
-      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'ID is required'), {
+    const parsed = patchBodySchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(createErrorResponse('AGENT_INVALID_JSON', 'Invalid follow-up data'), {
         status: 400,
       });
     }
 
-    await submissionService.updateFollowUp({
-      id: body.id,
-      grantId: body.grantId,
-      submissionId: body.submissionId,
-      type: body.type || 'other',
-      title: body.title,
-      description: body.description,
-      dueDate: body.dueDate,
-      status: body.status || 'pending',
-      completedAt: body.completedAt,
-      createdAt: body.createdAt || new Date().toISOString(),
-    });
+    const data = parsed.data;
+    const update = {
+      id: data.id,
+      type: data.type || 'other',
+      title: data.title || '',
+      status: data.status || 'pending',
+      createdAt: data.createdAt || new Date().toISOString(),
+      ...(data.grantId !== undefined ? { grantId: data.grantId } : {}),
+      ...(data.submissionId !== undefined ? { submissionId: data.submissionId } : {}),
+      ...(data.description !== undefined ? { description: data.description } : {}),
+      ...(data.dueDate !== undefined ? { dueDate: data.dueDate } : {}),
+      ...(data.completedAt !== undefined ? { completedAt: data.completedAt } : {}),
+    };
+    await submissionService.updateFollowUp(update);
 
     return NextResponse.json({ success: true });
   } catch (error) {

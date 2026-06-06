@@ -68,24 +68,44 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 }
 
+const notificationItemSchema = z.object({
+  id: z.string(),
+  text: z.string(),
+  time: z.string(),
+  dot: z.enum(['info', 'accent', 'success', 'warning', 'danger']),
+  urgency: z.enum(['info', 'warning', 'urgent']).optional(),
+});
+
+const patchBodySchema = z.object({
+  notifications: z.array(notificationItemSchema),
+});
+
 // PATCH: Batch update notifications (replace all notifications)
 export async function PATCH(request: NextRequest): Promise<NextResponse> {
   await connection();
   try {
     const body = await request.json();
-    const deps = getDependencies();
-
-    if (!Array.isArray(body.notifications)) {
+    const parsed = patchBodySchema.safeParse(body);
+    if (!parsed.success) {
       return NextResponse.json(
-        createErrorResponse('AGENT_INVALID_JSON', 'Notifications array is required'),
+        createErrorResponse('AGENT_INVALID_JSON', 'Invalid notifications array'),
         { status: 400 },
       );
     }
 
-    const sanitized = (body.notifications as Notification[]).map((n) => ({
-      ...n,
-      text: sanitizeNotificationText(n.text ?? ''),
-    }));
+    const deps = getDependencies();
+    const sanitized: Notification[] = parsed.data.notifications.map((n) => {
+      const notification: Notification = {
+        id: n.id,
+        text: sanitizeNotificationText(n.text),
+        time: n.time,
+        dot: n.dot,
+      };
+      if (n.urgency !== undefined) {
+        notification.urgency = n.urgency;
+      }
+      return notification;
+    });
     await deps.repository.updateNotifications(sanitized);
     return NextResponse.json({ success: true });
   } catch (error) {

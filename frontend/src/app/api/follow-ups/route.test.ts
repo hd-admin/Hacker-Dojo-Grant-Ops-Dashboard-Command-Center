@@ -82,7 +82,21 @@ describe('/api/follow-ups route', () => {
     const missingIdData = await missingIdResponse.json();
 
     expect(missingIdResponse.status).toBe(400);
-    expect(missingIdData.error).toMatch(/ID is required/i);
+    expect(missingIdData.error).toMatch(/Invalid follow-up data/i);
+
+    const malformedResponse = await PATCH(
+      new Request('http://localhost/api/follow-ups', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          id: 'followup-2',
+          status: 'invalid-status',
+        }),
+      }) as never,
+    );
+    const malformedData = await malformedResponse.json();
+    expect(malformedResponse.status).toBe(400);
+    expect(malformedData.error).toMatch(/Invalid follow-up data/i);
 
     await POST(
       new Request('http://localhost/api/follow-ups', {

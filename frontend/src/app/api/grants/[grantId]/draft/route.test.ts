@@ -78,6 +78,9 @@ const fakeAdapter = {
     success: true,
     content: `Grounding:\n${request.groundingDocuments?.join('\n') || ''}\nNotes:\n${request.revisionNotes || ''}`,
   })),
+  executePeerDiscovery: vi.fn().mockResolvedValue({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+  executeFunderInsights: vi.fn().mockResolvedValue({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+  executeEligibilityVetting: vi.fn().mockResolvedValue({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
   isConfigured: () => true,
 };
 
@@ -130,6 +133,21 @@ describe('/api/grants/[grantId]/draft route', () => {
     resetDependencies();
     await tempDataDir.cleanup();
     invalidateCache();
+  });
+
+  it('rejects malformed JSON with 400', async () => {
+    const response = await draftPOST(
+      new Request(`http://localhost/api/grants/${grant.id}/draft`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: 'not-valid-json',
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const data = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(data.error).toMatch(/Invalid request body/i);
   });
 
   it('rejects missing grant ids with 404', async () => {

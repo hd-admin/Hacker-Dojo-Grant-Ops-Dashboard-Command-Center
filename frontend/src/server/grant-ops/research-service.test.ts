@@ -127,7 +127,11 @@ describe('ResearchService', () => {
               success: true,
               content: JSON.stringify({ version: 1, draftContent: '' }),
             }),
-            isConfigured: () => true,
+            
+            executePeerDiscovery: async () => ({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+            executeFunderInsights: async () => ({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+            executeEligibilityVetting: async () => ({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
+                    isConfigured: () => true,
           }),
         }),
       );
@@ -239,7 +243,11 @@ describe('ResearchService', () => {
               success: true,
               content: JSON.stringify({ version: 1, draftContent: '' }),
             }),
-            isConfigured: () => true,
+            
+            executePeerDiscovery: async () => ({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+            executeFunderInsights: async () => ({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+            executeEligibilityVetting: async () => ({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
+                    isConfigured: () => true,
           }),
         }),
       );
@@ -280,7 +288,11 @@ describe('ResearchService', () => {
           createOpencodeAdapter: () => ({
             executeResearch: async () => ({ success: false, error: 'No results' }),
             generateDraft: async () => ({ success: false, error: 'not used' }),
-            isConfigured: () => true,
+            
+            executePeerDiscovery: async () => ({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+            executeFunderInsights: async () => ({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+            executeEligibilityVetting: async () => ({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
+                    isConfigured: () => true,
           }),
         }),
       );
@@ -326,7 +338,11 @@ describe('ResearchService', () => {
               content: JSON.stringify({ grants: [], evidence: [], rationale: 'No new grants' }),
             }),
             generateDraft: async () => ({ success: true, content: '' }),
-            isConfigured: () => true,
+            
+            executePeerDiscovery: async () => ({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+            executeFunderInsights: async () => ({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+            executeEligibilityVetting: async () => ({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
+                    isConfigured: () => true,
           }),
         }),
       );
@@ -350,7 +366,11 @@ describe('ResearchService', () => {
           createOpencodeAdapter: () => ({
             executeResearch: async () => ({ success: true, content: '' }),
             generateDraft: async () => ({ success: true, content: '' }),
-            isConfigured: () => true,
+            
+            executePeerDiscovery: async () => ({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+            executeFunderInsights: async () => ({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+            executeEligibilityVetting: async () => ({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
+                    isConfigured: () => true,
           }),
         }),
       );
@@ -400,7 +420,11 @@ describe('ResearchService', () => {
               success: true,
               content: JSON.stringify({ version: 1, draftContent: '' }),
             }),
-            isConfigured: () => true,
+            
+            executePeerDiscovery: async () => ({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+            executeFunderInsights: async () => ({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+            executeEligibilityVetting: async () => ({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
+                    isConfigured: () => true,
           }),
         }),
       );
@@ -567,7 +591,11 @@ describe('auto-draft triggering', () => {
             }),
           }),
           generateDraft: async () => ({ success: true, content: '' }),
-          isConfigured: () => true,
+          
+            executePeerDiscovery: async () => ({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+            executeFunderInsights: async () => ({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+            executeEligibilityVetting: async () => ({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
+                    isConfigured: () => true,
         }),
       }),
     );
@@ -616,7 +644,11 @@ describe('auto-draft triggering', () => {
             success: true,
             content: JSON.stringify({ version: 1, draftContent: '' }),
           }),
-          isConfigured: () => true,
+          
+            executePeerDiscovery: async () => ({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+            executeFunderInsights: async () => ({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+            executeEligibilityVetting: async () => ({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
+                    isConfigured: () => true,
         }),
       }),
     );
@@ -789,7 +821,11 @@ describe('PATH-fallback: no early isConfigured throw', () => {
             }),
           }),
           generateDraft: async () => ({ success: true, content: '' }),
-          isConfigured: () => true,
+          
+            executePeerDiscovery: async () => ({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+            executeFunderInsights: async () => ({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+            executeEligibilityVetting: async () => ({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
+                    isConfigured: () => true,
         }),
       }),
     );

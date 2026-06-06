@@ -125,6 +125,22 @@ interface DraftGenerationRequest {
   groundingDocuments?: string[];
 }
 
+interface PeerDiscoveryRequest {
+  query?: string | undefined;
+  organizationProfile: string;
+}
+
+interface FunderInsightsRequest {
+  funderId: string;
+  organizationProfile: string;
+}
+
+interface EligibilityVettingRequest {
+  grantId: string;
+  requirements?: string;
+  organizationProfile: string;
+}
+
 export type OpencodeFailureMode =
   | 'install-missing'
   | 'config-error'
@@ -232,6 +248,9 @@ export function classifyOpencodeError(
 export interface OpencodeAdapter {
   executeResearch(request: GrantResearchRequest): Promise<OpencodeResponse>;
   generateDraft(request: DraftGenerationRequest): Promise<OpencodeResponse>;
+  executePeerDiscovery(request: PeerDiscoveryRequest): Promise<OpencodeResponse>;
+  executeFunderInsights(request: FunderInsightsRequest): Promise<OpencodeResponse>;
+  executeEligibilityVetting(request: EligibilityVettingRequest): Promise<OpencodeResponse>;
   isConfigured(): boolean;
 }
 
@@ -394,6 +413,117 @@ We believe this partnership will create lasting positive impact in our community
     return {
       success: true,
       content: mockDraft,
+    };
+  }
+
+  async executePeerDiscovery(request: PeerDiscoveryRequest): Promise<OpencodeResponse> {
+    if (this.shouldFail) {
+      return {
+        success: false,
+        error: 'Fake provider: Opencode binary not found',
+        exitCode: 1,
+      };
+    }
+
+    const mockArtifact = {
+      artifactType: 'peer-discovery' as const,
+      jobId: 'peer-test-id',
+      timestamp: new Date().toISOString(),
+      results: [
+        {
+          funderName: `${request.query || 'Community'} Foundation`,
+          funderType: 'foundation' as const,
+          relevanceRationale: `Supports community innovation hubs similar to ${request.organizationProfile}`,
+          sourceOrganization: 'Peer Organization Network',
+          confidence: 0.85,
+        },
+      ],
+      organizationsAnalyzed: 1,
+    };
+
+    return {
+      success: true,
+      content: JSON.stringify(mockArtifact),
+    };
+  }
+
+  async executeFunderInsights(request: FunderInsightsRequest): Promise<OpencodeResponse> {
+    if (this.shouldFail) {
+      return {
+        success: false,
+        error: 'Fake provider: Opencode binary not found',
+        exitCode: 1,
+      };
+    }
+
+    const mockArtifact = {
+      artifactType: 'funder-insights' as const,
+      jobId: 'fi-test-id',
+      funderId: request.funderId,
+      timestamp: new Date().toISOString(),
+      patterns: [
+        {
+          patternType: 'giving-trend' as const,
+          description: 'Consistent support for STEM education initiatives',
+          confidence: 'high' as const,
+          suggestedAction: 'Apply for upcoming STEM grant cycle',
+        },
+      ],
+      givingTrends: [
+        {
+          year: new Date().getFullYear() - 1,
+          totalGiving: 5000000,
+          grantsCount: 25,
+          averageGrantSize: 200000,
+        },
+      ],
+    };
+
+    return {
+      success: true,
+      content: JSON.stringify(mockArtifact),
+    };
+  }
+
+  async executeEligibilityVetting(request: EligibilityVettingRequest): Promise<OpencodeResponse> {
+    if (this.shouldFail) {
+      return {
+        success: false,
+        error: 'Fake provider: Opencode binary not found',
+        exitCode: 1,
+      };
+    }
+
+    const mockArtifact = {
+      artifactType: 'eligibility-vetting' as const,
+      jobId: 'ev-test-id',
+      grantId: request.grantId,
+      timestamp: new Date().toISOString(),
+      status: 'meets-all' as const,
+      missingRequirements: [],
+      recommendation: `${request.organizationProfile} meets all eligibility requirements for this grant.`,
+      checks: [
+        {
+          requirement: 'Nonprofit status (501(c)(3))',
+          met: true,
+          detail: 'Organization is a registered 501(c)(3) nonprofit.',
+        },
+        {
+          requirement: 'Geographic eligibility',
+          met: true,
+          detail: 'Grant is available in the service area.',
+        },
+        {
+          requirement: 'Budget range fit',
+          met: true,
+          detail: 'Requested amount is within allowable range.',
+        },
+      ],
+    };
+
+    return {
+      success: true,
+      content: JSON.stringify(mockArtifact),
     };
   }
 
@@ -579,6 +709,68 @@ ${request.missionStatement}
 
     const args = ['run', prompt];
 
+    return this.runCommand(args);
+  }
+
+  async executePeerDiscovery(request: PeerDiscoveryRequest): Promise<OpencodeResponse> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Opencode not configured. Please set binary path and working directory in settings.',
+        exitCode: 1,
+      };
+    }
+
+    const prompt = `Return only JSON.
+Analyze peer organizations similar to the organization below and identify potential funders they have received grants from.
+Return a JSON object matching the peer-discovery artifact schema with results array containing funderName, funderType, relevanceRationale, sourceOrganization, and confidence.
+
+Organization profile:
+${request.organizationProfile}
+${request.query ? `\nFocus query: ${request.query}` : ''}`;
+
+    const args = ['run', '--format', 'json', prompt];
+    return this.runCommand(args);
+  }
+
+  async executeFunderInsights(request: FunderInsightsRequest): Promise<OpencodeResponse> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Opencode not configured. Please set binary path and working directory in settings.',
+        exitCode: 1,
+      };
+    }
+
+    const prompt = `Return only JSON.
+Analyze the funding patterns and giving trends for funder ${request.funderId}.
+Return a JSON object matching the funder-insights artifact schema with patterns array and optional givingTrends array.
+
+Organization profile:
+${request.organizationProfile}`;
+
+    const args = ['run', '--format', 'json', prompt];
+    return this.runCommand(args);
+  }
+
+  async executeEligibilityVetting(request: EligibilityVettingRequest): Promise<OpencodeResponse> {
+    if (!this.isConfigured()) {
+      return {
+        success: false,
+        error: 'Opencode not configured. Please set binary path and working directory in settings.',
+        exitCode: 1,
+      };
+    }
+
+    const prompt = `Return only JSON.
+Evaluate the eligibility of the organization for grant ${request.grantId}.
+Return a JSON object matching the eligibility-vetting artifact schema with status, missingRequirements, recommendation, and checks array.
+
+Organization profile:
+${request.organizationProfile}
+${request.requirements ? `\nGrant requirements: ${request.requirements}` : ''}`;
+
+    const args = ['run', '--format', 'json', prompt];
     return this.runCommand(args);
   }
 

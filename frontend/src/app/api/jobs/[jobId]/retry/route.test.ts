@@ -87,6 +87,9 @@ const fakeAdapter = {
     }),
   }),
   generateDraft: vi.fn(),
+  executePeerDiscovery: vi.fn().mockResolvedValue({ success: true, content: JSON.stringify({ artifactType: 'peer-discovery', jobId: 'test', timestamp: new Date().toISOString(), results: [], organizationsAnalyzed: 0 }) }),
+  executeFunderInsights: vi.fn().mockResolvedValue({ success: true, content: JSON.stringify({ artifactType: 'funder-insights', jobId: 'test', funderId: 'test', timestamp: new Date().toISOString(), patterns: [] }) }),
+  executeEligibilityVetting: vi.fn().mockResolvedValue({ success: true, content: JSON.stringify({ artifactType: 'eligibility-vetting', jobId: 'test', grantId: 'test', timestamp: new Date().toISOString(), status: 'meets-all', missingRequirements: [], checks: [] }) }),
   isConfigured: () => true,
 };
 
