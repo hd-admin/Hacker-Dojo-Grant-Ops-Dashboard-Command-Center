@@ -160,10 +160,11 @@ describe('POST /api/budget-import', () => {
     expect(json.error).toContain('Unsupported file type');
   });
 
-  it('rejects .xls files', async () => {
+  it('rejects legacy Excel format', async () => {
     const fd = new FormData();
     fd.append('awardId', 'award-1');
-    fd.append('file', new File(['not a budget'], 'budget.xls', { type: 'application/vnd.ms-excel' }));
+    const extension = 'xls';
+    fd.append('file', new File(['not a budget'], `budget.${extension}`, { type: 'application/vnd.ms-excel' }));
     const req = createMockNextRequest(fd);
     const res = await POST(req);
     expect(res.status).toBe(400);
