@@ -6,9 +6,9 @@
 # environmental memory-pressure kills (OOM) observed on shared runners.
 set -euo pipefail
 
-REPO_ROOT="/home/mistlight/Hacker-Dojo-Grant-Ops-Dashboard-Command-Center"
+REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 LOG="$REPO_ROOT/test-batches.log"
-BATCH_SIZE=15
+BATCH_SIZE=8
 MAX_RETRIES=2
 
 # Generate the test list if missing or stale
@@ -31,7 +31,7 @@ while read -r -a files; do
     ATTEMPT=$((ATTEMPT + 1))
     echo "=== BATCH $BATCH (attempt $ATTEMPT) ===" >> "$LOG"
     cd "$REPO_ROOT"
-    if pnpm vitest run "${files[@]}" --reporter=verbose >> "$LOG" 2>&1; then
+    if ./node_modules/.bin/vitest run "${files[@]}" --reporter=basic --no-color >> "$LOG" 2>&1; then
       echo "BATCH $BATCH PASSED (attempt $ATTEMPT)" >> "$LOG"
       BATCH_PASSED=1
     else

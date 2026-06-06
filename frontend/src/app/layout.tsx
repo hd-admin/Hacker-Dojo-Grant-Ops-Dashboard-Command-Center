@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import type { JSX } from 'react';
+import type { JSX, ReactNode } from 'react';
 import './globals.css';
 import { ToastProvider } from '@/components/ToastProvider';
 
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }): JSX.Element {
+export default function RootLayout({ children }: { children: ReactNode }): JSX.Element {
   return (
     <html lang="en">
       <head>

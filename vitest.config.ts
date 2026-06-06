@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import os from 'node:os';
 import path from 'node:path';
 import { defineConfig } from 'vitest/config';
 
@@ -24,7 +25,7 @@ export default defineConfig({
     environment: 'node',
     env: {
       NODE_ENV: 'test',
-      TMPDIR: '/home/mistlight/tmp-vitest',
+      TMPDIR: path.join(os.tmpdir(), 'vitest-hacker-dojo'),
       NODE_OPTIONS: '--max-old-space-size=4096',
     },
     setupFiles: [path.resolve(__dirname, './tests/vitest-setup.ts')],
@@ -33,12 +34,13 @@ export default defineConfig({
 
     // The 135+ test files share better-sqlite3 native state that
     // accumulates across files when run in a single process. Fork
-    // isolation with singleFork:false and maxForks:1 reuses the same
-    // fork worker for all files, so native memory growth still OOMs.
-    // The reliable fix is external batching: run-test-batches.sh
-    // splits the suite into groups of 15 and invokes vitest separately
-    // for each group, guaranteeing a completely fresh Node process per
-    // batch. The standard `pnpm test` script is wired to that wrapper.
+    // isolation with singleFork:false creates a new fork for each test
+    // file, and maxForks:1 limits concurrency to one file at a time.
+    // This provides per-file process isolation within a single vitest
+    // invocation. The standard `pnpm test` script additionally uses
+    // run-test-batches.sh to split the suite into groups of 15 files,
+    // each invoked as a separate vitest process, as an extra safeguard
+    // against environmental process-duration limits.
     fileParallelism: false,
     pool: 'forks',
     poolOptions: {
