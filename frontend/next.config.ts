@@ -22,6 +22,7 @@ const nextConfig: NextConfig = {
     unoptimized: true,
   },
   poweredByHeader: false,
+  outputFileTracingRoot: projectRoot,
   experimental: {
     serverActions: {
       bodySizeLimit: '50mb',

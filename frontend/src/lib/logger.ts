@@ -28,8 +28,7 @@ class RotatingLogStream extends Writable {
     try {
       // pino-roll has no TypeScript declarations; load dynamically to
       // avoid Next.js bundling issues with pino.transport() worker threads.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const pinoRollModule: any = await import('pino-roll');
+      const pinoRollModule = await import('pino-roll');
       const pinoRoll = pinoRollModule.default || pinoRollModule;
 
       // Remove stale symlinks (and regular files left by crashes) so pino-roll doesn't throw EEXIST
@@ -43,8 +42,7 @@ class RotatingLogStream extends Writable {
         // path doesn't exist, ignore
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const stream: any = await pinoRoll({
+      const stream = await pinoRoll({
         file: path.join(LOG_DIR, 'app'),
         frequency: 'daily',
         mkdir: true,

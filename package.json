@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "cd frontend && ../node_modules/.bin/next dev",
     "predev": "bash ./scripts/ensure-better-sqlite3.sh",
-    "build": "cd frontend && node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && ../node_modules/.bin/next build && node -e \"const fs=require('fs'),path=require('path');const src=path.join('.next','static');const dst=path.join('.next','standalone','frontend','.next','static');if(fs.existsSync(src)&&!fs.existsSync(dst)){fs.mkdirSync(path.dirname(dst),{recursive:true});fs.cpSync(src,dst,{recursive:true});}\"",
+    "build": "cd frontend && node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && ../node_modules/.bin/next build && node -e \"const fs=require('fs'),path=require('path');const src=path.join('.next','static');const standaloneRoot=path.join('.next','standalone');if(!fs.existsSync(standaloneRoot)){process.exit(0);}const entries=fs.readdirSync(standaloneRoot);const skipDirs=new Set(['node_modules','.nvm']);const projectDir=entries.find(e=>fs.statSync(path.join(standaloneRoot,e)).isDirectory()&&!skipDirs.has(e));const dst=projectDir?path.join(standaloneRoot,projectDir,'frontend','.next','static'):path.join('.next','standalone','frontend','.next','static');if(fs.existsSync(src)&&!fs.existsSync(dst)){fs.mkdirSync(path.dirname(dst),{recursive:true});fs.cpSync(src,dst,{recursive:true});}\"",
     "prebuild": "bash ./scripts/ensure-better-sqlite3.sh",
     "start": "cd frontend && PORT=3000 HOSTNAME=127.0.0.1 ../node_modules/.bin/next start",
     "start:verified": "bash scripts/setup-check.sh && cd frontend && PORT=3000 HOSTNAME=127.0.0.1 ../node_modules/.bin/next start",
