@@ -22,20 +22,28 @@ export default defineConfig({
       '**/.cache/**',
     ],
     environment: 'node',
-    env: { NODE_ENV: 'test', TMPDIR: '/home/mistlight/tmp-vitest' },
+    env: {
+      NODE_ENV: 'test',
+      TMPDIR: '/home/mistlight/tmp-vitest',
+      NODE_OPTIONS: '--max-old-space-size=4096',
+    },
     setupFiles: [path.resolve(__dirname, './tests/vitest-setup.ts')],
     testTimeout: 30000,
     hookTimeout: 30000,
 
-    // Use forks with singleFork and fileParallelism:false to ensure each
-    // test file runs sequentially in a fresh process. This prevents
-    // better-sqlite3 native memory growth from accumulating across the
-    // 184+ test files, which was the root cause of OOM kills.
+    // The 135+ test files share better-sqlite3 native state that
+    // accumulates across files when run in a single process. Fork
+    // isolation with singleFork:false and maxForks:1 reuses the same
+    // fork worker for all files, so native memory growth still OOMs.
+    // The reliable fix is external batching: run-test-batches.sh
+    // splits the suite into groups of 15 and invokes vitest separately
+    // for each group, guaranteeing a completely fresh Node process per
+    // batch. The standard `pnpm test` script is wired to that wrapper.
     fileParallelism: false,
     pool: 'forks',
     poolOptions: {
       forks: {
-        singleFork: true,
+        singleFork: false,
         maxForks: 1,
       },
     },

@@ -8,7 +8,7 @@ set -euo pipefail
 
 REPO_ROOT="/home/mistlight/Hacker-Dojo-Grant-Ops-Dashboard-Command-Center"
 LOG="$REPO_ROOT/test-batches.log"
-BATCH_SIZE=20
+BATCH_SIZE=15
 MAX_RETRIES=2
 
 # Generate the test list if missing or stale

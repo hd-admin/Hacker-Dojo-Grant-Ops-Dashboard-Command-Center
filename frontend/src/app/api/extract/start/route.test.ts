@@ -29,6 +29,13 @@ describe('/api/extract/start route', () => {
   it('queues an extract job', async () => {
     (getDependencies as ReturnType<typeof vi.fn>).mockReturnValue({
       idGenerator: { generateId: (p: string) => `${p}-test` },
+      repository: {
+        getOrgProfile: vi.fn().mockResolvedValue({ legalName: 'Hacker Dojo' }),
+        getOpencodeSettings: vi.fn().mockResolvedValue({ isConfigured: true }),
+        addJobQueueItem: vi.fn().mockResolvedValue(undefined),
+        updateJobQueueItem: vi.fn().mockResolvedValue(undefined),
+      },
+      clock: { now: () => new Date('2024-01-01') },
     });
     const req = new Request('http://localhost/api/extract/start', {
       method: 'POST',
@@ -44,6 +51,13 @@ describe('/api/extract/start route', () => {
   it('returns 202 with documentRef', async () => {
     (getDependencies as ReturnType<typeof vi.fn>).mockReturnValue({
       idGenerator: { generateId: () => 'ext-test' },
+      repository: {
+        getOrgProfile: vi.fn().mockResolvedValue({ legalName: 'Hacker Dojo' }),
+        getOpencodeSettings: vi.fn().mockResolvedValue({ isConfigured: true }),
+        addJobQueueItem: vi.fn().mockResolvedValue(undefined),
+        updateJobQueueItem: vi.fn().mockResolvedValue(undefined),
+      },
+      clock: { now: () => new Date('2024-01-01') },
     });
     const req = new Request('http://localhost/api/extract/start', {
       method: 'POST',

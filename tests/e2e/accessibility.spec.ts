@@ -146,12 +146,7 @@ test.describe('Accessibility', () => {
         }
       }
       if (!hasLabel) {
-        // Report the element for debugging
-        const tag = await el.evaluate((node: Element) => node.tagName);
-        const id = await el.getAttribute('id');
-        const cls = await el.getAttribute('class');
-        const tp = await el.getAttribute('type');
-        console.warn(`Element without accessible name: <${tag}> id=${id} class=${cls} type=${tp}`);
+        // Element lacks accessible name — test will fail below with details
       }
       expect(hasLabel).toBeTruthy();
     }
