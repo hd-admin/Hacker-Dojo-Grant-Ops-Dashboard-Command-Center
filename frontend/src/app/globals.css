@@ -3494,7 +3494,7 @@ textarea:focus:not(:focus-visible) {
 }
 
 /* === ENHANCED HOVER STATES === */
-/* Interactive rows in tables/lists */
+/* Clickable rows in tables/lists */
 button.grants-row,
 button.deadline-item,
 button.pipeline-list-row {

@@ -105,7 +105,6 @@ export async function analyzeStoredDocument(
     'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
     'text/csv',
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    'application/vnd.ms-excel',
   ];
 
   const lowerPath = filePath.toLowerCase();
