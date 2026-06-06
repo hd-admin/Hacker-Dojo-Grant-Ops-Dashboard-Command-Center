@@ -16,6 +16,7 @@ describe('GrantDrawer utilities', () => {
 
   afterEach(() => {
     globalThis.window = originalWindow;
+    vi.unstubAllGlobals();
   });
 
   describe('buildGrantDrawerViewModel', () => {
@@ -202,8 +203,10 @@ describe('GrantDrawer utilities', () => {
         }),
       } as unknown as Storage;
 
-      // @ts-expect-error - mocking window.localStorage
-      globalThis.window = { localStorage: mockStorage };
+      Object.defineProperty(window, 'localStorage', {
+        value: mockStorage,
+        writable: true,
+      });
 
       saveWorkingContextField('recentDraftId', 'draft-123');
 
@@ -227,8 +230,10 @@ describe('GrantDrawer utilities', () => {
         }),
       } as unknown as Storage;
 
-      // @ts-expect-error - mocking window.localStorage
-      globalThis.window = { localStorage: mockStorage };
+      Object.defineProperty(window, 'localStorage', {
+        value: mockStorage,
+        writable: true,
+      });
 
       saveWorkingContextField('newField', 'newValue');
 
@@ -238,8 +243,10 @@ describe('GrantDrawer utilities', () => {
     });
 
     it('handles missing localStorage gracefully', () => {
-      // @ts-expect-error - mocking window without localStorage
-      globalThis.window = {};
+      Object.defineProperty(window, 'localStorage', {
+        value: undefined,
+        writable: true,
+      });
 
       expect(() => saveWorkingContextField('field', 'value')).not.toThrow();
     });
