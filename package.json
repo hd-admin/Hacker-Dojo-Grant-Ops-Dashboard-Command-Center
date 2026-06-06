@@ -14,7 +14,7 @@
     "prelint": "bash ./scripts/ensure-better-sqlite3.sh",
     "lint": "eslint . --ext .ts,.tsx",
     "pretest": "bash ./scripts/ensure-better-sqlite3.sh",
-    "test": "bash ./run-test-batches.sh",
+    "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:all": "vitest run && playwright test",

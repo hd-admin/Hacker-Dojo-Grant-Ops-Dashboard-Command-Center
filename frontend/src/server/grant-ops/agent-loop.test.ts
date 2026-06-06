@@ -1,7 +1,7 @@
 /**
- * Agent Loop Unit Tests (v2)
+ * Agent Loop Unit Tests (v3)
  *
- * Tests executeAgentJob with mocked child_process.spawn.
+ * Tests executeAgentJob with injected fs and processSpawner dependencies.
  * Covers all AC-13.2.1 scenarios:
  * 1. Successful artifact generation and ingestion
  * 2. Invalid JSON -> retry -> success on 2nd attempt
@@ -14,10 +14,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Mock } from 'vitest';
-import fs from 'node:fs';
+import nodeFs from 'node:fs';
 import path from 'node:path';
 import { EventEmitter } from 'node:events';
 import { Writable, Readable } from 'node:stream';
+import type { ChildProcess } from 'node:child_process';
 import type { AgentJob, AgentTaskType } from '../../../../shared/types';
 import {
   executeAgentJob,
@@ -25,6 +26,8 @@ import {
   JOB_TIMEOUTS,
   PROGRESS_STAGES,
   checkQualityGates,
+  type FileSystem,
+  type ProcessSpawner,
 } from './agent-loop';
 import type { AgentLoopDeps } from './agent-loop';
 
@@ -33,17 +36,6 @@ let currentTestDataDir: string;
 function getTestDataDir() {
   return currentTestDataDir;
 }
-
-// Shared spawn mock setup
-const mockSpawnImpl = vi.fn();
-
-vi.mock('node:child_process', async () => {
-  const actual = await vi.importActual<typeof import('node:child_process')>('node:child_process');
-  return {
-    ...actual,
-    spawn: (...args: unknown[]) => mockSpawnImpl(...args),
-  };
-});
 
 function buildValidResearchArtifact(jobId: string) {
   return {
@@ -76,9 +68,49 @@ function buildValidResearchArtifact(jobId: string) {
   };
 }
 
-function writeArtifactToPath(artifactPath: string, data: unknown): void {
-  fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
-  fs.writeFileSync(artifactPath, JSON.stringify(data));
+function createMockFileSystem(_baseDir: string): FileSystem {
+  const files = new Map<string, string>();
+  const dirs = new Set<string>();
+
+  const ensureDir = (filePath: string) => {
+    const dir = path.dirname(filePath);
+    if (!dirs.has(dir)) {
+      nodeFs.mkdirSync(dir, { recursive: true });
+      dirs.add(dir);
+    }
+  };
+
+  return {
+    mkdirSync: (p, _o) => {
+      nodeFs.mkdirSync(p, { recursive: true });
+      dirs.add(p);
+    },
+    writeFileSync: (p, d, _e) => {
+      ensureDir(p);
+      files.set(p, d);
+      nodeFs.writeFileSync(p, d, 'utf-8');
+    },
+    readFileSync: (p, _e) => {
+      if (files.has(p)) return files.get(p)!;
+      return nodeFs.readFileSync(p, 'utf-8');
+    },
+    existsSync: (p) => files.has(p) || nodeFs.existsSync(p),
+    unlinkSync: (p) => {
+      files.delete(p);
+      if (nodeFs.existsSync(p)) nodeFs.unlinkSync(p);
+    },
+    statSync: (p) => {
+      if (files.has(p)) return { mtimeMs: Date.now() };
+      return nodeFs.statSync(p);
+    },
+    createWriteStream: (p, o) => nodeFs.createWriteStream(p, o),
+    rmSync: (p, o) => {
+      files.forEach((_v, k) => {
+        if (k.startsWith(p)) files.delete(k);
+      });
+      if (nodeFs.existsSync(p)) nodeFs.rmSync(p, o);
+    },
+  };
 }
 
 function createMockChildProcess(options?: { autoExitAfterMs?: number; exitCode?: number }) {
@@ -109,7 +141,20 @@ function createMockChildProcess(options?: { autoExitAfterMs?: number; exitCode?:
   return mockProc;
 }
 
-function createMockDeps(overrides?: Partial<AgentLoopDeps>): {
+const mockSpawnImpl = vi.fn();
+
+function createMockProcessSpawner(): ProcessSpawner {
+  return {
+    spawn: (command, args, options) => {
+      return mockSpawnImpl(command, args, options) as ChildProcess;
+    },
+  };
+}
+
+function createMockDeps(
+  baseDir: string,
+  overrides?: Partial<AgentLoopDeps>,
+): {
   deps: AgentLoopDeps;
   updateProgressCalls: Array<{ status: string; stage: string; errorMessage?: string | undefined }>;
   ingestCalls: Array<{ type: AgentTaskType; artifact: unknown; job: AgentJob }>;
@@ -123,7 +168,7 @@ function createMockDeps(overrides?: Partial<AgentLoopDeps>): {
 
   const deps: AgentLoopDeps = {
     getDataDir() {
-      return getTestDataDir();
+      return baseDir;
     },
     buildPrompt() {
       return 'Build artifact.';
@@ -139,6 +184,8 @@ function createMockDeps(overrides?: Partial<AgentLoopDeps>): {
       ingestCalls.push({ type, artifact, job });
     },
     opencodePath: 'opencode',
+    fs: createMockFileSystem(baseDir),
+    processSpawner: createMockProcessSpawner(),
     ...overrides,
   };
 
@@ -168,19 +215,18 @@ describe('executeAgentJob - mocked subprocess', () => {
   beforeEach(() => {
     currentTestDataDir = path.join(
       process.cwd(),
-      `.grant-ops-data-test-agent-loop-v2-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      `.grant-ops-data-test-agent-loop-v3-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     );
-    fs.mkdirSync(currentTestDataDir, { recursive: true });
-    fs.mkdirSync(path.join(currentTestDataDir, 'tmp'), { recursive: true });
+    nodeFs.mkdirSync(currentTestDataDir, { recursive: true });
+    nodeFs.mkdirSync(path.join(currentTestDataDir, 'tmp'), { recursive: true });
     mockSpawnImpl.mockReset();
   });
 
   afterEach(async () => {
-    // Allow a tick for any pending stream closes before deleting the directory
     await new Promise((r) => setImmediate(r));
-    if (fs.existsSync(currentTestDataDir)) {
+    if (nodeFs.existsSync(currentTestDataDir)) {
       try {
-        fs.rmSync(currentTestDataDir, { recursive: true, force: true });
+        nodeFs.rmSync(currentTestDataDir, { recursive: true, force: true });
       } catch {
         // Suppress cleanup errors (e.g., ENOENT from race conditions)
       }
@@ -192,10 +238,10 @@ describe('executeAgentJob - mocked subprocess', () => {
     mockSpawnImpl.mockReturnValue(mockProc);
 
     const job = createResearchJob();
-    const { deps, ingestCalls } = createMockDeps();
+    const { deps, ingestCalls } = createMockDeps(currentTestDataDir);
 
     const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
-    writeArtifactToPath(artifactPath, buildValidResearchArtifact(job.id));
+    deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
 
     const execPromise = executeAgentJob(job, deps);
 
@@ -213,25 +259,24 @@ describe('executeAgentJob - mocked subprocess', () => {
     mockSpawnImpl.mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
 
     const job = createResearchJob();
-    const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
+    const { deps, updateProgressCalls, ingestCalls } = createMockDeps(currentTestDataDir);
 
     const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
     const execPromise = executeAgentJob(job, deps);
 
     await flushPromises();
-    fs.writeFileSync(artifactPath, 'not valid json {{{');
+    deps.fs!.writeFileSync(artifactPath, 'not valid json {{{');
     mockProc1.emit('exit', 0);
     await flushPromises();
     await flushPromises();
 
-    writeArtifactToPath(artifactPath, buildValidResearchArtifact(job.id));
+    deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
     mockProc2.emit('exit', 0);
 
     await execPromise;
 
     expect(ingestCalls.length).toBe(1);
     expect(mockSpawnImpl).toHaveBeenCalledTimes(2);
-    // Verify malformed JSON triggers retry with parse-error reason (structural failure)
     const parseErrorUpdate = updateProgressCalls.find((u) => u.stage === 'invalid-json');
     expect(parseErrorUpdate).toBeDefined();
     expect(parseErrorUpdate!.errorMessage).toContain('invalid JSON');
@@ -247,14 +292,14 @@ describe('executeAgentJob - mocked subprocess', () => {
       .mockReturnValueOnce(mockProc3);
 
     const job = createResearchJob();
-    const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
+    const { deps, updateProgressCalls, ingestCalls } = createMockDeps(currentTestDataDir);
 
     const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
     const execPromise = executeAgentJob(job, deps);
 
     for (const proc of [mockProc1, mockProc2, mockProc3]) {
       await flushPromises();
-      writeArtifactToPath(artifactPath, 'not valid json {{{');
+      deps.fs!.writeFileSync(artifactPath, 'not valid json {{{');
       proc.emit('exit', 0);
       await flushPromises();
       await flushPromises();
@@ -272,7 +317,6 @@ describe('executeAgentJob - mocked subprocess', () => {
   }, 10000);
 
   it('4 - timeout -> retry on 2nd attempt (AC-13.2.1)', async () => {
-    // Use real timers but override the research timeout via module-level mock
     const agentLoopModule = await import('./agent-loop');
     const originalTimeout = agentLoopModule.JOB_TIMEOUTS.research;
     (agentLoopModule.JOB_TIMEOUTS as Record<string, number>).research = 50;
@@ -283,17 +327,15 @@ describe('executeAgentJob - mocked subprocess', () => {
       mockSpawnImpl.mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
 
       const job = createResearchJob();
-      const { deps, ingestCalls } = createMockDeps();
+      const { deps, ingestCalls } = createMockDeps(currentTestDataDir);
 
       const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
 
       const execPromise = executeAgentJob(job, deps);
 
-      // Wait a bit for the timeout to trigger on process 1
       await new Promise((r) => setTimeout(r, 100));
 
-      // Second attempt: exit with valid artifact
-      writeArtifactToPath(artifactPath, buildValidResearchArtifact(job.id));
+      deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
       mockProc2.emit('exit', 0);
 
       await execPromise;
@@ -314,17 +356,15 @@ describe('executeAgentJob - mocked subprocess', () => {
       mockSpawnImpl.mockReturnValue(mockProc);
 
       const job = createResearchJob({ status: 'running' });
-      const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
+      const { deps, updateProgressCalls, ingestCalls } = createMockDeps(currentTestDataDir);
 
       const execPromise = executeAgentJob(job, deps);
 
       await vi.advanceTimersByTimeAsync(0);
 
-      // Mark job as cancelled, then advance past the 1s interval check
       job.status = 'cancelled';
       await vi.advanceTimersByTimeAsync(1100);
 
-      // Advance the 5s SIGKILL timer
       await vi.advanceTimersByTimeAsync(5100);
 
       await execPromise;
@@ -344,19 +384,17 @@ describe('executeAgentJob - mocked subprocess', () => {
     mockSpawnImpl.mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
 
     const job = createResearchJob();
-    const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
+    const { deps, updateProgressCalls, ingestCalls } = createMockDeps(currentTestDataDir);
 
     const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
     const execPromise = executeAgentJob(job, deps);
 
-    // First attempt: exit without writing artifact file
     await flushPromises();
     mockProc1.emit('exit', 0);
     await flushPromises();
     await flushPromises();
 
-    // Second attempt: write valid artifact
-    writeArtifactToPath(artifactPath, buildValidResearchArtifact(job.id));
+    deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
     mockProc2.emit('exit', 0);
 
     await execPromise;
@@ -374,28 +412,29 @@ describe('executeAgentJob - mocked subprocess', () => {
     mockSpawnImpl.mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
 
     const job = createResearchJob();
-    const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
+    const { deps, updateProgressCalls, ingestCalls } = createMockDeps(currentTestDataDir);
 
     const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
     const execPromise = executeAgentJob(job, deps);
 
-    // First attempt: write JSON that fails schema validation
     await flushPromises();
-    writeArtifactToPath(artifactPath, {
-      artifactType: 'research',
-      jobId: job.id,
-      timestamp: new Date().toISOString(),
-      grants: [{ title: 123, funder: 'x' }],
-      evidence: [],
-      sourcesFound: 0,
-      grantsFound: 0,
-    });
+    deps.fs!.writeFileSync(
+      artifactPath,
+      JSON.stringify({
+        artifactType: 'research',
+        jobId: job.id,
+        timestamp: new Date().toISOString(),
+        grants: [{ title: 123, funder: 'x' }],
+        evidence: [],
+        sourcesFound: 0,
+        grantsFound: 0,
+      }),
+    );
     mockProc1.emit('exit', 0);
     await flushPromises();
     await flushPromises();
 
-    // Second attempt: write valid artifact
-    writeArtifactToPath(artifactPath, buildValidResearchArtifact(job.id));
+    deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
     mockProc2.emit('exit', 0);
 
     await execPromise;
@@ -405,6 +444,94 @@ describe('executeAgentJob - mocked subprocess', () => {
     expect(schemaRetry).toBeDefined();
     expect(schemaRetry!.errorMessage).toContain('Schema validation');
   }, 10000);
+});
+
+describe('executeAgentJob - edge case coverage', () => {
+  beforeEach(() => {
+    currentTestDataDir = path.join(
+      process.cwd(),
+      `.grant-ops-data-test-agent-loop-edge-v3-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    nodeFs.mkdirSync(currentTestDataDir, { recursive: true });
+    nodeFs.mkdirSync(path.join(currentTestDataDir, 'tmp'), { recursive: true });
+    mockSpawnImpl.mockReset();
+  });
+
+  afterEach(async () => {
+    await new Promise((r) => setImmediate(r));
+    if (nodeFs.existsSync(currentTestDataDir)) {
+      try {
+        nodeFs.rmSync(currentTestDataDir, { recursive: true, force: true });
+      } catch {
+        // Suppress cleanup errors
+      }
+    }
+  });
+
+  it('8 - timeout produces correct failure reason in retry prompt (AC-1.6.2)', async () => {
+    const agentLoopModule = await import('./agent-loop');
+    const originalTimeout = agentLoopModule.JOB_TIMEOUTS.research;
+    (agentLoopModule.JOB_TIMEOUTS as Record<string, number>).research = 50;
+
+    try {
+      const mockProc1 = createMockChildProcess();
+      const mockProc2 = createMockChildProcess();
+      mockSpawnImpl.mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
+
+      const job = createResearchJob();
+      const { deps, updateProgressCalls, ingestCalls } = createMockDeps(currentTestDataDir);
+
+      const execPromise = executeAgentJob(job, deps);
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
+      deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
+      mockProc2.emit('exit', 0);
+
+      await execPromise;
+
+      expect(ingestCalls.length).toBe(1);
+      const timeoutUpdate = updateProgressCalls.find(
+        (u) => u.status === 'retrying' && u.stage === 'timeout',
+      );
+      expect(timeoutUpdate).toBeDefined();
+      expect(timeoutUpdate!.errorMessage).toContain('timed out');
+    } finally {
+      (agentLoopModule.JOB_TIMEOUTS as Record<string, number>).research = originalTimeout;
+    }
+  });
+
+  it('9 - cancellation preserves job state for retry (AC-1.5.1)', async () => {
+    vi.useFakeTimers();
+
+    try {
+      const mockProc = createMockChildProcess();
+      mockSpawnImpl.mockReturnValue(mockProc);
+
+      const job = createResearchJob({ status: 'running' });
+      const { deps, updateProgressCalls, ingestCalls } = createMockDeps(currentTestDataDir);
+
+      const execPromise = executeAgentJob(job, deps);
+
+      await vi.advanceTimersByTimeAsync(0);
+
+      job.status = 'cancelled';
+      await vi.advanceTimersByTimeAsync(1100);
+
+      expect(mockProc.kill).toHaveBeenCalledWith('SIGTERM');
+      await vi.advanceTimersByTimeAsync(5100);
+
+      await execPromise;
+
+      expect(ingestCalls.length).toBe(0);
+      const cancelledUpdate = updateProgressCalls.find((u) => u.status === 'cancelled');
+      expect(cancelledUpdate).toBeDefined();
+      expect(mockProc.kill).toHaveBeenCalledWith('SIGKILL');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe('checkQualityGates - draft wordCount threshold (AC-15.8.1)', () => {
@@ -445,98 +572,6 @@ describe('checkQualityGates - draft wordCount threshold (AC-15.8.1)', () => {
   });
 });
 
-describe('executeAgentJob - edge case coverage (Step 5)', () => {
-  beforeEach(() => {
-    currentTestDataDir = path.join(
-      process.cwd(),
-      `.grant-ops-data-test-agent-loop-edge-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-    );
-    fs.mkdirSync(currentTestDataDir, { recursive: true });
-    fs.mkdirSync(path.join(currentTestDataDir, 'tmp'), { recursive: true });
-    mockSpawnImpl.mockReset();
-  });
-
-  afterEach(async () => {
-    await new Promise((r) => setImmediate(r));
-    if (fs.existsSync(currentTestDataDir)) {
-      try {
-        fs.rmSync(currentTestDataDir, { recursive: true, force: true });
-      } catch {
-        // Suppress cleanup errors
-      }
-    }
-  });
-
-  it('8 - timeout produces correct failure reason in retry prompt (AC-1.6.2)', async () => {
-    const agentLoopModule = await import('./agent-loop');
-    const originalTimeout = agentLoopModule.JOB_TIMEOUTS.research;
-    (agentLoopModule.JOB_TIMEOUTS as Record<string, number>).research = 50;
-
-    try {
-      const mockProc1 = createMockChildProcess();
-      const mockProc2 = createMockChildProcess();
-      mockSpawnImpl.mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
-
-      const job = createResearchJob();
-      const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
-
-      const execPromise = executeAgentJob(job, deps);
-
-      await new Promise((r) => setTimeout(r, 100));
-
-      // Second attempt: write valid artifact
-      const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
-      writeArtifactToPath(artifactPath, buildValidResearchArtifact(job.id));
-      mockProc2.emit('exit', 0);
-
-      await execPromise;
-
-      expect(ingestCalls.length).toBe(1);
-      const timeoutUpdate = updateProgressCalls.find(
-        (u) => u.status === 'retrying' && u.stage === 'timeout',
-      );
-      expect(timeoutUpdate).toBeDefined();
-      expect(timeoutUpdate!.errorMessage).toContain('timed out');
-    } finally {
-      (agentLoopModule.JOB_TIMEOUTS as Record<string, number>).research = originalTimeout;
-    }
-  });
-
-  it('9 - cancellation preserves job state for retry (AC-1.5.1)', async () => {
-    vi.useFakeTimers();
-
-    try {
-      const mockProc = createMockChildProcess();
-      mockSpawnImpl.mockReturnValue(mockProc);
-
-      const job = createResearchJob({ status: 'running' });
-      const { deps, updateProgressCalls, ingestCalls } = createMockDeps();
-
-      const execPromise = executeAgentJob(job, deps);
-
-      await vi.advanceTimersByTimeAsync(0);
-
-      // Mark job as cancelled
-      job.status = 'cancelled';
-      await vi.advanceTimersByTimeAsync(1100);
-
-      // Advance past SIGTERM/SIGKILL with 5s gap
-      expect(mockProc.kill).toHaveBeenCalledWith('SIGTERM');
-      await vi.advanceTimersByTimeAsync(5100);
-
-      await execPromise;
-
-      expect(ingestCalls.length).toBe(0);
-      const cancelledUpdate = updateProgressCalls.find((u) => u.status === 'cancelled');
-      expect(cancelledUpdate).toBeDefined();
-      // Verify SIGKILL was also called after 5s gap
-      expect(mockProc.kill).toHaveBeenCalledWith('SIGKILL');
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-});
-
 describe('agent-loop constants', () => {
   it('has max retries set to 3', () => {
     expect(MAX_RETRIES).toBe(3);
@@ -567,5 +602,28 @@ describe('agent-loop constants', () => {
       expect(last?.progress).toBe(100);
       expect(last?.stage).toBe('completed');
     }
+  });
+});
+
+describe('dependency injection interfaces', () => {
+  it('FileSystem interface is exported and usable', () => {
+    const fs: FileSystem = {
+      mkdirSync: vi.fn(),
+      writeFileSync: vi.fn(),
+      readFileSync: vi.fn(() => '{}'),
+      existsSync: vi.fn(() => false),
+      unlinkSync: vi.fn(),
+      statSync: vi.fn(() => ({ mtimeMs: Date.now() })),
+      createWriteStream: vi.fn(),
+      rmSync: vi.fn(),
+    };
+    expect(fs).toBeDefined();
+  });
+
+  it('ProcessSpawner interface is exported and usable', () => {
+    const spawner: ProcessSpawner = {
+      spawn: vi.fn(),
+    };
+    expect(spawner).toBeDefined();
   });
 });

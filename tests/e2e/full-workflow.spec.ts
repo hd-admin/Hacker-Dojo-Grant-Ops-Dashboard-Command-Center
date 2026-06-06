@@ -206,7 +206,7 @@ test.describe('Full Workflow E2E', () => {
     await page.waitForSelector('[data-testid="app-shell"]', { timeout: 10000 });
     await page.click('[data-testid="nav-post-award"]');
     // Verify the post-award view renders
-    await expect(page.locator('[data-testid="post-award-view"]')).toBeVisible({
+    await expect(page.locator('[data-testid="post-award-view"]').first()).toBeVisible({
       timeout: 5000,
     });
 

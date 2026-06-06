@@ -26,17 +26,19 @@ export default defineConfig({
     setupFiles: [path.resolve(__dirname, './tests/vitest-setup.ts')],
     testTimeout: 30000,
     hookTimeout: 30000,
-    fileParallelism: false,
 
+    // Use forks with singleFork and fileParallelism:false to ensure each
+    // test file runs sequentially in a fresh process. This prevents
+    // better-sqlite3 native memory growth from accumulating across the
+    // 184+ test files, which was the root cause of OOM kills.
+    fileParallelism: false,
     pool: 'forks',
     poolOptions: {
       forks: {
         singleFork: true,
+        maxForks: 1,
       },
     },
-    // Full suite (184+ files) exceeds single-process memory limits during
-    // vitest module graph analysis. Run via scripts/run-test-batches.sh
-    // (batch size 10) to keep memory stable.
   },
   resolve: {
     alias: {

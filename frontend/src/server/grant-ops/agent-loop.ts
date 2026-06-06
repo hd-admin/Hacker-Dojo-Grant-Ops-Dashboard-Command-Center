@@ -13,8 +13,9 @@ import 'server-only';
  * DI-compatible following dependencies.ts pattern.
  */
 
-import { spawn, type ChildProcess } from 'node:child_process';
-import fs from 'node:fs';
+import { createRequire } from 'node:module';
+import type { ChildProcess } from 'node:child_process';
+import type * as NodeFs from 'node:fs';
 import path from 'node:path';
 import { z } from 'zod';
 import type {
@@ -139,6 +140,57 @@ function getSchemaForType(type: AgentTaskType): z.ZodType {
   }
 }
 
+export interface FileSystem {
+  mkdirSync(path: string, options?: { recursive?: boolean }): void;
+  writeFileSync(path: string, data: string, encoding?: BufferEncoding): void;
+  readFileSync(path: string, encoding?: BufferEncoding): string | Buffer;
+  existsSync(path: string): boolean;
+  unlinkSync(path: string): void;
+  statSync(path: string): { mtimeMs: number };
+  createWriteStream(path: string, options?: { flags?: string }): NodeJS.WritableStream;
+  rmSync(path: string, options?: { recursive?: boolean; force?: boolean }): void;
+}
+
+export interface ProcessSpawner {
+  spawn(
+    command: string,
+    args: string[],
+    options: {
+      env?: NodeJS.ProcessEnv;
+      cwd?: string;
+      stdio?: [string, string, string];
+    },
+  ): ChildProcess;
+}
+
+const require = createRequire(import.meta.url);
+
+function getDefaultFileSystem(): FileSystem {
+  const fs = require('node:fs') as typeof NodeFs;
+  return {
+    mkdirSync: (p, o) => fs.mkdirSync(p, o),
+    writeFileSync: (p, d, e) => fs.writeFileSync(p, d, e),
+    readFileSync: (p, e) => fs.readFileSync(p, e),
+    existsSync: (p) => fs.existsSync(p),
+    unlinkSync: (p) => fs.unlinkSync(p),
+    statSync: (p) => fs.statSync(p),
+    createWriteStream: (p, o) => fs.createWriteStream(p, o),
+    rmSync: (p, o) => fs.rmSync(p, o),
+  };
+}
+
+function getDefaultProcessSpawner(): ProcessSpawner {
+  const { spawn } = require('node:child_process') as typeof import('node:child_process');
+  return {
+    spawn: (command, args, options) =>
+      spawn(command, args, {
+        env: options.env,
+        cwd: options.cwd,
+        stdio: options.stdio as ['pipe', 'pipe', 'pipe'],
+      }),
+  };
+}
+
 export interface AgentLoopDeps {
   getDataDir(): string;
   buildPrompt(
@@ -151,6 +203,8 @@ export interface AgentLoopDeps {
   ingestArtifact(type: AgentTaskType, artifact: unknown, job: AgentJob): Promise<void>;
   opencodePath?: string;
   onLog?(jobId: string, line: string): void;
+  fs?: FileSystem;
+  processSpawner?: ProcessSpawner;
 }
 
 let activeJobs = 0;
@@ -164,6 +218,9 @@ export function resetActiveJobs(): void {
 }
 
 export async function executeAgentJob(job: AgentJob, deps: AgentLoopDeps): Promise<void> {
+  const fs = deps.fs ?? getDefaultFileSystem();
+  const processSpawner = deps.processSpawner ?? getDefaultProcessSpawner();
+
   // Concurrent job gate
   if (activeJobs >= MAX_CONCURRENT_JOBS) {
     const update: JobProgressUpdate = {
@@ -243,7 +300,7 @@ export async function executeAgentJob(job: AgentJob, deps: AgentLoopDeps): Promi
       const opencodeBin = deps.opencodePath || 'opencode';
       let proc: ChildProcess;
       try {
-        proc = spawn(opencodeBin, [], {
+        proc = processSpawner.spawn(opencodeBin, [], {
           env,
           cwd: tmpDir,
           stdio: ['pipe', 'pipe', 'pipe'],
@@ -380,7 +437,7 @@ export async function executeAgentJob(job: AgentJob, deps: AgentLoopDeps): Promi
         continue;
       }
 
-      const raw = fs.readFileSync(artifactPath, 'utf-8');
+      const raw = fs.readFileSync(artifactPath, 'utf-8') as string;
       let artifact: unknown;
       try {
         artifact = JSON.parse(raw);

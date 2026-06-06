@@ -423,7 +423,6 @@ describe('classifyRootCause', () => {
 
 describe('log level filtering', () => {
   it('returns only error-level lines when ?level=error is requested', async () => {
-    const { GET: getAppLogs } = await import('../../app/api/logs/app/route');
     const fs = await import('node:fs');
     const path = await import('node:path');
 
@@ -432,7 +431,7 @@ describe('log level filtering', () => {
       fs.mkdirSync(logDir, { recursive: true });
     }
     // Clean up any leftover log files from previous tests to ensure isolation
-    const existingFiles = fs.readdirSync(logDir).filter((f: string) => f.endsWith('.log') || fs.lstatSync(path.join(logDir, f)).isSymbolicLink());
+    const existingFiles = fs.readdirSync(logDir).filter((f: string) => f.endsWith('.log'));
     for (const file of existingFiles) {
       fs.unlinkSync(path.join(logDir, file));
     }
@@ -447,6 +446,8 @@ describe('log level filtering', () => {
     fs.writeFileSync(logFile, mixedLines.join('\n'));
 
     try {
+      const { GET: getAppLogs } = await import('../../app/api/logs/app/route');
+
       const request = new Request(
         'http://localhost/api/logs/app?level=error',
       ) as unknown as import('next/server').NextRequest;

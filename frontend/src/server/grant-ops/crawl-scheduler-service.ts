@@ -11,6 +11,18 @@ import { runResearch } from './research-service';
 
 let schedulerHandle: NodeJS.Timeout | null = null;
 
+export interface Timer {
+  setInterval(callback: () => void, ms: number): NodeJS.Timeout;
+  clearInterval(handle: NodeJS.Timeout | null): void;
+}
+
+const defaultTimer: Timer = {
+  setInterval: (callback, ms) => global.setInterval(callback, ms),
+  clearInterval: (handle) => {
+    if (handle) global.clearInterval(handle);
+  },
+};
+
 function addHours(date: Date, hours: number): string {
   return new Date(date.getTime() + hours * 60 * 60 * 1000).toISOString();
 }
@@ -87,15 +99,18 @@ export async function checkAndRunDue(): Promise<number> {
   return dueSchedules.length;
 }
 
-function _startCrawlScheduler(intervalMs = 60_000): void {
+export function startCrawlScheduler(
+  intervalMs = 60_000,
+  timer: Timer = defaultTimer,
+): void {
   if (schedulerHandle) return;
-  schedulerHandle = setInterval(() => {
+  schedulerHandle = timer.setInterval(() => {
     void checkAndRunDue().catch((error) => logger.error({ err: error }, 'Crawl scheduler failed'));
   }, intervalMs);
 }
 
-function _stopCrawlScheduler(): void {
+export function stopCrawlScheduler(timer: Timer = defaultTimer): void {
   if (!schedulerHandle) return;
-  clearInterval(schedulerHandle);
+  timer.clearInterval(schedulerHandle);
   schedulerHandle = null;
 }

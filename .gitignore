@@ -76,3 +76,4 @@ vendor/
 .knip.log
 .knip-*.txt
 test-*-batches.log
+test-batches.log

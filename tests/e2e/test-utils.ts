@@ -1,4 +1,5 @@
 import type { APIRequestContext, Page } from '@playwright/test';
+import path from 'node:path';
 
 export const BASE_URL = 'http://127.0.0.1:3000';
 
@@ -43,10 +44,15 @@ export async function configureOpencodeThroughSettingsView(
   binaryPath: string,
   workingDirectory: string,
 ): Promise<void> {
+  // Resolve relative paths to absolute so the server (which runs from
+  // frontend/) can locate the stub binary correctly.
+  const resolvedBinaryPath = path.isAbsolute(binaryPath)
+    ? binaryPath
+    : path.resolve(workingDirectory, binaryPath);
   const response = await page.request.fetch(`${BASE_URL}/api/testing/configure-opencode`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    data: { binaryPath, workingDirectory },
+    data: { binaryPath: resolvedBinaryPath, workingDirectory },
   });
   if (!response.ok()) {
     throw new Error(`Failed to configure opencode: ${response.status()}`);

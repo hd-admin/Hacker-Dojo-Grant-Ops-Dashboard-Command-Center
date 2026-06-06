@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
 import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
 import { saveCrawlSchedule, loadCrawlSchedules } from '../../../../shared/grant-ops-persistence';
@@ -10,6 +10,9 @@ import {
   disableScheduleForSource,
   getScheduleForSource,
   upsertScheduleForSource,
+  startCrawlScheduler,
+  stopCrawlScheduler,
+  type Timer,
 } from './crawl-scheduler-service';
 
 const runResearchMock = vi.hoisted(() =>
@@ -115,5 +118,70 @@ describe('crawl-scheduler-service', () => {
 
     expect(await getScheduleForSource('source-1')).toBeNull();
     expect(await loadCrawlSchedules()).toEqual([]);
+  });
+});
+
+describe('crawl-scheduler timer injection', () => {
+  beforeEach(() => {
+    stopCrawlScheduler();
+  });
+
+  afterEach(() => {
+    stopCrawlScheduler();
+  });
+
+  it('starts and stops scheduler via injected timer', () => {
+    const mockTimer: Timer = {
+      setInterval: vi.fn(() => ({ ref: vi.fn(), unref: vi.fn() }) as unknown as NodeJS.Timeout),
+      clearInterval: vi.fn(),
+    };
+
+    startCrawlScheduler(60_000, mockTimer);
+    expect(mockTimer.setInterval).toHaveBeenCalledTimes(1);
+    expect(mockTimer.setInterval).toHaveBeenCalledWith(expect.any(Function), 60_000);
+
+    stopCrawlScheduler(mockTimer);
+    expect(mockTimer.clearInterval).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not start duplicate schedulers', () => {
+    const mockTimer: Timer = {
+      setInterval: vi.fn(() => ({ ref: vi.fn(), unref: vi.fn() }) as unknown as NodeJS.Timeout),
+      clearInterval: vi.fn(),
+    };
+
+    startCrawlScheduler(60_000, mockTimer);
+    startCrawlScheduler(60_000, mockTimer);
+    expect(mockTimer.setInterval).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not crash when stopping unstarted scheduler', () => {
+    const mockTimer: Timer = {
+      setInterval: vi.fn(() => ({ ref: vi.fn(), unref: vi.fn() }) as unknown as NodeJS.Timeout),
+      clearInterval: vi.fn(),
+    };
+
+    expect(() => stopCrawlScheduler(mockTimer)).not.toThrow();
+    expect(mockTimer.clearInterval).not.toHaveBeenCalled();
+  });
+
+  it('triggers checkAndRunDue when timer fires', async () => {
+    let capturedCallback: (() => void) | null = null;
+    const mockTimer: Timer = {
+      setInterval: vi.fn((callback) => {
+        capturedCallback = callback;
+        return { ref: vi.fn(), unref: vi.fn() } as unknown as NodeJS.Timeout;
+      }),
+      clearInterval: vi.fn(),
+    };
+
+    startCrawlScheduler(60_000, mockTimer);
+    expect(mockTimer.setInterval).toHaveBeenCalledTimes(1);
+    expect(capturedCallback).not.toBeNull();
+
+    // The callback should call checkAndRunDue which should not throw
+    // We can't easily mock checkAndRunDue here, but we can verify the
+    // callback is the expected function signature
+    expect(() => capturedCallback!()).not.toThrow();
   });
 });

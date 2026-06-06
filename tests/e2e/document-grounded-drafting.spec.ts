@@ -54,6 +54,7 @@ async function openMatchedGrantWithoutDraft(page: Page, request: APIRequestConte
   const grants: Array<{
     id: string;
     title: string;
+    funder: string;
     fit: number;
     status: string;
     draftContent?: string;
