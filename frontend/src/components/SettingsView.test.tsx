@@ -501,7 +501,11 @@ describe('SettingsView', () => {
 
     const labelInput = container.querySelector('[data-testid="new-field-label"]') as HTMLInputElement;
     expect(labelInput).not.toBeNull();
-    labelInput.value = 'Strategic Priority';
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set;
+    nativeInputValueSetter?.call(labelInput, 'Strategic Priority');
     labelInput.dispatchEvent(new Event('input', { bubbles: true }));
 
     const addBtn = container.querySelector('[data-testid="add-custom-field-btn"]') as HTMLButtonElement;
@@ -520,7 +524,11 @@ describe('SettingsView', () => {
     await waitFor(() => container.textContent?.includes('Custom Tracker Fields') === true);
 
     const labelInput = container.querySelector('[data-testid="new-field-label"]') as HTMLInputElement;
-    labelInput.value = 'Board Interest';
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      window.HTMLInputElement.prototype,
+      'value',
+    )?.set;
+    nativeInputValueSetter?.call(labelInput, 'Board Interest');
     labelInput.dispatchEvent(new Event('input', { bubbles: true }));
 
     const addBtn = container.querySelector('[data-testid="add-custom-field-btn"]') as HTMLButtonElement;

@@ -125,6 +125,43 @@ test.describe('Startup verification', () => {
     }
   });
 
+  test('fallback node resolution accepts snap/container wrappers', () => {
+    const fakeDir = join(tmpdir(), `fake-node-fallback-${process.pid}`);
+    mkdirSync(fakeDir, { recursive: true });
+    const fakeNode = join(fakeDir, 'node');
+    const script = `#!/bin/bash
+if [ "\${1:-}" = "-v" ] || [ "\${1:-}" = "--version" ]; then
+  echo "v20.0.0"
+  exit 0
+fi
+if [ "\${1:-}" = "-e" ]; then
+  printf 'other'
+  exit 0
+fi
+exit 0
+`;
+    writeFileSync(fakeNode, script);
+    chmodSync(fakeNode, 0o755);
+
+    const originalPath = process.env.PATH ?? '';
+    process.env.PATH = `${fakeDir}${originalPath ? ':' + originalPath : ''}`;
+
+    try {
+      const result = execSync('bash scripts/ensure-better-sqlite3.sh --diagnose 2>&1', {
+        cwd: process.cwd(),
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: 30_000,
+      });
+      expect(result).toContain('resolved real Node');
+    } finally {
+      process.env.PATH = originalPath;
+      if (existsSync(fakeDir)) {
+        rmSync(fakeDir, { recursive: true, force: true });
+      }
+    }
+  });
+
   test('insufficient Node version causes setup-check to fail with version error', () => {
     const fakeDir = join(tmpdir(), `fake-node-v16-${process.pid}`);
     const { restorePath } = withFakeNodeOnPath(fakeDir, 'v16.0.0');

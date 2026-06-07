@@ -16,6 +16,14 @@ export interface DocumentExtractionResult {
   extractionError?: string;
 }
 
+export interface FileReader {
+  readFile(filePath: string): Promise<Buffer>;
+}
+
+const defaultFileReader: FileReader = {
+  readFile: (filePath: string) => fs.readFile(filePath),
+};
+
 function snippetFromText(text: string): string {
   return text.includes(EXACT_GROUNDING_SNIPPET) ? EXACT_GROUNDING_SNIPPET : text.slice(0, 240);
 }
@@ -56,9 +64,12 @@ async function extractXlsxText(buffer: Buffer): Promise<string> {
   return normalizeWhitespace(sheets.join('\n\n'));
 }
 
-export async function extractDocumentText(filePath: string): Promise<DocumentExtractionResult> {
+export async function extractDocumentText(
+  filePath: string,
+  reader: FileReader = defaultFileReader,
+): Promise<DocumentExtractionResult> {
   try {
-    const buffer = await fs.readFile(filePath);
+    const buffer = await reader.readFile(filePath);
     const lowerPath = filePath.toLowerCase();
 
     let extractedText = '';
@@ -99,6 +110,7 @@ export async function extractDocumentText(filePath: string): Promise<DocumentExt
 export async function analyzeStoredDocument(
   filePath: string,
   mimeType: string,
+  reader?: FileReader,
 ): Promise<DocumentExtractionResult> {
   const supportedMimeTypes = [
     'application/pdf',
@@ -121,5 +133,5 @@ export async function analyzeStoredDocument(
     };
   }
 
-  return extractDocumentText(filePath);
+  return extractDocumentText(filePath, reader);
 }

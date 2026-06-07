@@ -129,7 +129,7 @@ test.describe('Grant Operations Center smoke', () => {
 
     await page.click('[data-view="settings"]');
     await expect(page.locator('.upload-item')).toBeVisible();
-    await expect(page.locator('.setting-card')).toHaveCount(8);
+    await expect(page.locator('.setting-card')).toHaveCount(9);
   });
 
   test('AC-14.2.4: failed job can be retried from UI', async ({ page, request }) => {

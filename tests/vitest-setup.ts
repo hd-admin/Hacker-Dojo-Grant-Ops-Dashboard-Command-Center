@@ -32,10 +32,19 @@ try {
   }
 
   if (!canLoadBetterSqlite3()) {
-    execFileSync('bash', [ensureScript], {
-      cwd: repoRoot,
-      stdio: 'inherit',
-    });
+    try {
+      execFileSync('bash', [ensureScript], {
+        cwd: repoRoot,
+        stdio: 'inherit',
+      });
+    } catch {
+      // ensure-better-sqlite3.sh may fail in some environments (e.g. snap
+      // wrappers, missing build tools). Fall back to direct require test.
+      // Using process.stderr.write to avoid eslint no-console in test setup.
+      process.stderr.write(
+        '[vitest-setup] ensure-better-sqlite3.sh exited non-zero; falling back to direct require test\n',
+      );
+    }
 
     if (!canLoadBetterSqlite3()) {
       throw new Error('better-sqlite3 is still unavailable after rebuild');

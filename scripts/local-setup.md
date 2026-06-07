@@ -2,15 +2,23 @@
 
 ## Prerequisites
 
-- Node.js 18.17 or newer
-- pnpm
-- Native build tooling for `better-sqlite3`
+- Node.js 20 or newer (24.x recommended)
+- pnpm (canonical package manager — `npm install -g pnpm`)
+- Native build tooling for `better-sqlite3` (python, make, g++)
 
 ## Verify the environment
 
 ```bash
 bash scripts/setup-check.sh
 ```
+
+This checks:
+- Node.js version (uses `node -v` for compatibility with wrappers)
+- pnpm availability
+- better-sqlite3 native module loadability
+- Persistence root writability
+- Disk space (≥100MB free)
+- Production build artifacts
 
 ## Start the app after verification
 
@@ -20,6 +28,7 @@ pnpm run start:verified
 
 ## Notes
 
-- The app stores local data under the configured `DATA_DIR`.
-- If `better-sqlite3` needs a rebuild, `scripts/ensure-better-sqlite3.sh` handles it.
+- The app stores local data under the configured `DATA_DIR` (defaults to `.grant-ops-data/`).
+- If `better-sqlite3` needs a rebuild, `scripts/ensure-better-sqlite3.sh` handles it automatically.
+- The script includes a fallback for snap/container Node wrappers that may not report `process.release.name === 'node'`.
 - The verification command checks the persistence root and build output before launch.

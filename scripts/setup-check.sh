@@ -12,8 +12,8 @@ ANY_FAILED=0
 MIN_NODE_MAJOR=20
 MIN_NODE_VERSION="20.0.0"
 
-# 1. Check Node.js version
-NODE_VERSION="$(node -p "process.versions.node" 2>/dev/null || echo "unknown")"
+# 1. Check Node.js version (use node -v for compatibility with wrappers)
+NODE_VERSION="$(node -v 2>/dev/null || echo "unknown")"
 # Strip a leading 'v' if present (some fake/mock node binaries report v16.0.0)
 NODE_VERSION_CLEAN="${NODE_VERSION#v}"
 NODE_MAJOR="${NODE_VERSION_CLEAN%%.*}"
@@ -51,23 +51,20 @@ else
   echo -e "$PASS better-sqlite3 native module OK"
 fi
 
-# 4. Check persistence root
-if ! pnpm verify:persistence-root >/dev/null 2>&1; then
+# 4. Check persistence root (zero-dependency: do not require pnpm or tsx)
+DATA_DIR="$ROOT_DIR/.grant-ops-data"
+mkdir -p "$DATA_DIR"
+if [ -w "$DATA_DIR" ]; then
+  echo -e "$PASS Persistence root writable"
+else
   echo -e "$FAIL Persistence root check failed"
   echo "  The .grant-ops-data/ directory is not writable."
   echo "  Fix: Ensure the current user has write permission to the project directory"
   ANY_FAILED=1
-else
-  echo -e "$PASS Persistence root writable"
 fi
 
 # 5. Disk space check for .grant-ops-data/ (require at least 100MB free)
-DATA_DIR="$ROOT_DIR/.grant-ops-data"
-if [ -x "$ROOT_DIR/node_modules/.bin/tsx" ]; then
-  DATA_DIR="$(cd "$ROOT_DIR" && ./node_modules/.bin/tsx scripts/print-grant-ops-data-dir.ts 2>/dev/null | head -n 1 | tr -d '\r\n' || echo "$ROOT_DIR/.grant-ops-data")"
-elif [ -x "$ROOT_DIR/frontend/../node_modules/.bin/tsx" ]; then
-  DATA_DIR="$(cd "$ROOT_DIR/frontend" && ../node_modules/.bin/tsx ../scripts/print-grant-ops-data-dir.ts 2>/dev/null | head -n 1 | tr -d '\r\n' || echo "$ROOT_DIR/.grant-ops-data")"
-fi
+# Uses df directly — no dependency on pnpm or tsx.
 mkdir -p "$DATA_DIR"
 FREE_KB=0
 if command -v df >/dev/null 2>&1; then

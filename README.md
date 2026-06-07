@@ -7,7 +7,7 @@ A local-first, single-user grant management application for Hacker Dojo. Researc
 ### Prerequisites
 
 - **Node.js** 24.x (Active LTS) or newer
-- **pnpm** (install with `npm install -g pnpm`)
+- **pnpm** (install with `npm install -g pnpm`) — pnpm is the canonical package manager for this project
 - **OpenCode CLI** (for AI-powered research and drafting — [install guide](https://opencode.ai))
 
 ### Run the App

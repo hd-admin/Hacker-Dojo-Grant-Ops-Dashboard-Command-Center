@@ -13,6 +13,8 @@ fi
 is_real_node() {
   # Returns 0 if $1 is a genuine Node.js binary (not Bun/Deno shim).
   # Validates both process.release.name === 'node' and process.versions.node exists.
+  # Falls back to checking node -v output if process.release.name check fails
+  # (some container/snap wrappers report a different release name).
   local node_bin="$1"
   if [ -z "$node_bin" ] || [ ! -x "$node_bin" ]; then
     return 1
@@ -31,7 +33,17 @@ is_real_node() {
   ' 2>/dev/null || echo 'error')
   case "$check_output" in
     node*) return 0 ;;
-    *) return 1 ;;
+    *)
+      # Fallback: accept if "node -v" returns a valid semver starting with "v"
+      # and the binary path is executable. This handles snap/container wrappers
+      # where process.release.name may not be exactly "node".
+      local version_output
+      version_output=$("$node_bin" -v 2>/dev/null || echo 'error')
+      if [ -n "$version_output" ] && echo "$version_output" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'; then
+        return 0
+      fi
+      return 1
+      ;;
   esac
 }
 

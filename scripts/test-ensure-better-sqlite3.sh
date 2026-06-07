@@ -53,6 +53,32 @@ else
   echo -e "$PASS incomplete mock node was rejected"
 fi
 
+# Create a mock node that fails process.release.name but passes node -v
+# (simulates snap/container wrappers)
+MOCK_NODE_FALLBACK="$TMP_DIR/mock-node-fallback"
+cat > "$MOCK_NODE_FALLBACK" <<'EOF'
+#!/bin/bash
+# Mock node binary that fails process.release.name check but passes node -v
+if [ "${1:-}" = "-v" ] || [ "${1:-}" = "--version" ]; then
+  echo "v20.0.0"
+  exit 0
+fi
+if [ "${1:-}" = "-e" ]; then
+  # Returns "other" because process.release.name is not "node"
+  printf 'other'
+  exit 0
+fi
+exit 0
+EOF
+chmod +x "$MOCK_NODE_FALLBACK"
+
+if is_real_node "$MOCK_NODE_FALLBACK"; then
+  echo -e "$PASS fallback node (snap/container wrapper) accepted via node -v"
+else
+  echo -e "$FAIL fallback node (snap/container wrapper) was incorrectly rejected"
+  ANY_FAILED=1
+fi
+
 # Find a real node binary
 REAL_NODE_CANDIDATE=""
 for candidate in "${NODE_PATH:-}" "$(command -v node 2>/dev/null || true)" "/usr/bin/node" "/usr/local/bin/node"; do
