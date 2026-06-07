@@ -12,8 +12,11 @@ set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DIAGNOSE=0
+SKIP_IF_WORKING=0
 if [ "${1:-}" = "--diagnose" ]; then
   DIAGNOSE=1
+elif [ "${1:-}" = "--skip-if-working" ]; then
+  SKIP_IF_WORKING=1
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -37,12 +40,16 @@ echo "[ensure-better-sqlite3] resolved real Node: $REAL_NODE ($("$REAL_NODE" -v)
 cd "$ROOT_DIR"
 if ! "$REAL_NODE" -e "require.resolve('better-sqlite3/package.json')" >/dev/null 2>&1; then
   echo "[ensure-better-sqlite3] better-sqlite3 package not found; installing dependencies" >&2
-  if ! command -v pnpm >/dev/null 2>&1; then
-    echo "[ensure-better-sqlite3] ERROR: pnpm is not installed and better-sqlite3 is missing." >&2
-    echo "  Fix: Install pnpm (npm install -g pnpm) and run pnpm install." >&2
+  if command -v pnpm >/dev/null 2>&1; then
+    pnpm install --frozen-lockfile --ignore-scripts
+  elif command -v npm >/dev/null 2>&1; then
+    echo "[ensure-better-sqlite3] pnpm not found; falling back to npm install" >&2
+    npm install --ignore-scripts
+  else
+    echo "[ensure-better-sqlite3] ERROR: Neither pnpm nor npm is installed and better-sqlite3 is missing." >&2
+    echo "  Fix: Install pnpm (npm install -g pnpm) or npm, then run install." >&2
     exit 1
   fi
-  pnpm install --frozen-lockfile --ignore-scripts
 fi
 
 PACKAGE_JSON_PATH="$("$REAL_NODE" -e "process.stdout.write(require.resolve('better-sqlite3/package.json'))")"
@@ -70,6 +77,10 @@ trap cleanup EXIT
 if "$REAL_NODE" -e "const Database=require('better-sqlite3');const db=new Database(':memory:');db.prepare('select 1').get();db.close();" >/dev/null 2>&1; then
   echo "[ensure-better-sqlite3] better-sqlite3 already works with $REAL_NODE" >&2
   exit 0
+fi
+
+if [ "$SKIP_IF_WORKING" -eq 1 ]; then
+  echo "[ensure-better-sqlite3] better-sqlite3 does not work; proceeding with rebuild (--skip-if-working was passed but module is not functional)" >&2
 fi
 
 # ── Detect containerized environments ────────────────────────────────────

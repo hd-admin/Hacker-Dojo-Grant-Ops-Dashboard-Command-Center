@@ -4,6 +4,15 @@ import { copyFileSync, cpSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 
+function commandExists(cmd: string): boolean {
+  try {
+    execSync(`command -v ${cmd}`, { stdio: 'pipe', encoding: 'utf-8' });
+    return true;
+  } catch (_err) {
+    return false;
+  }
+}
+
 const REPO_ROOT = resolve(process.cwd());
 const EXCLUDED_DIRS = new Set([
   'node_modules',
@@ -51,8 +60,18 @@ export function setupFreshCloneWorkspace(): FreshCloneResult {
 
   copyDirRecursive(REPO_ROOT, workspacePath);
 
+  const pkgManager = commandExists('pnpm') ? 'pnpm' : commandExists('npm') ? 'npm' : null;
+  if (!pkgManager) {
+    rmSync(workspacePath, { recursive: true, force: true });
+    throw new Error('Neither pnpm nor npm is available on PATH');
+  }
+
+  const installCmd = pkgManager === 'pnpm'
+    ? 'pnpm install --frozen-lockfile --ignore-scripts'
+    : 'npm install --ignore-scripts';
+
   try {
-    execSync('pnpm install --frozen-lockfile --ignore-scripts', {
+    execSync(installCmd, {
       cwd: workspacePath,
       stdio: 'pipe',
       encoding: 'utf-8',
@@ -61,7 +80,7 @@ export function setupFreshCloneWorkspace(): FreshCloneResult {
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     rmSync(workspacePath, { recursive: true, force: true });
-    throw new Error(`pnpm install failed in fresh clone workspace: ${message}`);
+    throw new Error(`${pkgManager} install failed in fresh clone workspace: ${message}`);
   }
 
   // Seed the better-sqlite3 native binding from the current workspace so the

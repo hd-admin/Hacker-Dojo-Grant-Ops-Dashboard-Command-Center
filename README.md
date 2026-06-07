@@ -7,14 +7,23 @@ A local-first, single-user grant management application for Hacker Dojo. Researc
 ### Prerequisites
 
 - **Node.js** 24.x (Active LTS) or newer
-- **pnpm** (install with `npm install -g pnpm`) — pnpm is the canonical package manager for this project
+- **pnpm** (recommended, install with `npm install -g pnpm`) or **npm** (comes with Node.js)
 - **OpenCode CLI** (for AI-powered research and drafting — [install guide](https://opencode.ai))
 
 ### Run the App
 
+With pnpm (recommended):
+
 ```bash
 pnpm install
 pnpm dev
+```
+
+Or with npm:
+
+```bash
+npm install
+npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
@@ -69,13 +78,13 @@ The app includes a built-in backup/restore system accessible from the Settings v
 
 | Command                       | Purpose                                    |
 | ----------------------------- | ------------------------------------------ |
-| `pnpm dev`                    | Start development server                   |
-| `pnpm build`                  | Build for production                       |
-| `pnpm start`                  | Run production build                       |
-| `pnpm test`                   | Run unit/integration tests                 |
-| `pnpm test:e2e`               | Run end-to-end tests (requires Playwright) |
-| `pnpm lint`                   | Check code style                           |
-| `pnpm typecheck`              | Type-check the codebase                    |
+| `pnpm dev` / `npm run dev`    | Start development server                   |
+| `pnpm build` / `npm run build`| Build for production                       |
+| `pnpm start` / `npm run start`| Run production build                       |
+| `pnpm test` / `npm test`      | Run unit/integration tests                 |
+| `pnpm test:e2e` / `npm run test:e2e` | Run end-to-end tests (requires Playwright) |
+| `pnpm lint` / `npm run lint`  | Check code style                           |
+| `pnpm typecheck` / `npm run typecheck` | Type-check the codebase             |
 | `bash scripts/setup-check.sh` | Verify your environment is ready           |
 
 ## Configuring OpenCode

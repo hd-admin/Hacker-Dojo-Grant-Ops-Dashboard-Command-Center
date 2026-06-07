@@ -38,33 +38,35 @@ wait_for_port_3000_clear() {
   return 1
 }
 
+PKG_MANAGER="$(command -v pnpm >/dev/null 2>&1 && echo 'pnpm' || echo 'npm')"
+
 trap cleanup EXIT
 
 bash ./scripts/ensure-better-sqlite3.sh
 cleanup
 sleep 1
 
-pnpm verify:persistence-root >/dev/null 2>&1
+$PKG_MANAGER verify:persistence-root >/dev/null 2>&1
 echo "✓ persistence root verified"
 
-pnpm lint >/dev/null 2>&1
+$PKG_MANAGER lint >/dev/null 2>&1
 echo "✓ lint passed"
 
-pnpm build >/dev/null 2>&1
+$PKG_MANAGER build >/dev/null 2>&1
 echo "✓ build passed"
 
 find frontend/.next/types -maxdepth 3 -type f | head >/dev/null
 echo "✓ next types present"
 
-pnpm typecheck >/dev/null 2>&1
+$PKG_MANAGER typecheck >/dev/null 2>&1
 echo "✓ typecheck passed"
 
 PLAYWRIGHT_DATA_DIR="$(mktemp -d "$ROOT_DIR/.agent/tmp/playwright-data.XXXXXX")"
 export CI=1
-DATA_DIR="$PLAYWRIGHT_DATA_DIR" pnpm test:e2e >/dev/null 2>&1
+DATA_DIR="$PLAYWRIGHT_DATA_DIR" $PKG_MANAGER test:e2e >/dev/null 2>&1
 echo "✓ playwright suite passed"
 
-pnpm test >/dev/null 2>&1
+$PKG_MANAGER test >/dev/null 2>&1
 echo "✓ test passed"
 
 cleanup

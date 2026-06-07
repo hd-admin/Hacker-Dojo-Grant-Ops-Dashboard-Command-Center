@@ -31,13 +31,18 @@ else
   echo -e "$PASS Node.js version $NODE_VERSION"
 fi
 
-# 2. Check pnpm is available
-if ! command -v pnpm >/dev/null 2>&1; then
-  echo -e "$FAIL pnpm is not installed or not on PATH"
+# 2. Check package manager is available (pnpm preferred, npm acceptable)
+PKG_MANAGER=""
+if command -v pnpm >/dev/null 2>&1; then
+  PKG_MANAGER="pnpm"
+  echo -e "$PASS pnpm is available ($(pnpm --version 2>/dev/null || echo 'unknown version'))"
+elif command -v npm >/dev/null 2>&1; then
+  PKG_MANAGER="npm"
+  echo -e "$PASS npm is available ($(npm --version 2>/dev/null || echo 'unknown version')) (pnpm not found, npm is acceptable)"
+else
+  echo -e "$FAIL Neither pnpm nor npm is installed or not on PATH"
   echo "  Fix: Install pnpm: npm install -g pnpm"
   ANY_FAILED=1
-else
-  echo -e "$PASS pnpm is available ($(pnpm --version 2>/dev/null || echo 'unknown version'))"
 fi
 
 # 3. Check better-sqlite3 (use --skip-rebuild semantics via ensure script)
@@ -87,10 +92,11 @@ fi
 if [ -d "frontend/.next/standalone" ] && [ -n "$(find frontend/.next/standalone/frontend/.next/static/chunks/ -name 'main-*.js' -print -quit 2>/dev/null || true)" ]; then
   echo -e "$PASS Production build OK (existing artifacts)"
 else
-  if ! pnpm build >/dev/null 2>&1; then
+  BUILD_CMD="${PKG_MANAGER:-pnpm} build"
+  if ! $BUILD_CMD >/dev/null 2>&1; then
     echo -e "$FAIL Build check failed"
     echo "  The Next.js production build did not complete."
-    echo "  Fix: Check for TypeScript errors with 'pnpm typecheck' and lint errors with 'pnpm lint'"
+    echo "  Fix: Check for TypeScript errors with '${PKG_MANAGER:-pnpm} typecheck' and lint errors with '${PKG_MANAGER:-pnpm} lint'"
     ANY_FAILED=1
   else
     # Validate standalone directory exists after build

@@ -4,7 +4,15 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 echo "[baseline] installing dependencies..."
-pnpm install --frozen-lockfile
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm install --frozen-lockfile
+elif command -v npm >/dev/null 2>&1; then
+  echo "[baseline] pnpm not found; falling back to npm install"
+  npm install
+else
+  echo "[baseline] ERROR: Neither pnpm nor npm is available"
+  exit 1
+fi
 
 echo "[baseline] ensuring better-sqlite3..."
 if ! node -e "const Database=require('better-sqlite3');const db=new Database(':memory:');db.prepare('select 1').get();db.close();" >/dev/null 2>&1; then

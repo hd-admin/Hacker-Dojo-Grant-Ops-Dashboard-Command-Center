@@ -83,6 +83,42 @@ resolve_real_node() {
     fi
   fi
 
+  # fnm support
+  local fnm_base
+  if [ -n "${FNM_DIR:-}" ]; then
+    fnm_base="$FNM_DIR"
+  elif [ -n "${HOME:-}" ]; then
+    fnm_base="$HOME/.local/share/fnm"
+  fi
+  if [ -n "${fnm_base:-}" ] && [ -d "$fnm_base/node-versions" ]; then
+    local latest_fnm
+    latest_fnm="$(ls -1 "$fnm_base/node-versions" 2>/dev/null | sort -V | tail -n 1 || echo "")"
+    if [ -n "$latest_fnm" ]; then
+      candidates+=("$fnm_base/node-versions/$latest_fnm/installation/bin/node")
+    fi
+  fi
+  if [ -n "${HOME:-}" ] && [ -d "$HOME/.fnm/node-versions" ]; then
+    local latest_fnm_home
+    latest_fnm_home="$(ls -1 "$HOME/.fnm/node-versions" 2>/dev/null | sort -V | tail -n 1 || echo "")"
+    if [ -n "$latest_fnm_home" ]; then
+      candidates+=("$HOME/.fnm/node-versions/$latest_fnm_home/installation/bin/node")
+    fi
+  fi
+
+  # volta support
+  if [ -n "${VOLTA_HOME:-}" ] && [ -x "$VOLTA_HOME/bin/node" ]; then
+    candidates+=("$VOLTA_HOME/bin/node")
+  elif [ -n "${HOME:-}" ] && [ -x "$HOME/.volta/bin/node" ]; then
+    candidates+=("$HOME/.volta/bin/node")
+  fi
+
+  # asdf support
+  if [ -n "${ASDF_DIR:-}" ] && [ -x "$ASDF_DIR/installs/nodejs/$(asdf current nodejs 2>/dev/null | awk '{print $2}')/bin/node" 2>/dev/null ]; then
+    candidates+=("$ASDF_DIR/installs/nodejs/$(asdf current nodejs 2>/dev/null | awk '{print $2}')/bin/node")
+  elif [ -n "${HOME:-}" ] && [ -x "$HOME/.asdf/bin/node" ]; then
+    candidates+=("$HOME/.asdf/installs/nodejs/$(asdf current nodejs 2>/dev/null | awk '{print $2}')/bin/node")
+  fi
+
   if [ -x "/snap/bin/node" ]; then
     candidates+=("/snap/bin/node")
   fi
@@ -116,7 +152,12 @@ resolve_real_node() {
     fi
     local resolved
     resolved="$(readlink -f "$candidate" 2>/dev/null || echo "$candidate")"
-    if [ -z "$resolved" ] || [ ! -x "$resolved" ]; then
+    # If readlink -f returns empty (can happen with relative symlinks or snap wrappers),
+    # fall back to the candidate path itself.
+    if [ -z "$resolved" ]; then
+      resolved="$candidate"
+    fi
+    if [ ! -x "$resolved" ]; then
       continue
     fi
     if is_real_node "$resolved"; then
@@ -128,7 +169,11 @@ resolve_real_node() {
   if [ -n "${which_node:-}" ]; then
     local resolved
     resolved="$(readlink -f "$which_node" 2>/dev/null || echo "$which_node")"
-    if [ -n "$resolved" ] && [ -x "$resolved" ] && is_real_node "$resolved"; then
+    # Handle case where readlink -f returns empty
+    if [ -z "$resolved" ]; then
+      resolved="$which_node"
+    fi
+    if [ -x "$resolved" ] && is_real_node "$resolved"; then
       echo "$resolved"
       return 0
     fi
