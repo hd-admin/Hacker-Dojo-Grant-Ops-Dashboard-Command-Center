@@ -39,7 +39,7 @@ curl -sS -X PUT "$BASE/api/profile" -H 'content-type: application/json' \
 
 log "Configure opencode..."
 OC=$(command -v opencode)
-curl -fsS -X PUT "$BASE/api/opencode-settings" -H 'content-type: application/json' \
+curl -fsS -X POST "$BASE/api/testing/configure-opencode" -H 'content-type: application/json' \
   -d "{\"binaryPath\":\"$OC\",\"isConfigured\":true,\"timeoutMs\":300000,\"workingDirectory\":\"$ROOT_DIR\"}" > /dev/null
 
 log "Health check..."

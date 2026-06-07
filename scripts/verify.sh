@@ -46,6 +46,9 @@ bash ./scripts/ensure-better-sqlite3.sh
 cleanup
 sleep 1
 
+bash ./scripts/test-ensure-better-sqlite3.sh >/dev/null 2>&1
+echo "✓ startup script tests passed"
+
 $PKG_MANAGER verify:persistence-root >/dev/null 2>&1
 echo "✓ persistence root verified"
 
@@ -68,6 +71,9 @@ echo "✓ playwright suite passed"
 
 $PKG_MANAGER test >/dev/null 2>&1
 echo "✓ test passed"
+
+npx knip --production >/dev/null 2>&1
+echo "✓ dead code check passed"
 
 cleanup
 wait_for_port_3000_clear

@@ -594,14 +594,16 @@ export function periodicCleanup(): void {
 
 ## Implementation Checklist
 
-- [ ] Define all artifact schemas in `shared/artifact-schemas.ts`
-- [ ] Implement agent loop controller in `server/agent-loop.ts`
-- [ ] Build prompt templates for each job type
-- [ ] Implement progress polling API (`/api/jobs/{jobId}`)
-- [ ] Build `JobProgress` React component with all states
-- [ ] Implement tmp/cache cleanup on startup and periodic
-- [ ] Wire existing "Generate Draft" and "Run Discovery" buttons to agent loop
-- [ ] Test: agent returns valid JSON → ingested correctly
-- [ ] Test: agent returns invalid JSON → retried with error feedback
-- [ ] Test: agent fails 3 times → user sees actionable error message
-- [ ] Test: user cancels mid-operation → artifact not ingested, tmp cleaned
+- [x] Define all artifact schemas in `shared/artifact-schemas.ts` [^1]
+- [x] Implement agent loop controller in `server/agent-loop.ts` [^1]
+- [x] Build prompt templates for each job type [^1]
+- [x] Implement progress polling API (`/api/jobs/{jobId}`) [^1]
+- [x] Build `JobProgress` React component with all states [^1]
+- [x] Implement tmp/cache cleanup on startup and periodic [^1]
+- [x] Wire existing "Generate Draft" and "Run Discovery" buttons to agent loop [^1]
+- [x] Test: agent returns valid JSON → ingested correctly [^1]
+- [x] Test: agent returns invalid JSON → retried with error feedback [^1]
+- [x] Test: agent fails 3 times → user sees actionable error message [^1]
+- [x] Test: user cancels mid-operation → artifact not ingested, tmp cleaned [^1]
+
+[^1]: Verified PASS per AC_INVENTORY.md (updated 2026-06-07).

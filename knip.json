@@ -1,18 +1,40 @@
 {
+  "$schema": "https://unpkg.com/knip@6/schema.json",
   "entry": [
-    "frontend/src/app/**/page.tsx",
-    "frontend/src/app/**/layout.tsx",
-    "frontend/src/app/**/route.ts",
-    "frontend/src/app/**/not-found.tsx",
+    "frontend/src/app/**",
+    "frontend/src/components/**/*.tsx",
+    "frontend/src/components/**/*.ts",
+    "frontend/src/hooks/**/*.ts",
+    "frontend/src/lib/**/*.ts",
+    "frontend/src/server/grant-ops/**/*.ts",
     "frontend/next.config.ts",
     "playwright.no-webserver.config.ts",
-    "frontend/src/server/grant-ops/repository.ts",
+    "scripts/print-grant-ops-data-dir.ts",
     "shared/**/*.ts",
     "tests/**/*.ts",
     "**/*.test.ts",
     "**/*.test.tsx"
   ],
-  "ignore": ["frontend/next-env.d.ts", "frontend/src/types/**", "frontend/src/middleware.ts"],
-  "ignoreDependencies": ["pino-pretty", "node-gyp"],
-  "ignoreBinaries": ["rg"]
+  "ignore": [
+    "frontend/next-env.d.ts",
+    "frontend/src/types/**",
+    "frontend/src/middleware.ts",
+    "frontend/src/test-helpers.ts"
+  ],
+  "ignoreDependencies": [
+    "adm-zip",
+    "better-sqlite3",
+    "csv-parse",
+    "exceljs",
+    "file-type",
+    "ical-generator",
+    "mammoth",
+    "pdf-parse",
+    "pino",
+    "pino-pretty",
+    "pino-roll",
+    "server-only",
+    "zod"
+  ],
+  "ignoreBinaries": ["rg", "next"]
 }

@@ -222,12 +222,13 @@ resolve_real_node() {
     failure_reasons+=("$which_node (via -v semver fallback): did not return valid semver")
   fi
 
-  echo "[ensure-better-sqlite3] ERROR: No Node.js binary found." >&2
+  echo "[ensure-better-sqlite3] ERROR: could not resolve a real Node binary." >&2
   echo "  Common causes:" >&2
   echo "  - Node.js is not installed." >&2
   echo "  - node on PATH is a corepack/Bun/Deno shim (process.release.name != 'node')." >&2
   echo "  - HOME/NVM_DIR are unset and node is not on PATH." >&2
   echo "  Fix: Install Node.js v20+ from https://nodejs.org/ or use a version manager (nvm, fnm, volta)." >&2
+  echo "  Tip: Run 'bash scripts/ensure-better-sqlite3.sh --diagnose' for more details." >&2
   echo "" >&2
   echo "  Candidates checked (${#checked_paths[@]}):" >&2
   local reason

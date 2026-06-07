@@ -747,14 +747,16 @@ After zip creation, SHA-256 hash is computed via `node:crypto` and stored alongs
 
 ## Implementation Checklist
 
-- [ ] Implement connection factory with all PRAGMAs
-- [ ] Implement read pool (4 replicas, round-robin)
-- [ ] Implement crash recovery (`wal_checkpoint(TRUNCATE)` on startup)
-- [ ] Implement integrity check on startup
-- [ ] Create all tables, indexes, and FTS5 on first run (single transaction)
-- [ ] Create FTS5 triggers (AI, AD, AU)
-- [ ] Insert seed data on first run
-- [ ] Create funder_profiles, outreach_records, and application_form_templates tables
-- [ ] Test: FTS search returns correct results with bm25 ranking
-- [ ] Test: WAL checkpoint before backup includes all data
-- [ ] Test: cloud sync folder detection warns operator
+- [x] Implement connection factory with all PRAGMAs [^1]
+- [x] Implement read pool (4 replicas, round-robin) [^1]
+- [x] Implement crash recovery (`wal_checkpoint(TRUNCATE)` on startup) [^1]
+- [x] Implement integrity check on startup [^1]
+- [x] Create all tables, indexes, and FTS5 on first run (single transaction) [^1]
+- [x] Create FTS5 triggers (AI, AD, AU) [^1]
+- [x] Insert seed data on first run [^1]
+- [x] Create funder_profiles, outreach_records, and application_form_templates tables [^1]
+- [x] Test: FTS search returns correct results with bm25 ranking [^1]
+- [x] Test: WAL checkpoint before backup includes all data [^1]
+- [x] Test: cloud sync folder detection warns operator [^1]
+
+[^1]: Verified PASS per AC_INVENTORY.md (updated 2026-06-07).

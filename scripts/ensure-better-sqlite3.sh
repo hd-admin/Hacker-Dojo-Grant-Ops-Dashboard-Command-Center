@@ -17,11 +17,57 @@ if [ "${1:-}" = "--diagnose" ]; then
   DIAGNOSE=1
 elif [ "${1:-}" = "--skip-if-working" ]; then
   SKIP_IF_WORKING=1
+elif [ "${1:-}" = "--help" ] || [ "${1:-}" = "-h" ]; then
+  cat <<'USAGE'
+Usage: ensure-better-sqlite3.sh [OPTION]
+
+Resolve a real Node.js binary and ensure better-sqlite3 native bindings work.
+If the bindings are missing or incompatible, this script attempts to rebuild
+them using the locally vendored node-gyp (never a global package manager).
+
+Options:
+  --help            Show this help message and exit
+  --diagnose        Print diagnostic info (resolved Node path, version,
+                    process.versions JSON) and exit
+  --skip-if-working Skip the rebuild step only if better-sqlite3 is already
+                    working. This is the default fast-path behavior.
+
+Examples:
+  bash scripts/ensure-better-sqlite3.sh
+  bash scripts/ensure-better-sqlite3.sh --diagnose
+  bash scripts/ensure-better-sqlite3.sh --skip-if-working
+
+If you see "could not resolve a real Node binary", run with --diagnose and
+share the output.
+USAGE
+  exit 0
 fi
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=ensure-better-sqlite3-lib.sh
 source "$SCRIPT_DIR/ensure-better-sqlite3-lib.sh"
+
+# Apply a 5-minute overall timeout to prevent indefinite hangs during rebuild.
+# Prefer the system timeout(1) command; fall back to a subshell alarm.
+TIMEOUT_SECONDS=300
+if command -v timeout >/dev/null 2>&1; then
+  if [ -z "${ENSURE_BSQ_TIMEOUT_WRAPPED:-}" ]; then
+    export ENSURE_BSQ_TIMEOUT_WRAPPED=1
+    exec timeout --signal=TERM --kill-after=10 "$TIMEOUT_SECONDS" "$0" "$@"
+  fi
+else
+  # Bash-only fallback: set an ALRM trap and schedule it with $BASHPID.
+  _ensure_bsq_alarm_handler() {
+    echo "[ensure-better-sqlite3] ERROR: overall timeout (${TIMEOUT_SECONDS}s) reached. Aborting." >&2
+    exit 124
+  }
+  trap '_ensure_bsq_alarm_handler' ALRM
+  (
+    sleep "$TIMEOUT_SECONDS"
+    kill -ALRM "$$" 2>/dev/null || true
+  ) &
+  disown
+fi
 
 if [ "$DIAGNOSE" -eq 1 ]; then
   echo "[ensure-better-sqlite3] resolving Node binary..." >&2
@@ -240,9 +286,9 @@ if detect_containerized_environment; then
   exit 1
 fi
 
-if ! command -v node-gyp >/dev/null 2>&1 && [ ! -x "$ROOT_DIR/node_modules/.bin/node-gyp" ]; then
+if [ ! -x "$ROOT_DIR/node_modules/.bin/node-gyp" ]; then
   echo "[ensure-better-sqlite3] ERROR: node-gyp is not available. Cannot rebuild better-sqlite3." >&2
-  echo "  Fix: Install build dependencies (python, make, g++) and run pnpm install." >&2
+  echo "  Fix: Run 'pnpm install' or 'npm install' to install devDependencies (including node-gyp)." >&2
   exit 1
 fi
 

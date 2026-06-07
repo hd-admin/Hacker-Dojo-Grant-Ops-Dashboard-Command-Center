@@ -117,6 +117,27 @@ body {
     radial-gradient(ellipse 800px 400px at 15% -5%, rgba(212, 169, 67, 0.06), transparent),
     radial-gradient(ellipse 600px 300px at 95% 100%, rgba(123, 163, 184, 0.04), transparent);
   background-attachment: fixed;
+  text-wrap: pretty;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  text-wrap: balance;
+}
+
+.tabular-nums,
+.kpi-value,
+.fit-num,
+.award,
+.deadline-cell,
+.grant-funder,
+.meta-value.mono,
+.funder-detail-value.mono,
+.board-col-count,
+.nav-count,
+.doc-meta,
+.activity-time,
+.setting-value.mono {
+  font-variant-numeric: tabular-nums;
 }
 
 /* === ACCESSIBILITY: Skip-to-content === */

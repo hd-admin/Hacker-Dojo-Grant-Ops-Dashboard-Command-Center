@@ -16,6 +16,7 @@
     "pretest": "bash ./scripts/ensure-better-sqlite3.sh",
     "test": "bash run-test-batches.sh",
     "test:raw": "vitest run",
+    "test:startup": "bash scripts/test-ensure-better-sqlite3.sh",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:all": "bash run-test-batches.sh && playwright test",

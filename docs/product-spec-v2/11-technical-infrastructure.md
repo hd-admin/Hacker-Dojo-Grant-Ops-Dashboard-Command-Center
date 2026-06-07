@@ -835,23 +835,25 @@ The app runs exclusively on `localhost` (AC-12.1.1). It is:
 
 ## Implementation Checklist
 
-- [ ] Define all Zod schemas for API request/response validation
-- [ ] Implement all API routes (1.1–1.20)
-- [ ] Create SQLite database with all tables, indexes, and FTS
-- [ ] Implement seed data insertion on first run
-- [ ] Implement document upload pipeline with atomic writes
-- [ ] Implement text extraction for PDF/DOCX
-- [ ] Implement grant FTS5 search with filter combination
-- [ ] Build toast notification system
-- [ ] Build in-app notification center (sidebar badge + drawer)
-- [ ] Implement CSV/XLSX budget import parser
-- [ ] Implement settings persistence and UI
-- [ ] Implement custom tracker fields
-- [ ] Implement peer discovery data model and crawl
-- [ ] Implement structured JSON logging
-- [ ] Implement log viewer in Settings
-- [ ] Implement automated backup scheduler
-- [ ] Implement disk space health check
-- [ ] Implement WAL checkpoint trigger
-- [ ] Create favicon and app icon assets
-- [ ] Wire all views to API routes (replace any direct DB access from frontend)
+- [x] Define all Zod schemas for API request/response validation [^1]
+- [x] Implement all API routes (1.1–1.20) [^1]
+- [x] Create SQLite database with all tables, indexes, and FTS [^1]
+- [x] Implement seed data insertion on first run [^1]
+- [x] Implement document upload pipeline with atomic writes [^1]
+- [x] Implement text extraction for PDF/DOCX [^1]
+- [x] Implement grant FTS5 search with filter combination [^1]
+- [x] Build toast notification system [^1]
+- [x] Build in-app notification center (sidebar badge + drawer) [^1]
+- [x] Implement CSV/XLSX budget import parser [^1]
+- [x] Implement settings persistence and UI [^1]
+- [x] Implement custom tracker fields [^1]
+- [x] Implement peer discovery data model and crawl [^1]
+- [x] Implement structured JSON logging [^1]
+- [x] Implement log viewer in Settings [^1]
+- [x] Implement automated backup scheduler [^1]
+- [x] Implement disk space health check [^1]
+- [x] Implement WAL checkpoint trigger [^1]
+- [x] Create favicon and app icon assets [^1]
+- [x] Wire all views to API routes (replace any direct DB access from frontend) [^1]
+
+[^1]: Verified PASS per AC_INVENTORY.md (updated 2026-06-07).
