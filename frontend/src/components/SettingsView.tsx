@@ -4,6 +4,7 @@ import type { JSX } from 'react';
 import React, { useEffect, useRef, useState } from 'react';
 import type {
   BackupFreshnessStatus,
+  CustomTrackerField,
   DocumentMetadata,
   FailureHistoryEntry,
   HealthCheckResult,
@@ -292,6 +293,11 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
   const [toast, setToast] = useState<string | null>(null);
   const [expandedDocVersions, setExpandedDocVersions] = useState<Record<string, boolean>>({});
   const [_error, setError] = useState<string | null>(null);
+  const [customFields, setCustomFields] = useState<CustomTrackerField[]>([]);
+  const [customFieldsSaving, setCustomFieldsSaving] = useState(false);
+  const [newFieldLabel, setNewFieldLabel] = useState('');
+  const [newFieldType, setNewFieldType] = useState<'text' | 'select'>('text');
+  const [newFieldOptions, setNewFieldOptions] = useState('');
 
   function showToast(message: string) {
     setToast(message);
@@ -337,6 +343,17 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
           if (activeTheme?.matchingPolicy) {
             setMatchThreshold(activeTheme.matchingPolicy.matchThreshold);
             setAutoDraftThreshold(activeTheme.matchingPolicy.autoDraftThreshold);
+          }
+        }
+
+        // Load custom fields from settings
+        const settingsData = await client.settings.get().catch(() => null);
+        if (settingsData?.customFields) {
+          try {
+            const parsed = JSON.parse(settingsData.customFields) as CustomTrackerField[];
+            setCustomFields(parsed);
+          } catch {
+            setCustomFields([]);
           }
         }
       } finally {
@@ -569,6 +586,43 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
       await onRefreshAppState?.();
     };
     input.click();
+  };
+
+  const handleSaveCustomFields = async () => {
+    setCustomFieldsSaving(true);
+    try {
+      await client.settings.update({ customFields });
+      showToast('Custom fields saved');
+    } catch (_err) {
+      setError('Error saving custom fields');
+    } finally {
+      setCustomFieldsSaving(false);
+    }
+  };
+
+  const handleAddCustomField = () => {
+    if (!newFieldLabel.trim()) return;
+    const key = newFieldLabel
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+    const newField: CustomTrackerField = {
+      key,
+      label: newFieldLabel.trim(),
+      type: newFieldType,
+      visible: true,
+      ...(newFieldType === 'select' && newFieldOptions.trim()
+        ? { options: newFieldOptions.split(',').map((o) => o.trim()).filter(Boolean) }
+        : {}),
+    };
+    setCustomFields((prev) => [...prev, newField]);
+    setNewFieldLabel('');
+    setNewFieldType('text');
+    setNewFieldOptions('');
+  };
+
+  const handleRemoveCustomField = (key: string) => {
+    setCustomFields((prev) => prev.filter((f) => f.key !== key));
   };
 
   const lastBackupVerification =
@@ -1218,6 +1272,103 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
           </div>
           <div className="setting-card-body">
             <LogViewer />
+          </div>
+        </section>
+
+        <section className="setting-card" data-testid="custom-fields-card">
+          <div className="setting-card-header">
+            <div className="setting-card-title">Custom Tracker Fields</div>
+          </div>
+          <div className="setting-card-body">
+            <p className="settings-card-description">
+              Add custom tracking columns that appear in the pipeline list view and grant detail
+              views.
+            </p>
+            {customFields.length === 0 && (
+              <div className="empty-state">No custom fields defined yet.</div>
+            )}
+            {customFields.map((field) => (
+              <div key={field.key} className="setting-row" data-testid={`custom-field-${field.key}`}>
+                <span className="setting-label">{field.label}</span>
+                <span className="setting-value">
+                  {field.type}
+                  {field.options ? ` (${field.options.join(', ')})` : ''}
+                </span>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => handleRemoveCustomField(field.key)}
+                  aria-label={`Remove field ${field.label}`}
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <div className="settings-form-grid">
+              <div>
+                <label className="setting-label" htmlFor="new-field-label">
+                  Field Label
+                </label>
+                <input
+                  id="new-field-label"
+                  className="form-input"
+                  value={newFieldLabel}
+                  onChange={(e) => setNewFieldLabel(e.target.value)}
+                  placeholder="e.g., Program Area"
+                  data-testid="new-field-label"
+                />
+              </div>
+              <div>
+                <label className="setting-label" htmlFor="new-field-type">
+                  Type
+                </label>
+                <select
+                  id="new-field-type"
+                  className="form-select"
+                  value={newFieldType}
+                  onChange={(e) => setNewFieldType(e.target.value as 'text' | 'select')}
+                  data-testid="new-field-type"
+                >
+                  <option value="text">Text</option>
+                  <option value="select">Select</option>
+                </select>
+              </div>
+              {newFieldType === 'select' && (
+                <div>
+                  <label className="setting-label" htmlFor="new-field-options">
+                    Options (comma-separated)
+                  </label>
+                  <input
+                    id="new-field-options"
+                    className="form-input"
+                    value={newFieldOptions}
+                    onChange={(e) => setNewFieldOptions(e.target.value)}
+                    placeholder="High, Medium, Low"
+                    data-testid="new-field-options"
+                  />
+                </div>
+              )}
+            </div>
+            <div className="settings-form-row">
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={handleAddCustomField}
+                disabled={!newFieldLabel.trim()}
+                data-testid="add-custom-field-btn"
+              >
+                Add field
+              </button>
+              <button
+                type="button"
+                className="btn btn-sm"
+                onClick={handleSaveCustomFields}
+                disabled={customFieldsSaving}
+                data-testid="save-custom-fields-btn"
+              >
+                {customFieldsSaving ? 'Saving...' : 'Save fields'}
+              </button>
+            </div>
           </div>
         </section>
 

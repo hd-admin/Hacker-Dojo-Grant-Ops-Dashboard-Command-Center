@@ -22,6 +22,14 @@ function getDb(): GrantOpsDb | undefined {
   return (globalThis as unknown as GrantOpsGlobal).__grantOpsDb;
 }
 
+const customTrackerFieldSchema = z.object({
+  key: z.string().min(1),
+  label: z.string().min(1),
+  type: z.enum(['text', 'select']),
+  options: z.array(z.string()).optional(),
+  visible: z.boolean().optional().default(true),
+});
+
 const SettingsBodySchema = z.object({
   operatorName: z.string().min(1).optional(),
   agentSettings: z
@@ -54,6 +62,7 @@ const SettingsBodySchema = z.object({
       enabled: z.boolean().optional(),
     })
     .optional(),
+  customFields: z.array(customTrackerFieldSchema).optional(),
 });
 
 function setSetting(db: GrantOpsDb, key: string, value: string): void {
@@ -114,7 +123,7 @@ export async function PUT(request: Request): Promise<NextResponse> {
       );
     }
 
-    const { operatorName, agentSettings, crawlSettings, notificationSettings, backupSchedule } =
+    const { operatorName, agentSettings, crawlSettings, notificationSettings, backupSchedule, customFields } =
       validation.data;
 
     if (operatorName !== undefined) {
@@ -185,6 +194,9 @@ export async function PUT(request: Request): Promise<NextResponse> {
       if (backupSchedule.enabled !== undefined) {
         setSetting(db, 'settings.backup.enabled', String(backupSchedule.enabled));
       }
+    }
+    if (customFields !== undefined) {
+      setSetting(db, 'settings.customFields', JSON.stringify(customFields));
     }
 
     const updatedSettings = getSettings(db);

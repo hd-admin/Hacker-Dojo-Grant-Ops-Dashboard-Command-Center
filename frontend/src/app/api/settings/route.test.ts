@@ -186,5 +186,42 @@ describe('/api/settings route', () => {
       expect(stmt.run).toHaveBeenCalledWith('settings.backup.maxBackups', '5');
       expect(stmt.run).toHaveBeenCalledWith('settings.backup.enabled', 'true');
     });
+
+    it('saves custom tracker fields', async () => {
+      const customFields = [
+        { key: 'programArea', label: 'Program Area', type: 'text' as const, visible: true },
+        {
+          key: 'strategicPriority',
+          label: 'Strategic Priority',
+          type: 'select' as const,
+          options: ['High', 'Medium', 'Low'],
+          visible: true,
+        },
+      ];
+      const request = new Request('http://localhost:3000/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customFields }),
+      });
+      await PUT(request);
+      expect(stmt.run).toHaveBeenCalledWith(
+        'settings.customFields',
+        JSON.stringify(customFields),
+      );
+    });
+
+    it('returns 400 for invalid custom field type', async () => {
+      const request = new Request('http://localhost:3000/api/settings', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customFields: [
+            { key: 'bad', label: 'Bad', type: 'number', visible: true },
+          ],
+        }),
+      });
+      const response = await PUT(request);
+      expect(response.status).toBe(400);
+    });
   });
 });

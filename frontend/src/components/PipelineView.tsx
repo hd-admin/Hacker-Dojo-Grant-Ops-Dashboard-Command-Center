@@ -203,6 +203,7 @@ export function PipelineView({
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');
   const [funderTypeFilter, setFunderTypeFilter] = useState<FunderTypeFilter>('all');
   const [_error, setError] = useState<string | null>(null);
+  const [customFields, setCustomFields] = useState<Array<{ key: string; label: string; type: string; options?: string[] }>>([]);
   const [moveMenuOpen, setMoveMenuOpen] = useState<string | null>(null);
   const [declineModalOpen, setDeclineModalOpen] = useState(false);
   const [declineGrantId, setDeclineGrantId] = useState<string | null>(null);
@@ -311,8 +312,24 @@ export function PipelineView({
   useEffect(() => {
     async function load() {
       try {
-        const data = await client.grants.getAll();
+        const [data, settings] = await Promise.all([
+          client.grants.getAll(),
+          client.settings.get().catch(() => null),
+        ]);
         setGrants(data.items);
+        if (settings?.customFields) {
+          try {
+            const parsed = JSON.parse(settings.customFields) as Array<{
+              key: string;
+              label: string;
+              type: string;
+              options?: string[];
+            }>;
+            setCustomFields(parsed);
+          } catch {
+            setCustomFields([]);
+          }
+        }
       } catch (_error) {
         setError('Error loading grants');
         setGrants([]);
@@ -478,6 +495,9 @@ export function PipelineView({
             <div>Deadline</div>
             <div>Award</div>
             <div>Responsibility</div>
+            {customFields.map((field) => (
+              <div key={field.key}>{field.label}</div>
+            ))}
           </div>
           {filteredGrants.map((grant) => (
             <button
@@ -492,6 +512,9 @@ export function PipelineView({
               <div>{renderDeadlineCell(grant)}</div>
               <div>{grant.award}</div>
               <div>{grant.responsibilityTag ?? '—'}</div>
+              {customFields.map((field) => (
+                <div key={field.key}>{grant.customFields?.[field.key] ?? '—'}</div>
+              ))}
             </button>
           ))}
         </div>
@@ -530,6 +553,17 @@ export function PipelineView({
                           <span>{renderDeadlineCell(grant)}</span>
                           <span className="amount">{grant.award}</span>
                         </div>
+                        {customFields.length > 0 && (
+                          <div className={styles.customFieldsRow}>
+                            {customFields.map((field) =>
+                              grant.customFields?.[field.key] ? (
+                                <span key={field.key} className={styles.customFieldTag}>
+                                  {field.label}: {grant.customFields[field.key]}
+                                </span>
+                              ) : null,
+                            )}
+                          </div>
+                        )}
                         <div className="pipeline-move-menu-wrapper">
                           <button
                             type="button"

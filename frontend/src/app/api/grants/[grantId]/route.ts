@@ -31,6 +31,7 @@ const grantDetailUpdateSchema = z
     groundedDocumentCount: z.number().int().min(0).optional(),
     sourceCount: z.number().int().min(0).optional(),
     draftContent: z.string().optional(),
+    customFields: z.record(z.string()).optional(),
   })
   .strict();
 

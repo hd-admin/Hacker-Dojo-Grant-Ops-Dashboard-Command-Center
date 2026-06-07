@@ -4,6 +4,7 @@ import type { JSX } from 'react';
 import React, { useCallback, useEffect, useState } from 'react';
 import type {
   AuditEvent,
+  CustomTrackerField,
   DocumentMetadata,
   FollowUp,
   GrantDetailResponse,
@@ -71,6 +72,8 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
   const [runbookCompleted, setRunbookCompleted] = useState(false);
   const [runbookSaving, setRunbookSaving] = useState(false);
   const [_error, setError] = useState<string | null>(null);
+  const [customFields, setCustomFields] = useState<CustomTrackerField[]>([]);
+  const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
 
   const viewModel = buildGrantDrawerViewModel(detail);
   const hasDirtyNotes = revisionNote.trim().length > 0 || submitNotes.trim().length > 0;
@@ -147,6 +150,31 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
       .then((docs) => setSubmissionDocuments(docs))
       .catch(() => setSubmissionDocuments([]));
   }, [grantId]);
+
+  useEffect(() => {
+    async function loadCustomFields() {
+      try {
+        const settings = await client.settings.get();
+        if (settings?.customFields) {
+          const parsed = JSON.parse(settings.customFields) as CustomTrackerField[];
+          setCustomFields(parsed);
+        } else {
+          setCustomFields([]);
+        }
+      } catch {
+        setCustomFields([]);
+      }
+    }
+    void loadCustomFields();
+  }, []);
+
+  useEffect(() => {
+    if (detail?.grant.customFields) {
+      setCustomFieldValues(detail.grant.customFields);
+    } else {
+      setCustomFieldValues({});
+    }
+  }, [detail?.grant.customFields]);
 
   const loadManifest = useCallback(async () => {
     if (!grantId) {
@@ -714,6 +742,58 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
               setShowGroundingWarning={setShowGroundingWarning}
               latestDraft={detail.latestDraft}
             />
+
+            {customFields.length > 0 && (
+              <div className="drawer-section" data-testid="custom-fields-section">
+                <h3>Custom Fields</h3>
+                {customFields.map((field) => (
+                  <div key={field.key} className="settings-form-row">
+                    <label className="setting-label" htmlFor={`custom-field-${field.key}`}>
+                      {field.label}
+                    </label>
+                    {field.type === 'select' && field.options ? (
+                      <select
+                        id={`custom-field-${field.key}`}
+                        className="form-select"
+                        value={customFieldValues[field.key] ?? ''}
+                        onChange={async (e) => {
+                          const newValue = e.target.value;
+                          const updated = { ...customFieldValues, [field.key]: newValue };
+                          setCustomFieldValues(updated);
+                          if (grantId) {
+                            await client.grants.update(grantId, { customFields: updated });
+                          }
+                        }}
+                        data-testid={`custom-field-select-${field.key}`}
+                      >
+                        <option value="">—</option>
+                        {field.options.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        id={`custom-field-${field.key}`}
+                        type="text"
+                        className="form-input"
+                        value={customFieldValues[field.key] ?? ''}
+                        onChange={async (e) => {
+                          const newValue = e.target.value;
+                          const updated = { ...customFieldValues, [field.key]: newValue };
+                          setCustomFieldValues(updated);
+                          if (grantId) {
+                            await client.grants.update(grantId, { customFields: updated });
+                          }
+                        }}
+                        data-testid={`custom-field-input-${field.key}`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </>
       )}

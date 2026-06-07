@@ -370,6 +370,14 @@ export interface SubmissionManifest {
   runbookCompleted?: boolean;
 }
 
+export interface CustomTrackerField {
+  key: string;
+  label: string;
+  type: 'text' | 'select';
+  options?: string[];
+  visible: boolean;
+}
+
 export interface Grant {
   id: string;
   title: string;
@@ -404,6 +412,7 @@ export interface Grant {
   humanOverrides?: HumanOverride[];
   attachments?: GrantAttachment[];
   lessonsLearned?: string;
+  customFields?: Record<string, string>;
 }
 
 export interface ContactInfo {
@@ -646,6 +655,7 @@ export interface GrantDetailUpdate {
   groundedDocumentCount?: number;
   sourceCount?: number;
   draftContent?: string;
+  customFields?: Record<string, string>;
 }
 
 export interface GrantDetailResponse {

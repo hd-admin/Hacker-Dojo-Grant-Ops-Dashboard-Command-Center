@@ -26,7 +26,7 @@ const {
   onRefreshAppState: vi.fn(),
 }));
 
-const { themesGet, themesUpdate, themesRescore, backupGetFreshness, backupExport, backupRestore } =
+const { themesGet, themesUpdate, themesRescore, backupGetFreshness, backupExport, backupRestore, settingsGet, settingsUpdate } =
   vi.hoisted(() => ({
     themesGet: vi.fn(),
     themesUpdate: vi.fn(),
@@ -34,6 +34,8 @@ const { themesGet, themesUpdate, themesRescore, backupGetFreshness, backupExport
     backupGetFreshness: vi.fn(),
     backupExport: vi.fn(),
     backupRestore: vi.fn(),
+    settingsGet: vi.fn(),
+    settingsUpdate: vi.fn(),
   }));
 
 vi.mock('../lib/grant-ops-client', () => ({
@@ -47,6 +49,7 @@ vi.mock('../lib/grant-ops-client', () => ({
       exportBackup: backupExport,
       restore: backupRestore,
     },
+    settings: { get: settingsGet, update: settingsUpdate },
   },
 }));
 
@@ -230,6 +233,8 @@ beforeEach(() => {
     strategicPriorities: [],
   });
   themesRescore.mockResolvedValue({ success: true, rescored: 0 });
+  settingsGet.mockResolvedValue({});
+  settingsUpdate.mockResolvedValue({});
 
   vi.spyOn(document, 'createElement').mockImplementation(((tagName: string) => {
     if (tagName === 'input') {
@@ -480,5 +485,55 @@ describe('SettingsView', () => {
     expect(container.querySelector('[data-testid="settings-toast"]')?.textContent).toContain(
       'Keyword cluster removed',
     );
+  });
+
+  it('renders Custom Tracker Fields card and allows adding fields', async () => {
+    settingsGet.mockResolvedValue({
+      customFields: JSON.stringify([
+        { key: 'program-area', label: 'Program Area', type: 'text', visible: true },
+      ]),
+    });
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('Custom Tracker Fields') === true);
+
+    expect(container.querySelector('[data-testid="custom-fields-card"]')).not.toBeNull();
+    expect(container.textContent).toContain('Program Area');
+
+    const labelInput = container.querySelector('[data-testid="new-field-label"]') as HTMLInputElement;
+    expect(labelInput).not.toBeNull();
+    labelInput.value = 'Strategic Priority';
+    labelInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const addBtn = container.querySelector('[data-testid="add-custom-field-btn"]') as HTMLButtonElement;
+    expect(addBtn).not.toBeNull();
+    addBtn.click();
+
+    await waitFor(() => container.textContent?.includes('Strategic Priority') === true);
+    expect(container.querySelector('[data-testid="custom-field-strategic-priority"]')).not.toBeNull();
+  });
+
+  it('saves custom fields via settings API', async () => {
+    settingsGet.mockResolvedValue({
+      customFields: JSON.stringify([]),
+    });
+    root.render(React.createElement(SettingsView, { onRefreshAppState }));
+    await waitFor(() => container.textContent?.includes('Custom Tracker Fields') === true);
+
+    const labelInput = container.querySelector('[data-testid="new-field-label"]') as HTMLInputElement;
+    labelInput.value = 'Board Interest';
+    labelInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const addBtn = container.querySelector('[data-testid="add-custom-field-btn"]') as HTMLButtonElement;
+    addBtn.click();
+
+    await waitFor(() => container.textContent?.includes('Board Interest') === true);
+
+    const saveBtn = container.querySelector('[data-testid="save-custom-fields-btn"]') as HTMLButtonElement;
+    saveBtn.click();
+
+    await waitFor(() => settingsUpdate.mock.calls.length > 0);
+    expect(settingsUpdate).toHaveBeenCalledWith({
+      customFields: [{ key: 'board-interest', label: 'Board Interest', type: 'text', visible: true }],
+    });
   });
 });

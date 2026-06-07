@@ -627,6 +627,13 @@ interface SettingsBody {
     maxBackups?: number;
     enabled?: boolean;
   };
+  customFields?: Array<{
+    key: string;
+    label: string;
+    type: 'text' | 'select';
+    options?: string[];
+    visible?: boolean;
+  }>;
 }
 
 const settingsApi = {
