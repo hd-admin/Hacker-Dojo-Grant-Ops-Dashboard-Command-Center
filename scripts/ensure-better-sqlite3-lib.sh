@@ -12,9 +12,8 @@ fi
 
 is_real_node() {
   # Returns 0 if $1 is a genuine Node.js binary (not Bun/Deno shim).
-  # Validates both process.release.name === 'node' and process.versions.node exists.
-  # Falls back to checking node -v output if process.release.name check fails
-  # (some container/snap wrappers report a different release name).
+  # Requires both process.release.name === 'node' and process.versions.node exists.
+  # Does NOT fall back to node -v; callers should use resolve_real_node for that.
   local node_bin="$1"
   if [ -z "$node_bin" ] || [ ! -x "$node_bin" ]; then
     return 1
@@ -33,17 +32,7 @@ is_real_node() {
   ' 2>/dev/null || echo 'error')
   case "$check_output" in
     node*) return 0 ;;
-    *)
-      # Fallback: accept if "node -v" returns a valid semver starting with "v"
-      # and the binary path is executable. This handles snap/container wrappers
-      # where process.release.name may not be exactly "node".
-      local version_output
-      version_output=$("$node_bin" -v 2>/dev/null || echo 'error')
-      if [ -n "$version_output" ] && echo "$version_output" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'; then
-        return 0
-      fi
-      return 1
-      ;;
+    *) return 1 ;;
   esac
 }
 
@@ -212,6 +201,25 @@ resolve_real_node() {
       checked_paths+=("$exec_path (via process.execPath)")
       failure_reasons+=("$exec_path (via process.execPath): is_real_node rejected")
     fi
+  fi
+
+  # Final fallback: accept if node on PATH returns a valid semver via -v.
+  # This handles snap/container wrappers where process.release.name may not
+  # be exactly "node", but only after all stricter checks have failed.
+  if [ -n "${which_node:-}" ]; then
+    local version_output
+    version_output=$("$which_node" -v 2>/dev/null || echo "")
+    if [ -n "$version_output" ] && echo "$version_output" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'; then
+      local resolved
+      resolved="$(readlink -f "$which_node" 2>/dev/null || echo "$which_node")"
+      if [ -z "$resolved" ]; then
+        resolved="$which_node"
+      fi
+      echo "$resolved"
+      return 0
+    fi
+    checked_paths+=("$which_node (via -v semver fallback)")
+    failure_reasons+=("$which_node (via -v semver fallback): did not return valid semver")
   fi
 
   echo "[ensure-better-sqlite3] ERROR: No Node.js binary found." >&2
