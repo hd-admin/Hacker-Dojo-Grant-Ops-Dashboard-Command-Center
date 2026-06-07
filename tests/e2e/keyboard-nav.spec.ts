@@ -1,26 +1,12 @@
-import fs from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import { configureOpencodeThroughSettingsView, resetAppState } from './test-utils';
 
 const opencodeStubPath = path.join(process.cwd(), 'tests/e2e/opencode-stub.sh');
 
-async function ensureOpencodeStub(): Promise<string> {
-  const script = `#!/bin/sh
-set -eu
-
-cat <<'EOF'
-OpenCode 0.1.0-stub
-EOF
-`;
-  await fs.writeFile(opencodeStubPath, script, 'utf8');
-  await fs.chmod(opencodeStubPath, 0o755);
-  return opencodeStubPath;
-}
-
 test.describe('Keyboard navigation', () => {
   test.beforeEach(async ({ request, page }) => {
-    const stubPath = await ensureOpencodeStub();
+    const stubPath = opencodeStubPath;
     await resetAppState(request);
     await page.goto('http://127.0.0.1:3000', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.app', { timeout: 30000 });
