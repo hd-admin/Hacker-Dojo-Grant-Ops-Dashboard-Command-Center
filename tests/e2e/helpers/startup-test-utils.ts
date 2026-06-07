@@ -220,6 +220,51 @@ export function withFakeNodeOnPath(fakeDir: string, version: string): { restoreP
 }
 
 /**
+ * Creates a fake corepack shim at the given directory that prints a valid
+ * version but sets process.release.name to 'other', then prepends it to PATH.
+ * The shim delegates to the real node binary for all other commands.
+ * Returns a restore function that resets PATH and removes the fake directory.
+ */
+export function withFakeCorepackShim(fakeDir: string): { restorePath: () => void; fakeNodePath: string } {
+  mkdirSync(fakeDir, { recursive: true });
+  const fakeNode = join(fakeDir, 'node');
+  const realNode = execSync('command -v node', { encoding: 'utf-8', stdio: 'pipe' }).trim();
+
+  const script = `#!/bin/bash
+REAL_NODE="${realNode}"
+if [ "\${1:-}" = "-v" ] || [ "\${1:-}" = "--version" ]; then
+  "$REAL_NODE" -v
+  exit 0
+fi
+if [ "\${1:-}" = "-e" ] && [ "\${2:-}" = 'process.stdout.write(process.execPath)' ]; then
+  # Return the real node path when asked for execPath
+  printf '%s' "$REAL_NODE"
+  exit 0
+fi
+if [ "\${1:-}" = "-e" ]; then
+  # Simulate corepack shim: valid version but process.release.name = 'other'
+  printf 'other'
+  exit 0
+fi
+exec "$REAL_NODE" "$@"
+`;
+  writeFileSync(fakeNode, script);
+  chmodSync(fakeNode, 0o755);
+
+  const originalPath = process.env.PATH ?? '';
+  process.env.PATH = `${fakeDir}${originalPath ? ':' + originalPath : ''}`;
+
+  const restorePath = (): void => {
+    process.env.PATH = originalPath;
+    if (existsSync(fakeDir)) {
+      rmSync(fakeDir, { recursive: true, force: true });
+    }
+  };
+
+  return { restorePath, fakeNodePath: fakeNode };
+}
+
+/**
  * Gets free disk space in KB for the given path using df.
  */
 export function getFreeDiskKb(path: string): number {

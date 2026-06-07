@@ -10,6 +10,7 @@ import {
   restoreBetterSqlite3Binding,
   setupFreshCloneWorkspace,
   withFakeNodeOnPath,
+  withFakeCorepackShim,
 } from './helpers/startup-test-utils';
 
 test.describe('Startup verification', () => {
@@ -183,5 +184,32 @@ exit 0
     } finally {
       restorePath();
     }
+  });
+
+  test('corepack shim fallback resolves to real Node via process.execPath', () => {
+    const fakeDir = join(tmpdir(), `fake-corepack-shim-${process.pid}`);
+    const { restorePath } = withFakeCorepackShim(fakeDir);
+    try {
+      const result = execSync('bash scripts/ensure-better-sqlite3.sh --diagnose 2>&1', {
+        cwd: process.cwd(),
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: 30_000,
+      });
+      expect(result).toContain('resolved real Node');
+    } finally {
+      restorePath();
+    }
+  });
+
+  test('--skip-if-working exits 0 when better-sqlite3 is already functional', () => {
+    const result = execSync('bash scripts/ensure-better-sqlite3.sh --skip-if-working 2>&1', {
+      cwd: process.cwd(),
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      timeout: 30_000,
+    });
+    // Should exit 0 without attempting rebuild when module is already functional
+    expect(result).toContain('better-sqlite3 already works');
   });
 });

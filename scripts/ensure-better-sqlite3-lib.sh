@@ -49,6 +49,8 @@ is_real_node() {
 
 resolve_real_node() {
   local candidates=()
+  local checked_paths=()
+  local failure_reasons=()
 
   if [ -n "${NODE_PATH:-}" ] && [ -x "$NODE_PATH" ]; then
     candidates+=("$NODE_PATH")
@@ -56,7 +58,23 @@ resolve_real_node() {
 
   local which_node
   which_node="$(command -v node 2>/dev/null || echo "")"
+
+  # Corepack shim detection: if `node` on PATH returns a valid version but
+  # is_real_node rejects it, try to resolve the real binary behind the shim
+  # using process.execPath.
   if [ -n "$which_node" ]; then
+    local shim_version
+    shim_version=$("$which_node" -v 2>/dev/null || echo "")
+    if [ -n "$shim_version" ] && echo "$shim_version" | grep -qE '^v[0-9]+\.[0-9]+\.[0-9]+'; then
+      if ! is_real_node "$which_node"; then
+        local exec_path
+        exec_path=$("$which_node" -e 'process.stdout.write(process.execPath)' 2>/dev/null || echo "")
+        if [ -n "$exec_path" ] && [ -x "$exec_path" ] && is_real_node "$exec_path"; then
+          echo "$exec_path"
+          return 0
+        fi
+      fi
+    fi
     candidates+=("$which_node")
   fi
 
@@ -157,13 +175,16 @@ resolve_real_node() {
     if [ -z "$resolved" ]; then
       resolved="$candidate"
     fi
+    checked_paths+=("$resolved")
     if [ ! -x "$resolved" ]; then
+      failure_reasons+=("$resolved: not executable")
       continue
     fi
     if is_real_node "$resolved"; then
       echo "$resolved"
       return 0
     fi
+    failure_reasons+=("$resolved: is_real_node rejected (not genuine Node.js)")
   done
 
   if [ -n "${which_node:-}" ]; then
@@ -179,13 +200,33 @@ resolve_real_node() {
     fi
   fi
 
+  # Explicit fallback: try using node on PATH to print process.execPath directly.
+  if [ -n "${which_node:-}" ]; then
+    local exec_path
+    exec_path=$("$which_node" -e 'process.stdout.write(process.execPath)' 2>/dev/null || echo "")
+    if [ -n "$exec_path" ] && [ -x "$exec_path" ] && is_real_node "$exec_path"; then
+      echo "$exec_path"
+      return 0
+    fi
+    if [ -n "$exec_path" ]; then
+      checked_paths+=("$exec_path (via process.execPath)")
+      failure_reasons+=("$exec_path (via process.execPath): is_real_node rejected")
+    fi
+  fi
+
   echo "[ensure-better-sqlite3] ERROR: No Node.js binary found." >&2
   echo "  Common causes:" >&2
   echo "  - Node.js is not installed." >&2
-  echo "  - node on PATH is a Bun/Deno shim (process.release.name != 'node')." >&2
+  echo "  - node on PATH is a corepack/Bun/Deno shim (process.release.name != 'node')." >&2
   echo "  - HOME/NVM_DIR are unset and node is not on PATH." >&2
   echo "  Fix: Install Node.js v20+ from https://nodejs.org/ or use a version manager (nvm, fnm, volta)." >&2
-  echo "  Candidates checked: ${candidates[*]}" >&2
+  echo "" >&2
+  echo "  Candidates checked (${#checked_paths[@]}):" >&2
+  local reason
+  for reason in "${failure_reasons[@]}"; do
+    echo "    - $reason" >&2
+  done
+  echo "" >&2
   echo "  PATH: $PATH" >&2
   echo "  HOME: ${HOME:-<unset>}" >&2
   echo "  NVM_DIR: ${NVM_DIR:-<unset>}" >&2
