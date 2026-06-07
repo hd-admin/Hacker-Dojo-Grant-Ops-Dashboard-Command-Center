@@ -617,7 +617,7 @@
 
 1. File exists and is readable
 2. File size ≤ 50MB (configurable)
-3. File extension is in the allowed list: `.pdf`, `.docx`, `.doc`, `.xlsx`, `.xls`, `.csv`, `.txt`, `.png`, `.jpg`, `.jpeg`
+3. File extension is in the allowed list: `.pdf`, `.docx`, `.doc`, `.xlsx`, `.csv`, `.txt`, `.png`, `.jpg`, `.jpeg`
 4. MIME type matches the extension (server-side check, not client-side)
 5. File is written atomically: temp path → rename to final path after DB record created
 
@@ -935,7 +935,7 @@ The JSON must match this schema exactly:
 
 ### 16.6 — Budget Import Parsing
 
-**AC-16.6.1** — CSV budget imports MUST use `csv-parse` with `columns: true, cast: true`. XLSX budget imports MUST use `xlsx` (SheetJS) `0.20.3`.
+**AC-16.6.1** — CSV budget imports MUST use `csv-parse` with `columns: true, cast: true`. XLSX budget imports MUST use `exceljs` `^4.4.0`.
 
 **AC-16.6.2** — The budget import parser MUST detect header rows by scanning the first 10 rows for budget-related keywords (`category`, `item`, `line`, `description`, `amount`, `budget`, `total`, `cost`, `expense`).
 

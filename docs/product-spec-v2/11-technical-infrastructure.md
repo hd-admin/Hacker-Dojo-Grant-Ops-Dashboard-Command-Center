@@ -42,7 +42,7 @@ This is a local-only desktop application. Application data persistence is fully 
 | **PDF** (layout-aware) | `pdfjs-dist`     | `^5.7.284` | Mozilla's PDF.js. For complex/scanned award letters.                                                                                                 |
 | **DOCX**               | `mammoth`        | `^1.12.0`  | `.extractRawText()` for clean semantic text; `.convertToHtml()` for structure.                                                                       |
 | **CSV**                | `csv-parse`      | `^5.6.0`   | Most robust, RFC 4180 compliant, memory-efficient streaming.                                                                                         |
-| **XLSX**               | `xlsx` (SheetJS) | `0.20.3`   | Vendored tarball in the repo (for example `vendor/xlsx-0.20.3.tgz`). npm registry is stale (0.18.5, 2022); do not rely on a live CDN during install. |
+| **XLSX**               | `exceljs`        | `^4.4.0`   | Modern, actively maintained XLSX reader/writer with full TypeScript support and streaming API. |
 | **Budget schema**      | `excel-zod`      | `^1.0.0`   | Type-safe column mapping with Zod schemas, auto header detection.                                                                                    |
 
 ### File Operations
@@ -147,10 +147,9 @@ node --version  # compare against https://nodejs.org/en/about/previous-releases
 # 2. Check each npm package for newer versions
 npx npm-check-updates --filter "next,react,typescript,better-sqlite3,zod,csv-parse,mammoth,pino,pino-roll,ical-generator,adm-zip,vitest,playwright,file-type,@napi-rs/canvas,server-only"
 
-# 3. Check upstream SheetJS release notes, then refresh the vendored tarball in `vendor/`
-# Do not rely on a live CDN during install
+# 4. Check npmjs.com for exceljs release notes
 
-# 4. Check Context7 or npmjs.com for pdf-parse and pdfjs-dist
+# 5. Check Context7 or npmjs.com for pdf-parse and pdfjs-dist
 npx npm-check-updates --filter "pdf-parse,pdfjs-dist,excel-zod"
 
 # 5. Run the test suite after any version bumps
@@ -243,7 +242,7 @@ Per-source crawl history is persisted in the `crawl_runs` table and linked to bo
 | `PUT`    | `/api/documents/{id}`      | Update document metadata                        |
 | `DELETE` | `/api/documents/{id}`      | Delete document                                 |
 
-Document upload validates: file size ≤ 50MB, allowed extensions (`.pdf`, `.docx`, `.doc`, `.xlsx`, `.xls`, `.csv`, `.txt`, `.png`, `.jpg`, `.jpeg`), MIME type matches extension.
+Document upload validates: file size ≤ 50MB, allowed extensions (`.pdf`, `.docx`, `.doc`, `.xlsx`, `.csv`, `.txt`, `.png`, `.jpg`, `.jpeg`), MIME type matches extension.
 
 ### 1.5 — Agent Jobs
 
@@ -423,7 +422,7 @@ The complete database schema — all 19 tables, indexes, FTS5 virtual tables, co
 ### 3.2 — Upload Pipeline
 
 1. File uploaded via `POST /api/documents` (multipart form with file + metadata fields)
-2. Validate: size ≤ 50MB, extension in allowed list (`.pdf`, `.docx`, `.doc`, `.xlsx`, `.xls`, `.csv`, `.txt`, `.png`, `.jpg`, `.jpeg`), MIME type server-checked via `file-type` package (magic number sniffing, not just extension)
+2. Validate: size ≤ 50MB, extension in allowed list (`.pdf`, `.docx`, `.doc`, `.xlsx`, `.csv`, `.txt`, `.png`, `.jpg`, `.jpeg`), MIME type server-checked via `file-type` package (magic number sniffing, not just extension)
 3. Generate UUID filename, write to temp path first → create DB record → rename to final path on success
 4. Compute SHA-256 checksum via `node:crypto` and store in `documents.checksum`
 5. Queue text extraction (see §3.3)
@@ -438,7 +437,7 @@ The complete database schema — all 19 tables, indexes, FTS5 virtual tables, co
 | **PDF** (complex/scanned) | `pdfjs-dist`     | `^5.7.284` | `getDocument().promise` → `page.getTextContent()` — layout-aware extraction |
 | **DOCX**                  | `mammoth`        | `^1.12.0`  | `mammoth.extractRawText({buffer})` — clean semantic text for AI grounding   |
 | **CSV**                   | `csv-parse`      | `^5.6.0`   | Streaming: `createReadStream().pipe(parse({columns: true, cast: true}))`    |
-| **XLSX**                  | `xlsx` (SheetJS) | `0.20.3`   | `XLSX.read(buffer, {type:'buffer'})` → `XLSX.utils.sheet_to_json()`         |
+| **XLSX**                  | `exceljs`        | `^4.4.0`   | `workbook.xlsx.load(buffer)` → `worksheet.eachRow()` to extract cell values  |
 | **TXT**                   | `node:fs`        | built-in   | `fs.readFileSync(path, 'utf-8')`                                            |
 | **Images**                | —                | —          | No text extraction. Stored as binary reference only.                        |
 
@@ -543,7 +542,7 @@ The sidebar shows an unread badge count. Clicking opens a drawer listing recent 
 | Format               | Library             | Version  | Strategy                                                                              |
 | -------------------- | ------------------- | -------- | ------------------------------------------------------------------------------------- |
 | CSV                  | `csv-parse`         | `^5.6.0` | Streaming: `createReadStream().pipe(parse({columns: true, cast: true}))`              |
-| XLSX                 | `xlsx` (SheetJS)    | `0.20.3` | `XLSX.read(buffer)` → `sheet_to_json()` with sheet detection and header row detection |
+| XLSX                 | `exceljs`           | `^4.4.0` | `workbook.xlsx.load(buffer)` → sheet detection and `worksheet.eachRow()` for header detection |
 | CSV/XLSX (typed)     | `excel-zod`         | `^1.0.0` | Zod schema → auto-detect headers → type-safe column mapping                           |
 | PDF (tabular budget) | OpenCode subprocess | —        | Extract via agent loop, returned as `ExtractArtifact` budget fields                   |
 
