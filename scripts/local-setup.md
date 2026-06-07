@@ -29,6 +29,5 @@ pnpm run start:verified
 ## Notes
 
 - The app stores local data under the configured `DATA_DIR` (defaults to `.grant-ops-data/`).
-- If `better-sqlite3` needs a rebuild, `scripts/ensure-better-sqlite3.sh` handles it automatically.
-- The script includes a fallback for snap/container Node wrappers that may not report `process.release.name === 'node'`.
+- If `better-sqlite3` needs a rebuild, pnpm's `onlyBuiltDependencies` setting in `.pnpmrc` handles it automatically on `pnpm install`.
 - The verification command checks the persistence root and build output before launch.

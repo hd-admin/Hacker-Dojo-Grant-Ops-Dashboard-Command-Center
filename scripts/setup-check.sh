@@ -45,15 +45,15 @@ else
   ANY_FAILED=1
 fi
 
-# 3. Check better-sqlite3 (use --skip-rebuild semantics via ensure script)
-# If the native module already loads, ensure-better-sqlite3.sh exits 0 quickly without rebuilding.
-if ! bash ./scripts/ensure-better-sqlite3.sh >/dev/null 2>&1; then
+# 3. Check better-sqlite3 (use the verify-only check script)
+# pnpm's onlyBuiltDependencies setting in .pnpmrc rebuilds the binding on 'pnpm install'.
+if ! bash ./scripts/check-better-sqlite3.sh >/dev/null 2>&1; then
   echo -e "$FAIL better-sqlite3 check failed"
-  echo "  The native module could not be loaded or rebuilt."
+  echo "  The native module could not be loaded."
   echo "  Fix: Run 'pnpm install' to install dependencies, or check that build tools (python, make, g++) are installed"
   ANY_FAILED=1
 else
-  echo -e "$PASS better-sqlite3 native module OK"
+  echo -e "$PASS better-sqlite3 native module loads"
 fi
 
 # 4. Check persistence root (zero-dependency: do not require pnpm or tsx)

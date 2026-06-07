@@ -42,12 +42,12 @@ PKG_MANAGER="$(command -v pnpm >/dev/null 2>&1 && echo 'pnpm' || echo 'npm')"
 
 trap cleanup EXIT
 
-bash ./scripts/ensure-better-sqlite3.sh
+bash ./scripts/check-better-sqlite3.sh
 cleanup
 sleep 1
 
-bash ./scripts/test-ensure-better-sqlite3.sh >/dev/null 2>&1
-echo "✓ startup script tests passed"
+bash ./scripts/check-better-sqlite3.sh >/dev/null 2>&1
+echo "✓ better-sqlite3 binding loads"
 
 $PKG_MANAGER verify:persistence-root >/dev/null 2>&1
 echo "✓ persistence root verified"

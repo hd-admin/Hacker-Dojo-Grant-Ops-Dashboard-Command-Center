@@ -15,8 +15,8 @@ else
 fi
 
 echo "[baseline] ensuring better-sqlite3..."
-if ! node -e "const Database=require('better-sqlite3');const db=new Database(':memory:');db.prepare('select 1').get();db.close();" >/dev/null 2>&1; then
-  bash scripts/ensure-better-sqlite3.sh
+if ! node -e "require('better-sqlite3')" >/dev/null 2>&1; then
+  bash scripts/check-better-sqlite3.sh
 fi
 
 echo "=== typecheck ==="

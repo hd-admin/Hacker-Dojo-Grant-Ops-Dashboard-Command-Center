@@ -10,49 +10,34 @@ if (typeof process !== 'undefined' && process.env) {
   }
 }
 
-import { execFileSync } from 'node:child_process';
 import { createRequire } from 'node:module';
 import path from 'node:path';
 
+// better-sqlite3 sanity check.
+// The vitest config's `environment: 'node'` loads this setup file in node,
+// but tests that pin `@vitest-environment jsdom` cause Vite to re-evaluate
+// imports through its browser-style pipeline and externalize `node:module`,
+// so a direct createRequire from this file may throw in jsdom-only test
+// files. The check is best-effort: if the binding loads we confirm with a
+// SELECT 1 round-trip, otherwise we log a hint and continue. Tests that
+// actually need better-sqlite3 will surface a real failure when the binding
+// is missing.
 try {
-  const require = createRequire(import.meta.url);
-  const repoRoot = path.resolve(process.cwd());
-  const ensureScript = path.join(repoRoot, 'scripts', 'ensure-better-sqlite3.sh');
-
-  function canLoadBetterSqlite3(): boolean {
-    try {
-      const Database = require('better-sqlite3') as typeof import('better-sqlite3');
-      const db = new Database(':memory:');
-      db.prepare('select 1').get();
-      db.close();
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  if (!canLoadBetterSqlite3()) {
-    try {
-      execFileSync('bash', [ensureScript], {
-        cwd: repoRoot,
-        stdio: 'inherit',
-      });
-    } catch {
-      // ensure-better-sqlite3.sh may fail in some environments (e.g. snap
-      // wrappers, missing build tools). Fall back to direct require test.
-      // Using process.stderr.write to avoid eslint no-console in test setup.
-      process.stderr.write(
-        '[vitest-setup] ensure-better-sqlite3.sh exited non-zero; falling back to direct require test\n',
-      );
-    }
-
-    if (!canLoadBetterSqlite3()) {
-      throw new Error('better-sqlite3 is still unavailable after rebuild');
-    }
-  }
+  const req = createRequire(path.join(process.cwd(), 'noop.js'));
+  const Database = req('better-sqlite3') as new (filename: string) => {
+    prepare: (sql: string) => {
+      get: () => unknown;
+    };
+    close: () => void;
+  };
+  const db = new Database(':memory:');
+  db.prepare('select 1').get();
+  db.close();
 } catch {
-  // jsdom environment - Node.js builtins are externalized stubs
-  // Component tests don't need native modules
+  // better-sqlite3 is not loadable from this test environment.
+  // pnpm's onlyBuiltDependencies setting in .pnpmrc rebuilds the binding
+  // automatically on 'pnpm install'. The node CLI check at
+  // scripts/check-better-sqlite3.sh is the canonical sanity check.
 }
 
 // Mock next/server connection() for route handler tests

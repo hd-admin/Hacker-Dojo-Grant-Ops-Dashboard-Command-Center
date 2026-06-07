@@ -11,117 +11,15 @@ import type {
   Source,
   Task,
 } from '../../../shared/types';
-import React from 'react';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  AlertTriangle,
-  Award,
-  Bell,
-  Calendar,
-  Check,
-  Columns3,
-  Database,
-  FileText,
-  GitFork,
-  LayoutDashboard,
-  ListChecks,
-  Search,
-  Settings,
-  X,
-} from 'lucide-react';
-import { client } from '../lib/grant-ops-client';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useToast } from './ToastProvider';
-import { DashboardView } from './DashboardView';
-import { DiscoveryView } from './DiscoveryView';
+import { client } from '../lib/grant-ops-client';
 import { GrantDrawer } from './GrantDrawer';
-import styles from './AppShell.module.css';
-import { NotificationsView } from './NotificationsView';
-import { PipelineView } from './PipelineView';
-import { SettingsView } from './SettingsView';
-import { SourcesView } from './SourcesView';
-import { TasksView } from './TasksView';
-import { AuditView } from './AuditView';
-import { CalendarView } from './CalendarView';
-import { DuplicatesView } from './DuplicatesView';
-import { JobsPanel } from './JobsPanel';
 import { OperatorNamePrompt } from './OperatorNamePrompt';
-import { PostAwardView } from './PostAwardView';
-
-type ViewType =
-  | 'dashboard'
-  | 'discovery'
-  | 'pipeline'
-  | 'sources'
-  | 'calendar'
-  | 'post-award'
-  | 'tasks'
-  | 'settings'
-  | 'notifications'
-  | 'jobs'
-  | 'audit'
-  | 'duplicates';
-
-type HealthTier = 'fully_online' | 'partially_degraded' | 'fully_offline';
-
-interface NavItem {
-  view?: ViewType;
-  label: string;
-  icon?: React.ReactNode;
-  ariaLabel?: string;
-}
-
-const workspaceNav: NavItem[] = [
-  {
-    view: 'dashboard',
-    label: 'Dashboard',
-    icon: <LayoutDashboard size={18} />,
-    ariaLabel: 'View dashboard',
-  },
-  {
-    view: 'discovery',
-    label: 'Discovery',
-    icon: <Search size={18} />,
-    ariaLabel: 'Discover grants',
-  },
-  {
-    view: 'pipeline',
-    label: 'Pipeline',
-    icon: <Columns3 size={18} />,
-    ariaLabel: 'View grant pipeline',
-  },
-  { view: 'sources', label: 'Sources', icon: <Database size={18} />, ariaLabel: 'Manage sources' },
-  { view: 'calendar', label: 'Calendar', icon: <Calendar size={18} />, ariaLabel: 'View calendar' },
-  {
-    view: 'post-award',
-    label: 'Post-Award',
-    icon: <Award size={18} />,
-    ariaLabel: 'View post-award management',
-  },
-  { view: 'tasks', label: 'Tasks', icon: <ListChecks size={18} />, ariaLabel: 'View tasks' },
-  {
-    view: 'settings',
-    label: 'Settings',
-    icon: <Settings size={18} />,
-    ariaLabel: 'Application settings',
-  },
-];
-
-const activityNav: NavItem[] = [
-  {
-    view: 'notifications',
-    label: 'Notifications',
-    icon: <Bell size={18} />,
-    ariaLabel: 'View notifications',
-  },
-  { view: 'jobs', label: 'Jobs', icon: <Settings size={18} />, ariaLabel: 'View job queue' },
-  { view: 'audit', label: 'Audit', icon: <FileText size={18} />, ariaLabel: 'View audit trail' },
-  {
-    view: 'duplicates',
-    label: 'Duplicates',
-    icon: <GitFork size={18} />,
-    ariaLabel: 'Review duplicate candidates',
-  },
-];
+import { AppShellHealthBanner, type HealthTier } from './AppShellHealthBanner';
+import { AppShellSidebar, type SidebarView } from './AppShellSidebar';
+import { AppShellView, type AppShellActiveView } from './AppShellView';
+import { AppShellSafeQuitDialog } from './AppShellSafeQuitDialog';
 
 const WORKING_CONTEXT_KEY = 'grantops.workingContext';
 
@@ -153,9 +51,24 @@ function readWorkingContext(): {
   }
 }
 
+function getRelativeTime(isoString: string): string {
+  const now = new Date();
+  const date = new Date(isoString);
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'just now';
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
 export function AppShell(): JSX.Element {
   const { addToast } = useToast();
-  const [activeView, setActiveView] = useState<ViewType>('dashboard');
+  const [activeView, setActiveView] = useState<SidebarView>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
   const [selectedGrantRefreshKey, setSelectedGrantRefreshKey] = useState(0);
   const [grants, setGrants] = useState<Grant[]>([]);
@@ -169,16 +82,13 @@ export function AppShell(): JSX.Element {
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
 
-  // Operator name prompt state
   const [operatorName, setOperatorName] = useState<string>('');
 
-  // Safe quit state
   const [showSafeQuit, setShowSafeQuit] = useState(false);
   const [activeJobs, setActiveJobs] = useState<JobQueueItem[]>([]);
   const isSafeQuit = useRef(false);
   const previousJobStatuses = useRef<Record<string, JobQueueItem['status']>>({});
 
-  // Keyboard navigation
   const mainRef = useRef<HTMLElement>(null);
 
   const pendingSourcesCount = useMemo(
@@ -186,9 +96,8 @@ export function AppShell(): JSX.Element {
     [sources],
   );
   const [pendingDuplicatesCount, setPendingDuplicatesCount] = useState(0);
-  const [_error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
-  // Health tier computation
   const healthTier: HealthTier = useMemo(() => {
     if (!healthResult) return 'fully_online';
     if (healthResult.storage === 'error') return 'fully_offline';
@@ -201,7 +110,6 @@ export function AppShell(): JSX.Element {
     return 'fully_online';
   }, [healthResult]);
 
-  // Crawl staleness (>7 days)
   const isCrawlStale = useMemo(() => {
     if (!crawlStatus.lastSync) return false;
     const diffDays =
@@ -209,9 +117,19 @@ export function AppShell(): JSX.Element {
     return diffDays > 7;
   }, [crawlStatus.lastSync]);
 
+  const opencodeBlocked = useMemo(() => {
+    if (healthResult === null) return false;
+    return (
+      healthResult.opencode === 'not-installed' ||
+      healthResult.opencode === 'not-reachable' ||
+      healthResult.opencode === 'incompatible' ||
+      healthResult.opencode === 'error'
+    );
+  }, [healthResult]);
+
   const saveWorkingContext = useCallback(
     (next: {
-      activeView?: ViewType;
+      activeView?: SidebarView;
       selectedGrantId?: string | null;
       recentGrantIds?: string[];
       recentDraftId?: string | null;
@@ -237,7 +155,7 @@ export function AppShell(): JSX.Element {
       const response = await fetch('/api/health');
       const data = (await response.json()) as HealthCheckResult;
       setHealthResult(data);
-    } catch (_error) {
+    } catch {
       setError('Error loading health');
       setHealthResult({
         storage: 'error',
@@ -264,7 +182,6 @@ export function AppShell(): JSX.Element {
         : [];
       setActiveJobs(active);
 
-      // Toast bridge: detect jobs that transitioned to completed
       const prevStatuses = previousJobStatuses.current;
       for (const job of Array.isArray(data) ? data : []) {
         const prevStatus = prevStatuses[job.id];
@@ -336,13 +253,13 @@ export function AppShell(): JSX.Element {
   useEffect(() => {
     setIsMounted(true);
     const context = readWorkingContext();
-    if (context.activeView) setActiveView(context.activeView as ViewType);
+    if (context.activeView) setActiveView(context.activeView as SidebarView);
     if (context.selectedGrantId !== undefined) setSelectedGrantId(context.selectedGrantId);
     if (Array.isArray(context.recentGrantIds))
       setRecentGrantIds(context.recentGrantIds.slice(0, 5));
     if (context.recentDraftId !== undefined) setRecentDraftId(context.recentDraftId);
 
-    void Promise.all([refreshAppState(), refreshHealth(), loadActiveJobs()]).catch((_error) => {
+    void Promise.all([refreshAppState(), refreshHealth(), loadActiveJobs()]).catch(() => {
       setError('Error loading app state');
     });
   }, [refreshAppState, refreshHealth, loadActiveJobs]);
@@ -351,7 +268,7 @@ export function AppShell(): JSX.Element {
     const triggerScheduledCrawls = async (): Promise<void> => {
       try {
         await fetch('/api/crawl/scheduled?trigger=true');
-      } catch (_error) {
+      } catch {
         setError('Error checking scheduled crawls');
       }
     };
@@ -366,7 +283,6 @@ export function AppShell(): JSX.Element {
     };
   }, []);
 
-  // Periodic health refresh for reconnection detection
   useEffect(() => {
     const interval = window.setInterval(() => {
       void refreshHealth();
@@ -374,7 +290,6 @@ export function AppShell(): JSX.Element {
     return () => window.clearInterval(interval);
   }, [refreshHealth]);
 
-  // Working context save effects
   useEffect(() => {
     if (!isMounted) return;
     saveWorkingContext({ activeView });
@@ -405,7 +320,6 @@ export function AppShell(): JSX.Element {
     saveWorkingContext({ recentDraftId });
   }, [recentDraftId, isMounted, saveWorkingContext]);
 
-  // Safe quit: beforeunload handler
   useEffect(() => {
     const handler = async (e: BeforeUnloadEvent) => {
       const freshlyLoadedJobs = await loadActiveJobs();
@@ -428,7 +342,6 @@ export function AppShell(): JSX.Element {
     return () => window.removeEventListener('beforeunload', handler);
   }, [loadActiveJobs]);
 
-  // Keyboard navigation: Escape to close drawer
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -444,51 +357,19 @@ export function AppShell(): JSX.Element {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedGrantId, showSafeQuit]);
 
-  // ============ Handlers ============
-
-  const handleNavClick = (item: NavItem) => {
-    if (item.view) {
-      setActiveView(item.view);
-    }
-  };
-
-  const handleNavKeyDown = (e: React.KeyboardEvent, item: NavItem) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      if (item.view) {
-        setActiveView(item.view);
-      }
-      return;
-    }
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      const current = e.currentTarget as HTMLElement;
-      const sidebar = current.closest('.sidebar');
-      if (!sidebar) return;
-      const allNavItems = Array.from(sidebar.querySelectorAll<HTMLElement>('.nav-item'));
-      const currentIndex = allNavItems.indexOf(current);
-      if (currentIndex === -1) return;
-      const nextIndex =
-        e.key === 'ArrowDown'
-          ? (currentIndex + 1) % allNavItems.length
-          : (currentIndex - 1 + allNavItems.length) % allNavItems.length;
-      allNavItems[nextIndex]?.focus();
-    }
-  };
-
-  const handleNavigate = (view: ViewType) => {
+  const handleNavigate = (view: SidebarView): void => {
     setActiveView(view);
   };
 
-  const handleGrantSelect = (grantId: string) => {
+  const handleGrantSelect = (grantId: string): void => {
     setSelectedGrantId(grantId);
   };
 
-  const handleDrawerClose = () => {
+  const handleDrawerClose = (): void => {
     setSelectedGrantId(null);
   };
 
-  const handleSkipToContent = (e: React.MouseEvent | React.KeyboardEvent) => {
+  const handleSkipToContent = (e: React.MouseEvent | React.KeyboardEvent): void => {
     if ('key' in e && e.key !== 'Enter' && e.key !== ' ') return;
     e.preventDefault();
     mainRef.current?.focus();
@@ -497,23 +378,27 @@ export function AppShell(): JSX.Element {
     }
   };
 
-  // ============ Operator Name Prompt ============
-
-  const handleOperatorComplete = useCallback((name: string) => {
+  const handleOperatorComplete = useCallback((name: string): void => {
     setOperatorName(name);
   }, []);
 
-  // ============ Compute derived state ============
+  const handleSafeQuitConfirm = useCallback(async (): Promise<void> => {
+    isSafeQuit.current = true;
+    if (activeJobs.length > 0) {
+      try {
+        await fetch('/api/jobs/interrupt', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ jobIds: activeJobs.map((j) => j.id) }),
+        });
+      } catch {
+        // Best effort
+      }
+    }
+    window.close();
+  }, [activeJobs]);
 
   const hasStorageError = healthResult?.storage === 'error';
-  const opencodeBlocked =
-    healthResult !== null &&
-    (healthResult.opencode === 'not-installed' ||
-      healthResult.opencode === 'not-reachable' ||
-      healthResult.opencode === 'incompatible' ||
-      healthResult.opencode === 'error');
-
-  // ============ Render ============
 
   if (!isMounted) {
     return (
@@ -526,7 +411,6 @@ export function AppShell(): JSX.Element {
     );
   }
 
-  // Storage blocked: critical failure screen
   if (hasStorageError) {
     return (
       <div className="app app-blocked" role="alert">
@@ -550,7 +434,6 @@ export function AppShell(): JSX.Element {
 
   return (
     <div className="app" data-testid="app-shell">
-      {/* Skip-to-content link for keyboard users */}
       <a
         href="#main-content"
         className="skip-to-content"
@@ -561,103 +444,21 @@ export function AppShell(): JSX.Element {
         Skip to main content
       </a>
 
-      {/* Sidebar */}
-      {/* biome-ignore lint/a11y/useSemanticElements: <explanation>sidebar layout uses aside for complementary content */}
-      <aside className="sidebar" aria-label="Main navigation">
-        <div className="brand">
-          <div className="brand-mark">
-            Hacker Dojo <em>Grant Ops</em>
-          </div>
-          <div className="brand-sub">v0.2</div>
-        </div>
+      <AppShellSidebar
+        activeView={activeView}
+        onNavigate={handleNavigate}
+        grants={grants}
+        sourcesCount={pendingSourcesCount}
+        notifications={notifications}
+        activeJobs={activeJobs}
+        pendingDuplicatesCount={pendingDuplicatesCount}
+        operatorName={operatorName}
+        profile={profile}
+        crawlStatus={crawlStatus}
+        isCrawlStale={isCrawlStale}
+        getRelativeTime={getRelativeTime}
+      />
 
-        <div className="nav-section">
-          <div className="nav-label">Workspace</div>
-          {workspaceNav.map((item) => {
-            const matchedCount =
-              item.view === 'discovery'
-                ? grants.filter((g) => g.status === 'matched').length
-                : item.view === 'pipeline'
-                  ? grants.filter((g) => g.status !== 'awarded').length
-                  : item.view === 'sources'
-                    ? pendingSourcesCount
-                    : 0;
-            return (
-              <button
-                key={item.label}
-                type="button"
-                className={`nav-item ${activeView === item.view ? 'active' : ''}`}
-                data-view={item.view}
-                data-testid={item.view ? `nav-${item.view}` : undefined}
-                aria-label={item.ariaLabel}
-                aria-current={activeView === item.view ? 'page' : undefined}
-                tabIndex={0}
-                disabled={false}
-                onClick={() => handleNavClick(item)}
-                onKeyDown={(e) => handleNavKeyDown(e, item)}
-              >
-                <span className="nav-icon" aria-hidden="true">
-                  {item.icon}
-                </span>
-                {item.label}
-                {matchedCount > 0 && item.view && <span className="nav-count">{matchedCount}</span>}
-              </button>
-            );
-          })}
-        </div>
-
-        <div className="nav-section">
-          <div className="nav-label">Activity</div>
-          {activityNav.map((item) => (
-            <button
-              key={item.label}
-              type="button"
-              className={`nav-item ${activeView === item.view ? 'active' : ''}`}
-              data-view={item.view}
-              data-testid={item.view ? `nav-${item.view}` : undefined}
-              aria-label={item.ariaLabel}
-              aria-current={activeView === item.view ? 'page' : undefined}
-              tabIndex={0}
-              onClick={() => handleNavClick(item)}
-              onKeyDown={(e) => handleNavKeyDown(e, item)}
-            >
-              <span className="nav-icon" aria-hidden="true">
-                {item.icon}
-              </span>
-              {item.label}
-              {item.view === 'notifications' && notifications.length > 0 && (
-                <span className="nav-count">{notifications.length}</span>
-              )}
-              {item.view === 'jobs' && activeJobs.length > 0 && (
-                <span className="nav-count">{activeJobs.length}</span>
-              )}
-              {item.view === 'duplicates' && pendingDuplicatesCount > 0 && (
-                <span className="nav-count">{pendingDuplicatesCount}</span>
-              )}
-            </button>
-          ))}
-        </div>
-
-        <div className="sidebar-footer">
-          <span
-            className={`status-dot ${crawlStatus.online ? '' : 'offline'}`}
-            aria-hidden="true"
-          />
-          Crawler {crawlStatus.online ? 'online' : 'offline'}
-          {isCrawlStale && <span className="staleness-badge">Stale</span>}
-          <br />
-          Last sync: {crawlStatus.lastSync ? getRelativeTime(crawlStatus.lastSync) : '\u2014'}
-          <br />
-          <br />
-          {operatorName ? `Logged in as ${operatorName}` : 'Not logged in'}
-          <br />
-          <strong className={styles.mutedText}>
-            {profile?.agentBehavior?.notifyEmail || 'ed@hackerdojo.com'}
-          </strong>
-        </div>
-      </aside>
-
-      {/* Main content with skip target */}
       <main
         className="main"
         ref={mainRef}
@@ -665,294 +466,45 @@ export function AppShell(): JSX.Element {
         tabIndex={-1}
         aria-label="Main content"
       >
-        {/* Health Banner */}
-        {healthTier !== 'fully_online' && (
-          <div
-            className={`health-banner ${healthTier === 'partially_degraded' ? 'degraded' : 'offline'}`}
-            role="alert"
-            aria-live="polite"
-            data-testid="health-banner"
-          >
-            <span className="health-banner-icon" aria-hidden="true">
-              {healthTier === 'partially_degraded' ? <AlertTriangle size={16} /> : <X size={16} />}
-            </span>
-            <span className="health-banner-text">
-              {healthTier === 'partially_degraded'
-                ? 'AI drafting and research are unavailable. You can still browse grants, sources, and tasks.'
-                : 'Storage is unavailable. Grant data, sources, and tasks cannot be saved or loaded.'}
-            </span>
-            <button
-              type="button"
-              className="health-banner-action"
-              onClick={() => {
-                void refreshHealth();
-              }}
-              aria-label="Re-check system health"
-            >
-              Re-check
-            </button>
-          </div>
-        )}
+        <AppShellHealthBanner
+          healthTier={healthTier}
+          healthResult={healthResult}
+          isCrawlStale={isCrawlStale}
+          crawlStatus={crawlStatus}
+          opencodeBlocked={opencodeBlocked}
+          hasStorageError={hasStorageError}
+          onRefreshHealth={() => {
+            void refreshHealth();
+          }}
+          getRelativeTime={getRelativeTime}
+        />
 
-        {/* Reconnection notification */}
-        {healthTier === 'fully_online' &&
-          healthResult &&
-          opencodeBlocked === false &&
-          healthResult.opencode === 'ok' && (
-            <div
-              className="health-banner online"
-              role="status"
-              aria-live="polite"
-              data-testid="health-banner-online"
-            >
-              <span className="health-banner-icon" aria-hidden="true">
-                <Check size={16} />
-              </span>
-              <span className="health-banner-text">
-                All systems operational
-                {crawlStatus.lastSync && (
-                  <>
-                    {' · '}
-                    <span data-testid="health-banner-crawl-sync">
-                      Last crawl: {getRelativeTime(crawlStatus.lastSync)}
-                      {isCrawlStale && (
-                        <span
-                          className="health-banner-stale-badge"
-                          data-testid="health-banner-stale"
-                        >
-                          {' '}
-                          Stale
-                        </span>
-                      )}
-                    </span>
-                  </>
-                )}
-              </span>
-            </div>
-          )}
-
-        {/* Existing banner row (kept for backward compatibility) */}
-        <div className="shell-banner-row">
-          {hasStorageError && (
-            <div data-testid="storage-blocked-banner">
-              Storage unavailable: {healthResult?.storageError ?? 'Unknown error'}
-            </div>
-          )}
-          {(healthResult?.opencode === 'not-installed' ||
-            healthResult?.opencode === 'not-reachable') && (
-            <div data-testid="opencode-degraded-banner">
-              AI features unavailable until opencode is configured.
-            </div>
-          )}
-          <button
-            type="button"
-            data-testid="rerun-health-check-btn"
-            onClick={() => {
-              void refreshHealth();
-            }}
-          >
-            Re-run Health Check
-          </button>
-        </div>
-
-        {/* Views */}
-        <div
-          id="view-dashboard"
-          className={`view ${activeView === 'dashboard' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Dashboard"
-        >
-          <DashboardView
-            onGrantSelect={handleGrantSelect}
-            onNavigate={handleNavigate}
-            onRefreshAppState={refreshAppState}
-            grants={grants}
-            profile={profile}
-            notifications={notifications}
-            recentGrantIds={recentGrantIds}
-            sources={sources}
-            operatorName={operatorName}
-          />
-        </div>
-        <div
-          id="view-discovery"
-          data-testid="discovery-view"
-          className={`view ${activeView === 'discovery' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Discovery"
-        >
-          <DiscoveryView
-            onGrantSelect={handleGrantSelect}
-            onRefreshAppState={refreshAppState}
-            grants={grants}
-            sources={sources}
-          />
-        </div>
-        <div
-          id="view-pipeline"
-          data-testid="pipeline-view"
-          className={`view ${activeView === 'pipeline' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Pipeline"
-        >
-          <PipelineView
-            onGrantSelect={handleGrantSelect}
-            onNavigate={handleNavigate}
-            grants={grants}
-          />
-        </div>
-        <div
-          id="view-sources"
-          className={`view ${activeView === 'sources' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Sources"
-        >
-          <SourcesView onRefreshAppState={refreshAppState} />
-        </div>
-        <div
-          id="view-tasks"
-          className={`view ${activeView === 'tasks' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Tasks"
-        >
-          <TasksView
-            onRefreshAppState={refreshAppState}
-            tasks={tasks}
-            onNavigate={handleNavigate}
-          />
-        </div>
-        <div
-          id="view-settings"
-          className={`view ${activeView === 'settings' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Settings"
-        >
-          <SettingsView onRefreshAppState={refreshAppState} />
-        </div>
-        <div
-          id="view-calendar"
-          className={`view ${activeView === 'calendar' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Calendar"
-        >
-          <CalendarView grants={grants} />
-        </div>
-        <div
-          id="view-post-award"
-          data-testid="post-award-view"
-          className={`view ${activeView === 'post-award' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Post-Award Management"
-        >
-          <PostAwardView onRefreshAppState={refreshAppState} />
-        </div>
-        <div
-          id="view-notifications"
-          className={`view ${activeView === 'notifications' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Notifications"
-        >
-          <NotificationsView notifications={notifications} />
-        </div>
-        <div
-          id="view-jobs"
-          className={`view ${activeView === 'jobs' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Job Queue"
-        >
-          <JobsPanel onRefreshAppState={refreshAppState} />
-        </div>
-        <div
-          id="view-audit"
-          className={`view ${activeView === 'audit' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Audit Trail"
-        >
-          <AuditView />
-        </div>
-        <div
-          id="view-duplicates"
-          className={`view ${activeView === 'duplicates' ? 'active' : ''}`}
-          role="tabpanel"
-          aria-label="Duplicate Candidates"
-        >
-          <DuplicatesView onGrantSelect={handleGrantSelect} onRefreshAppState={refreshAppState} />
-        </div>
+        <AppShellView
+          activeView={activeView as AppShellActiveView}
+          grants={grants}
+          profile={profile}
+          notifications={notifications}
+          sources={sources}
+          tasks={tasks}
+          recentGrantIds={recentGrantIds}
+          operatorName={operatorName}
+          onGrantSelect={handleGrantSelect}
+          onNavigate={handleNavigate}
+          refreshAppState={refreshAppState}
+        />
       </main>
 
-      {/* Safe Quit Dialog */}
-      {showSafeQuit && (
-        <div
-          className="safe-quit-overlay"
-          role="dialog"
-          aria-modal="true"
-          aria-label="Safe quit confirmation"
-          onKeyDown={(e) => {
-            if (e.key === 'Escape') {
-              e.stopPropagation();
-              setShowSafeQuit(false);
-            }
-          }}
-        >
-          <div className="safe-quit-dialog">
-            <h3>Safe Quit</h3>
-            <p>
-              {activeJobs.length > 0
-                ? `The following jobs are still running. Quitting will mark them as incomplete.`
-                : 'No active jobs detected. You can safely close the application.'}
-            </p>
-            {activeJobs.length > 0 && (
-              <div className="active-jobs-list">
-                {activeJobs.map((job) => (
-                  <div key={job.id} className="active-job-item">
-                    <span>
-                      {job.jobType} #{job.id.slice(0, 8)}
-                    </span>
-                    <span>{job.status}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="quit-actions">
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => setShowSafeQuit(false)}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                className="btn btn-primary"
-                onClick={() => {
-                  isSafeQuit.current = true;
-                  void (async () => {
-                    if (activeJobs.length > 0) {
-                      try {
-                        await fetch('/api/jobs/interrupt', {
-                          method: 'POST',
-                          headers: { 'content-type': 'application/json' },
-                          body: JSON.stringify({ jobIds: activeJobs.map((j) => j.id) }),
-                        });
-                      } catch {
-                        // Best effort
-                      }
-                    }
-                    window.close();
-                  })();
-                }}
-              >
-                Quit anyway
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <AppShellSafeQuitDialog
+        open={showSafeQuit}
+        activeJobs={activeJobs}
+        onCancel={() => setShowSafeQuit(false)}
+        onConfirm={() => {
+          void handleSafeQuitConfirm();
+        }}
+      />
 
-      {/* Operator Name Prompt */}
       <OperatorNamePrompt onComplete={handleOperatorComplete} />
 
-      {/* Grant Drawer */}
       <GrantDrawer
         key={`${selectedGrantId ?? 'none'}-${selectedGrantRefreshKey}`}
         grantId={selectedGrantId}
@@ -961,19 +513,4 @@ export function AppShell(): JSX.Element {
       />
     </div>
   );
-}
-
-function getRelativeTime(isoString: string): string {
-  const now = new Date();
-  const date = new Date(isoString);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
-
-  if (diffMins < 1) return 'just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
 }

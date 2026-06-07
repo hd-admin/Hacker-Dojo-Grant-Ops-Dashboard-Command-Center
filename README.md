@@ -30,7 +30,7 @@ Open [http://localhost:3000](http://localhost:3000).
 
 That's it. Your data lives in `.grant-ops-data/` (SQLite database and uploaded documents). Nothing leaves your machine.
 
-> **Troubleshooting:** If the app fails to start, run `bash scripts/setup-check.sh` to diagnose common issues. If `better-sqlite3` needs rebuilding for your Node version, `bash scripts/ensure-better-sqlite3.sh` handles it automatically.
+> **Troubleshooting:** If the app fails to start, run `bash scripts/setup-check.sh` to diagnose common issues. If `better-sqlite3` needs rebuilding for your Node version, run `pnpm install` to use the prebuilt binary; pnpm's `onlyBuiltDependencies` setting in `.pnpmrc` handles the rebuild automatically.
 
 ---
 
