@@ -188,8 +188,9 @@ exit 0
 
   test('corepack shim fallback resolves to real Node via process.execPath', () => {
     const fakeDir = join(tmpdir(), `fake-corepack-shim-${process.pid}`);
-    const { restorePath, fakeNodePath } = withFakeCorepackShim(fakeDir);
+    // Capture the real node path BEFORE adding the fake shim to PATH
     const realNodePath = execSync('command -v node', { encoding: 'utf-8', stdio: 'pipe' }).trim();
+    const { restorePath, fakeNodePath } = withFakeCorepackShim(fakeDir);
     try {
       const result = execSync('bash scripts/ensure-better-sqlite3.sh --diagnose 2>&1', {
         cwd: process.cwd(),

@@ -21,6 +21,7 @@ const EXCLUDED_DIRS = new Set([
   '.git',
   'test-results',
   '.tmp-tests',
+  '.agent',
 ]);
 
 function shouldCopy(name: string): boolean {
