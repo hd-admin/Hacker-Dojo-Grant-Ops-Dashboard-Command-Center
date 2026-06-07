@@ -72,6 +72,121 @@ if "$REAL_NODE" -e "const Database=require('better-sqlite3');const db=new Databa
   exit 0
 fi
 
+# ── Detect containerized environments ────────────────────────────────────
+# Snap, Flatpak, and chroot environments often lack build tools or have
+# restricted filesystem access that prevents node-gyp rebuild. Detect them
+# early and emit a clear error with remediation steps.
+detect_containerized_environment() {
+  local container_type=""
+  local remediation=""
+
+  # Snap detection
+  if [ -n "${SNAP:-}" ] || [ -n "${SNAP_NAME:-}" ] || [ -n "${SNAP_VERSION:-}" ]; then
+    container_type="snap"
+  elif echo "$REAL_NODE" | grep -qE '(snap|/snap/)' 2>/dev/null; then
+    container_type="snap"
+  fi
+
+  # Flatpak detection
+  if [ -z "$container_type" ] && [ -n "${FLATPAK_ID:-}" ]; then
+    container_type="flatpak"
+  elif [ -z "$container_type" ] && [ -f "/.flatpak-info" ]; then
+    container_type="flatpak"
+  fi
+
+  # Chroot detection
+  if [ -z "$container_type" ]; then
+    local proc1_root
+    proc1_root="$(readlink -f /proc/1/root 2>/dev/null || echo "")"
+    if [ -n "$proc1_root" ] && [ "$proc1_root" != "/" ]; then
+      container_type="chroot"
+    fi
+  fi
+
+  if [ -n "$container_type" ]; then
+    case "$container_type" in
+      snap)
+        remediation="Snap-confined Node.js cannot run node-gyp builds. Remediation options:
+  1. Install Node.js outside of snap (e.g. via nvm, fnm, or the NodeSource apt repo).
+  2. Install build-essential inside the snap if the snap exposes it.
+  3. Use a prebuilt better-sqlite3 binding that matches your platform and arch."
+        ;;
+      flatpak)
+        remediation="Flatpak cannot compile native modules. Remediation options:
+  1. Install Node.js on the host system (outside Flatpak).
+  2. Use a prebuilt better-sqlite3 binding that matches your platform and arch."
+        ;;
+      chroot)
+        remediation="Chroot environment detected. Build tools may be missing. Remediation options:
+  1. Install build-essential, python3, and make inside the chroot.
+  2. Bind-mount the host's node_modules into the chroot.
+  3. Use a prebuilt better-sqlite3 binding that matches your platform and arch."
+        ;;
+    esac
+    echo "[ensure-better-sqlite3] ERROR: Detected $container_type environment. Cannot rebuild better-sqlite3." >&2
+    echo "  $remediation" >&2
+    return 0
+  fi
+  return 1
+}
+
+# ── Prebuilt binding detection ───────────────────────────────────────────
+# better-sqlite3 ships prebuilt binaries for common platforms. If a matching
+# prebuild exists, copy it to the expected binding path instead of compiling.
+try_prebuilt_binding() {
+  local package_dir="$1"
+  local prebuilds_dir="$package_dir/prebuilds"
+  local target_pattern="${TARGET_PLATFORM}-${TARGET_ARCH}"
+  local binding_target="$package_dir/lib/binding/node-v${NODE_MODULE_VERSION}-${TARGET_PLATFORM}-${TARGET_ARCH}/better_sqlite3.node"
+
+  if [ ! -d "$prebuilds_dir" ]; then
+    return 1
+  fi
+
+  # Look for a directory matching the target platform-arch
+  local match_dir=""
+  for dir in "$prebuilds_dir"/*; do
+    if [ -d "$dir" ]; then
+      local basename_dir
+      basename_dir="$(basename "$dir")"
+      if echo "$basename_dir" | grep -qE "^${TARGET_PLATFORM}-${TARGET_ARCH}$"; then
+        match_dir="$dir"
+        break
+      fi
+    fi
+  done
+
+  if [ -z "$match_dir" ]; then
+    return 1
+  fi
+
+  # Look for the .node file inside the matched directory
+  local node_file=""
+  for f in "$match_dir"/*.node; do
+    if [ -f "$f" ]; then
+      node_file="$f"
+      break
+    fi
+  done
+
+  if [ -z "$node_file" ]; then
+    return 1
+  fi
+
+  mkdir -p "$(dirname "$binding_target")"
+  cp -f "$node_file" "$binding_target"
+
+  # Verify the copied binding loads
+  if "$REAL_NODE" -e "const Database = require('better-sqlite3'); const db = new Database(':memory:'); db.prepare('select 1').get(); db.close();" >/dev/null 2>&1; then
+    echo "[ensure-better-sqlite3] installed prebuilt binding from $node_file" >&2
+    return 0
+  fi
+
+  # If the prebuilt binding didn't work, remove it so rebuild can proceed
+  rm -f "$binding_target"
+  return 1
+}
+
 # Before rebuilding from source, try to restore any backup binding nearby.
 # This is useful in test environments where the binding was intentionally
 # renamed to .bak and should be recovered without a full node-gyp compile.
@@ -99,6 +214,19 @@ restore_binding_from_backup() {
 
 if restore_binding_from_backup "$PACKAGE_DIR"; then
   exit 0
+fi
+
+# Try prebuilt bindings before any rebuild
+if try_prebuilt_binding "$PACKAGE_DIR"; then
+  exit 0
+fi
+
+# Check for containerized environments before attempting node-gyp rebuild
+if detect_containerized_environment; then
+  echo "[ensure-better-sqlite3] ERROR: better-sqlite3 cannot be rebuilt in this environment." >&2
+  echo "  No prebuilt binding was found for ${TARGET_PLATFORM}-${TARGET_ARCH}." >&2
+  echo "  Please install build tools or use a supported environment." >&2
+  exit 1
 fi
 
 if ! command -v node-gyp >/dev/null 2>&1 && [ ! -x "$ROOT_DIR/node_modules/.bin/node-gyp" ]; then
