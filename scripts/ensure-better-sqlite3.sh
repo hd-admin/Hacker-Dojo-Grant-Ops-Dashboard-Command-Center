@@ -4,45 +4,56 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 resolve_real_node() {
-  local candidate
-  # Prefer the node from PATH that nvm or similar tools set,
-  # but validate it is a real ELF binary, not a Bun/Deno shim.
-  candidate="$(which node 2>/dev/null || echo "")"
-  if [ -n "$candidate" ] && [ -x "$candidate" ]; then
-    # Check it isn't a Bun-style symlink shim
-    local link_target
-    link_target="$(readlink -f "$candidate" 2>/dev/null || echo "$candidate")"
-    if file "$link_target" 2>/dev/null | grep -qi 'elf' && is_real_node "$link_target"; then
-      echo "$link_target"
+  # Allow NODE_PATH override
+  if [ -n "${NODE_PATH:-}" ] && [ -x "$NODE_PATH" ]; then
+    if is_real_node "$NODE_PATH"; then
+      echo "$NODE_PATH"
       return 0
     fi
   fi
-  # Fallback: check /usr/bin/node
-  if [ -x /usr/bin/node ]; then
-    local usr_link
-    usr_link="$(readlink -f /usr/bin/node 2>/dev/null || echo "/usr/bin/node")"
-    if file "$usr_link" 2>/dev/null | grep -qi 'elf' && is_real_node "$usr_link"; then
-      echo "$usr_link"
+
+  # Candidate paths to check
+  local candidates=()
+  local which_node
+  which_node="$(which node 2>/dev/null || echo "")"
+  if [ -n "$which_node" ]; then
+    candidates+=("$which_node")
+  fi
+  candidates+=(
+    "/usr/bin/node"
+    "/usr/local/bin/node"
+    "$HOME/.nvm/versions/node/$(ls -1 "$HOME/.nvm/versions/node" 2>/dev/null | sort -V | tail -n 1 || echo "")/bin/node"
+  )
+
+  # Also check NVM current symlink
+  if [ -n "${NVM_DIR:-}" ] && [ -x "$NVM_DIR/current/bin/node" ]; then
+    candidates+=("$NVM_DIR/current/bin/node")
+  fi
+
+  for candidate in "${candidates[@]}"; do
+    if [ -z "$candidate" ] || [ ! -x "$candidate" ]; then
+      continue
+    fi
+    # Resolve symlinks
+    local resolved
+    resolved="$(readlink -f "$candidate" 2>/dev/null || echo "$candidate")"
+    if is_real_node "$resolved"; then
+      echo "$resolved"
       return 0
     fi
-  fi
-  # Last resort: try /usr/local/bin/node
-  if [ -x /usr/local/bin/node ] && is_real_node "/usr/local/bin/node"; then
-    echo "/usr/local/bin/node"
-    return 0
-  fi
-  echo "" >&2
-  echo "[ensure-better-sqlite3] ERROR: could not resolve a real Node binary" >&2
+  done
+
+  echo "[ensure-better-sqlite3] ERROR: No Node.js binary found. Install Node.js v20+ from https://nodejs.org/" >&2
   exit 1
 }
 
 is_real_node() {
   # Returns 0 if $1 is a genuine Node.js binary (not Bun/Deno shim).
+  # Real Node.js has process.release.name === 'node'.
   # Bun's node shim sets process.isBun=true and process.versions.bun.
-  # Real Node.js has neither.
   local node_bin="$1"
   local check_output
-  check_output="$("$node_bin" -e 'process.stdout.write(process.isBun ? "bun" : process.versions.bun ? "bun" : process.release?.name === "node" ? "node" : "unknown")' 2>/dev/null || echo 'error')"
+  check_output="$("$node_bin" -e 'process.stdout.write(process.release?.name === "node" ? "node" : "other")' 2>/dev/null || echo 'error')"
   [ "$check_output" = "node" ]
 }
 
