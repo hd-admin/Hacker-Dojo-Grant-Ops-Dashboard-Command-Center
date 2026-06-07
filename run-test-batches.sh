@@ -8,7 +8,7 @@ set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")" && pwd)"
 LOG="$REPO_ROOT/test-batches.log"
-BATCH_SIZE=20
+BATCH_SIZE=8
 MAX_RETRIES=2
 
 # Generate the test list if missing or stale

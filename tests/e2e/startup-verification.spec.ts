@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { execSync } from 'child_process';
-import { existsSync, accessSync, constants } from 'fs';
+import { existsSync } from 'fs';
 import { join } from 'path';
 
 test.describe('Startup verification', () => {
@@ -30,7 +30,7 @@ test.describe('Startup verification', () => {
       const fs = require('fs');
       fs.writeFileSync(testFile, 'ok');
       fs.unlinkSync(testFile);
-    } catch (err) {
+    } catch (_err) {
       throw new Error('.grant-ops-data/ is not writable');
     }
   });

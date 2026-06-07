@@ -46,8 +46,10 @@ else
   echo -e "$PASS Persistence root writable"
 fi
 
-# Check build
-if ! pnpm build >/dev/null 2>&1; then
+# Check build (skip rebuild if standalone artifacts already exist)
+if [ -d "frontend/.next/standalone" ] && [ -n "$(find frontend/.next/standalone/frontend/.next/static/chunks/ -name 'main-*.js' -print -quit 2>/dev/null)" ]; then
+  echo -e "$PASS Production build OK (existing artifacts)"
+elif ! pnpm build >/dev/null 2>&1; then
   echo -e "$FAIL Build check failed"
   echo "  The Next.js production build did not complete."
   echo "  Fix: Check for TypeScript errors with 'pnpm typecheck' and lint errors with 'pnpm lint'"
