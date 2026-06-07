@@ -61,7 +61,7 @@ test.describe('Agent Failure Propagation', () => {
     const grantsArr = grantsData.items || grantsData;
 
     if (grantsArr.length === 0) {
-      test.skip();
+      test.skip(true, 'No grants available in database');
       return;
     }
 
