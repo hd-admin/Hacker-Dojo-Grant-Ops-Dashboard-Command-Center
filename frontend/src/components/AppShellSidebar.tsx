@@ -1,20 +1,7 @@
 'use client';
 
-import type { JSX, ReactNode } from 'react';
+import type { JSX } from 'react';
 import React from 'react';
-import {
-  Award,
-  Bell,
-  Calendar,
-  Columns3,
-  Database,
-  FileText,
-  GitFork,
-  LayoutDashboard,
-  ListChecks,
-  Search,
-  Settings,
-} from 'lucide-react';
 import type {
   CrawlStatus,
   Grant,
@@ -23,6 +10,12 @@ import type {
   OrganizationProfile,
 } from '../../../shared/types';
 import styles from './AppShell.module.css';
+import {
+  activityNav,
+  handleNavClick,
+  handleNavKeyDown,
+  workspaceNav,
+} from './sidebarNavigation';
 
 export type SidebarView =
   | 'dashboard'
@@ -37,66 +30,6 @@ export type SidebarView =
   | 'jobs'
   | 'audit'
   | 'duplicates';
-
-interface NavItem {
-  view?: SidebarView;
-  label: string;
-  icon?: ReactNode;
-  ariaLabel?: string;
-}
-
-const workspaceNav: NavItem[] = [
-  {
-    view: 'dashboard',
-    label: 'Dashboard',
-    icon: <LayoutDashboard size={18} />,
-    ariaLabel: 'View dashboard',
-  },
-  {
-    view: 'discovery',
-    label: 'Discovery',
-    icon: <Search size={18} />,
-    ariaLabel: 'Discover grants',
-  },
-  {
-    view: 'pipeline',
-    label: 'Pipeline',
-    icon: <Columns3 size={18} />,
-    ariaLabel: 'View grant pipeline',
-  },
-  { view: 'sources', label: 'Sources', icon: <Database size={18} />, ariaLabel: 'Manage sources' },
-  { view: 'calendar', label: 'Calendar', icon: <Calendar size={18} />, ariaLabel: 'View calendar' },
-  {
-    view: 'post-award',
-    label: 'Post-Award',
-    icon: <Award size={18} />,
-    ariaLabel: 'View post-award management',
-  },
-  { view: 'tasks', label: 'Tasks', icon: <ListChecks size={18} />, ariaLabel: 'View tasks' },
-  {
-    view: 'settings',
-    label: 'Settings',
-    icon: <Settings size={18} />,
-    ariaLabel: 'Application settings',
-  },
-];
-
-const activityNav: NavItem[] = [
-  {
-    view: 'notifications',
-    label: 'Notifications',
-    icon: <Bell size={18} />,
-    ariaLabel: 'View notifications',
-  },
-  { view: 'jobs', label: 'Jobs', icon: <Settings size={18} />, ariaLabel: 'View job queue' },
-  { view: 'audit', label: 'Audit', icon: <FileText size={18} />, ariaLabel: 'View audit trail' },
-  {
-    view: 'duplicates',
-    label: 'Duplicates',
-    icon: <GitFork size={18} />,
-    ariaLabel: 'Review duplicate candidates',
-  },
-];
 
 export interface AppShellSidebarProps {
   activeView: SidebarView;
@@ -127,36 +60,6 @@ export function AppShellSidebar({
   isCrawlStale,
   getRelativeTime,
 }: AppShellSidebarProps): JSX.Element {
-  const handleNavClick = (item: NavItem): void => {
-    if (item.view) {
-      onNavigate(item.view);
-    }
-  };
-
-  const handleNavKeyDown = (e: React.KeyboardEvent, item: NavItem): void => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      if (item.view) {
-        onNavigate(item.view);
-      }
-      return;
-    }
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      const current = e.currentTarget as HTMLElement;
-      const sidebar = current.closest('.sidebar');
-      if (!sidebar) return;
-      const allNavItems = Array.from(sidebar.querySelectorAll<HTMLElement>('.nav-item'));
-      const currentIndex = allNavItems.indexOf(current);
-      if (currentIndex === -1) return;
-      const nextIndex =
-        e.key === 'ArrowDown'
-          ? (currentIndex + 1) % allNavItems.length
-          : (currentIndex - 1 + allNavItems.length) % allNavItems.length;
-      allNavItems[nextIndex]?.focus();
-    }
-  };
-
   return (
     <aside className="sidebar" aria-label="Main navigation">
       <div className="brand">
@@ -188,8 +91,8 @@ export function AppShellSidebar({
               aria-current={activeView === item.view ? 'page' : undefined}
               tabIndex={0}
               disabled={false}
-              onClick={() => handleNavClick(item)}
-              onKeyDown={(e) => handleNavKeyDown(e, item)}
+              onClick={() => handleNavClick(item, onNavigate)}
+              onKeyDown={(e) => handleNavKeyDown(e, item, onNavigate)}
             >
               <span className="nav-icon" aria-hidden="true">
                 {item.icon}
@@ -213,8 +116,8 @@ export function AppShellSidebar({
             aria-label={item.ariaLabel}
             aria-current={activeView === item.view ? 'page' : undefined}
             tabIndex={0}
-            onClick={() => handleNavClick(item)}
-            onKeyDown={(e) => handleNavKeyDown(e, item)}
+            onClick={() => handleNavClick(item, onNavigate)}
+            onKeyDown={(e) => handleNavKeyDown(e, item, onNavigate)}
           >
             <span className="nav-icon" aria-hidden="true">
               {item.icon}

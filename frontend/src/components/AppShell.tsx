@@ -1,55 +1,16 @@
 'use client';
 
 import type { JSX } from 'react';
-import type {
-  CrawlStatus,
-  Grant,
-  HealthCheckResult,
-  JobQueueItem,
-  Notification,
-  OrganizationProfile,
-  Source,
-  Task,
-} from '../../../shared/types';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useToast } from './ToastProvider';
-import { client } from '../lib/grant-ops-client';
+import type { JobQueueItem } from '../../../shared/types';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { readWorkingContext, saveWorkingContext } from '../lib/working-context';
+import { useAppShellState } from '../hooks/useAppShellState';
 import { GrantDrawer } from './GrantDrawer';
 import { OperatorNamePrompt } from './OperatorNamePrompt';
-import { AppShellHealthBanner, type HealthTier } from './AppShellHealthBanner';
+import { AppShellHealthBanner } from './AppShellHealthBanner';
 import { AppShellSidebar, type SidebarView } from './AppShellSidebar';
 import { AppShellView, type AppShellActiveView } from './AppShellView';
 import { AppShellSafeQuitDialog } from './AppShellSafeQuitDialog';
-
-const WORKING_CONTEXT_KEY = 'grantops.workingContext';
-
-function getWorkingContextStorage(): Storage | null {
-  if (typeof window === 'undefined') return null;
-  const storage = window.localStorage;
-  return typeof storage.getItem === 'function' && typeof storage.setItem === 'function'
-    ? storage
-    : null;
-}
-
-function readWorkingContext(): {
-  activeView?: string;
-  selectedGrantId?: string | null;
-  recentGrantIds?: string[];
-  recentDraftId?: string | null;
-} {
-  const storage = getWorkingContextStorage();
-  if (!storage) return {};
-  try {
-    return JSON.parse(storage.getItem(WORKING_CONTEXT_KEY) || '{}') as {
-      activeView?: string;
-      selectedGrantId?: string | null;
-      recentGrantIds?: string[];
-      recentDraftId?: string | null;
-    };
-  } catch {
-    return {};
-  }
-}
 
 function getRelativeTime(isoString: string): string {
   const now = new Date();
@@ -67,188 +28,37 @@ function getRelativeTime(isoString: string): string {
 }
 
 export function AppShell(): JSX.Element {
-  const { addToast } = useToast();
+  const shell = useAppShellState();
+  const {
+    grants,
+    sources,
+    profile,
+    crawlStatus,
+    notifications,
+    tasks,
+    recentGrantIds,
+    healthResult,
+    activeJobs,
+    healthTier,
+    isCrawlStale,
+    opencodeBlocked,
+    pendingSourcesCount,
+    pendingDuplicatesCount,
+    setRecentGrantIds,
+    refreshHealth,
+    refreshAppState,
+    loadActiveJobs,
+  } = shell;
+
   const [activeView, setActiveView] = useState<SidebarView>('dashboard');
   const [selectedGrantId, setSelectedGrantId] = useState<string | null>(null);
   const [selectedGrantRefreshKey, setSelectedGrantRefreshKey] = useState(0);
-  const [grants, setGrants] = useState<Grant[]>([]);
-  const [sources, setSources] = useState<Source[]>([]);
-  const [profile, setProfile] = useState<OrganizationProfile | null>(null);
-  const [crawlStatus, setCrawlStatus] = useState<CrawlStatus>({ online: true, lastSync: '' });
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [recentGrantIds, setRecentGrantIds] = useState<string[]>([]);
   const [recentDraftId, setRecentDraftId] = useState<string | null>(null);
-  const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [isMounted, setIsMounted] = useState(false);
-
   const [operatorName, setOperatorName] = useState<string>('');
-
   const [showSafeQuit, setShowSafeQuit] = useState(false);
-  const [activeJobs, setActiveJobs] = useState<JobQueueItem[]>([]);
   const isSafeQuit = useRef(false);
-  const previousJobStatuses = useRef<Record<string, JobQueueItem['status']>>({});
-
   const mainRef = useRef<HTMLElement>(null);
-
-  const pendingSourcesCount = useMemo(
-    () => sources.filter((source) => source.reviewStatus === 'pending-review').length,
-    [sources],
-  );
-  const [pendingDuplicatesCount, setPendingDuplicatesCount] = useState(0);
-  const [, setError] = useState<string | null>(null);
-
-  const healthTier: HealthTier = useMemo(() => {
-    if (!healthResult) return 'fully_online';
-    if (healthResult.storage === 'error') return 'fully_offline';
-    const opencodeDegraded =
-      healthResult.opencode === 'not-installed' ||
-      healthResult.opencode === 'not-reachable' ||
-      healthResult.opencode === 'incompatible' ||
-      healthResult.opencode === 'error';
-    if (opencodeDegraded) return 'partially_degraded';
-    return 'fully_online';
-  }, [healthResult]);
-
-  const isCrawlStale = useMemo(() => {
-    if (!crawlStatus.lastSync) return false;
-    const diffDays =
-      (Date.now() - new Date(crawlStatus.lastSync).getTime()) / (1000 * 60 * 60 * 24);
-    return diffDays > 7;
-  }, [crawlStatus.lastSync]);
-
-  const opencodeBlocked = useMemo(() => {
-    if (healthResult === null) return false;
-    return (
-      healthResult.opencode === 'not-installed' ||
-      healthResult.opencode === 'not-reachable' ||
-      healthResult.opencode === 'incompatible' ||
-      healthResult.opencode === 'error'
-    );
-  }, [healthResult]);
-
-  const saveWorkingContext = useCallback(
-    (next: {
-      activeView?: SidebarView;
-      selectedGrantId?: string | null;
-      recentGrantIds?: string[];
-      recentDraftId?: string | null;
-    }) => {
-      const storage = getWorkingContextStorage();
-      if (!storage || typeof storage.setItem !== 'function') return;
-      const current = readWorkingContext();
-      const merged = {
-        ...current,
-        ...next,
-      };
-      try {
-        storage.setItem(WORKING_CONTEXT_KEY, JSON.stringify(merged));
-      } catch {
-        // Ignore storage write failures in non-persistent test environments.
-      }
-    },
-    [],
-  );
-
-  const refreshHealth = useCallback(async (): Promise<void> => {
-    try {
-      const response = await fetch('/api/health');
-      const data = (await response.json()) as HealthCheckResult;
-      setHealthResult(data);
-    } catch {
-      setError('Error loading health');
-      setHealthResult({
-        storage: 'error',
-        opencode: 'error',
-        crawlerStatus: 'never-run',
-        documentIndexer: 'error',
-        storageError: 'Unable to load health',
-      });
-    }
-  }, []);
-
-  const loadActiveJobs = useCallback(async (): Promise<JobQueueItem[]> => {
-    try {
-      const response = await fetch('/api/jobs');
-      const data = (await response.json()) as JobQueueItem[];
-      const active = Array.isArray(data)
-        ? data.filter(
-            (job) =>
-              job.status === 'queued' ||
-              job.status === 'running' ||
-              job.status === 'verifying' ||
-              job.status === 'retrying',
-          )
-        : [];
-      setActiveJobs(active);
-
-      const prevStatuses = previousJobStatuses.current;
-      for (const job of Array.isArray(data) ? data : []) {
-        const prevStatus = prevStatuses[job.id];
-        if (prevStatus && prevStatus !== 'completed' && job.status === 'completed') {
-          addToast(`\u2705 ${job.jobType} completed`, 'success');
-        }
-        if (prevStatus && prevStatus !== 'failed' && job.status === 'failed') {
-          addToast(`\u274C ${job.jobType} failed`, 'error');
-        }
-      }
-      const nextStatuses: Record<string, JobQueueItem['status']> = {};
-      for (const job of Array.isArray(data) ? data : []) {
-        nextStatuses[job.id] = job.status;
-      }
-      previousJobStatuses.current = nextStatuses;
-      return active;
-    } catch {
-      setActiveJobs([]);
-      return [];
-    }
-  }, [addToast]);
-
-  const refreshAppState = useCallback(async (): Promise<void> => {
-    const [
-      grantsData,
-      profileData,
-      notificationsData,
-      tasksData,
-      sourcesData,
-      runsResponse,
-      duplicatesData,
-    ] = await Promise.all([
-      client.grants.getAll(),
-      client.profile.get().catch(() => null),
-      client.notifications.getAll().catch(() => []),
-      client.tasks.getAll().catch(() => []),
-      client.sources.getAll().catch(() => []),
-      client.research.getRuns().catch(() => ({ latestRun: null, allRuns: [] })),
-      client.duplicates.getAll().catch(() => []),
-    ]);
-
-    setGrants(grantsData?.items ?? []);
-    setProfile(profileData);
-    setNotifications(notificationsData);
-    setTasks(tasksData);
-    setSources(sourcesData);
-    setPendingDuplicatesCount(
-      (Array.isArray(duplicatesData) ? duplicatesData : []).filter((d) => d.status === 'pending')
-        .length,
-    );
-
-    const latestRun = runsResponse.latestRun;
-    setCrawlStatus({
-      online: latestRun ? latestRun.status !== 'failed' : true,
-      lastSync: latestRun?.completedAt || latestRun?.startedAt || '',
-    });
-
-    await loadActiveJobs();
-  }, [loadActiveJobs]);
-
-  const refreshSelectedGrant = useCallback(async (): Promise<void> => {
-    if (!selectedGrantId) {
-      return;
-    }
-    setSelectedGrantRefreshKey((value) => value + 1);
-    await refreshAppState();
-  }, [refreshAppState, selectedGrantId]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -256,20 +66,21 @@ export function AppShell(): JSX.Element {
     if (context.activeView) setActiveView(context.activeView as SidebarView);
     if (context.selectedGrantId !== undefined) setSelectedGrantId(context.selectedGrantId);
     if (Array.isArray(context.recentGrantIds))
-      setRecentGrantIds(context.recentGrantIds.slice(0, 5));
+      setRecentGrantIds(() => context.recentGrantIds?.slice(0, 5) ?? []);
     if (context.recentDraftId !== undefined) setRecentDraftId(context.recentDraftId);
 
     void Promise.all([refreshAppState(), refreshHealth(), loadActiveJobs()]).catch(() => {
-      setError('Error loading app state');
+      // Loading errors are reflected in the storage-blocked screen and
+      // health banner; keep the mount resilient.
     });
-  }, [refreshAppState, refreshHealth, loadActiveJobs]);
+  }, [refreshAppState, refreshHealth, loadActiveJobs, setRecentGrantIds]);
 
   useEffect(() => {
     const triggerScheduledCrawls = async (): Promise<void> => {
       try {
         await fetch('/api/crawl/scheduled?trigger=true');
       } catch {
-        setError('Error checking scheduled crawls');
+        // Best effort: scheduler failures shouldn't tear down the app.
       }
     };
 
@@ -293,7 +104,7 @@ export function AppShell(): JSX.Element {
   useEffect(() => {
     if (!isMounted) return;
     saveWorkingContext({ activeView });
-  }, [activeView, isMounted, saveWorkingContext]);
+  }, [activeView, isMounted]);
 
   useEffect(() => {
     if (!isMounted) return;
@@ -308,17 +119,17 @@ export function AppShell(): JSX.Element {
         return next;
       });
     }
-  }, [selectedGrantId, isMounted, saveWorkingContext]);
+  }, [selectedGrantId, isMounted, setRecentGrantIds]);
 
   useEffect(() => {
     if (!isMounted) return;
     saveWorkingContext({ recentGrantIds });
-  }, [recentGrantIds, isMounted, saveWorkingContext]);
+  }, [recentGrantIds, isMounted]);
 
   useEffect(() => {
     if (!isMounted || recentDraftId === null) return;
     saveWorkingContext({ recentDraftId });
-  }, [recentDraftId, isMounted, saveWorkingContext]);
+  }, [recentDraftId, isMounted]);
 
   useEffect(() => {
     const handler = async (e: BeforeUnloadEvent) => {
@@ -382,6 +193,14 @@ export function AppShell(): JSX.Element {
     setOperatorName(name);
   }, []);
 
+  const refreshSelectedGrant = useCallback(async (): Promise<void> => {
+    if (!selectedGrantId) {
+      return;
+    }
+    setSelectedGrantRefreshKey((value) => value + 1);
+    await refreshAppState();
+  }, [refreshAppState, selectedGrantId]);
+
   const handleSafeQuitConfirm = useCallback(async (): Promise<void> => {
     isSafeQuit.current = true;
     if (activeJobs.length > 0) {
@@ -389,7 +208,7 @@ export function AppShell(): JSX.Element {
         await fetch('/api/jobs/interrupt', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ jobIds: activeJobs.map((j) => j.id) }),
+          body: JSON.stringify({ jobIds: activeJobs.map((j: JobQueueItem) => j.id) }),
         });
       } catch {
         // Best effort
