@@ -27,75 +27,19 @@
  */
 import { test, expect } from '@playwright/test';
 import { execSync, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertBetterSqlite3Loads } from '../helpers/abi-guard';
+import {
+  hasEnoughMemory,
+  killProcessHoldingPort,
+  pickInstaller,
+  stageCleanWorkingTree,
+  wipeRuntimeState,
+} from './test-utils';
 
 const TEST_PORT = 3001;
-
-function stageCleanWorkingTree(repoRoot: string, stageDir: string): void {
-  execSync(`git -C "${repoRoot}" archive --format=tar HEAD | tar -x -C "${stageDir}"`, {
-    stdio: 'pipe',
-  });
-}
-
-function wipeRuntimeState(stageDir: string): void {
-  const paths = [
-    join(stageDir, 'node_modules'),
-    join(stageDir, 'frontend', '.next'),
-    join(stageDir, '.next'),
-    join(stageDir, '.grant-ops-data'),
-    join(stageDir, 'playwright-report'),
-    join(stageDir, 'test-results'),
-    join(stageDir, '.agent', 'tmp'),
-  ];
-  for (const p of paths) {
-    if (existsSync(p)) rmSync(p, { recursive: true, force: true });
-  }
-}
-
-function killProcessHoldingPort(port: number): void {
-  try {
-    const pid = execSync(`lsof -ti tcp:${port} 2>/dev/null || true`, { encoding: 'utf-8' }).trim();
-    if (pid) {
-      spawnSync('kill', ['-TERM', ...pid.split(/\s+/).filter(Boolean)], { stdio: 'ignore' });
-      const start = Date.now();
-      while (Date.now() - start < 3000) {
-        const stillThere = execSync(`lsof -ti tcp:${port} 2>/dev/null || true`, {
-          encoding: 'utf-8',
-        }).trim();
-        if (!stillThere) return;
-        execSync('sleep 0.2');
-      }
-      spawnSync('kill', ['-KILL', ...pid.split(/\s+/).filter(Boolean)], { stdio: 'ignore' });
-    }
-  } catch {
-    // lsof not available or no match — nothing to do.
-  }
-}
-
-function pickInstaller(stageDir: string): 'pnpm' | 'npm' {
-  if (existsSync(join(stageDir, 'pnpm-lock.yaml'))) {
-    const probe = spawnSync('pnpm', ['--version'], { stdio: 'pipe' });
-    if (probe.status === 0) return 'pnpm';
-  }
-  return 'npm';
-}
-
-function hasEnoughMemory(): boolean {
-  try {
-    const entries = readdirSync('/');
-    if (!entries.includes('proc')) return true;
-    const meminfo = readFileSync('/proc/meminfo', 'utf8');
-    const match = meminfo.match(/MemTotal:\s+(\d+)\s+kB/);
-    if (!match) return true;
-    const totalMb = Math.round(parseInt(match[1], 10) / 1024);
-    return totalMb >= 2048;
-  } catch {
-    return true;
-  }
-}
 
 test.describe('Fresh user onboarding', () => {
   test('install + dev yields a responsive app on 127.0.0.1:3001', async ({}, testInfo) => {

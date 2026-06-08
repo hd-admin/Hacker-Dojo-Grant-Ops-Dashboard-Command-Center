@@ -12,89 +12,21 @@
  */
 import { test, expect } from '@playwright/test';
 import { execSync, spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs';
+import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertBetterSqlite3Loads } from '../helpers/abi-guard';
+import {
+  findStandaloneServer,
+  hasEnoughMemory,
+  killProcessHoldingPort,
+  pickInstaller,
+  stageCleanWorkingTree,
+  wipeRuntimeState,
+} from './test-utils';
 
 const TEST_PORT = 3010;
 const READY_TIMEOUT_MS = 30_000;
-
-function stageCleanWorkingTree(repoRoot: string, stageDir: string): void {
-  execSync(`git -C "${repoRoot}" archive --format=tar HEAD | tar -x -C "${stageDir}"`, {
-    stdio: 'pipe',
-  });
-}
-
-function wipeRuntimeState(stageDir: string): void {
-  const paths = [
-    join(stageDir, 'node_modules'),
-    join(stageDir, 'frontend', '.next'),
-    join(stageDir, '.next'),
-    join(stageDir, '.grant-ops-data'),
-  ];
-  for (const p of paths) {
-    if (existsSync(p)) rmSync(p, { recursive: true, force: true });
-  }
-}
-
-function killProcessHoldingPort(port: number): void {
-  try {
-    const pid = execSync(`lsof -ti tcp:${port} 2>/dev/null || true`, { encoding: 'utf-8' }).trim();
-    if (pid) {
-      spawnSync('kill', ['-TERM', ...pid.split(/\s+/).filter(Boolean)], { stdio: 'ignore' });
-      const start = Date.now();
-      while (Date.now() - start < 3000) {
-        const stillThere = execSync(`lsof -ti tcp:${port} 2>/dev/null || true`, {
-          encoding: 'utf-8',
-        }).trim();
-        if (!stillThere) return;
-        execSync('sleep 0.2');
-      }
-      spawnSync('kill', ['-KILL', ...pid.split(/\s+/).filter(Boolean)], { stdio: 'ignore' });
-    }
-  } catch {
-    // best-effort
-  }
-}
-
-function pickInstaller(stageDir: string): 'pnpm' | 'npm' {
-  if (existsSync(join(stageDir, 'pnpm-lock.yaml'))) {
-    const probe = spawnSync('pnpm', ['--version'], { stdio: 'pipe' });
-    if (probe.status === 0) return 'pnpm';
-  }
-  return 'npm';
-}
-
-function hasEnoughMemory(): boolean {
-  try {
-    const entries = readdirSync('/');
-    if (!entries.includes('proc')) return true;
-    const meminfo = readFileSync('/proc/meminfo', 'utf8');
-    const match = meminfo.match(/MemTotal:\s+(\d+)\s+kB/);
-    if (!match) return true;
-    const totalMb = Math.round(parseInt(match[1], 10) / 1024);
-    return totalMb >= 2048;
-  } catch {
-    return true;
-  }
-}
-
-function findStandaloneServer(stageDir: string): string | null {
-  const standaloneRoot = join(stageDir, 'frontend', '.next', 'standalone');
-  if (!existsSync(standaloneRoot)) return null;
-  const skipDirs = new Set(['node_modules', '.nvm']);
-  const entries = readdirSync(standaloneRoot, { withFileTypes: true });
-  for (const entry of entries) {
-    if (!entry.isDirectory() || skipDirs.has(entry.name)) continue;
-    const candidate = join(standaloneRoot, entry.name, 'server.js');
-    if (existsSync(candidate)) return candidate;
-  }
-  // Fallback: <standalone>/frontend/server.js
-  const alt = join(standaloneRoot, 'frontend', 'server.js');
-  if (existsSync(alt)) return alt;
-  return null;
-}
 
 test.describe('Production distribution smoke', () => {
   test('pnpm build + standalone server boots and serves / and /api/health', async ({}, testInfo) => {

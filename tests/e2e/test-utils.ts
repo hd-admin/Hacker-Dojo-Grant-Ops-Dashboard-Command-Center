@@ -1,10 +1,121 @@
 import type { APIRequestContext, Page } from '@playwright/test';
+import { execSync, spawnSync } from 'node:child_process';
+import { existsSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
 
 export const BASE_URL = 'http://127.0.0.1:3000';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Stage a clean working tree by streaming `git archive` into a tmpdir.
+ * This is the canonical fresh-clone simulation; it preserves dotfiles
+ * (e.g. `.agent-startup.log`, `.gitignore`, `.pnpmrc`) in a single
+ * pass. The prior `git ls-files | xargs rsync` approach missed dotfiles
+ * and was fragile on paths with spaces.
+ */
+export function stageCleanWorkingTree(repoRoot: string, stageDir: string): void {
+  execSync(`git -C "${repoRoot}" archive --format=tar HEAD | tar -x -C "${stageDir}"`, {
+    stdio: 'pipe',
+  });
+}
+
+/**
+ * Wipe the explicit allowlist of paths that carry runtime state.
+ * The list is intentionally narrow so we never delete user data
+ * outside the test boundary.
+ */
+export function wipeRuntimeState(stageDir: string): void {
+  const paths = [
+    path.join(stageDir, 'node_modules'),
+    path.join(stageDir, 'frontend', '.next'),
+    path.join(stageDir, '.next'),
+    path.join(stageDir, '.grant-ops-data'),
+    path.join(stageDir, 'playwright-report'),
+    path.join(stageDir, 'test-results'),
+    path.join(stageDir, '.agent', 'tmp'),
+  ];
+  for (const p of paths) {
+    if (existsSync(p)) rmSync(p, { recursive: true, force: true });
+  }
+}
+
+/**
+ * Best-effort kill of any process holding `port`. Sends SIGTERM,
+ * waits up to 3s, then escalates to SIGKILL.
+ */
+export function killProcessHoldingPort(port: number): void {
+  try {
+    const pid = execSync(`lsof -ti tcp:${port} 2>/dev/null || true`, { encoding: 'utf-8' }).trim();
+    if (pid) {
+      spawnSync('kill', ['-TERM', ...pid.split(/\s+/).filter(Boolean)], { stdio: 'ignore' });
+      const start = Date.now();
+      while (Date.now() - start < 3000) {
+        const stillThere = execSync(`lsof -ti tcp:${port} 2>/dev/null || true`, {
+          encoding: 'utf-8',
+        }).trim();
+        if (!stillThere) return;
+        execSync('sleep 0.2');
+      }
+      spawnSync('kill', ['-KILL', ...pid.split(/\s+/).filter(Boolean)], { stdio: 'ignore' });
+    }
+  } catch {
+    // lsof not available or no match — nothing to do.
+  }
+}
+
+/**
+ * Pick the package manager for the staged tree. Prefers pnpm when a
+ * pnpm-lock.yaml is present and pnpm is on PATH, falls back to npm.
+ */
+export function pickInstaller(stageDir: string): 'pnpm' | 'npm' {
+  if (existsSync(path.join(stageDir, 'pnpm-lock.yaml'))) {
+    const probe = spawnSync('pnpm', ['--version'], { stdio: 'pipe' });
+    if (probe.status === 0) return 'pnpm';
+  }
+  return 'npm';
+}
+
+/**
+ * Detect a low-memory runner so the heavy e2e specs (fresh install,
+ * standalone build) can skip with an explicit reason.
+ */
+export function hasEnoughMemory(): boolean {
+  try {
+    const entries = readdirSync('/');
+    if (!entries.includes('proc')) return true;
+    const meminfo = readFileSync('/proc/meminfo', 'utf8');
+    const match = meminfo.match(/MemTotal:\s+(\d+)\s+kB/);
+    if (!match) return true;
+    const totalMb = Math.round(parseInt(match[1], 10) / 1024);
+    return totalMb >= 2048;
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Locate the standalone server produced by `next build`. The build
+ * script copies `.next/static` into the standalone tree at
+ * `<standalone>/<project-dir>/server.js`; we also handle the
+ * `<standalone>/frontend/server.js` layout that some Next.js versions
+ * produce when the source root is `frontend/`.
+ */
+export function findStandaloneServer(stageDir: string): string | null {
+  const standaloneRoot = path.join(stageDir, 'frontend', '.next', 'standalone');
+  if (!existsSync(standaloneRoot)) return null;
+  const skipDirs = new Set(['node_modules', '.nvm']);
+  const entries = readdirSync(standaloneRoot, { withFileTypes: true });
+  for (const entry of entries) {
+    if (!entry.isDirectory() || skipDirs.has(entry.name)) continue;
+    const candidate = path.join(standaloneRoot, entry.name, 'server.js');
+    if (existsSync(candidate)) return candidate;
+  }
+  const alt = path.join(standaloneRoot, 'frontend', 'server.js');
+  if (existsSync(alt)) return alt;
+  return null;
 }
 
 export async function resetAppState(request: APIRequestContext): Promise<void> {

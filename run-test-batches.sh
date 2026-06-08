@@ -47,7 +47,7 @@ while read -r -a files; do
   if [ $BATCH_PASSED -eq 0 ]; then
     FAILED_BATCHES+=("$BATCH")
   fi
-done < <(awk -v n="$BATCH_SIZE" '{for(i=1;i<=NF;i++) printf "%s ", $i; if(NR%n==0) print ""}' /tmp/all-tests.txt)
+done < <(awk -v n="$BATCH_SIZE" '{for(i=1;i<=NF;i++) printf "%s ", $i; if(NR%n==0) print ""} END { if (NR%n != 0) print "" }' /tmp/all-tests.txt)
 
 FAILED_COUNT=${#FAILED_BATCHES[@]}
 echo "=== ALL BATCHES COMPLETE ($TOTAL files, $FAILED_COUNT failed batches) ===" >> "$LOG"
