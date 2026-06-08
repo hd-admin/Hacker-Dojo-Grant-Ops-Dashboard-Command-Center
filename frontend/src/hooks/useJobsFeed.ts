@@ -67,11 +67,11 @@ export function __resetJobsFeedCacheForTesting(): void {
 
 function safeLogError(err: unknown): void {
   try {
-    // Logger is wrapped in try/catch so pino's filesystem-based logger
-    // cannot crash the feed loop in jsdom-based test runs where the
-    // .grant-ops-data directory may not be writable.
-    const { logger } = require('../lib/logger') as { logger: { error: (e: unknown) => void } };
-    logger.error(err);
+    // This hook is client-only ('use client'), so it runs in the browser.
+    // The server-side pino/pino-roll logger pulls in Node 'fs/promises' and
+    // cannot be bundled for the browser, so client errors go to console.
+    // Wrapped in try/catch so logging can never take down the poll loop.
+    console.error(err);
   } catch {
     // Swallow: never let logging take down the poll loop.
   }

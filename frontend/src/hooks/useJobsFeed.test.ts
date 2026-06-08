@@ -5,15 +5,6 @@ import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { JobQueueItem } from '../../../shared/types';
 import { useJobsFeed, __resetJobsFeedCacheForTesting } from './useJobsFeed';
 
-vi.mock('../lib/logger', () => ({
-  logger: {
-    error: vi.fn(),
-    warn: vi.fn(),
-    info: vi.fn(),
-    debug: vi.fn(),
-  },
-}));
-
 const fetchMock = vi.fn();
 
 const sampleJob: JobQueueItem = {

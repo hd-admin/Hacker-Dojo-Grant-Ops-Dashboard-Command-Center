@@ -88,12 +88,17 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [cancelConfirmJobId, setCancelConfirmJobId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
+  // Errors from retry/cancel actions. The polling error comes read-only from
+  // useJobsFeed, so action failures need their own local state.
+  const [actionError, setActionError] = useState<string | null>(null);
 
-  const { jobs, isLoading: loading, error, refresh } = useJobsFeed({
+  const { jobs, isLoading: loading, error: feedError, refresh } = useJobsFeed({
     pollIntervalMs: 5000,
     status: statusFilter,
     type: typeFilter,
   });
+
+  const error = actionError ?? feedError;
 
   const setJobActionLoading = useCallback((jobId: string, loading: boolean) => {
     setActionLoading((prev) => {
@@ -107,6 +112,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
   const handleRetry = useCallback(
     async (jobId: string) => {
       setJobActionLoading(jobId, true);
+      setActionError(null);
       try {
         const res = await fetch(`/api/jobs/${jobId}/retry`, { method: 'POST' });
         if (!res.ok) {
@@ -118,7 +124,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
         await refresh();
         if (onRefreshAppState) await onRefreshAppState();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Retry failed');
+        setActionError(err instanceof Error ? err.message : 'Retry failed');
       } finally {
         setJobActionLoading(jobId, false);
       }
@@ -135,6 +141,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
     if (!jobId) return;
     setCancelConfirmJobId(null);
     setJobActionLoading(jobId, true);
+    setActionError(null);
     try {
       const res = await fetch(`/api/jobs/${jobId}/cancel`, {
         method: 'POST',
@@ -148,7 +155,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
       await refresh();
       if (onRefreshAppState) await onRefreshAppState();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Cancel failed');
+      setActionError(err instanceof Error ? err.message : 'Cancel failed');
     } finally {
       setJobActionLoading(jobId, false);
     }

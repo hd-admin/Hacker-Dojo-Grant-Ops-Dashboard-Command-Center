@@ -109,19 +109,21 @@ export interface JobQueueItem {
   id: string;
   jobType: AgentTaskType;
   status: JobStatus;
-  stage?: string;
-  lastUpdate?: string;
+  // Optional fields use `| undefined` to match the zod `.optional()` output
+  // under exactOptionalPropertyTypes (see JobQueueItemSchema in schemas.ts).
+  stage?: string | undefined;
+  lastUpdate?: string | undefined;
   createdAt: string;
-  startedAt?: string;
-  completedAt?: string;
-  entityId?: string;
-  retryCount?: number;
+  startedAt?: string | undefined;
+  completedAt?: string | undefined;
+  entityId?: string | undefined;
+  retryCount?: number | undefined;
   errorMessage?: string | undefined;
-  resultSummary?: string;
+  resultSummary?: string | undefined;
   failureCategory?: JobFailureCategory | undefined;
   partialOutput?: string;
-  progress?: number;
-  maxRetries?: number;
+  progress?: number | undefined;
+  maxRetries?: number | undefined;
   processPid?: number;
 }
 
