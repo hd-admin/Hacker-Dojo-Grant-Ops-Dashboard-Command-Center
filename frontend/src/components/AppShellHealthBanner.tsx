@@ -79,10 +79,7 @@ export function AppShellHealthBanner({
                   <span data-testid="health-banner-crawl-sync">
                     Last crawl: {getRelativeTime(crawlStatus.lastSync)}
                     {isCrawlStale && (
-                      <span
-                        className="health-banner-stale-badge"
-                        data-testid="health-banner-stale"
-                      >
+                      <span className="health-banner-stale-badge" data-testid="health-banner-stale">
                         {' '}
                         Stale
                       </span>
