@@ -34,7 +34,7 @@ That's it. Your data lives in `.grant-ops-data/` (SQLite database and uploaded d
 
 ### New in this version?
 
-A new operator only needs to run `pnpm install` (or `npm install`) followed by `pnpm dev` (or `npm run dev`). The package manager rebuilds `better-sqlite3` against your Node version automatically via the `onlyBuiltDependencies` setting in `.pnpmrc`. If `better-sqlite3` still fails to load (e.g., the prebuilt binary does not match your Node ABI), run `pnpm rebuild better-sqlite3` (or `npm rebuild better-sqlite3`) and try again. There are no `predev`/`prebuild`/`prestart`/`prepare` shims — `pnpm dev` starts the app directly.
+A new operator only needs to run `pnpm install` (or `npm install`) followed by `pnpm dev` (or `npm run dev`). The package manager rebuilds `better-sqlite3` against your Node version automatically via the `onlyBuiltDependencies` setting in `.pnpmrc`. If `better-sqlite3` still fails to load (e.g., the prebuilt binary does not match your Node ABI), run `pnpm rebuild better-sqlite3` (or `npm rebuild better-sqlite3`) and try again. There are no `predev`/`prebuild`/`prestart`/`prepare` shims — `pnpm dev` starts the app directly. The no-shim invariant is locked in by `tests/no-predev-shim.test.ts` and exercised end-to-end by `tests/e2e/fresh-user-onboarding.spec.ts`, so a clean clone always works on the documented path.
 
 ### Verifying the install
 

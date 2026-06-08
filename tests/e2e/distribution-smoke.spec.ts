@@ -82,6 +82,8 @@ test.describe('Production distribution smoke', () => {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
+      const collectedChunks: Buffer[] = [];
+
       await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(
           () =>
@@ -91,6 +93,7 @@ test.describe('Production distribution smoke', () => {
           READY_TIMEOUT_MS,
         );
         const onChunk = (chunk: Buffer) => {
+          collectedChunks.push(chunk);
           if (chunk.toString('utf8').toLowerCase().includes('ready')) {
             clearTimeout(timer);
             child?.stdout?.off('data', onChunk);
@@ -114,6 +117,20 @@ test.describe('Production distribution smoke', () => {
       expect(health.status).toBe(200);
       const healthBody = (await health.json()) as { storage?: string };
       expect(healthBody.storage).toBe('ok');
+
+      const collected = Buffer.concat(collectedChunks).toString('utf8');
+      expect(
+        collected,
+        'standalone server log must not contain the legacy ensure-better-sqlite3 predev shim',
+      ).not.toContain('ensure-better-sqlite3');
+      expect(
+        collected,
+        'standalone server log must not reference a predev hook (see tests/no-predev-shim.test.ts)',
+      ).not.toContain('predev');
+      expect(
+        collected,
+        "standalone server log must not surface the legacy `could not resolve a real Node binary` error",
+      ).not.toContain('could not resolve a real Node binary');
     } finally {
       try {
         if (child && child.pid) {

@@ -2,6 +2,7 @@
 
 > Generated: 2026-05-31
 > Updated: 2026-06-08 (post-sweep: added regression tests for 6 unverified ACs in section 1 + 3 in section 3; verified full 185-file suite passes)
+> Updated: 2026-06-08 (audit pass: `shared/grant-ops-sqlite.ts` gained `import 'server-only'`, `tests/no-predev-shim.test.ts` added, `tests/e2e/{fresh-user-onboarding,distribution-smoke,startup-verification}.spec.ts` gained negative log assertions, `tests/no-xlsx-package.test.ts` gained positive exceljs round-trip)
 > Method: Systematic grep of codebase + test verification + in-session CI gate re-execution
 
 ## Summary
@@ -206,6 +207,7 @@ Post-sweep date: 2026-06-08
 Post-sweep verified-by-test count: 131/169 (was 123/169)
 Post-sweep test files: 185 (was 182)
 Post-sweep new tests added: 9 (covering 8 unverified ACs)
+Audit pass (2026-06-08): style-guide greps clean, `shared/grant-ops-sqlite.ts` gained `import 'server-only'`, `tests/no-predev-shim.test.ts` added, `tests/e2e/{fresh-user-onboarding,distribution-smoke,startup-verification}.spec.ts` gained negative log assertions, `tests/no-xlsx-package.test.ts` gained positive exceljs round-trip.
 
 ## File-Path Reconciliation
 

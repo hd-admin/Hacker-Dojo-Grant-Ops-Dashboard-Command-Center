@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFile, readdir, access } from 'node:fs/promises';
 import { resolve } from 'node:path';
+import ExcelJS from 'exceljs';
 
 const REPO_ROOT = resolve(__dirname, '..');
 
@@ -122,5 +123,43 @@ describe('no xlsx import statements in app code', () => {
     }
 
     expect(offenders, `forbidden xlsx imports:\n${JSON.stringify(offenders, null, 2)}`).toEqual([]);
+  });
+});
+
+describe('positive exceljs round-trip', () => {
+  it('round-trips a small .xlsx buffer via exceljs (proves the negative xlsx ban is not blocking real .xlsx work)', async () => {
+    const workbook = new ExcelJS.Workbook();
+    workbook.creator = 'no-xlsx-package.test.ts';
+    workbook.created = new Date('2026-06-08T00:00:00Z');
+    const worksheet = workbook.addWorksheet('Grants');
+    worksheet.columns = [
+      { header: 'Title', key: 'title', width: 32 },
+      { header: 'Funder', key: 'funder', width: 24 },
+      { header: 'Amount', key: 'amount', width: 12 },
+    ];
+    worksheet.addRow({ title: 'Community Resilience Grant', funder: 'Hacker Dojo', amount: 25000 });
+    worksheet.addRow({ title: 'Open Source Infrastructure', funder: 'Foundation X', amount: 50000 });
+    worksheet.getRow(1).font = { bold: true };
+
+    const buffer = (await workbook.xlsx.writeBuffer()) as ArrayBuffer;
+    expect(buffer.byteLength).toBeGreaterThan(0);
+
+    const reloaded = new ExcelJS.Workbook();
+    await reloaded.xlsx.load(Buffer.from(buffer));
+    const reloadedSheet = reloaded.getWorksheet('Grants');
+    expect(reloadedSheet, 'worksheet named "Grants" must survive the round-trip').toBeDefined();
+    if (!reloadedSheet) throw new Error('worksheet missing after round-trip');
+
+    const titleCell = reloadedSheet.getCell('A2').value;
+    const funderCell = reloadedSheet.getCell('B2').value;
+    const amountCell = reloadedSheet.getCell('C2').value;
+    expect(String(titleCell)).toBe('Community Resilience Grant');
+    expect(String(funderCell)).toBe('Hacker Dojo');
+    expect(Number(amountCell)).toBe(25000);
+
+    const thirdRowTitle = reloadedSheet.getCell('A3').value;
+    const thirdRowAmount = reloadedSheet.getCell('C3').value;
+    expect(String(thirdRowTitle)).toBe('Open Source Infrastructure');
+    expect(Number(thirdRowAmount)).toBe(50000);
   });
 });

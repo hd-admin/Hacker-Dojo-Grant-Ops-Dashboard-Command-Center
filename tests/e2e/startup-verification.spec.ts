@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { execSync } from 'child_process';
+import { execFileSync, execSync } from 'child_process';
 import { existsSync } from 'fs';
 import { chmodSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -20,6 +20,20 @@ test.describe('Startup verification', () => {
       { encoding: 'utf-8', stdio: 'pipe', env: { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' } }
     );
     expect(result.trim().replace(/\u001b\[[0-9;]*m/g, '')).toBe('1');
+  });
+
+  test('node -e "require(\'better-sqlite3\'); console.log(\'node-abi: ok\')" exits 0 and prints the canonical ok string', () => {
+    const result = execFileSync(
+      process.execPath,
+      ['-e', "require('better-sqlite3'); console.log('node-abi: ok');"],
+      {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        env: { ...process.env, NODE_NO_WARNINGS: '1', NO_COLOR: '1' },
+      },
+    );
+    const cleaned = result.replace(/\u001b\[[0-9;]*m/g, '').trim();
+    expect(cleaned).toContain('node-abi: ok');
   });
 
   test('.grant-ops-data/ directory is writable', () => {

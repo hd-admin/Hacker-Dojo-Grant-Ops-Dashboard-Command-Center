@@ -61,11 +61,15 @@ contract:
 - `tests/e2e/fresh-user-onboarding.spec.ts` — simulates a brand-new
   operator: stages a clean working tree, wipes runtime state, runs
   `pnpm install` (or `npm install`), starts the dev server, and
-  asserts `GET /` and `GET /api/health`. Skips on <2GB runners with
-  an explicit reason.
+  asserts `GET /` and `GET /api/health`. The spec also collects the
+  dev-server log and asserts it does NOT contain `ensure-better-sqlite3`,
+  `predev`, or the legacy `could not resolve a real Node binary`
+  error string. Skips on <2GB runners with an explicit reason.
 - `tests/e2e/distribution-smoke.spec.ts` — runs the production
   build (`pnpm build`) and boots the standalone server on port 3010. Asserts `GET /` and `GET /api/health` against the bundled
-  artifact. Skips on <2GB runners.
+  artifact, and the collected standalone-server log is asserted to
+  NOT contain `ensure-better-sqlite3`, `predev`, or `could not
+  resolve a real Node binary`. Skips on <2GB runners.
 
 ## ABI Rebuild Recipe
 
@@ -95,7 +99,9 @@ violated:
 2. **No `predev` / `prebuild` / `prestart` / `pretest` / `prepare`
    hook in `package.json` or `frontend/package.json`.** These
    hooks are a smell; if a hook is unavoidable, document it inline
-   and prefer a check inside the dev script proper.
+   and prefer a check inside the dev script proper. The
+   `tests/no-predev-shim.test.ts` Vitest guard is the canary that
+   fails CI on any re-introduction of these hooks.
 3. **No scripts/ensure-better-sqlite3.sh.** The verify-only
    successor is `scripts/check-better-sqlite3.sh`.
 4. **`better-sqlite3` must load against the current Node ABI.** The

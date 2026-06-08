@@ -91,12 +91,18 @@ test.describe('Fresh user onboarding', () => {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 
+      const collectedChunks: Buffer[] = [];
+      const collectChunk = (chunk: Buffer) => {
+        collectedChunks.push(chunk);
+      };
+
       await new Promise<void>((resolve, reject) => {
         const timer = setTimeout(
           () => reject(new Error('dev server did not become ready within 90s')),
           90_000,
         );
         const onChunk = (chunk: Buffer) => {
+          collectChunk(chunk);
           if (chunk.toString('utf8').toLowerCase().includes('ready')) {
             clearTimeout(timer);
             child?.stdout?.off('data', onChunk);
@@ -120,6 +126,20 @@ test.describe('Fresh user onboarding', () => {
       expect(health.status).toBe(200);
       const healthBody = (await health.json()) as { storage?: string };
       expect(healthBody.storage).toBe('ok');
+
+      const collected = Buffer.concat(collectedChunks).toString('utf8');
+      expect(
+        collected,
+        'dev server log must not contain the legacy ensure-better-sqlite3 predev shim',
+      ).not.toContain('ensure-better-sqlite3');
+      expect(
+        collected,
+        'dev server log must not reference a predev hook (see tests/no-predev-shim.test.ts)',
+      ).not.toContain('predev');
+      expect(
+        collected,
+        "dev server log must not surface the legacy `could not resolve a real Node binary` error",
+      ).not.toContain('could not resolve a real Node binary');
     } finally {
       try {
         if (child && child.pid) {

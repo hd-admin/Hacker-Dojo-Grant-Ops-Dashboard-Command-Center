@@ -16,6 +16,7 @@ This document defines the baseline rules and conventions for all development on 
 - No unused imports or variables.
 - Prefer named exports over default exports except where Next.js conventions require defaults.
 - One file should represent one primary concept.
+- The lifecycle hooks `predev`, `prebuild`, `prestart`, `pretest`, `prepare`, `postinstall`, `prepublishOnly` are forbidden in both `package.json` and `frontend/package.json`. The invariant is enforced by `tests/no-predev-shim.test.ts`. These hooks were the original source of the `could not resolve a real Node binary` error fresh operators saw on `pnpm install`; the project's install path is `pnpm install && pnpm dev` with no shims. If a hook is genuinely unavoidable, the new file must update its test AND `docs/product-spec-v2/13-distribution-and-onboarding.md` to document the exception.
 
 ## 3. Accessibility (WCAG 2.1 AA)
 
