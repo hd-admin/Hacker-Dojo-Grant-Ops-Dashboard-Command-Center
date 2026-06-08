@@ -36,6 +36,7 @@ This specification defines the next evolution of Hacker Dojo Grant Ops — a loc
 | 10  | [Technical Acceptance Criteria](./10-technical-acceptance-criteria.md) | **Specific, testable AC for every subsystem**                                                                             |
 | 11  | [Technical Infrastructure](./11-technical-infrastructure.md)           | Technology stack, API routes, document management, search, notifications, configuration, logging, backup, identity        |
 | 12  | [Data Architecture](./12-data-architecture.md)                         | Connection configuration, complete database schema (all tables, indexes, FTS5), seed data, initialization, SQLite gotchas |
+| 13  | [Distribution & Onboarding](./13-distribution-and-onboarding.md)       | Single install path, verification chain, ABI rebuild recipe                                                               |
 
 ## How to Use This Spec
 

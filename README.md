@@ -32,6 +32,24 @@ That's it. Your data lives in `.grant-ops-data/` (SQLite database and uploaded d
 
 > **Troubleshooting:** If the app fails to start, run `bash scripts/setup-check.sh` to diagnose common issues. If `better-sqlite3` needs rebuilding for your Node version, run `pnpm install` to use the prebuilt binary; pnpm's `onlyBuiltDependencies` setting in `.pnpmrc` handles the rebuild automatically.
 
+### New in this version?
+
+A new operator only needs to run `pnpm install` (or `npm install`) followed by `pnpm dev` (or `npm run dev`). The package manager rebuilds `better-sqlite3` against your Node version automatically via the `onlyBuiltDependencies` setting in `.pnpmrc`. If `better-sqlite3` still fails to load (e.g., the prebuilt binary does not match your Node ABI), run `pnpm rebuild better-sqlite3` (or `npm rebuild better-sqlite3`) and try again. There are no `predev`/`prebuild`/`prestart`/`prepare` shims — `pnpm dev` starts the app directly.
+
+### Verifying the install
+
+The same checks the CI runs are available as standalone scripts:
+
+```bash
+bash scripts/setup-check.sh         # Node version, scripts, env, db health
+bash scripts/check-better-sqlite3.sh # node -e "require('better-sqlite3')"
+pnpm typecheck                       # npx tsc --noEmit -p frontend/tsconfig.json
+pnpm lint                            # npx eslint . --ext .ts,.tsx
+pnpm test                            # bash run-test-batches.sh
+```
+
+A green output from every command above means the operator environment is identical to CI.
+
 ---
 
 ## What It Does
@@ -76,16 +94,16 @@ The app includes a built-in backup/restore system accessible from the Settings v
 
 ## Common Commands
 
-| Command                       | Purpose                                    |
-| ----------------------------- | ------------------------------------------ |
-| `pnpm dev` / `npm run dev`    | Start development server                   |
-| `pnpm build` / `npm run build`| Build for production                       |
-| `pnpm start` / `npm run start`| Run production build                       |
-| `pnpm test` / `npm test`      | Run unit/integration tests                 |
-| `pnpm test:e2e` / `npm run test:e2e` | Run end-to-end tests (requires Playwright) |
-| `pnpm lint` / `npm run lint`  | Check code style                           |
-| `pnpm typecheck` / `npm run typecheck` | Type-check the codebase             |
-| `bash scripts/setup-check.sh` | Verify your environment is ready           |
+| Command                                | Purpose                                    |
+| -------------------------------------- | ------------------------------------------ |
+| `pnpm dev` / `npm run dev`             | Start development server                   |
+| `pnpm build` / `npm run build`         | Build for production                       |
+| `pnpm start` / `npm run start`         | Run production build                       |
+| `pnpm test` / `npm test`               | Run unit/integration tests                 |
+| `pnpm test:e2e` / `npm run test:e2e`   | Run end-to-end tests (requires Playwright) |
+| `pnpm lint` / `npm run lint`           | Check code style                           |
+| `pnpm typecheck` / `npm run typecheck` | Type-check the codebase                    |
+| `bash scripts/setup-check.sh`          | Verify your environment is ready           |
 
 ## Configuring OpenCode
 

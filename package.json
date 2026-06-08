@@ -12,6 +12,8 @@
     "test": "bash run-test-batches.sh",
     "test:raw": "vitest run",
     "test:startup": "bash scripts/check-better-sqlite3.sh",
+    "test:abi": "vitest run tests/abi-rebuild-guard.test.ts",
+    "test:no-xlsx": "vitest run tests/no-xlsx-package.test.ts",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "test:all": "bash run-test-batches.sh && playwright test",
