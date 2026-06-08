@@ -3,6 +3,7 @@ import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type { JobQueueItem } from '../../../../../shared/types';
+import { JobQueueItemSchema } from '../../../../../shared/schemas';
 import { z } from 'zod';
 
 export const dynamic = 'force-dynamic';
@@ -39,9 +40,21 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       filtered = filtered.filter((job) => job.jobType === type);
     }
 
-    return NextResponse.json(filtered);
+    const validated = z.array(JobQueueItemSchema).parse(filtered);
+    return NextResponse.json(validated);
   } catch (error) {
     logger.error({ err: error }, 'Error listing jobs');
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        createErrorResponse('VALIDATION_ERROR', 'Jobs response failed validation', {
+          issues: error.issues.map((issue) => ({
+            path: issue.path.join('.'),
+            message: issue.message,
+          })),
+        }),
+        { status: 500 },
+      );
+    }
     return NextResponse.json(createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to list jobs'), {
       status: 500,
     });

@@ -10,12 +10,12 @@ import type {
   OrganizationProfile,
   ActivityEvent,
   Notification,
-  JobQueueItem,
   Source,
 } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
 import { jobFailureMessages } from '../lib/failure-messages';
 import { sanitizeNotificationText } from '../lib/sanitize-html';
+import { useJobsFeed } from '../hooks/useJobsFeed';
 
 type ViewType =
   | 'dashboard'
@@ -107,7 +107,7 @@ export function DashboardView({
   sources = [],
   operatorName,
 }: DashboardViewProps) {
-  const [jobs, setJobs] = useState<JobQueueItem[]>([]);
+  const { jobs } = useJobsFeed({ pollIntervalMs: 5000 });
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [crawlLatestRun, setCrawlLatestRun] = useState<CrawlRun | null>(null);
   const [crawlFetching, setCrawlFetching] = useState(true);
@@ -197,31 +197,6 @@ export function DashboardView({
       cancelled = true;
     };
   }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadJobs = async () => {
-      try {
-        const response = await fetch('/api/jobs');
-        const data = (await response.json()) as JobQueueItem[];
-        if (!cancelled) setJobs(Array.isArray(data) ? data : []);
-      } catch (_error) {
-        setError('Error loading jobs');
-        if (!cancelled) setJobs([]);
-      }
-    };
-    void loadJobs();
-    const interval = window.setInterval(
-      () => {
-        void loadJobs();
-      },
-      jobs.some((job) => job.status === 'queued' || job.status === 'running') ? 5000 : 15000,
-    );
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [jobs]);
 
   useEffect(() => {
     let cancelled = false;

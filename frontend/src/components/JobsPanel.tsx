@@ -1,9 +1,10 @@
 import type { JSX } from 'react';
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import type { JobQueueItem } from '../../../shared/types';
 import { jobFailureMessages } from '../lib/failure-messages';
+import { useJobsFeed } from '../hooks/useJobsFeed';
 import styles from './JobsPanel.module.css';
 
 type JobStatus = JobQueueItem['status'] | 'all';
@@ -82,35 +83,17 @@ function stageDescription(stage: string | undefined): string {
 }
 
 export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
-  const [jobs, setJobs] = useState<JobQueueItem[]>([]);
-  const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<JobStatus>('all');
   const [typeFilter, setTypeFilter] = useState<JobTypeFilter>('all');
-  const [error, setError] = useState<string | null>(null);
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [cancelConfirmJobId, setCancelConfirmJobId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<Record<string, boolean>>({});
 
-  const loadJobs = useCallback(async () => {
-    try {
-      const params = new URLSearchParams();
-      if (statusFilter !== 'all') params.set('status', statusFilter);
-      if (typeFilter !== 'all') params.set('type', typeFilter);
-
-      const url = `/api/jobs${params.toString() ? `?${params.toString()}` : ''}`;
-      const response = await fetch(url);
-      if (!response.ok) throw new Error(`Failed to load jobs: ${response.status}`);
-      const data = (await response.json()) as JobQueueItem[];
-      setJobs(Array.isArray(data) ? data : []);
-      setError(null);
-    } catch (err) {
-      setError('Error loading jobs');
-      setError(err instanceof Error ? err.message : 'Failed to load jobs');
-      setJobs([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [statusFilter, typeFilter]);
+  const { jobs, isLoading: loading, error, refresh } = useJobsFeed({
+    pollIntervalMs: 5000,
+    status: statusFilter,
+    type: typeFilter,
+  });
 
   const setJobActionLoading = useCallback((jobId: string, loading: boolean) => {
     setActionLoading((prev) => {
@@ -132,7 +115,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
           };
           throw new Error(body.error ?? 'Retry failed');
         }
-        await loadJobs();
+        await refresh();
         if (onRefreshAppState) await onRefreshAppState();
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Retry failed');
@@ -140,7 +123,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
         setJobActionLoading(jobId, false);
       }
     },
-    [loadJobs, onRefreshAppState, setJobActionLoading],
+    [refresh, onRefreshAppState, setJobActionLoading],
   );
 
   const handleCancelRequest = useCallback((jobId: string) => {
@@ -162,39 +145,18 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
         };
         throw new Error(body.error ?? 'Cancel failed');
       }
-      await loadJobs();
+      await refresh();
       if (onRefreshAppState) await onRefreshAppState();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Cancel failed');
     } finally {
       setJobActionLoading(jobId, false);
     }
-  }, [cancelConfirmJobId, loadJobs, onRefreshAppState, setJobActionLoading]);
+  }, [cancelConfirmJobId, refresh, onRefreshAppState, setJobActionLoading]);
 
   const dismissCancelConfirm = useCallback(() => {
     setCancelConfirmJobId(null);
   }, []);
-
-  useEffect(() => {
-    void loadJobs();
-  }, [loadJobs]);
-
-  // Auto-refresh when there are active jobs
-  useEffect(() => {
-    const hasActiveJobs = jobs.some(
-      (job) =>
-        job.status === 'queued' ||
-        job.status === 'running' ||
-        job.status === 'verifying' ||
-        job.status === 'retrying',
-    );
-    if (!hasActiveJobs) return;
-
-    const interval = window.setInterval(() => {
-      void loadJobs();
-    }, 5000);
-    return () => window.clearInterval(interval);
-  }, [jobs, loadJobs]);
 
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
@@ -276,7 +238,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
             className="btn btn-ghost btn-sm"
             data-testid="jobs-refresh-btn"
             onClick={() => {
-              void loadJobs();
+              void refresh();
             }}
           >
             {'↻'} Refresh

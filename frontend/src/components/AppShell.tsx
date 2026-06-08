@@ -69,7 +69,7 @@ export function AppShell(): JSX.Element {
       setRecentGrantIds(() => context.recentGrantIds?.slice(0, 5) ?? []);
     if (context.recentDraftId !== undefined) setRecentDraftId(context.recentDraftId);
 
-    void Promise.all([refreshAppState(), refreshHealth(), loadActiveJobs()]).catch(() => {
+    void Promise.all([refreshAppState(), refreshHealth()]).catch(() => {
       // Loading errors are reflected in the storage-blocked screen and
       // health banner; keep the mount resilient.
     });
@@ -133,7 +133,7 @@ export function AppShell(): JSX.Element {
 
   useEffect(() => {
     const handler = async (e: BeforeUnloadEvent) => {
-      const freshlyLoadedJobs = await loadActiveJobs();
+      const freshlyLoadedJobs = await loadActiveJobs({ force: true });
       if (freshlyLoadedJobs.length > 0) {
         e.preventDefault();
         e.returnValue = '';

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   CrawlStatus,
   Grant,
@@ -14,6 +14,11 @@ import type {
 import { client } from '../lib/grant-ops-client';
 import type { HealthTier } from '../components/AppShellHealthBanner';
 import { useToast } from '../components/ToastProvider';
+import { useJobsFeed } from './useJobsFeed';
+
+export interface LoadActiveJobsOptions {
+  force?: boolean;
+}
 
 export interface AppShellState {
   grants: Grant[];
@@ -33,7 +38,7 @@ export interface AppShellState {
   setRecentGrantIds: (updater: (current: string[]) => string[]) => void;
   refreshHealth: () => Promise<void>;
   refreshAppState: () => Promise<void>;
-  loadActiveJobs: () => Promise<JobQueueItem[]>;
+  loadActiveJobs: (options?: LoadActiveJobsOptions) => Promise<JobQueueItem[]>;
 }
 
 export function useAppShellState(): AppShellState {
@@ -52,6 +57,13 @@ export function useAppShellState(): AppShellState {
   const [, setError] = useState<string | null>(null);
 
   const previousJobStatuses = useRef<Record<string, JobQueueItem['status']>>({});
+  const jobsRef = useRef<JobQueueItem[]>([]);
+
+  const { jobs: feedJobs, refresh: feedRefresh } = useJobsFeed({ pollIntervalMs: 5000 });
+
+  useEffect(() => {
+    jobsRef.current = feedJobs;
+  }, [feedJobs]);
 
   const setRecentGrantIds = useCallback(
     (updater: (current: string[]) => string[]): void => {
@@ -111,23 +123,24 @@ export function useAppShellState(): AppShellState {
     }
   }, []);
 
-  const loadActiveJobs = useCallback(async (): Promise<JobQueueItem[]> => {
-    try {
-      const response = await fetch('/api/jobs');
-      const data = (await response.json()) as JobQueueItem[];
-      const active = Array.isArray(data)
-        ? data.filter(
-            (job) =>
-              job.status === 'queued' ||
-              job.status === 'running' ||
-              job.status === 'verifying' ||
-              job.status === 'retrying',
-          )
-        : [];
+  const loadActiveJobs = useCallback(
+    async (options?: LoadActiveJobsOptions): Promise<JobQueueItem[]> => {
+      let data: JobQueueItem[] = jobsRef.current;
+      if (options?.force === true) {
+        await feedRefresh();
+        data = jobsRef.current;
+      }
+      const active = data.filter(
+        (job) =>
+          job.status === 'queued' ||
+          job.status === 'running' ||
+          job.status === 'verifying' ||
+          job.status === 'retrying',
+      );
       setActiveJobs(active);
 
       const prevStatuses = previousJobStatuses.current;
-      for (const job of Array.isArray(data) ? data : []) {
+      for (const job of data) {
         const prevStatus = prevStatuses[job.id];
         if (prevStatus && prevStatus !== 'completed' && job.status === 'completed') {
           addToast(`\u2705 ${job.jobType} completed`, 'success');
@@ -137,16 +150,14 @@ export function useAppShellState(): AppShellState {
         }
       }
       const nextStatuses: Record<string, JobQueueItem['status']> = {};
-      for (const job of Array.isArray(data) ? data : []) {
+      for (const job of data) {
         nextStatuses[job.id] = job.status;
       }
       previousJobStatuses.current = nextStatuses;
       return active;
-    } catch {
-      setActiveJobs([]);
-      return [];
-    }
-  }, [addToast]);
+    },
+    [addToast, feedRefresh],
+  );
 
   const refreshAppState = useCallback(async (): Promise<void> => {
     const [

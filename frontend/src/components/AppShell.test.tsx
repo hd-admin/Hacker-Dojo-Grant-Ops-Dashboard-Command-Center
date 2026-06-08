@@ -686,3 +686,162 @@ describe('AppShell accessibility', () => {
     expect(document.activeElement).toBe(mainContent);
   });
 });
+
+describe('AppShell beforeunload handler', () => {
+  function makeJobsResponse(items: Array<Record<string, unknown>>): Response {
+    return new Response(JSON.stringify(items), {
+      headers: { 'content-type': 'application/json' },
+    });
+  }
+
+  function makeInterruptSpy(impl: (input: RequestInfo | URL) => Promise<Response>): ReturnType<typeof vi.fn> {
+    return vi.fn(async (input: RequestInfo | URL) => impl(input));
+  }
+
+  it('force-refresh issues a fresh fetch and then posts to /api/jobs/interrupt with the active job ids', async () => {
+    const activeJob = {
+      id: 'job-99',
+      jobType: 'research',
+      status: 'running',
+      progress: 50,
+      stage: 'analyzing',
+      createdAt: new Date().toISOString(),
+    };
+    const interruptSpy = makeInterruptSpy(async () => new Response('{}', { status: 200 }));
+    let jobsCallCount = 0;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/health') {
+        return new Response(
+          JSON.stringify({
+            storage: 'ok',
+            opencode: 'ok',
+            opencodeVersion: '1.0.0',
+            crawlerStatus: 'ok',
+            documentIndexer: 'ok',
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (url === '/api/crawl/scheduled?trigger=true') {
+        return new Response(JSON.stringify({ triggered: 0 }), {
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.startsWith('/api/jobs/interrupt')) {
+        return interruptSpy(input);
+      }
+      if (url.startsWith('/api/jobs')) {
+        jobsCallCount += 1;
+        return makeJobsResponse([activeJob]);
+      }
+      return new Response(JSON.stringify({}), {
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
+    await waitFor(() => queryByRole(container, 'button', { name: 'View job queue' }) !== null);
+
+    const jobsCallsBefore = jobsCallCount;
+    window.dispatchEvent(new Event('beforeunload'));
+    await waitFor(() => interruptSpy.mock.calls.length > 0, 5000);
+
+    expect(jobsCallCount).toBeGreaterThan(jobsCallsBefore);
+    expect(interruptSpy).toHaveBeenCalledTimes(1);
+    const interruptInput = interruptSpy.mock.calls[0]?.[0];
+    const interruptUrl = typeof interruptInput === 'string' ? interruptInput : interruptInput.toString();
+    expect(interruptUrl).toBe('/api/jobs/interrupt');
+  });
+
+  it('skips /api/jobs/interrupt when no active jobs remain at the time of unload', async () => {
+    const interruptSpy = makeInterruptSpy(async () => new Response('{}', { status: 200 }));
+    let jobsCallCount = 0;
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/health') {
+        return new Response(
+          JSON.stringify({
+            storage: 'ok',
+            opencode: 'ok',
+            opencodeVersion: '1.0.0',
+            crawlerStatus: 'ok',
+            documentIndexer: 'ok',
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (url === '/api/crawl/scheduled?trigger=true') {
+        return new Response(JSON.stringify({ triggered: 0 }), {
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.startsWith('/api/jobs/interrupt')) {
+        return interruptSpy(input);
+      }
+      if (url.startsWith('/api/jobs')) {
+        jobsCallCount += 1;
+        return makeJobsResponse([]);
+      }
+      return new Response(JSON.stringify({}), {
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
+    await waitFor(() => queryByRole(container, 'button', { name: 'View job queue' }) !== null);
+
+    window.dispatchEvent(new Event('beforeunload'));
+    await waitFor(() => jobsCallCount > 0);
+
+    expect(interruptSpy).not.toHaveBeenCalled();
+  });
+
+  it('survives an empty active-jobs feed without throwing or posting to /api/jobs/interrupt', async () => {
+    const interruptSpy = makeInterruptSpy(async () => new Response('{}', { status: 200 }));
+    fetchMock.mockImplementation(async (input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url === '/api/health') {
+        return new Response(
+          JSON.stringify({
+            storage: 'ok',
+            opencode: 'ok',
+            opencodeVersion: '1.0.0',
+            crawlerStatus: 'ok',
+            documentIndexer: 'ok',
+          }),
+          { headers: { 'content-type': 'application/json' } },
+        );
+      }
+      if (url === '/api/crawl/scheduled?trigger=true') {
+        return new Response(JSON.stringify({ triggered: 0 }), {
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      if (url.startsWith('/api/jobs/interrupt')) {
+        return interruptSpy(input);
+      }
+      if (url.startsWith('/api/jobs')) {
+        return new Response(JSON.stringify([]), {
+          headers: { 'content-type': 'application/json' },
+        });
+      }
+      return new Response(JSON.stringify({}), {
+        headers: { 'content-type': 'application/json' },
+      });
+    });
+
+    let renderError: Error | null = null;
+    try {
+      root.render(React.createElement(ToastProvider, null, React.createElement(AppShell)));
+      await waitFor(() => queryByRole(container, 'button', { name: 'View job queue' }) !== null);
+      window.dispatchEvent(new Event('beforeunload'));
+      await waitFor(() => true);
+    } catch (err) {
+      renderError = err as Error;
+    }
+
+    expect(renderError).toBeNull();
+    expect(interruptSpy).not.toHaveBeenCalled();
+  });
+});
