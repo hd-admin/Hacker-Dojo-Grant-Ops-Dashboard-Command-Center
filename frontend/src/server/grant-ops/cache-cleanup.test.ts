@@ -90,4 +90,36 @@ describe('cache-cleanup', () => {
     cleanupTmpDir(dataDir);
     expect(fs.existsSync(failedFile)).toBe(true);
   });
+
+  it('AC-3.2.1: log files older than 30 days are removed', () => {
+    const oldLog = path.join(tmpDir, 'session-old.log');
+    fs.writeFileSync(oldLog, 'log line');
+    const stat = fs.statSync(oldLog);
+    fs.utimesSync(oldLog, stat.atime, new Date(Date.now() - 31 * 24 * 60 * 60 * 1000));
+
+    cleanupTmpDir(dataDir);
+    expect(fs.existsSync(oldLog)).toBe(false);
+  });
+
+  it('AC-3.2.1: log files within 30 days are preserved', () => {
+    const recentLog = path.join(tmpDir, 'session-recent.log');
+    fs.writeFileSync(recentLog, 'log line');
+    cleanupTmpDir(dataDir);
+    expect(fs.existsSync(recentLog)).toBe(true);
+  });
+
+  it('AC-3.2.2: returns accurate deletedFiles count and freedBytes when over size', () => {
+    const cacheDir = path.join(tmpDir, '.cache');
+    fs.mkdirSync(cacheDir, { recursive: true });
+    const file1 = path.join(cacheDir, 'a.cache');
+    const file2 = path.join(cacheDir, 'b.cache');
+    fs.writeFileSync(file1, 'a'.repeat(100));
+    fs.writeFileSync(file2, 'b'.repeat(100));
+    const stat1 = fs.statSync(file1);
+    fs.utimesSync(file1, stat1.atime, new Date(Date.now() - 120_000));
+
+    const stats = enforceCacheSizeLimit(cacheDir, 150);
+    expect(stats.deletedFiles).toBeGreaterThanOrEqual(1);
+    expect(stats.freedBytes).toBeGreaterThan(0);
+  });
 });

@@ -32,9 +32,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { assertBetterSqlite3Loads } from '../helpers/abi-guard';
 import {
+  getInstallArgs,
   hasEnoughMemory,
   killProcessHoldingPort,
   pickInstaller,
+  resolveRepoRoot,
   stageCleanWorkingTree,
   wipeRuntimeState,
 } from './test-utils';
@@ -49,7 +51,7 @@ test.describe('Fresh user onboarding', () => {
       test.skip(true, 'Skipped: insufficient memory for fresh install (<2GB detected)');
     }
 
-    const repoRoot = testInfo.config.rootDir;
+    const repoRoot = resolveRepoRoot(testInfo.config.rootDir);
     const stageDir = mkdtempSync(join(tmpdir(), 'hdojo-fresh-'));
     let child: ReturnType<typeof spawn> | null = null;
     try {
@@ -63,16 +65,29 @@ test.describe('Fresh user onboarding', () => {
       }
 
       const installer = pickInstaller(stageDir);
+      const installArgs = getInstallArgs(installer);
 
-      execSync(`${installer} install --no-audit --no-fund`, {
+      execSync(`${installer} ${installArgs.join(' ')}`, {
         cwd: stageDir,
         stdio: 'pipe',
         timeout: 480_000,
       });
 
-      child = spawn(`${installer}`, ['run', 'dev'], {
-        cwd: stageDir,
-        env: { ...process.env, PORT: String(TEST_PORT), HOSTNAME: '127.0.0.1' },
+      // The shipped `dev` script hardcodes `-p 3000`, so we cannot
+      // satisfy `playwright.config.ts`'s webServer (port 3000) and the
+      // test target (port 3001) with a single `pnpm run dev` call.
+      // Invoking `next dev` directly with the test port keeps the
+      // install path (`pnpm install` on a fresh tree) authentic
+      // while still booting an isolated dev server. We strip NODE_ENV
+      // for the same reason the shipped script does — a parent shell's
+      // `NODE_ENV=production` would otherwise bypass dev-only loaders
+      // (CSS) and produce a 500 on the first page render.
+      const nextBin = join(stageDir, 'node_modules', '.bin', 'next');
+      const devEnv = { ...process.env, HOSTNAME: '127.0.0.1' };
+      delete devEnv.NODE_ENV;
+      child = spawn(nextBin, ['dev', '-H', '127.0.0.1', '-p', String(TEST_PORT)], {
+        cwd: join(stageDir, 'frontend'),
+        env: devEnv,
         stdio: ['ignore', 'pipe', 'pipe'],
       });
 

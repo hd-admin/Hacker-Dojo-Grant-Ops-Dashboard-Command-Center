@@ -10,6 +10,31 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Resolve the repository root from a Playwright `testInfo.config.rootDir`.
+ * Playwright's `testDir: './tests/e2e'` makes the default `rootDir`
+ * resolve to the test directory itself, but the staged tree must come
+ * from the git working tree at the project root. This helper walks up
+ * until it finds the directory that contains `package.json` and a
+ * git checkout, then returns that path. If none is found it falls
+ * back to the supplied `rootDir`.
+ */
+export function resolveRepoRoot(rootDir: string): string {
+  let cursor = path.resolve(rootDir);
+  for (let i = 0; i < 6; i += 1) {
+    if (
+      existsSync(path.join(cursor, 'package.json')) &&
+      existsSync(path.join(cursor, '.git'))
+    ) {
+      return cursor;
+    }
+    const parent = path.dirname(cursor);
+    if (parent === cursor) break;
+    cursor = parent;
+  }
+  return rootDir;
+}
+
+/**
  * Stage a clean working tree by streaming `git archive` into a tmpdir.
  * This is the canonical fresh-clone simulation; it preserves dotfiles
  * (e.g. `.agent-startup.log`, `.gitignore`, `.pnpmrc`) in a single
@@ -76,6 +101,18 @@ export function pickInstaller(stageDir: string): 'pnpm' | 'npm' {
     if (probe.status === 0) return 'pnpm';
   }
   return 'npm';
+}
+
+/**
+ * Return the install-args list appropriate for the chosen installer.
+ * npm honors `--no-audit --no-fund`; pnpm 11 does not and rejects
+ * unknown options, so passing those flags breaks the staged install.
+ * Using this helper keeps the spec in sync with the package manager
+ * contract and prevents `pnpm install` from failing on real flags.
+ */
+export function getInstallArgs(installer: 'pnpm' | 'npm'): string[] {
+  if (installer === 'pnpm') return ['install'];
+  return ['install', '--no-audit', '--no-fund'];
 }
 
 /**

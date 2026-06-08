@@ -18,9 +18,11 @@ import { join } from 'node:path';
 import { assertBetterSqlite3Loads } from '../helpers/abi-guard';
 import {
   findStandaloneServer,
+  getInstallArgs,
   hasEnoughMemory,
   killProcessHoldingPort,
   pickInstaller,
+  resolveRepoRoot,
   stageCleanWorkingTree,
   wipeRuntimeState,
 } from './test-utils';
@@ -36,7 +38,7 @@ test.describe('Production distribution smoke', () => {
       test.skip(true, 'Skipped: insufficient memory for production build (<2GB detected)');
     }
 
-    const repoRoot = testInfo.config.rootDir;
+    const repoRoot = resolveRepoRoot(testInfo.config.rootDir);
     const stageDir = mkdtempSync(join(tmpdir(), 'hdojo-dist-'));
     let child: ReturnType<typeof spawn> | null = null;
     try {
@@ -50,8 +52,9 @@ test.describe('Production distribution smoke', () => {
       }
 
       const installer = pickInstaller(stageDir);
+      const installArgs = getInstallArgs(installer);
 
-      execSync(`${installer} install --no-audit --no-fund`, {
+      execSync(`${installer} ${installArgs.join(' ')}`, {
         cwd: stageDir,
         stdio: 'pipe',
         timeout: 480_000,

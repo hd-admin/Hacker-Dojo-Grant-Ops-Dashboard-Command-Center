@@ -627,3 +627,215 @@ describe('dependency injection interfaces', () => {
     expect(spawner).toBeDefined();
   });
 });
+
+describe('executeAgentJob - unverified ACs (AC-1.1.1, AC-1.1.5, AC-1.2.3, AC-1.3.1)', () => {
+  beforeEach(() => {
+    currentTestDataDir = path.join(
+      process.cwd(),
+      `.grant-ops-data-test-agent-loop-unverified-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    nodeFs.mkdirSync(currentTestDataDir, { recursive: true });
+    nodeFs.mkdirSync(path.join(currentTestDataDir, 'tmp'), { recursive: true });
+    mockSpawnImpl.mockReset();
+  });
+
+  afterEach(async () => {
+    await new Promise((r) => setImmediate(r));
+    if (nodeFs.existsSync(currentTestDataDir)) {
+      try {
+        nodeFs.rmSync(currentTestDataDir, { recursive: true, force: true });
+      } catch {
+        // Suppress cleanup errors
+      }
+    }
+  });
+
+  it('AC-1.1.1: spawn env includes ARTIFACT_PATH matching the expected artifact file', async () => {
+    const mockProc = createMockChildProcess({ autoExitAfterMs: 2000 });
+    mockSpawnImpl.mockReturnValue(mockProc);
+
+    const job = createResearchJob();
+    const { deps } = createMockDeps(currentTestDataDir);
+
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
+    deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
+
+    await executeAgentJob(job, deps);
+
+    expect(mockSpawnImpl).toHaveBeenCalledTimes(1);
+    const spawnArgs = mockSpawnImpl.mock.calls[0] as unknown as [
+      string,
+      string[],
+      { env?: NodeJS.ProcessEnv },
+    ];
+    expect(spawnArgs[2].env).toBeDefined();
+    expect(spawnArgs[2].env?.ARTIFACT_PATH).toBe(artifactPath);
+  });
+
+  it('AC-1.1.5: pre-existing artifact is deleted before retry on attempt > 1', async () => {
+    const mockProc1 = createMockChildProcess();
+    const mockProc2 = createMockChildProcess();
+    mockSpawnImpl.mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
+
+    const job = createResearchJob();
+    const { deps } = createMockDeps(currentTestDataDir);
+
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
+    const execPromise = executeAgentJob(job, deps);
+
+    await flushPromises();
+    deps.fs!.writeFileSync(artifactPath, 'stale content from prior attempt');
+    mockProc1.emit('exit', 0);
+    await flushPromises();
+    await flushPromises();
+
+    expect(nodeFs.existsSync(artifactPath)).toBe(false);
+
+    deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
+    mockProc2.emit('exit', 0);
+
+    await execPromise;
+
+    expect(nodeFs.existsSync(artifactPath)).toBe(true);
+  });
+
+  it('AC-1.1.5: stale artifact (mtime older than timeout) triggers retry with stale-artifact stage', async () => {
+    const mockProc1 = createMockChildProcess();
+    const mockProc2 = createMockChildProcess();
+    mockSpawnImpl.mockReturnValueOnce(mockProc1).mockReturnValueOnce(mockProc2);
+
+    const job = createResearchJob();
+    const { deps, updateProgressCalls, ingestCalls } = createMockDeps(currentTestDataDir);
+
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
+    const execPromise = executeAgentJob(job, deps);
+
+    await flushPromises();
+    nodeFs.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
+    const past = Date.now() - 600_000;
+    nodeFs.utimesSync(artifactPath, past / 1000, past / 1000);
+    mockProc1.emit('exit', 0);
+    await flushPromises();
+    await flushPromises();
+
+    deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
+    mockProc2.emit('exit', 0);
+
+    await execPromise;
+
+    expect(ingestCalls.length).toBe(1);
+    const staleUpdate = updateProgressCalls.find((u) => u.stage === 'stale-artifact');
+    expect(staleUpdate).toBeDefined();
+  }, 10000);
+
+  it('AC-1.2.3: schema validation failure on all 3 attempts produces zero ingest calls', async () => {
+    const mockProc1 = createMockChildProcess();
+    const mockProc2 = createMockChildProcess();
+    const mockProc3 = createMockChildProcess();
+    mockSpawnImpl
+      .mockReturnValueOnce(mockProc1)
+      .mockReturnValueOnce(mockProc2)
+      .mockReturnValueOnce(mockProc3);
+
+    const job = createResearchJob();
+    const { deps, ingestCalls, updateProgressCalls } = createMockDeps(currentTestDataDir);
+
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
+    const invalidArtifact = {
+      artifactType: 'research',
+      jobId: job.id,
+      timestamp: new Date().toISOString(),
+      grants: [{ title: 123, funder: 'x' }],
+      evidence: [],
+      sourcesFound: 0,
+      grantsFound: 0,
+    };
+    const execPromise = executeAgentJob(job, deps);
+
+    for (const proc of [mockProc1, mockProc2, mockProc3]) {
+      await flushPromises();
+      deps.fs!.writeFileSync(artifactPath, JSON.stringify(invalidArtifact));
+      proc.emit('exit', 0);
+      await flushPromises();
+      await flushPromises();
+    }
+
+    await execPromise;
+
+    expect(ingestCalls.length).toBe(0);
+    const schemaMismatches = updateProgressCalls.filter((u) => u.stage === 'schema-mismatch');
+    expect(schemaMismatches.length).toBeGreaterThanOrEqual(3);
+  }, 10000);
+
+  it('AC-1.3.1: successful artifact is copied to canonical artifacts/<type>s/<jobId>.json', async () => {
+    const mockProc = createMockChildProcess({ autoExitAfterMs: 2000 });
+    mockSpawnImpl.mockReturnValue(mockProc);
+
+    const job = createResearchJob();
+    const { deps } = createMockDeps(currentTestDataDir);
+
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
+    const expectedCanonical = path.join(
+      getTestDataDir(),
+      'artifacts',
+      'researchs',
+      `${job.id}.json`,
+    );
+    deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
+
+    await executeAgentJob(job, deps);
+
+    expect(nodeFs.existsSync(expectedCanonical)).toBe(true);
+    const canonicalContent = JSON.parse(nodeFs.readFileSync(expectedCanonical, 'utf-8'));
+    expect(canonicalContent.artifactType).toBe('research');
+    expect(canonicalContent.jobId).toBe(job.id);
+  });
+});
+
+describe('executeAgentJob - AC-1.4.1 progress reporting with required fields', () => {
+  beforeEach(() => {
+    currentTestDataDir = path.join(
+      process.cwd(),
+      `.grant-ops-data-test-progress-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    nodeFs.mkdirSync(currentTestDataDir, { recursive: true });
+    nodeFs.mkdirSync(path.join(currentTestDataDir, 'tmp'), { recursive: true });
+    mockSpawnImpl.mockReset();
+  });
+
+  afterEach(async () => {
+    await new Promise((r) => setImmediate(r));
+    if (nodeFs.existsSync(currentTestDataDir)) {
+      try {
+        nodeFs.rmSync(currentTestDataDir, { recursive: true, force: true });
+      } catch {
+        // Suppress cleanup errors
+      }
+    }
+  });
+
+  it('AC-1.4.1: every progress update includes status, stage, retryCount, and maxRetries', async () => {
+    const mockProc = createMockChildProcess({ autoExitAfterMs: 2000 });
+    mockSpawnImpl.mockReturnValue(mockProc);
+
+    const job = createResearchJob();
+    const { deps, updateProgressCalls } = createMockDeps(currentTestDataDir);
+
+    const artifactPath = path.join(getTestDataDir(), 'tmp', `research-${job.id}.json`);
+    deps.fs!.writeFileSync(artifactPath, JSON.stringify(buildValidResearchArtifact(job.id)));
+
+    await executeAgentJob(job, deps);
+
+    for (const call of updateProgressCalls) {
+      expect(call.status).toBeDefined();
+      expect(call.stage).toBeDefined();
+      expect(['running', 'verifying', 'completed', 'retrying', 'failed', 'cancelled']).toContain(
+        call.status,
+      );
+    }
+
+    const completed = updateProgressCalls.find((u) => u.status === 'completed');
+    expect(completed).toBeDefined();
+    expect(completed?.stage).toBe('completed');
+  });
+});

@@ -206,4 +206,74 @@ describe('JobProgress', () => {
       removeSpy.mockRestore();
     });
   });
+
+  describe('AC-1.4.4: 30s slow-job warning', () => {
+    it('shows slow-running alert when running job has not updated in 30s', async () => {
+      let callCount = 0;
+      fetchMock.mockImplementation(async () => {
+        callCount += 1;
+        return new Response(
+          JSON.stringify({
+            id: 'job-1',
+            jobType: 'research',
+            status: 'running',
+            progress: 5,
+            stage: 'fetching',
+            createdAt: new Date().toISOString(),
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        );
+      });
+
+      const start = Date.now();
+      const dateNowSpy = vi.spyOn(Date, 'now');
+      dateNowSpy.mockImplementation(() => start);
+
+      root.render(React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }));
+
+      await waitFor(() => callCount >= 1, 2000);
+      await new Promise((r) => setTimeout(r, 50));
+
+      dateNowSpy.mockImplementation(() => start + 31_000);
+      root.render(React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }));
+      await new Promise((r) => setTimeout(r, 50));
+
+      const alert = container.querySelector('[role="alert"]');
+      expect(alert).not.toBeNull();
+      expect(alert?.textContent).toMatch(/longer than expected/i);
+
+      dateNowSpy.mockRestore();
+    });
+
+    it('does not show slow warning when job is completed', async () => {
+      fetchMock.mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            id: 'job-1',
+            jobType: 'research',
+            status: 'completed',
+            progress: 100,
+            stage: 'completed',
+            createdAt: new Date().toISOString(),
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } },
+        ),
+      );
+
+      const start = Date.now();
+      const dateNowSpy = vi.spyOn(Date, 'now');
+      dateNowSpy.mockImplementation(() => start + 60_000);
+
+      root.render(React.createElement(JobProgress, { jobId: 'job-1', jobType: 'research' }));
+
+      await new Promise((r) => setTimeout(r, 200));
+
+      const slowAlerts = Array.from(container.querySelectorAll('[role="alert"]')).filter(
+        (el) => el.className.includes('slow-warning') || /longer than expected/i.test(el.textContent ?? ''),
+      );
+      expect(slowAlerts).toHaveLength(0);
+
+      dateNowSpy.mockRestore();
+    });
+  });
 });
