@@ -19,6 +19,7 @@ import type {
   Notification,
   OpencodeSettings,
   OrganizationProfile,
+  PlannedExpense,
   RevisionRequest,
   Source,
   SubmissionManifest,
@@ -437,6 +438,7 @@ import {
   saveFormTemplate,
   loadPipelineTransitions,
   savePipelineTransition,
+  loadPlannedExpenses,
 } from '../../../../shared/grant-ops-persistence';
 import { getSqliteState } from '../../../../shared/grant-ops-sqlite';
 
@@ -492,6 +494,18 @@ export async function createExpense(expense: AwardExpense): Promise<void> {
   const expenses = await loadAwardExpenses();
   expenses.push(expense);
   writeAwardExpenses(getSqliteState(), expenses);
+}
+
+export async function getPlannedExpensesByAwardId(awardId: string): Promise<PlannedExpense[]> {
+  const { readPlannedExpenses } = await import('../../../../shared/grant-ops-sqlite');
+  return readPlannedExpenses(getSqliteState()).filter((e) => e.awardId === awardId);
+}
+
+export async function addPlannedExpense(expense: PlannedExpense): Promise<void> {
+  const { writePlannedExpenses } = await import('../../../../shared/grant-ops-sqlite');
+  const expenses = await loadPlannedExpenses();
+  expenses.push(expense);
+  writePlannedExpenses(getSqliteState(), expenses);
 }
 
 export async function getReportDeadlinesByAwardId(awardId: string): Promise<AwardReportDeadline[]> {

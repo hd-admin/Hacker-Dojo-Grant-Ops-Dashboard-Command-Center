@@ -1,0 +1,140 @@
+/* OutreachPanel CSS Module */
+
+.outreachHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.outreachTitle {
+  margin-bottom: 0;
+}
+
+.outreachForm {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.formField {
+  margin-bottom: 8px;
+}
+
+.actionRow {
+  display: flex;
+  gap: 8px;
+}
+
+.outreachList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.outreachItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 10px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  gap: 12px;
+}
+
+.outreachItemOverdue {
+  border-color: var(--danger);
+  border-width: 1.5px;
+}
+
+.outreachContent {
+  flex: 1;
+  min-width: 0;
+}
+
+.outreachMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.outreachMethodBadge {
+  font-family: var(--mono);
+  font-size: var(--font-size-9);
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.outreachTitleText {
+  font-weight: 500;
+  color: var(--text);
+}
+
+.outreachTitleOverdue {
+  color: var(--danger);
+}
+
+.outreachDate {
+  color: var(--text-muted);
+  font-size: var(--font-size-12);
+}
+
+.outreachDateOverdue {
+  color: var(--danger);
+}
+
+.outreachNotes {
+  color: var(--text-dim);
+  font-size: var(--font-size-13);
+  margin-top: 4px;
+}
+
+.outreachContact {
+  color: var(--text-muted);
+  font-size: var(--font-size-12);
+  margin-top: 2px;
+}
+
+.outreachStatusBadge {
+  font-family: var(--mono);
+  font-size: var(--font-size-9);
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.outreachStatusAwaiting {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.outreachStatusConfirmed {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.outreachStatusDeclined {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.outreachStatusNeutral {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.outreachDeleteBtn {
+  color: var(--text-muted);
+}

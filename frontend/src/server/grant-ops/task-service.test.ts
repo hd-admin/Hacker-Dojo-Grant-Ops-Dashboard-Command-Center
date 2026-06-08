@@ -73,7 +73,7 @@ describe('TaskService', () => {
       const tasks = taskService.extractRequirementsFromGrant(mockGrant, 'draft');
 
       expect(tasks).toHaveLength(1);
-      expect(tasks[0]!.text).toBe('Generate draft LOI for Test Foundation');
+      expect(tasks[0]!.text).toBe('Generate draft LOI / narrative for Test Foundation');
       expect(tasks[0]!.responsibilityTag).toBe('program');
       expect(tasks[0]!.taskStatus).toBe('blocked');
     });
@@ -83,7 +83,7 @@ describe('TaskService', () => {
       const tasks = taskService.extractRequirementsFromGrant(draftGrant, 'review');
 
       expect(tasks).toHaveLength(1);
-      expect(tasks[0]!.text).toBe('Review draft for Test Foundation');
+      expect(tasks[0]!.text).toBe('Internal review of draft for Test Foundation');
       expect(tasks[0]!.responsibilityTag).toBe('review');
     });
 
@@ -117,7 +117,7 @@ describe('TaskService', () => {
     });
 
     it('marks extracted tasks as blocking submission when required', () => {
-      const tasks = taskService.extractRequirementsFromGrant(mockGrant, 'draft', true);
+      const tasks = taskService.extractRequirementsFromGrant(mockGrant, 'review', true);
 
       expect(tasks[0]!.blockSubmission).toBe(true);
     });

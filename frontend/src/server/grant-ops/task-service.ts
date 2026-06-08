@@ -12,8 +12,23 @@ import 'server-only';
  * - Submission-blocking: mandatory tasks must be completed before submission-ready
  */
 
-import type { Grant, Task, TaskStatus } from '../../../../shared/types';
+import type { Task, TaskStatus } from '../../../../shared/types';
 import { getDependencies } from './dependencies';
+
+// Re-export the canonical requirement-extraction API from the
+// task-automation-service module. Audit pass 9 re-homed these
+// helpers so the requirement template map lives in one place
+// (task-automation-service.ts) but call sites in task-service
+// and the rest of the codebase continue to work via this
+// re-export.
+export {
+  REQUIREMENT_TEMPLATES,
+  extractRequirementsFromGrant,
+  extractAllRequiredRequirements,
+  materializeAutoTasksForGrant,
+  type RequirementKey,
+  type RequirementTemplate,
+} from './task-automation-service';
 
 // ==================== Types ====================
 
@@ -58,70 +73,6 @@ export type RequirementPhase =
   | 'follow-up'
   | 'maintenance'
   | 'program';
-
-// ==================== Requirement Extraction ====================
-
-const REQUIREMENT_TEMPLATES: Record<
-  RequirementPhase,
-  {
-    textTemplate: (funder: string, title: string) => string;
-    responsibilityTag: 'finance' | 'program' | 'review' | 'follow-up';
-  }
-> = {
-  draft: {
-    textTemplate: (funder) => `Generate draft LOI for ${funder}`,
-    responsibilityTag: 'program',
-  },
-  review: {
-    textTemplate: (funder) => `Review draft for ${funder}`,
-    responsibilityTag: 'review',
-  },
-  finance: {
-    textTemplate: (funder, title) => `Verify budget and finance for ${funder} (${title})`,
-    responsibilityTag: 'finance',
-  },
-  'follow-up': {
-    textTemplate: (funder) => `Schedule follow-up for ${funder}`,
-    responsibilityTag: 'follow-up',
-  },
-  maintenance: {
-    textTemplate: (funder) => `Maintain records for ${funder}`,
-    responsibilityTag: 'follow-up',
-  },
-  program: {
-    textTemplate: (funder) => `Program evaluation for ${funder}`,
-    responsibilityTag: 'program',
-  },
-};
-
-/**
- * Extract task requirements from a grant based on phase.
- * These are auto-generated tasks that track what needs to happen for each grant.
- */
-export function extractRequirementsFromGrant(
-  grant: Grant,
-  phase: RequirementPhase,
-  blockSubmission = false,
-): Partial<Task>[] {
-  const template = REQUIREMENT_TEMPLATES[phase];
-  if (!template) return [];
-
-  const deps = getDependencies();
-  const idGenerator = deps.idGenerator;
-
-  const task: Partial<Task> = {
-    id: idGenerator.generateId('task'),
-    text: template.textTemplate(grant.funder, grant.title),
-    completed: false,
-    grantId: grant.id,
-    taskStatus: 'blocked' as TaskStatus,
-    responsibilityTag: template.responsibilityTag,
-    blockSubmission,
-    dependsOn: [],
-  };
-
-  return [task];
-}
 
 // ==================== Task Creation ====================
 

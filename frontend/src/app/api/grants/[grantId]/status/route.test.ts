@@ -6,7 +6,7 @@ import {
 } from '../../../../../../../shared/grant-ops-persistence';
 import type { Grant } from '../../../../../../../shared/types';
 import * as repository from '../../../../../server/grant-ops/repository';
-import { PATCH } from './route';
+import { PATCH, POST } from './route';
 
 function createGrant(id: string): Grant {
   return {
@@ -181,5 +181,47 @@ describe('/api/grants/[grantId]/status', () => {
 
     expect(response.status).toBe(200);
     expect((await repository.getGrant(grant.id))?.status).toBe('draft');
+  });
+
+  // ===== Method-reconciliation regression tests =====
+  // PipelineView.tsx historically calls /api/grants/[id]/status
+  // with method: 'POST' for the move-menu and decline flows. The
+  // route now exports POST as an alias for PATCH; these tests lock
+  // in that the alias continues to work and that the validation
+  // surface is identical between the two methods.
+
+  it('POST is accepted as an alias for PATCH and updates status', async () => {
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'draft', statusLabel: 'Drafting' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+
+    expect(response.status).toBe(200);
+    expect((await repository.getGrant(grant.id))?.status).toBe('draft');
+  });
+
+  it('POST and PATCH share the same validation surface (400 on bad payload)', async () => {
+    const postResponse = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'unknown' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const patchResponse = await PATCH(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'unknown' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    expect(postResponse.status).toBe(400);
+    expect(patchResponse.status).toBe(400);
   });
 });

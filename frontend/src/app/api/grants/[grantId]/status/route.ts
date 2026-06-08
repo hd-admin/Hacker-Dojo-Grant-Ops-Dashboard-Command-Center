@@ -33,6 +33,29 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ grantId: string }> },
 ): Promise<NextResponse> {
+  return updateStatus(request, params);
+}
+
+/**
+ * POST is exported as an alias for PATCH so the PipelineView client
+ * (which historically uses fetch with method: 'POST' for the
+ * move-menu and decline workflows) is reconciled with the
+ * server-side PATCH handler. The two methods share the same
+ * implementation; the regression test in
+ * frontend/src/app/api/grants/[grantId]/status/route.test.ts locks
+ * in that POST and PATCH are both accepted.
+ */
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ grantId: string }> },
+): Promise<NextResponse> {
+  return updateStatus(request, params);
+}
+
+async function updateStatus(
+  request: NextRequest,
+  params: Promise<{ grantId: string }>,
+): Promise<NextResponse> {
   await connection();
   try {
     const { grantId } = await params;

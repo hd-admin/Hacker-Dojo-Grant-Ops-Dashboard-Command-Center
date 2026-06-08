@@ -8,6 +8,7 @@ import type {
   PipelineViewMode,
   ResponsibilityTag,
 } from '../../../shared/types';
+import { classifyGrantDeadline, type UrgencyBucket } from '../../../shared/deadline-classifier';
 import { client } from '../lib/grant-ops-client';
 import styles from './PipelineView.module.css';
 
@@ -154,8 +155,9 @@ function renderDeadlineCell(grant: Grant): React.ReactNode {
 }
 
 function getUrgency(grant: Grant): UrgencyFilter {
-  if (grant.daysOut < 0) return 'overdue';
-  if (grant.daysOut <= 30) return 'soon';
+  const bucket: UrgencyBucket = classifyGrantDeadline(grant);
+  if (bucket === 'overdue') return 'overdue';
+  if (bucket === 'urgent' || bucket === 'soon') return 'soon';
   return 'normal';
 }
 

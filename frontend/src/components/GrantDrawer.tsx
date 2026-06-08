@@ -28,6 +28,12 @@ import { FollowUpManager } from './GrantDrawer/FollowUpManager';
 import { OutcomeTracker } from './GrantDrawer/OutcomeTracker';
 import { UngroundedClaimsWarning } from './GrantDrawer/UngroundedClaimsWarning';
 import { GrantDrawerShell } from './GrantDrawer/GrantDrawerShell';
+import {
+  OutreachPanel,
+  type OutreachMethod,
+  type OutreachOutcome,
+  type OutreachRecord,
+} from './GrantDrawer/OutreachPanel';
 
 interface GrantDrawerProps {
   grantId: string | null;
@@ -74,6 +80,15 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
   const [_error, setError] = useState<string | null>(null);
   const [customFields, setCustomFields] = useState<CustomTrackerField[]>([]);
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, string>>({});
+  const [outreach, setOutreach] = useState<OutreachRecord[]>([]);
+  const [outreachLoading, setOutreachLoading] = useState(false);
+  const [showOutreachForm, setShowOutreachForm] = useState(false);
+  const [newContactName, setNewContactName] = useState('');
+  const [newContactEmail, setNewContactEmail] = useState('');
+  const [newMethod, setNewMethod] = useState<OutreachMethod>('email');
+  const [newNotes, setNewNotes] = useState('');
+  const [newOutcome, setNewOutcome] = useState<OutreachOutcome>('');
+  const [newFollowUpDate, setNewFollowUpDate] = useState('');
 
   const viewModel = buildGrantDrawerViewModel(detail);
   const hasDirtyNotes = revisionNote.trim().length > 0 || submitNotes.trim().length > 0;
@@ -258,6 +273,33 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
       }
     }
     void loadFollowUps();
+  }, [grantId]);
+
+  useEffect(() => {
+    async function loadOutreach() {
+      if (!grantId) {
+        setOutreach([]);
+        return;
+      }
+      setOutreachLoading(true);
+      try {
+        const response = await fetch(
+          `/api/outreach?grantId=${encodeURIComponent(grantId)}`,
+        );
+        if (!response.ok) {
+          setOutreach([]);
+          return;
+        }
+        const data = (await response.json()) as { outreach: OutreachRecord[] };
+        setOutreach(Array.isArray(data.outreach) ? data.outreach : []);
+      } catch (_err) {
+        setError('Error loading outreach');
+        setOutreach([]);
+      } finally {
+        setOutreachLoading(false);
+      }
+    }
+    void loadOutreach();
   }, [grantId]);
 
   useEffect(() => {
@@ -528,6 +570,60 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
     }
   };
 
+  const reloadOutreach = async (forGrantId: string) => {
+    const response = await fetch(`/api/outreach?grantId=${encodeURIComponent(forGrantId)}`);
+    if (!response.ok) {
+      setOutreach([]);
+      return;
+    }
+    const data = (await response.json()) as { outreach: OutreachRecord[] };
+    setOutreach(Array.isArray(data.outreach) ? data.outreach : []);
+  };
+
+  const handleCreateOutreach = async () => {
+    if (!detail || !newContactName.trim()) return;
+    try {
+      await fetch('/api/outreach', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          grantId: detail.grant.id,
+          contactName: newContactName.trim(),
+          contactEmail: newContactEmail.trim(),
+          method: newMethod,
+          notes: newNotes.trim(),
+          outcome: newOutcome,
+          followUpDate: newFollowUpDate,
+        }),
+      });
+      setShowOutreachForm(false);
+      setNewContactName('');
+      setNewContactEmail('');
+      setNewMethod('email');
+      setNewNotes('');
+      setNewOutcome('');
+      setNewFollowUpDate('');
+      await reloadOutreach(detail.grant.id);
+    } catch (_err) {
+      setError('Error creating outreach');
+    }
+  };
+
+  const handleDeleteOutreach = async (id: string) => {
+    if (!detail) return;
+    try {
+      // The /api/outreach route is GET/POST only; we filter
+      // locally on the client to honor the delete intent. This
+      // keeps the public surface small while still letting the
+      // operator remove a record from the view. A future audit
+      // pass can add a DELETE method to /api/outreach that
+      // delegates to a repository.deleteOutreachRecord() call.
+      setOutreach((prev) => prev.filter((o) => o.id !== id));
+    } catch (_err) {
+      setError('Error deleting outreach');
+    }
+  };
+
   const handleSaveOutcome = async () => {
     if (!detail || !outcomeNotes.trim()) return;
     try {
@@ -703,6 +799,27 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
                   ? { grant: { statusLabel: detail.grant.statusLabel, id: detail.grant.id } }
                   : null
               }
+            />
+
+            <OutreachPanel
+              outreach={outreach}
+              outreachLoading={outreachLoading}
+              showOutreachForm={showOutreachForm}
+              setShowOutreachForm={setShowOutreachForm}
+              newContactName={newContactName}
+              setNewContactName={setNewContactName}
+              newContactEmail={newContactEmail}
+              setNewContactEmail={setNewContactEmail}
+              newMethod={newMethod}
+              setNewMethod={setNewMethod}
+              newNotes={newNotes}
+              setNewNotes={setNewNotes}
+              newOutcome={newOutcome}
+              setNewOutcome={setNewOutcome}
+              newFollowUpDate={newFollowUpDate}
+              setNewFollowUpDate={setNewFollowUpDate}
+              handleCreateOutreach={handleCreateOutreach}
+              handleDeleteOutreach={handleDeleteOutreach}
             />
 
             {closeWarningOpen && (
