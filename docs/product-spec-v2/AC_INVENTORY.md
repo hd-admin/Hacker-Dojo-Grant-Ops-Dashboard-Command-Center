@@ -6,6 +6,7 @@
 > Updated: 2026-06-08 (audit pass 2: ticked 26 Release Gate checkboxes in `docs/product-spec-v2/10-technical-acceptance-criteria.md:995-1020` with AC_INVENTORY row pointers; re-verified the no-shim and no-xlsx invariants; re-ran the full verification chain against a 186-file vitest suite)
 > Updated: 2026-06-08 (audit pass 3: corrected `.agent/baseline-evidence.txt` Step 1.8 to record the actual successful `run-test-batches.sh` exit (BATCH 8 attempt 1 transient failure retried to pass on attempt 2; final `=== ALL BATCHES COMPLETE (186 files, 0 failed batches) ===`); expanded the development_result `files_changed` to list all four files modified in this audit pass)
 > Updated: 2026-06-08 (audit pass 4: re-verified the full verification chain with fresh command output; all gates green; 186 test files, 0 failed batches; no-shim/no-xlsx invariants confirmed)
+> Updated: 2026-06-08 (audit pass 5: re-ran the full verification chain with fresh command output; all gates green; 186 test files, 0 failed batches; no-shim and no-xlsx invariants re-confirmed; zero style-guide regressions)
 > Method: Systematic grep of codebase + test verification + in-session CI gate re-execution
 
 ## Summary
