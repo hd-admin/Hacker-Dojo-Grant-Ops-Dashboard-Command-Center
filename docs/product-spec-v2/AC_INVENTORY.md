@@ -5,6 +5,7 @@
 > Updated: 2026-06-08 (audit pass: `shared/grant-ops-sqlite.ts` gained `import 'server-only'`, `tests/no-predev-shim.test.ts` added, `tests/e2e/{fresh-user-onboarding,distribution-smoke,startup-verification}.spec.ts` gained negative log assertions, `tests/no-xlsx-package.test.ts` gained positive exceljs round-trip)
 > Updated: 2026-06-08 (audit pass 2: ticked 26 Release Gate checkboxes in `docs/product-spec-v2/10-technical-acceptance-criteria.md:995-1020` with AC_INVENTORY row pointers; re-verified the no-shim and no-xlsx invariants; re-ran the full verification chain against a 186-file vitest suite)
 > Updated: 2026-06-08 (audit pass 3: corrected `.agent/baseline-evidence.txt` Step 1.8 to record the actual successful `run-test-batches.sh` exit (BATCH 8 attempt 1 transient failure retried to pass on attempt 2; final `=== ALL BATCHES COMPLETE (186 files, 0 failed batches) ===`); expanded the development_result `files_changed` to list all four files modified in this audit pass)
+> Updated: 2026-06-08 (audit pass 4: re-verified the full verification chain with fresh command output; all gates green; 186 test files, 0 failed batches; no-shim/no-xlsx invariants confirmed)
 > Method: Systematic grep of codebase + test verification + in-session CI gate re-execution
 
 ## Summary
@@ -212,6 +213,7 @@ Post-sweep new tests added: 9 (covering 8 unverified ACs)
 Audit pass (2026-06-08): style-guide greps clean, `shared/grant-ops-sqlite.ts` gained `import 'server-only'`, `tests/no-predev-shim.test.ts` added, `tests/e2e/{fresh-user-onboarding,distribution-smoke,startup-verification}.spec.ts` gained negative log assertions, `tests/no-xlsx-package.test.ts` gained positive exceljs round-trip.
 Audit pass 2 (2026-06-08): no-shim and no-xlsx invariants re-verified via `tests/no-predev-shim.test.ts` and `tests/no-xlsx-package.test.ts`; release-gate checkboxes ticked at `docs/product-spec-v2/10-technical-acceptance-criteria.md:995-1020`; e2e onboarding specs (`startup-verification`, `fresh-user-onboarding`, `distribution-smoke`) structurally re-checked and the startup-verification spec gained a new negative-log assertion for the legacy shim strings.
 Audit pass 3 (2026-06-08): corrected `.agent/baseline-evidence.txt` Step 1.8 to record the actual successful `run-test-batches.sh` exit (BATCH 8 attempt 1 transient failure retried to pass on attempt 2; final `=== ALL BATCHES COMPLETE (186 files, 0 failed batches) ===`); updated the development_result `files_changed` to list every file modified in this audit pass.
+Audit pass 4 (2026-06-08): re-verified the full verification chain with fresh command output; all gates green; 186 test files, 0 failed batches; no-shim/no-xlsx invariants confirmed via tests/no-predev-shim.test.ts and tests/no-xlsx-package.test.ts; release-gate checkboxes ticked at docs/product-spec-v2/10-technical-acceptance-criteria.md:995-1020.
 
 ## File-Path Reconciliation
 
