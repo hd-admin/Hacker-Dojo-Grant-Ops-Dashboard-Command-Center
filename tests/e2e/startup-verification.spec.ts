@@ -129,4 +129,32 @@ exit 0
       }
     }
   });
+
+  test('setup-check output is free of the legacy predev shim strings', () => {
+    let combinedOutput = '';
+    try {
+      const out = execSync('pnpm setup:check', {
+        cwd: process.cwd(),
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: 60_000,
+      });
+      combinedOutput = out;
+    } catch (err) {
+      const e = err as { stdout?: string; stderr?: string; message?: string };
+      combinedOutput = [e.stdout, e.stderr, e.message].filter(Boolean).join('\n');
+    }
+    expect(
+      combinedOutput,
+      'setup-check output must not reference the legacy ensure-better-sqlite3 predev shim',
+    ).not.toContain('ensure-better-sqlite3');
+    expect(
+      combinedOutput,
+      'setup-check output must not reference a predev hook (see tests/no-predev-shim.test.ts)',
+    ).not.toContain('predev');
+    expect(
+      combinedOutput,
+      "setup-check output must not surface the legacy `could not resolve a real Node binary` error",
+    ).not.toContain('could not resolve a real Node binary');
+  });
 });

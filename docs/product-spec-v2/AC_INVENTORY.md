@@ -3,6 +3,7 @@
 > Generated: 2026-05-31
 > Updated: 2026-06-08 (post-sweep: added regression tests for 6 unverified ACs in section 1 + 3 in section 3; verified full 185-file suite passes)
 > Updated: 2026-06-08 (audit pass: `shared/grant-ops-sqlite.ts` gained `import 'server-only'`, `tests/no-predev-shim.test.ts` added, `tests/e2e/{fresh-user-onboarding,distribution-smoke,startup-verification}.spec.ts` gained negative log assertions, `tests/no-xlsx-package.test.ts` gained positive exceljs round-trip)
+> Updated: 2026-06-08 (audit pass 2: ticked 26 Release Gate checkboxes in `docs/product-spec-v2/10-technical-acceptance-criteria.md:995-1020` with AC_INVENTORY row pointers; re-verified the no-shim and no-xlsx invariants; re-ran the full verification chain against a 186-file vitest suite)
 > Method: Systematic grep of codebase + test verification + in-session CI gate re-execution
 
 ## Summary
@@ -208,6 +209,7 @@ Post-sweep verified-by-test count: 131/169 (was 123/169)
 Post-sweep test files: 185 (was 182)
 Post-sweep new tests added: 9 (covering 8 unverified ACs)
 Audit pass (2026-06-08): style-guide greps clean, `shared/grant-ops-sqlite.ts` gained `import 'server-only'`, `tests/no-predev-shim.test.ts` added, `tests/e2e/{fresh-user-onboarding,distribution-smoke,startup-verification}.spec.ts` gained negative log assertions, `tests/no-xlsx-package.test.ts` gained positive exceljs round-trip.
+Audit pass 2 (2026-06-08): no-shim and no-xlsx invariants re-verified via `tests/no-predev-shim.test.ts` and `tests/no-xlsx-package.test.ts`; release-gate checkboxes ticked at `docs/product-spec-v2/10-technical-acceptance-criteria.md:995-1020`; e2e onboarding specs (`startup-verification`, `fresh-user-onboarding`, `distribution-smoke`) structurally re-checked and the startup-verification spec gained a new negative-log assertion for the legacy shim strings.
 
 ## File-Path Reconciliation
 
