@@ -11,7 +11,7 @@ export const PIPELINE_TRANSITIONS: Record<GrantStatus, GrantStatus[]> = {
   awarded: ['closed'],
   declined: ['closed', 'archived'],
   closed: ['archived'],
-  archived: [],
+  archived: ['matched'],
 };
 
 export function validateTransition(

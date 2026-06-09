@@ -152,3 +152,67 @@ export async function loadGrantDetail(grantId: string): Promise<GrantDetailRespo
     ),
   };
 }
+
+/**
+ * Archive a grant in-process. The archive actually flows through the existing
+ * /api/grants/[grantId]/status PATCH route from the UI; this helper exists for
+ * tests and the in-process seed-rubric endpoint that want the same side
+ * effects (status='archived' + archivedAt timestamp + audit event) without
+ * going through HTTP.
+ */
+export async function archiveGrant(
+  grantId: string,
+  archivedBy: string,
+): Promise<Grant | null> {
+  const deps = getDependencies();
+  const grant = await deps.repository.getGrant(grantId);
+  if (!grant) return null;
+  const archivedAt = new Date().toISOString();
+  await deps.repository.updateGrant(grantId, {
+    status: 'archived',
+    statusLabel: 'Archived',
+    archivedAt,
+  });
+  await deps.repository.addAuditEvent({
+    id: deps.idGenerator.generateId('audit'),
+    eventType: 'grant_archived',
+    entityId: grantId,
+    entityType: 'grant',
+    actorLabel: archivedBy,
+    timestamp: archivedAt,
+    metadata: { from: grant.status, to: 'archived' },
+  });
+  const updated = await deps.repository.getGrant(grantId);
+  return updated;
+}
+
+/**
+ * Reverse of archiveGrant: clears archivedAt and returns the grant to its
+ * prior status (defaulting to 'matched' when no prior status is recorded).
+ */
+export async function unarchiveGrant(
+  grantId: string,
+  unarchivedBy: string,
+): Promise<Grant | null> {
+  const deps = getDependencies();
+  const grant = await deps.repository.getGrant(grantId);
+  if (!grant) return null;
+  const unarchivedAt = new Date().toISOString();
+  const nextStatus = grant.status === 'archived' ? 'matched' : grant.status;
+  await deps.repository.updateGrant(grantId, {
+    status: nextStatus,
+    statusLabel: nextStatus === 'matched' ? 'Matched' : grant.statusLabel,
+    ...(nextStatus === 'matched' ? { archivedAt: null as unknown as string } : {}),
+  });
+  await deps.repository.addAuditEvent({
+    id: deps.idGenerator.generateId('audit'),
+    eventType: 'grant_unarchived',
+    entityId: grantId,
+    entityType: 'grant',
+    actorLabel: unarchivedBy,
+    timestamp: unarchivedAt,
+    metadata: { from: 'archived', to: nextStatus },
+  });
+  const updated = await deps.repository.getGrant(grantId);
+  return updated;
+}

@@ -8,7 +8,15 @@ import 'server-only';
  * Prompts are tested for no placeholder text (AC-15.7.1).
  */
 
+import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 import type { AgentTaskType } from '../../../../shared/types';
+import {
+  FitRubricSchema,
+  ResearchEvidenceContentSchema,
+  ResearchGrantSchema,
+  ResearchGrantSchemaStrict,
+} from '../../../../shared/schemas';
 import { HARDCODED_PROFILE } from './hardcoded-profile';
 
 function getOrgContext(): string {
@@ -104,7 +112,7 @@ export function buildPrompt(
   }
 }
 
-function buildResearchPrompt(
+export function buildResearchPrompt(
   params: Record<string, unknown>,
   artifactPath: string,
   retryFeedback?: string,
@@ -118,15 +126,28 @@ Query: ${searchQuery || 'Find all available grants relevant to Hacker Dojo'}
 Sources: ${sourceUrls.length > 0 ? sourceUrls.join('\n  - ') : 'All configured sources'}
 
 ## Task
-Search for grant opportunities matching Hacker Dojo's profile. For each grant found, extract:
+Search for grant opportunities matching Hacker Dojo's profile. For each grant found, you MUST return:
 - Title, funder name, award amount, deadline
 - Eligibility requirements, application URL
-- Relevant tags and categories
+- A full fitRubric (5 dimensions, each with score 0-100 AND a 1-2 sentence justification)
+- A changeClass: 'new' if the grant has never been seen, 'updated' if any tracked field changed, or 'unchanged' if it is identical to a previous crawl
+- An evidence object with at least one of: deadline / award_amount / eligibility / requirements / fit_score (each a short string paraphrased from the source)
+- lastSeenConfirmed: true (the LLM has seen this grant in the current crawl)
+
+### Rubric scoring (REQUIRED for every grant)
+Score each dimension 0-100 with reference to Hacker Dojo's profile attributes:
+- missionAlignment: how well does the grant align with Hacker Dojo's mission?
+- geographicFocus: does it serve the Bay Area / Silicon Valley?
+- programTrackrecord: has Hacker Dojo delivered this kind of program before?
+- budgetCapacity: is the award size within Hacker Dojo's $25K-$250K band?
+- partnershipReadiness: does Hacker Dojo have the partnerships required?
+
+End the rubric with overallRationale (1-2 sentence summary) and rubricVersion: 1.
 
 If you cannot find grants or access sources, explain why in the errors array.`;
 
   const qualityReq =
-    'Must find at least 1 grant OR include errors explaining why none were found. Grants must have non-empty title and funder. At least one grant should have award, deadline, or eligibility info.';
+    'Must find at least 1 grant OR include errors explaining why none were found. EVERY grant MUST include a complete fitRubric (5 dimensions with justifications + overallRationale + rubricVersion), a changeClass, an evidence object with at least one entry, and lastSeenConfirmed: true. Per-dimension scores MUST vary across grants so the operator can distinguish them at a glance.';
 
   return buildPromptHeader(
     'research',
@@ -410,40 +431,15 @@ If no categories can be extracted, explain why in the errors array.`;
   );
 }
 
-const RESEARCH_SCHEMA_JSON = `{
-  "artifactType": "research",
-  "jobId": "string",
-  "timestamp": "string (ISO format)",
-  "grants": [
-    {
-      "title": "string (required, non-empty)",
-      "funder": "string (required, non-empty)",
-      "funderShort": "string",
-      "award": "string (optional)",
-      "awardSort": 0,
-      "deadline": "string (optional)",
-      "deadlineConfidence": "exact | estimated | rolling | unknown",
-      "eligibility": "string (optional)",
-      "requirements": ["string"],
-      "externalUrl": "string (optional)",
-      "summary": "string (optional)",
-      "tags": ["string"],
-      "category": "string (optional)"
-    }
-  ],
-  "evidence": [
-    {
-      "grantTitle": "string",
-      "evidenceType": "fit_score | deadline | award_amount | eligibility | requirements",
-      "content": "string",
-      "sourceUrl": "string (optional)"
-    }
-  ],
-  "rationale": "string (optional)",
-  "sourcesFound": 0,
-  "grantsFound": 0,
-  "errors": ["string (optional)"]
-}`;
+// Re-derived from the Zod schema to keep the JSON contract in lockstep with the
+// parsed-at-ingest type. If you change the Zod schema below, this constant
+// updates automatically. The drift-detection test in
+// prompt-templates-rubric.test.ts compares the names against ResearchGrantSchema
+// to catch any divergence introduced by manual edits.
+const RESEARCH_STRICT_JSON_SCHEMA = zodToJsonSchema(ResearchGrantSchemaStrict, {
+  $refStrategy: 'none',
+});
+const RESEARCH_SCHEMA_JSON = JSON.stringify(RESEARCH_STRICT_JSON_SCHEMA, null, 2);
 
 const DRAFT_SCHEMA_JSON = `{
   "artifactType": "draft",

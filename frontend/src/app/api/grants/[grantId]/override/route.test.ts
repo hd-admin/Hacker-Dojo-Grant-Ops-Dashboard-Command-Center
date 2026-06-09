@@ -257,6 +257,81 @@ describe('/api/grants/[grantId]/override route', () => {
     expect(data.error).toMatch(/Invalid task status/i);
   });
 
+  it('overrides fitRubric with full rubric stored and stringified-truncated audit metadata', async () => {
+    const initialRubric = {
+      missionAlignment: { score: 70, justification: 'initial mission' },
+      geographicFocus: { score: 70, justification: 'initial geo' },
+      programTrackrecord: { score: 70, justification: 'initial program' },
+      budgetCapacity: { score: 70, justification: 'initial budget' },
+      partnershipReadiness: { score: 70, justification: 'initial partnership' },
+      overallRationale: 'initial overall',
+      rubricVersion: 1,
+    };
+    await repository.updateGrant(grant.id, { fitRubric: initialRubric });
+
+    const newRubric = {
+      missionAlignment: { score: 92, justification: 'tightened after board review' },
+      geographicFocus: { score: 88, justification: 'added Bay Area specificity' },
+      programTrackrecord: { score: 84, justification: 'incorporated Q1 case study' },
+      budgetCapacity: { score: 80, justification: 'aligned to $50K-$150K band' },
+      partnershipReadiness: { score: 78, justification: 'co-applicant confirmed' },
+      overallRationale: 'revised overall rationale',
+      rubricVersion: 1,
+    };
+
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/override`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          field: 'fitRubric',
+          newValue: newRubric,
+          rationale: 'Board approved revised rubric',
+          overrideType: 'rubric',
+        }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+
+    expect(response.status).toBe(200);
+    const data = await response.json();
+    // Full object is stored on the grant
+    expect(data.fitRubric.missionAlignment.score).toBe(92);
+    expect(data.fitRubric.overallRationale).toBe('revised overall rationale');
+    // Audit entry: previousValue/newValue are stringified-truncated JSON
+    const events = await repository.getAuditEvents();
+    const overrideEvent = events.find((e) => e.eventType === 'human_override');
+    expect(overrideEvent?.metadata?.overrideType).toBe('rubric');
+    expect(overrideEvent?.metadata?.field).toBe('fitRubric');
+    expect(typeof overrideEvent?.metadata?.previousValue).toBe('string');
+    expect(typeof overrideEvent?.metadata?.newValue).toBe('string');
+    const prev = overrideEvent!.metadata!.previousValue as string;
+    const next = overrideEvent!.metadata!.newValue as string;
+    expect(prev.length).toBeLessThanOrEqual(200);
+    expect(next.length).toBeLessThanOrEqual(200);
+    // The previous rubric was small (under 200 chars), so it should be valid JSON
+    // containing the original rationale.
+    expect(JSON.parse(prev).overallRationale).toBe('initial overall');
+    expect(JSON.parse(next).overallRationale).toBe('revised overall rationale');
+  });
+
+  it('rejects fitRubric override with an invalid value', async () => {
+    const response = await POST(
+      new Request(`http://localhost/api/grants/${grant.id}/override`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          field: 'fitRubric',
+          newValue: { not: 'a rubric' },
+          rationale: 'should fail',
+          overrideType: 'rubric',
+        }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    expect(response.status).toBe(400);
+  });
+
   it('rejects task override when task belongs to a different grant', async () => {
     // Create a second grant with its own task
     const otherGrant = createGrant(`other-grant-${Date.now()}`);

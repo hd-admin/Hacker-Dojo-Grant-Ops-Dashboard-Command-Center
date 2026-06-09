@@ -53,6 +53,35 @@ describe('grant-ops-persistence', () => {
     expect(loaded[0].title).toContain('-test');
   });
 
+  it('round-trips fitRubric + lastSeenAt + lastUpdatedAt on a grant', async () => {
+    const original = await loadGrants();
+    const target = original[0];
+    if (!target) throw new Error('expected at least one seed grant');
+    const enriched = {
+      ...target,
+      fitRubric: {
+        missionAlignment: { score: 90, justification: 'm' },
+        geographicFocus: { score: 80, justification: 'g' },
+        programTrackrecord: { score: 85, justification: 'p' },
+        budgetCapacity: { score: 75, justification: 'b' },
+        partnershipReadiness: { score: 80, justification: 'r' },
+        overallRationale: 'overall good',
+        rubricVersion: 1,
+      },
+      lastSeenAt: '2026-05-01T00:00:00.000Z',
+      lastUpdatedAt: '2026-05-01T00:00:00.000Z',
+      archivedAt: '2026-05-02T00:00:00.000Z',
+    };
+    await saveGrants([enriched, ...original.slice(1)]);
+    const loaded = await loadGrants();
+    const found = loaded.find((g) => g.id === target.id);
+    expect(found?.fitRubric?.overallRationale).toBe('overall good');
+    expect(found?.fitRubric?.missionAlignment.score).toBe(90);
+    expect(found?.lastSeenAt).toBe('2026-05-01T00:00:00.000Z');
+    expect(found?.lastUpdatedAt).toBe('2026-05-01T00:00:00.000Z');
+    expect(found?.archivedAt).toBe('2026-05-02T00:00:00.000Z');
+  });
+
   it('loadProfile returns a profile after reset', async () => {
     const profile = await loadProfile();
     expect(profile).toBeDefined();

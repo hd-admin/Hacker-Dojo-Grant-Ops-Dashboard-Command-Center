@@ -20,6 +20,31 @@ export interface FitScoreBreakdown {
   partnershipReadiness: number;
 }
 
+export interface FitRubricDimension {
+  score: number;
+  justification: string;
+}
+
+export interface FitRubric {
+  missionAlignment: FitRubricDimension;
+  geographicFocus: FitRubricDimension;
+  programTrackrecord: FitRubricDimension;
+  budgetCapacity: FitRubricDimension;
+  partnershipReadiness: FitRubricDimension;
+  overallRationale: string;
+  rubricVersion: number;
+}
+
+export interface ResearchEvidenceContent {
+  deadline?: string;
+  award_amount?: string;
+  eligibility?: string;
+  requirements?: string;
+  fit_score?: string;
+}
+
+export type ResearchChangeClass = 'new' | 'updated' | 'unchanged';
+
 export interface ChecklistItem {
   label: string;
   done: boolean;
@@ -134,7 +159,7 @@ export interface HumanOverride {
   rationale: string;
   overriddenAt: string;
   overriddenBy: string;
-  overrideType: 'score' | 'category' | 'task' | 'status';
+  overrideType: 'score' | 'category' | 'task' | 'status' | 'rubric';
 }
 
 export interface AuditEvent {
@@ -432,6 +457,16 @@ export interface Grant {
   attachments?: GrantAttachment[];
   lessonsLearned?: string;
   customFields?: Record<string, string>;
+  /** Full 5-dimension rubric with per-dimension justifications + overall rationale. */
+  fitRubric?: FitRubric;
+  /** ISO timestamp of the last time the grant was observed in any crawl, even
+   * if no fields changed. */
+  lastSeenAt?: string;
+  /** ISO timestamp of the last time any field on this grant was updated. */
+  lastUpdatedAt?: string;
+  /** ISO timestamp set when the grant was moved to status='archived'; cleared on
+   * unarchive. The status column remains the canonical flag. */
+  archivedAt?: string;
 }
 
 export interface ContactInfo {

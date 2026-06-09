@@ -110,3 +110,44 @@ export async function PATCH(
     return NextResponse.json({ error: 'Failed to update grant' }, { status: 500 });
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ grantId: string }> },
+): Promise<NextResponse> {
+  await connection();
+  try {
+    const { grantId } = await params;
+    const deps = getDependencies();
+    const existing = await deps.repository.getGrant(grantId);
+    if (!existing) {
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
+    }
+    const previousTitle = existing.title;
+    const previousFunder = existing.funder;
+    const result = await deps.repository.removeGrant(grantId);
+    if (!result.success) {
+      return NextResponse.json(createErrorResponse('FILE_NOT_FOUND', 'Grant not found'), {
+        status: 404,
+      });
+    }
+    await deps.repository.addAuditEvent({
+      id: `${grantId}-delete-${Date.now()}`,
+      eventType: 'grant_deleted',
+      entityId: grantId,
+      entityType: 'grant',
+      actorLabel: 'operator',
+      timestamp: new Date().toISOString(),
+      metadata: { previousTitle, previousFunder },
+    });
+    return NextResponse.json({ success: true, id: grantId });
+  } catch (error) {
+    logger.error({ err: error }, 'Error deleting grant');
+    return NextResponse.json(
+      createErrorResponse('STORAGE_UNAVAILABLE', 'Failed to delete grant'),
+      { status: 500 },
+    );
+  }
+}

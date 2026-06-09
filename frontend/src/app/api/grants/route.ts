@@ -9,6 +9,7 @@ export const dynamic = 'force-dynamic';
 const querySchema = z.object({
   page: z.coerce.number().int().positive().default(1),
   pageSize: z.coerce.number().int().min(1).max(100).default(25),
+  showArchived: z.enum(['0', '1']).default('0'),
 });
 
 const manualGrantSchema = z.object({
@@ -36,7 +37,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
         { status: 400 },
       );
     }
-    const { page, pageSize } = parsed.data;
+    const { page, pageSize, showArchived } = parsed.data;
 
     const search = searchParams.get('search');
     const status = searchParams.get('status');
@@ -66,37 +67,71 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 			`;
       const rows = db.prepare(sql).all(ftsQuery) as Array<Record<string, unknown>>;
 
-      grants = rows.map((row) => ({
-        id: String(row.id),
-        title: String(row.title),
-        funder: String(row.funder),
-        funderShort: String(row.funderShort || ''),
-        award: String(row.award || ''),
-        awardSort: Number(row.awardSort || 0),
-        deadline: String(row.deadline || ''),
-        deadlineConfidence: (row.deadlineConfidence as Grant['deadlineConfidence']) || 'unknown',
-        daysOut: 0,
-        fit: Number(row.fitScore || 0),
-        tags: JSON.parse(String(row.tags || '[]')) as string[],
-        status: String(row.status) as Grant['status'],
-        statusLabel: String(row.status),
-        eligibility: String(row.eligibility || ''),
-        externalUrl: String(row.externalUrl || ''),
-        summary: String(row.summary || ''),
-        category: String(row.category || ''),
-        matchedAt: String(row.matchedAt || ''),
-        createdAt: String(row.createdAt || ''),
-        updatedAt: String(row.updatedAt || ''),
-        deletedAt: row.deletedAt ? String(row.deletedAt) : undefined,
-        grantType: 'crawled',
-        checklist: [],
-      }));
+      grants = rows.map((row) => {
+        const fitRubricRaw = row.fitRubric;
+        let fitRubric: Grant['fitRubric'];
+        if (fitRubricRaw !== null && fitRubricRaw !== undefined && fitRubricRaw !== '') {
+          try {
+            fitRubric = JSON.parse(String(fitRubricRaw)) as Grant['fitRubric'];
+          } catch {
+            fitRubric = undefined;
+          }
+        }
+        // The FTS5 row carries extra internal fields (eligibility / summary /
+        // createdAt / updatedAt / grantType) that are not on the Grant type.
+        // They're surfaced as a plain shape and intersected into the Grant
+        // object without round-tripping through the type's strict literal check.
+        const base: Record<string, unknown> = {
+          id: String(row.id),
+          title: String(row.title),
+          funder: String(row.funder),
+          funderShort: String(row.funderShort || ''),
+          award: String(row.award || ''),
+          awardSort: Number(row.awardSort || 0),
+          deadline: String(row.deadline || ''),
+          deadlineConfidence: (row.deadlineConfidence as Grant['deadlineConfidence']) || 'unknown',
+          daysOut: 0,
+          fit: Number(row.fitScore || 0),
+          tags: JSON.parse(String(row.tags || '[]')) as string[],
+          status: String(row.status) as Grant['status'],
+          statusLabel: String(row.status),
+          eligibility: String(row.eligibility || ''),
+          externalUrl: String(row.externalUrl || ''),
+          summary: String(row.summary || ''),
+          category: String(row.category || ''),
+          matchedAt: String(row.matchedAt || ''),
+          createdAt: String(row.createdAt || ''),
+          updatedAt: String(row.updatedAt || ''),
+          deletedAt: row.deletedAt ? String(row.deletedAt) : undefined,
+          grantType: 'crawled',
+          checklist: [],
+        };
+        const enriched = base as unknown as Grant;
+        if (fitRubric) {
+          enriched.fitRubric = fitRubric;
+        }
+        const lastSeenAt = row.lastSeenAt;
+        if (lastSeenAt !== null && lastSeenAt !== undefined && lastSeenAt !== '') {
+          enriched.lastSeenAt = String(lastSeenAt);
+        }
+        const lastUpdatedAt = row.lastUpdatedAt;
+        if (lastUpdatedAt !== null && lastUpdatedAt !== undefined && lastUpdatedAt !== '') {
+          enriched.lastUpdatedAt = String(lastUpdatedAt);
+        }
+        if (String(row.status) === 'archived') {
+          enriched.archivedAt = enriched.archivedAt ?? String(row.updatedAt || '');
+        }
+        return enriched;
+      });
     } else {
       grants = await deps.repository.getGrants();
     }
 
     // Apply column filters (intersection with search results)
     let filtered = grants.filter((g) => !('deletedAt' in g) || g.deletedAt === undefined);
+    if (showArchived === '0') {
+      filtered = filtered.filter((g) => g.status !== 'archived');
+    }
 
     if (status) {
       filtered = filtered.filter((g) => g.status === status);

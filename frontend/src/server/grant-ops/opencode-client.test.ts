@@ -12,6 +12,10 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  ResearchResponseSchema,
+  ResearchGrantSchemaStrict,
+} from '../../../../shared/schemas';
 import type { OpencodeSettings } from '../../../../shared/types';
 import {
   classifyOpencodeError,
@@ -263,6 +267,90 @@ printf '%s' '{"grants":[],"evidence":[],"rationale":"ok"}'
       const data = JSON.parse(result.content);
       expect(data.grants).toBeDefined();
       expect(Array.isArray(data.grants)).toBe(true);
+    });
+
+    it('executeResearch mock data passes the lenient ResearchResponseSchema', async () => {
+      const adapter = createOpencodeAdapter(defaultSettings, 'fake');
+      const result = await adapter.executeResearch({
+        organizationProfile: 'Test Org',
+        searchThemes: ['EdTech', 'Community', 'STEM'],
+      });
+      expect(result.success).toBe(true);
+      if (!result.content) throw new Error('expected content');
+      const data = JSON.parse(result.content);
+      const lenient = ResearchResponseSchema.safeParse(data);
+      expect(lenient.success).toBe(true);
+    });
+
+    it('executeResearch mock data passes the strict ResearchGrantSchemaStrict per-grant', async () => {
+      const adapter = createOpencodeAdapter(defaultSettings, 'fake');
+      const result = await adapter.executeResearch({
+        organizationProfile: 'Test Org',
+        searchThemes: ['EdTech', 'Community', 'STEM'],
+      });
+      expect(result.success).toBe(true);
+      if (!result.content) throw new Error('expected content');
+      const data = JSON.parse(result.content) as { grants: unknown[] };
+      for (const grant of data.grants) {
+        const strict = ResearchGrantSchemaStrict.safeParse(grant);
+        expect(strict.success).toBe(true);
+      }
+    });
+
+    it('every mock grant carries a 5-dimension rubric with per-dimension justifications', async () => {
+      const adapter = createOpencodeAdapter(defaultSettings, 'fake');
+      const result = await adapter.executeResearch({
+        organizationProfile: 'Test Org',
+        searchThemes: ['EdTech', 'Community', 'STEM'],
+      });
+      if (!result.content) throw new Error('expected content');
+      const data = JSON.parse(result.content) as {
+        grants: Array<{ fitRubric?: Record<string, { score: number; justification: string }> }>;
+      };
+      const dimensions = [
+        'missionAlignment',
+        'geographicFocus',
+        'programTrackrecord',
+        'budgetCapacity',
+        'partnershipReadiness',
+      ];
+      expect(data.grants.length).toBe(3);
+      for (const grant of data.grants) {
+        expect(grant.fitRubric).toBeDefined();
+        for (const dim of dimensions) {
+          const entry = grant.fitRubric?.[dim];
+          expect(entry).toBeDefined();
+          expect(typeof entry?.score).toBe('number');
+          expect(entry?.justification.length).toBeGreaterThan(0);
+        }
+      }
+    });
+
+    it('every mock grant has a changeClass + evidence + lastSeenConfirmed', async () => {
+      const adapter = createOpencodeAdapter(defaultSettings, 'fake');
+      const result = await adapter.executeResearch({
+        organizationProfile: 'Test Org',
+        searchThemes: ['EdTech', 'Community', 'STEM'],
+      });
+      if (!result.content) throw new Error('expected content');
+      const data = JSON.parse(result.content) as {
+        grants: Array<{
+          changeClass?: string;
+          evidence?: Record<string, string>;
+          lastSeenConfirmed?: boolean;
+        }>;
+      };
+      const classes = new Set<string>();
+      for (const grant of data.grants) {
+        expect(['new', 'updated', 'unchanged']).toContain(grant.changeClass);
+        expect(Object.keys(grant.evidence ?? {}).length).toBeGreaterThan(0);
+        expect(grant.lastSeenConfirmed).toBe(true);
+        if (grant.changeClass) classes.add(grant.changeClass);
+      }
+      // The plan mandates one of each changeClass across the 3 mocks.
+      expect(classes.has('new')).toBe(true);
+      expect(classes.has('updated')).toBe(true);
+      expect(classes.has('unchanged')).toBe(true);
     });
 
     it('generateDraft returns mock draft content', async () => {

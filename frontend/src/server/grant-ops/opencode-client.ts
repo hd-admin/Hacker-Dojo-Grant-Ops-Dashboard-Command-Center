@@ -309,7 +309,9 @@ class FakeOpencodeProvider implements OpencodeAdapter {
       };
     }
 
-    // Return deterministic mock research data
+    // Return deterministic mock research data with the new fitRubric + changeClass
+    // + evidence + lastSeenConfirmed fields on every grant. Per-dimension scores
+    // vary between grants so the e2e can detect dimension-specific justifications.
     const mockResearch = {
       grants: [
         {
@@ -327,6 +329,39 @@ class FakeOpencodeProvider implements OpencodeAdapter {
           status: 'matched' as const,
           statusLabel: 'Matched',
           matchedAt: new Date().toISOString(),
+          fitRubric: {
+            missionAlignment: {
+              score: 88,
+              justification: 'Mock Foundation directly funds community tech programs that mirror Hacker Dojo\'s mission of community innovation and education.',
+            },
+            geographicFocus: {
+              score: 80,
+              justification: 'Bay Area is the funder\'s primary geography; aligned with Hacker Dojo\'s Silicon Valley footprint.',
+            },
+            programTrackrecord: {
+              score: 85,
+              justification: 'Hacker Dojo has delivered multi-year STEM pathways to over 1,200 learners; matches this funder\'s cohort focus.',
+            },
+            budgetCapacity: {
+              score: 78,
+              justification: '$50,000 is squarely within Hacker Dojo\'s $25K-$250K execution band for single-program funding.',
+            },
+            partnershipReadiness: {
+              score: 80,
+              justification: 'Existing partnerships with local community colleges create co-funding leverage the funder rewards.',
+            },
+            overallRationale:
+              'Strong fit at 82: mission, geography, and program track record all align. $50K award is appropriate; partnership posture is healthy.',
+            rubricVersion: 1,
+          },
+          changeClass: 'new' as const,
+          evidence: {
+            eligibility:
+              'Open to registered 501(c)(3) nonprofits with active community programs in the Bay Area.',
+            award_amount: '$50,000 over 12 months, unrestricted program support.',
+            deadline: 'Rolling quarterly review; next cut-off 30 days out.',
+          },
+          lastSeenConfirmed: true,
         },
         {
           id: `mock-grant-002`,
@@ -343,6 +378,38 @@ class FakeOpencodeProvider implements OpencodeAdapter {
           status: 'matched' as const,
           statusLabel: 'Matched',
           matchedAt: new Date().toISOString(),
+          fitRubric: {
+            missionAlignment: {
+              score: 78,
+              justification: 'Alliance for Learning funds K-12+ STEM pathways; secondary match to Hacker Dojo\'s adult-learner focus.',
+            },
+            geographicFocus: {
+              score: 82,
+              justification: 'Regional scope; covers the Bay Area and adjacent counties.',
+            },
+            programTrackrecord: {
+              score: 70,
+              justification: 'Some adjacent programming; not a direct prior grantee of this funder.',
+            },
+            budgetCapacity: {
+              score: 75,
+              justification: '$75,000 is comfortable but on the larger side; would need a defined program scope.',
+            },
+            partnershipReadiness: {
+              score: 74,
+              justification: 'Hacker Dojo has adjacent partners (e.g., local schools) but the Alliance prefers a co-applicant model.',
+            },
+            overallRationale:
+              'Moderate fit at 76: needs a tightly-scoped education track and a co-applicant partner; award size and timing are workable.',
+            rubricVersion: 1,
+          },
+          changeClass: 'updated' as const,
+          evidence: {
+            deadline: 'Single annual deadline, 45 days out.',
+            award_amount: '$75,000 program grant with optional second-year renewal at 80% of original.',
+            requirements: 'Co-applicant partnership letter required at full proposal stage.',
+          },
+          lastSeenConfirmed: true,
         },
         {
           id: `mock-grant-003`,
@@ -359,6 +426,38 @@ class FakeOpencodeProvider implements OpencodeAdapter {
           status: 'matched' as const,
           statusLabel: 'Matched',
           matchedAt: new Date().toISOString(),
+          fitRubric: {
+            missionAlignment: {
+              score: 70,
+              justification: 'CIN funds operational capacity for grassroots innovation spaces; mission is adjacent, not central.',
+            },
+            geographicFocus: {
+              score: 88,
+              justification: 'CIN prioritizes the Bay Area; Hacker Dojo is exactly the geography they fund.',
+            },
+            programTrackrecord: {
+              score: 60,
+              justification: 'No prior CIN funding; would need to make the case for operational impact.',
+            },
+            budgetCapacity: {
+              score: 80,
+              justification: '$25,000 is the lower bound of Hacker Dojo\'s execution band; manageable as a single project.',
+            },
+            partnershipReadiness: {
+              score: 56,
+              justification: 'CIN expects a peer-nominated lead; Hacker Dojo would need to cultivate a nominator first.',
+            },
+            overallRationale:
+              'Lower fit at 71: geography is great, but the partnership readiness gap and the operational-only scope drag the score down. Worth a smaller-capacity application.',
+            rubricVersion: 1,
+          },
+          changeClass: 'unchanged' as const,
+          evidence: {
+            fit_score: 'CIN 990 filings show 8 prior grants to Bay Area makerspaces; 4 of those at $20K-$30K levels.',
+            eligibility: 'IRS-recognized 501(c)(3) with annual operating budget under $2M.',
+            deadline: '60 days out, single annual deadline.',
+          },
+          lastSeenConfirmed: true,
         },
       ],
       evidence: [

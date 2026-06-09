@@ -10,9 +10,13 @@ import 'server-only';
  */
 
 import { logger } from '@/lib/logger';
-import { ResearchResponseSchema } from '../../../../shared/schemas';
+import {
+  ResearchGrantSchemaStrict,
+  ResearchResponseSchema,
+} from '../../../../shared/schemas';
 import type {
   CrawlRun,
+  FitRubric,
   Grant,
   GrantContact,
   Notification,
@@ -26,6 +30,27 @@ import { type Clock, getDependencies, type IdGenerator } from './dependencies';
 import { ensureProPublicaSourceRegistered } from './propublica-service';
 import { scoreGrantByThemes } from './theme-service';
 import { checkUrlsLiveness } from './url-liveness';
+
+/**
+ * Convert a per-dimension score list into a default FitRubric shell. When a
+ * grant carries an LLM-authored rubric, the research service uses that
+ * verbatim; this helper is the fallback for grants ingested without one.
+ */
+function buildFitRubricFromScore(
+  fit: number,
+  rationale: string,
+): FitRubric {
+  const normalized = Math.min(100, Math.max(0, fit));
+  return {
+    missionAlignment: { score: normalized, justification: rationale },
+    geographicFocus: { score: normalized, justification: rationale },
+    programTrackrecord: { score: normalized, justification: rationale },
+    budgetCapacity: { score: normalized, justification: rationale },
+    partnershipReadiness: { score: normalized, justification: rationale },
+    overallRationale: rationale,
+    rubricVersion: 1,
+  };
+}
 
 export class NoSourcesConfiguredError extends Error {
   public readonly code = 'NO_SOURCES_CONFIGURED';
@@ -51,6 +76,52 @@ function createDefaultFitBreakdown(
     budgetCapacity: normalized,
     partnershipReadiness: normalized,
   };
+}
+
+/**
+ * Mirror the JSON-blob Grant's fitRubric + lastSeenAt + lastUpdatedAt + status
+ * into the typed grants_v2 table so the FTS5 search branch in
+ * /api/grants/route.ts can read them. The mirror is best-effort: a missing
+ * column on an older schema raises and we log instead of failing the crawl.
+ */
+async function mirrorGrantToV2(
+  deps: ReturnType<typeof getDependencies>,
+  grant: Grant,
+): Promise<void> {
+  try {
+    const { getSqliteState, openDatabase } = await import('../../../../shared/grant-ops-sqlite');
+    const state = getSqliteState();
+    const db = openDatabase(state);
+    const stmt = db.prepare(
+      `INSERT INTO grants_v2 (id, title, funder, deadline, status, fitScore, lastSeenAt, lastUpdatedAt, fitRubric)
+       VALUES (@id, @title, @funder, @deadline, @status, @fitScore, @lastSeenAt, @lastUpdatedAt, @fitRubric)
+       ON CONFLICT(id) DO UPDATE SET
+         lastSeenAt = excluded.lastSeenAt,
+         lastUpdatedAt = excluded.lastUpdatedAt,
+         status = excluded.status,
+         fitRubric = excluded.fitRubric,
+         fitScore = excluded.fitScore,
+         title = excluded.title,
+         funder = excluded.funder,
+         deadline = excluded.deadline`,
+    );
+    stmt.run({
+      id: grant.id,
+      title: grant.title,
+      funder: grant.funder,
+      deadline: grant.deadline,
+      status: grant.status,
+      fitScore: grant.fit,
+      lastSeenAt: grant.lastSeenAt ?? null,
+      lastUpdatedAt: grant.lastUpdatedAt ?? null,
+      fitRubric: grant.fitRubric ? JSON.stringify(grant.fitRubric) : null,
+    });
+  } catch (err) {
+    logger.warn(
+      { err, grantId: grant.id },
+      'grants_v2 mirror write failed (continuing without it)',
+    );
+  }
 }
 
 /**
@@ -362,12 +433,29 @@ async function performResearch(
           for (const grantData of grants) {
             const title = grantData.title;
             const funder = grantData.funder;
+
+            // Per-grant strict re-parse: a single bad grant (e.g. one that omits
+            // the required fitRubric) MUST be dropped with a warn, not propagate
+            // and take the whole response down. The lenient ResearchResponseSchema
+            // has already accepted the overall shape; this tightens the per-grant
+            // shape using the strict schema introduced for the rubric pipeline.
+            const strict = ResearchGrantSchemaStrict.safeParse(grantData);
+            if (!strict.success) {
+              droppedNoFollowUp++;
+              logger.warn(
+                { title, funder, issues: strict.error.issues.slice(0, 3) },
+                'dropping grant: missing rubric',
+              );
+              continue;
+            }
+
             if (!title || !funder) {
               continue;
             }
 
             const grantEvidence = evidence.filter((item) => item.grantId === grantData.id);
             const researchRationale = researchData.rationale;
+            const llmChangeClass = strict.data.changeClass;
 
             // Pick the best WORKING full source URL: prefer a live one, then an unknown
             // (bot-blocked/transient), and never a dead 404. Drop grants that have no
@@ -399,11 +487,26 @@ async function performResearch(
             // Check if grant already exists
             const existing = existingGrants.find((g) => g.title === title && g.funder === funder);
 
+            // Skip-archived guard runs FIRST — a re-crawl must not touch an
+            // archived grant at all. The audit-empty invariant (no event
+            // emitted for an archived grant) is enforced by short-circuiting
+            // before any of the addGrant / updateGrant / addAuditEvent calls
+            // below.
+            if (existing && existing.status === 'archived') {
+              logger.info(
+                { grantId: existing.id, title, funder },
+                'skipped archived grant',
+              );
+              continue;
+            }
+
             if (!existing) {
               const fallbackDeadline = new Date(clock.now().getTime() + 30 * 24 * 60 * 60 * 1000)
                 .toISOString()
                 .slice(0, 10);
               const deadline = grantData.deadline ?? fallbackDeadline;
+              const matchedAt = clock.now().toISOString();
+              const fit = grantData.fit ?? 70;
               const newGrant: Grant = {
                 id: grantData.id || idGenerator.generateId('grant'),
                 title,
@@ -421,15 +524,16 @@ async function performResearch(
                 ...(hasContact ? { contact } : {}),
                 status: 'matched',
                 statusLabel: 'Matched',
-                matchedAt: clock.now().toISOString(),
-                fitBreakdown: createDefaultFitBreakdown(grantData.fit || 70),
+                matchedAt,
+                fitBreakdown: createDefaultFitBreakdown(fit),
+                fitRubric: strict.data.fitRubric,
                 funderSummary: createDefaultFunderSummary({
                   title,
                   funder,
                   tags: grantData.tags || profile.searchThemes.slice(0, 2),
                 }),
                 checklist: createDefaultGrantChecklist({
-                  fit: grantData.fit || 70,
+                  fit,
                   status: 'matched',
                   latestDraftVersion: 0,
                   groundedDocumentCount: 0,
@@ -440,16 +544,32 @@ async function performResearch(
                 sourceCount: 1,
                 researchEvidence: grantEvidence,
                 ...(researchRationale ? { researchRationale } : {}),
+                lastSeenAt: matchedAt,
+                lastUpdatedAt: matchedAt,
               };
 
               await deps.repository.addGrant(newGrant);
               existingGrants.push(newGrant);
               totalGrantsMatched++;
+              await mirrorGrantToV2(deps, newGrant);
+
+              await deps.repository.addAuditEvent({
+                id: idGenerator.generateId('audit'),
+                eventType: 'grant_created',
+                entityId: newGrant.id,
+                entityType: 'grant',
+                actorLabel: 'research-agent',
+                timestamp: matchedAt,
+                metadata: {
+                  changeClass: llmChangeClass,
+                  overallRationale: strict.data.fitRubric.overallRationale,
+                },
+              });
 
               perGrantNotifications.push({
                 id: idGenerator.generateId('notification'),
                 dot: 'accent',
-                time: clock.now().toISOString(),
+                time: matchedAt,
                 text: `New match: <strong>${escapeForHtml(newGrant.title)}</strong> · ${escapeForHtml(newGrant.funder)} · ${escapeForHtml(newGrant.award)} · fit ${newGrant.fit}`,
               });
             } else {
@@ -484,10 +604,26 @@ async function performResearch(
                   : undefined;
               const nextExternalUrl = externalUrl ?? existing.externalUrl;
 
+              // Material change detection — drives whether lastUpdatedAt is bumped.
+              // The LLM's changeClass is logged in the audit metadata but is NOT
+              // the source of truth for the decision: we re-derive the outcome
+              // from the structural diff of fields we actually persist.
+              const materialChange = Boolean(
+                refreshedAward ||
+                  refreshedAwardSort !== undefined ||
+                  refreshedDeadline ||
+                  refreshedFit !== undefined ||
+                  mergedContact ||
+                  (nextExternalUrl && nextExternalUrl !== existing.externalUrl),
+              );
+
+              const now = clock.now().toISOString();
               const updatedGrant: Partial<Grant> = {
                 sourceCount: updatedSourceCount,
                 fitBreakdown:
-                  existing.fitBreakdown ?? createDefaultFitBreakdown(refreshedFit ?? existing.fit),
+                  existing.fitBreakdown ??
+                  createDefaultFitBreakdown(refreshedFit ?? existing.fit),
+                fitRubric: strict.data.fitRubric ?? existing.fitRubric,
                 funderSummary: existing.funderSummary ?? createDefaultFunderSummary(existing),
                 checklist:
                   existing.checklist ??
@@ -508,9 +644,47 @@ async function performResearch(
                     }
                   : {}),
                 ...(refreshedFit !== undefined ? { fit: refreshedFit } : {}),
+                // lastSeenAt is always bumped on a crawl observation, even when
+                // nothing else changed. lastUpdatedAt only moves on a real
+                // material change.
+                lastSeenAt: now,
+                ...(materialChange ? { lastUpdatedAt: now } : {}),
               };
               await deps.repository.updateGrant(existing.id, updatedGrant);
               Object.assign(existing, updatedGrant);
+              await mirrorGrantToV2(deps, existing);
+
+              if (materialChange) {
+                await deps.repository.addAuditEvent({
+                  id: idGenerator.generateId('audit'),
+                  eventType: 'grant_updated',
+                  entityId: existing.id,
+                  entityType: 'grant',
+                  actorLabel: 'research-agent',
+                  timestamp: now,
+                  metadata: {
+                    changeClass: llmChangeClass,
+                    refreshedFields: [
+                      refreshedAward && 'award',
+                      refreshedAwardSort !== undefined && 'awardSort',
+                      refreshedDeadline && 'deadline',
+                      refreshedFit !== undefined && 'fit',
+                      mergedContact && 'contact',
+                      nextExternalUrl && 'externalUrl',
+                    ].filter((x): x is string => Boolean(x)),
+                  },
+                });
+              } else {
+                await deps.repository.addAuditEvent({
+                  id: idGenerator.generateId('audit'),
+                  eventType: 'grant_unchanged',
+                  entityId: existing.id,
+                  entityType: 'grant',
+                  actorLabel: 'research-agent',
+                  timestamp: now,
+                  metadata: { changeClass: llmChangeClass },
+                });
+              }
             }
           }
         }

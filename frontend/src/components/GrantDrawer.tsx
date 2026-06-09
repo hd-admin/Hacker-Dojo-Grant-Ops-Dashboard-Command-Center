@@ -30,6 +30,10 @@ import { OutcomeTracker } from './GrantDrawer/OutcomeTracker';
 import { UngroundedClaimsWarning } from './GrantDrawer/UngroundedClaimsWarning';
 import { GrantDrawerShell } from './GrantDrawer/GrantDrawerShell';
 import {
+  GrantArchiveDeleteDialog,
+  type GrantArchiveDeleteAction,
+} from './GrantDrawer/GrantArchiveDeleteDialog';
+import {
   OutreachPanel,
   type OutreachMethod,
   type OutreachOutcome,
@@ -94,6 +98,7 @@ export function GrantDrawer({
   const [newNotes, setNewNotes] = useState('');
   const [newOutcome, setNewOutcome] = useState<OutreachOutcome>('');
   const [newFollowUpDate, setNewFollowUpDate] = useState('');
+  const [archiveDeleteAction, setArchiveDeleteAction] = useState<GrantArchiveDeleteAction | null>(null);
 
   const viewModel = buildGrantDrawerViewModel(detail);
   const hasDirtyNotes = revisionNote.trim().length > 0 || submitNotes.trim().length > 0;
@@ -418,6 +423,33 @@ export function GrantDrawer({
     onClose();
   };
 
+  const handleArchiveGrant = () => {
+    if (!detail) return;
+    setArchiveDeleteAction('archive');
+  };
+
+  const handleDeleteGrant = () => {
+    if (!detail) return;
+    setArchiveDeleteAction('delete');
+  };
+
+  const handleConfirmArchiveDelete = async () => {
+    if (!detail || !archiveDeleteAction) return;
+    const action = archiveDeleteAction;
+    setArchiveDeleteAction(null);
+    try {
+      if (action === 'archive') {
+        await client.grants.archive(detail.grant.id, 'Archived');
+      } else {
+        await client.grants.delete(detail.grant.id);
+      }
+      await refreshAfterMutation();
+      onClose();
+    } catch (_err) {
+      setError(`Error ${action === 'archive' ? 'archiving' : 'deleting'} grant`);
+    }
+  };
+
   const handleConfirmRevision = async () => {
     if (!detail || !revisionNote.trim()) return;
     try {
@@ -657,11 +689,19 @@ export function GrantDrawer({
     <GrantDrawerShell grantId={grantId} loading={loading} onClose={handleRequestClose}>
       {detail && (
         <>
-          <GrantDrawerHeader grant={detail.grant} onClose={handleRequestClose} />
+          <GrantDrawerHeader
+            grant={detail.grant}
+            onClose={handleRequestClose}
+            onArchive={handleArchiveGrant}
+            onDelete={handleDeleteGrant}
+          />
 
           <div className="drawer-body">
             {detail.grant.fitBreakdown && (
-              <FitScoreBreakdown fitBreakdown={detail.grant.fitBreakdown} />
+              <FitScoreBreakdown
+                fitBreakdown={detail.grant.fitBreakdown}
+                rubric={detail.grant.fitRubric}
+              />
             )}
 
             <RequirementsChecklist checklist={detail.grant.checklist || []} />
@@ -988,6 +1028,13 @@ export function GrantDrawer({
           </div>
         </>
       )}
+
+      <GrantArchiveDeleteDialog
+        open={archiveDeleteAction !== null}
+        action={archiveDeleteAction ?? 'archive'}
+        onCancel={() => setArchiveDeleteAction(null)}
+        onConfirm={handleConfirmArchiveDelete}
+      />
     </GrantDrawerShell>
   );
 }

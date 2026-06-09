@@ -73,6 +73,7 @@
     "prettier": "^3.8.3",
     "tsx": "^4.19.3",
     "typescript": "^5.9.3",
-    "vitest": "^2.1.9"
+    "vitest": "^2.1.9",
+    "zod-to-json-schema": "^3.25.2"
   }
 }

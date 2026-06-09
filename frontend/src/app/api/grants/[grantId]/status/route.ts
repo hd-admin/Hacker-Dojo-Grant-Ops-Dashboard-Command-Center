@@ -123,10 +123,17 @@ async function updateStatus(
     }
 
     const previousStatus = existingGrant.status;
-    await deps.repository.updateGrant(grantId, {
+    const archivedAt = new Date().toISOString();
+    const statusUpdates: Record<string, unknown> = {
       status: targetStatus,
       statusLabel: parsed.data.statusLabel,
-    });
+    };
+    if (targetStatus === 'archived') {
+      statusUpdates.archivedAt = archivedAt;
+    } else if (previousStatus === 'archived') {
+      statusUpdates.archivedAt = undefined;
+    }
+    await deps.repository.updateGrant(grantId, statusUpdates);
 
     // Insert pipeline transition audit log
     await deps.repository.createPipelineTransition({
@@ -135,7 +142,7 @@ async function updateStatus(
       fromState: previousStatus,
       toState: targetStatus,
       actor: 'system',
-      timestamp: new Date().toISOString(),
+      timestamp: archivedAt,
       reason: `Transitioned via API from ${previousStatus} to ${targetStatus}`,
     });
 
@@ -145,8 +152,12 @@ async function updateStatus(
       entityId: grantId,
       entityType: 'grant',
       actorLabel: 'system',
-      timestamp: new Date().toISOString(),
-      metadata: { from: previousStatus, to: parsed.data.status },
+      timestamp: archivedAt,
+      metadata: {
+        from: previousStatus,
+        to: parsed.data.status,
+        archivedAt: targetStatus === 'archived' ? archivedAt : null,
+      },
     });
 
     return NextResponse.json({ success: true });

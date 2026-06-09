@@ -3,7 +3,7 @@ import React from 'react';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import { getByRole, getAllByRole, queryByRole } from '../../test-helpers';
-import type { FitScoreBreakdown as FitScoreBreakdownType } from '../../../../shared/types';
+import type { FitRubric, FitScoreBreakdown as FitScoreBreakdownType } from '../../../../shared/types';
 import { FitScoreBreakdown } from './FitScoreBreakdown';
 
 async function waitFor(predicate: () => boolean, timeoutMs = 5000): Promise<void> {
@@ -101,5 +101,43 @@ describe('FitScoreBreakdown', () => {
       'Budget capacity: 1 percent',
       'Partnership readiness: 99 percent',
     ]);
+  });
+
+  it('renders a rubric justification paragraph for each dimension when a rubric is provided', async () => {
+    const breakdown = makeBreakdown();
+    const rubric: FitRubric = {
+      missionAlignment: { score: 96, justification: 'Hacker Dojo mission aligned.' },
+      geographicFocus: { score: 90, justification: 'Bay Area match.' },
+      programTrackrecord: { score: 88, justification: 'Past programs.' },
+      budgetCapacity: { score: 82, justification: 'Within band.' },
+      partnershipReadiness: { score: 78, justification: 'Co-applicant ready.' },
+      overallRationale: 'Strong overall fit',
+      rubricVersion: 1,
+    };
+    root.render(React.createElement(FitScoreBreakdown, { fitBreakdown: breakdown, rubric }));
+    await waitFor(() => container.querySelectorAll('[data-testid="rubric-justification"]').length === 5);
+    const paragraphs = container.querySelectorAll('[data-testid="rubric-justification"]');
+    expect(paragraphs.length).toBe(5);
+    expect(paragraphs[0]?.textContent).toBe('Hacker Dojo mission aligned.');
+  });
+
+  it('renders the overall rationale paragraph when rubric.overallRationale is set', async () => {
+    const breakdown = makeBreakdown();
+    const rubric: FitRubric = {
+      missionAlignment: { score: 80, justification: 'm' },
+      geographicFocus: { score: 80, justification: 'g' },
+      programTrackrecord: { score: 80, justification: 'p' },
+      budgetCapacity: { score: 80, justification: 'b' },
+      partnershipReadiness: { score: 80, justification: 'r' },
+      overallRationale: 'Strong fit overall',
+      rubricVersion: 1,
+    };
+    root.render(React.createElement(FitScoreBreakdown, { fitBreakdown: breakdown, rubric }));
+    await waitFor(
+      () => container.querySelector('[data-testid="rubric-overall-rationale"]') !== null,
+    );
+    expect(container.querySelector('[data-testid="rubric-overall-rationale"]')?.textContent).toBe(
+      'Strong fit overall',
+    );
   });
 });

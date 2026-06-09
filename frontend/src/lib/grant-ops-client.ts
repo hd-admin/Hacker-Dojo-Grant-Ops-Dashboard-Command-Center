@@ -166,10 +166,11 @@ interface GrantOverrideRequest {
     | 'funder'
     | 'funderShort'
     | 'category'
+    | 'fitRubric'
     | `task.${string}.status`;
   newValue: unknown;
   rationale: string;
-  overrideType: 'score' | 'category' | 'task' | 'status';
+  overrideType: 'score' | 'category' | 'task' | 'status' | 'rubric';
 }
 
 interface PaginatedGrantsResponse {
@@ -202,6 +203,17 @@ export const grantsApi = {
     apiFetch<{ success: boolean }>(`/api/grants/${encodeURIComponent(grantId)}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status, statusLabel }),
+    }),
+
+  archive: (grantId: string, statusLabel: string) =>
+    apiFetch<{ success: boolean }>(`/api/grants/${encodeURIComponent(grantId)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status: 'archived', statusLabel }),
+    }),
+
+  delete: (grantId: string) =>
+    apiFetch<{ success: boolean; id: string }>(`/api/grants/${encodeURIComponent(grantId)}`, {
+      method: 'DELETE',
     }),
 
   override: (grantId: string, override: GrantOverrideRequest) =>

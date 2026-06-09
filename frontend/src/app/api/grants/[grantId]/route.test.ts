@@ -8,7 +8,7 @@ import type {
   RevisionRequest,
   SubmissionRecord,
 } from '../../../../../../shared/types';
-import { GET, PATCH } from './route';
+import { DELETE, GET, PATCH } from './route';
 
 const { loadGrantDetailMock, getDependenciesMock } = vi.hoisted(() => ({
   loadGrantDetailMock: vi.fn(),
@@ -132,9 +132,12 @@ function buildDetail(grant: Grant): GrantDetailResponse {
 describe('/api/grants/[grantId]', () => {
   let grant: Grant;
   let currentDetail: GrantDetailResponse;
+  let grantDeleted = false;
   const repository = {
     getGrant: vi.fn(),
     updateGrant: vi.fn(),
+    removeGrant: vi.fn(),
+    addAuditEvent: vi.fn(),
   };
 
   beforeEach(() => {
@@ -142,10 +145,12 @@ describe('/api/grants/[grantId]', () => {
 
     grant = buildGrant(`grant-${Date.now()}`);
     currentDetail = buildDetail(grant);
+    grantDeleted = false;
 
-    repository.getGrant.mockImplementation(async (grantId: string) =>
-      grantId === grant.id ? grant : null,
-    );
+    repository.getGrant.mockImplementation(async (grantId: string) => {
+      if (grantDeleted || grantId !== grant.id) return null;
+      return grant;
+    });
     repository.updateGrant.mockImplementation(async (grantId: string, updates: Partial<Grant>) => {
       if (grantId !== grant.id) {
         return;
@@ -153,10 +158,18 @@ describe('/api/grants/[grantId]', () => {
       grant = { ...grant, ...updates };
       currentDetail = buildDetail(grant);
     });
+    repository.removeGrant.mockImplementation(async (grantId: string) => {
+      if (grantId !== grant.id) {
+        return { success: false };
+      }
+      grantDeleted = true;
+      return { success: true };
+    });
+    repository.addAuditEvent.mockResolvedValue(undefined);
 
     getDependenciesMock.mockReturnValue({ repository });
     loadGrantDetailMock.mockImplementation(async (grantId: string) =>
-      grantId === grant.id ? currentDetail : null,
+      grantId === grant.id && !grantDeleted ? currentDetail : null,
     );
   });
 
@@ -258,5 +271,32 @@ describe('/api/grants/[grantId]', () => {
     });
 
     expect(response.status).toBe(404);
+  });
+
+  describe('DELETE /api/grants/[grantId]', () => {
+    it('removes the grant and returns a JSON body with success + id', async () => {
+      const response = await DELETE(new Request(`http://localhost/api/grants/${grant.id}`, {
+        method: 'DELETE',
+      }) as never, { params: Promise.resolve({ grantId: grant.id }) });
+
+      expect(response.status).toBe(200);
+      const body = await response.json();
+      expect(body).toEqual({ success: true, id: grant.id });
+      expect(repository.updateGrant).not.toHaveBeenCalled();
+      // The GET should now miss
+      const afterDelete = await GET(
+        new Request(`http://localhost/api/grants/${grant.id}`) as never,
+        { params: Promise.resolve({ grantId: grant.id }) },
+      );
+      expect(afterDelete.status).toBe(404);
+    });
+
+    it('returns 404 when deleting a missing grant', async () => {
+      const response = await DELETE(
+        new Request('http://localhost/api/grants/missing', { method: 'DELETE' }) as never,
+        { params: Promise.resolve({ grantId: 'missing' }) },
+      );
+      expect(response.status).toBe(404);
+    });
   });
 });

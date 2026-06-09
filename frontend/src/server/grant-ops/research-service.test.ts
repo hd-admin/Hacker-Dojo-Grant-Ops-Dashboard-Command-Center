@@ -20,6 +20,24 @@ import * as researchService from './research-service';
 import { NoSourcesConfiguredError } from './research-service';
 import * as sourceService from './source-service';
 
+function buildStrictFixture(overrides: Record<string, unknown>): Record<string, unknown> {
+  return {
+    fitRubric: {
+      missionAlignment: { score: 80, justification: 'mission alignment' },
+      geographicFocus: { score: 80, justification: 'bay area' },
+      programTrackrecord: { score: 80, justification: 'past delivery' },
+      budgetCapacity: { score: 80, justification: 'within band' },
+      partnershipReadiness: { score: 80, justification: 'partnerships' },
+      overallRationale: 'good fit overall',
+      rubricVersion: 1,
+    },
+    changeClass: 'new',
+    evidence: { eligibility: 'open to 501(c)(3) community programs' },
+    lastSeenConfirmed: true,
+    ...overrides,
+  };
+}
+
 const mockProfile: OrganizationProfile = {
   legalName: 'Hacker Dojo',
   ein: '12-3456789',
@@ -122,7 +140,7 @@ describe('ResearchService', () => {
               success: true,
               content: JSON.stringify({
                 grants: [
-                  {
+                  buildStrictFixture({
                     id: 'mock-grant-001',
                     title: 'Mock Foundation Grant',
                     url: 'https://example.com/mock-foundation-grant',
@@ -134,7 +152,7 @@ describe('ResearchService', () => {
                     daysOut: 127,
                     fit: 80,
                     tags: ['funding', 'tech'],
-                  },
+                  }),
                 ],
               }),
             }),
@@ -239,7 +257,7 @@ describe('ResearchService', () => {
               success: true,
               content: JSON.stringify({
                 grants: [
-                  {
+                  buildStrictFixture({
                     id: 'mock-grant-001',
                     title: 'Mock Foundation Grant',
                     url: 'https://example.com/mock-foundation-grant',
@@ -250,8 +268,8 @@ describe('ResearchService', () => {
                     deadline: '2026-09-30',
                     daysOut: 127,
                     fit: 80,
-                    tags: ['funding', 'tech'],
-                  },
+                    tags: ["funding", "tech"],
+                  }),
                 ],
               }),
             }),
@@ -417,7 +435,7 @@ describe('ResearchService', () => {
               success: true,
               content: JSON.stringify({
                 grants: [
-                  {
+                  buildStrictFixture({
                     id: 'mock-grant-001',
                     title: 'Mock Foundation Grant',
                     url: 'https://example.com/mock-foundation-grant',
@@ -428,8 +446,8 @@ describe('ResearchService', () => {
                     deadline: '2026-09-30',
                     daysOut: 127,
                     fit: 80,
-                    tags: ['funding', 'tech'],
-                  },
+                    tags: ["funding", "tech"],
+                  }),
                 ],
               }),
             }),

@@ -158,4 +158,44 @@ describe('GrantDrawerHeader', () => {
     await waitFor(() => container.textContent?.includes('Rolling') === true);
     expect(container.textContent).toContain('Rolling');
   });
+
+  it('renders Archive and Delete buttons when callbacks are provided', async () => {
+    let archived = false;
+    let deleted = false;
+    const grant = makeGrant();
+    root.render(
+      React.createElement(GrantDrawerHeader, {
+        grant,
+        onClose: () => {},
+        onArchive: () => {
+          archived = true;
+        },
+        onDelete: () => {
+          deleted = true;
+        },
+      }),
+    );
+    await waitFor(
+      () => container.querySelector("[data-testid='grant-archive-btn']") !== null,
+    );
+    (container.querySelector("[data-testid='grant-archive-btn']") as HTMLButtonElement)?.click();
+    (container.querySelector("[data-testid='grant-delete-btn']") as HTMLButtonElement)?.click();
+    expect(archived).toBe(true);
+    expect(deleted).toBe(true);
+  });
+
+  it('renders Last seen and Updated meta items with relative-time text', async () => {
+    const grant = makeGrant({
+      lastSeenAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
+      lastUpdatedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    root.render(React.createElement(GrantDrawerHeader, { grant, onClose: () => {} }));
+    await waitFor(
+      () => container.querySelector("[data-testid='header-last-seen-text']") !== null,
+    );
+    const lastSeen = container.querySelector("[data-testid='header-last-seen-text']");
+    const lastUpdated = container.querySelector("[data-testid='header-last-updated-text']");
+    expect(lastSeen?.textContent).toBe('3h ago');
+    expect(lastUpdated?.textContent).toBe('yesterday');
+  });
 });

@@ -6,6 +6,7 @@ import 'server-only';
  * Uses the shared grant-ops-persistence.ts functions for data storage.
  */
 
+import { logger } from '@/lib/logger';
 import type {
   ApprovalRecord,
   AuditEvent,
@@ -295,6 +296,34 @@ export async function addGrant(grant: Grant): Promise<void> {
   const grants = await loadGrants();
   grants.push(grant);
   await saveGrants(grants);
+}
+
+export async function removeGrant(grantId: string): Promise<{ success: boolean }> {
+  const grants = await loadGrants();
+  const index = grants.findIndex((g: Grant) => g.id === grantId);
+  if (index === -1) {
+    return { success: false };
+  }
+  const previous = grants[index]!;
+  grants.splice(index, 1);
+  await saveGrants(grants);
+
+  // Best-effort: drop the typed grants_v2 row too so the FTS5 search branch
+  // does not return a phantom grant. A missing column on an older schema
+  // raises and we log instead of failing the delete.
+  try {
+    const { getSqliteState, openDatabase } = await import('../../../../shared/grant-ops-sqlite');
+    const state = getSqliteState();
+    const db = openDatabase(state);
+    db.prepare('DELETE FROM grants_v2 WHERE id = ?').run(grantId);
+  } catch (err) {
+    logger.warn(
+      { err, grantId },
+      'grants_v2 mirror delete failed (continuing without it)',
+    );
+  }
+
+  return { success: true };
 }
 
 // Organization profile operations - now uses shared persistence (GAP-01 fix)

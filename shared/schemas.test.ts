@@ -4,6 +4,7 @@ import {
   OrganizationProfileSchema,
   GrantStatusSchema,
   FitScoreBreakdownSchema,
+  FitRubricSchema,
   ChecklistItemSchema,
   HumanOverrideSchema,
   WorkingContextSchema,
@@ -61,6 +62,34 @@ describe('shared/schemas', () => {
         partnershipReadiness: 70,
       };
       expect(FitScoreBreakdownSchema.safeParse(invalid).success).toBe(false);
+    });
+  });
+
+  describe('FitRubricSchema', () => {
+    it('accepts a full rubric with per-dimension justifications and rationale', () => {
+      const rubric = {
+        missionAlignment: { score: 90, justification: 'Strong mission alignment' },
+        geographicFocus: { score: 80, justification: 'Bay Area focus' },
+        programTrackrecord: { score: 85, justification: 'Strong track record' },
+        budgetCapacity: { score: 75, justification: 'Within band' },
+        partnershipReadiness: { score: 80, justification: 'Existing partnerships' },
+        overallRationale: 'Good fit for Hacker Dojo',
+        rubricVersion: 1,
+      };
+      expect(FitRubricSchema.safeParse(rubric).success).toBe(true);
+    });
+
+    it('rejects missing justification on a dimension', () => {
+      const bad = {
+        missionAlignment: { score: 90 },
+        geographicFocus: { score: 80, justification: 'g' },
+        programTrackrecord: { score: 85, justification: 'p' },
+        budgetCapacity: { score: 75, justification: 'b' },
+        partnershipReadiness: { score: 80, justification: 'r' },
+        overallRationale: 'good',
+        rubricVersion: 1,
+      };
+      expect(FitRubricSchema.safeParse(bad).success).toBe(false);
     });
   });
 
@@ -128,6 +157,37 @@ describe('shared/schemas', () => {
         checklist: [{ label: 'Test', done: false, source: 'Test' }],
         draftContent: 'Draft content here',
         externalUrl: 'https://example.com',
+      };
+      expect(GrantSchema.safeParse(grant).success).toBe(true);
+    });
+
+    it('should accept grant with new fitRubric + lastSeenAt + lastUpdatedAt + archivedAt fields', () => {
+      const grant = {
+        id: 'test-grant',
+        title: 'Test Grant',
+        funder: 'Test Funder',
+        funderShort: 'TF',
+        award: '$50,000',
+        awardSort: 50000,
+        deadline: 'Rolling',
+        daysOut: 0,
+        fit: 85,
+        tags: [],
+        status: 'archived',
+        statusLabel: 'Archived',
+        matchedAt: '2026-05-19',
+        fitRubric: {
+          missionAlignment: { score: 90, justification: 'm' },
+          geographicFocus: { score: 80, justification: 'g' },
+          programTrackrecord: { score: 85, justification: 'p' },
+          budgetCapacity: { score: 75, justification: 'b' },
+          partnershipReadiness: { score: 80, justification: 'r' },
+          overallRationale: 'good',
+          rubricVersion: 1,
+        },
+        lastSeenAt: '2026-05-19T00:00:00.000Z',
+        lastUpdatedAt: '2026-05-19T00:00:00.000Z',
+        archivedAt: '2026-05-20T00:00:00.000Z',
       };
       expect(GrantSchema.safeParse(grant).success).toBe(true);
     });
@@ -222,6 +282,27 @@ describe('shared/schemas', () => {
         overriddenAt: '2026-05-27T10:00:00.000Z',
         overriddenBy: 'operator',
         overrideType: 'status',
+      };
+      expect(HumanOverrideSchema.safeParse(override).success).toBe(true);
+    });
+
+    it('should accept human override with rubric overrideType', () => {
+      const override = {
+        field: 'fitRubric',
+        previousValue: null,
+        newValue: {
+          missionAlignment: { score: 90, justification: 'm' },
+          geographicFocus: { score: 80, justification: 'g' },
+          programTrackrecord: { score: 85, justification: 'p' },
+          budgetCapacity: { score: 75, justification: 'b' },
+          partnershipReadiness: { score: 80, justification: 'r' },
+          overallRationale: 'good',
+          rubricVersion: 1,
+        },
+        rationale: 'Operator corrected the rubric after a manual review',
+        overriddenAt: '2026-05-27T10:00:00.000Z',
+        overriddenBy: 'operator',
+        overrideType: 'rubric',
       };
       expect(HumanOverrideSchema.safeParse(override).success).toBe(true);
     });

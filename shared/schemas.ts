@@ -69,7 +69,30 @@ export const HumanOverrideSchema = z.object({
   rationale: z.string(),
   overriddenAt: z.string(),
   overriddenBy: z.string(),
-  overrideType: z.enum(['score', 'category', 'task', 'status']),
+  overrideType: z.enum(['score', 'category', 'task', 'status', 'rubric']),
+});
+
+export const FitRubricDimensionSchema = z.object({
+  score: z.number().min(0).max(100),
+  justification: z.string(),
+});
+
+export const FitRubricSchema = z.object({
+  missionAlignment: FitRubricDimensionSchema,
+  geographicFocus: FitRubricDimensionSchema,
+  programTrackrecord: FitRubricDimensionSchema,
+  budgetCapacity: FitRubricDimensionSchema,
+  partnershipReadiness: FitRubricDimensionSchema,
+  overallRationale: z.string(),
+  rubricVersion: z.number(),
+});
+
+export const ResearchEvidenceContentSchema = z.object({
+  deadline: z.string().optional(),
+  award_amount: z.string().optional(),
+  eligibility: z.string().optional(),
+  requirements: z.string().optional(),
+  fit_score: z.string().optional(),
 });
 
 export const GrantSchema = z.object({
@@ -87,6 +110,7 @@ export const GrantSchema = z.object({
   statusLabel: z.string(),
   matchedAt: z.string().optional(),
   fitBreakdown: FitScoreBreakdownSchema.optional(),
+  fitRubric: FitRubricSchema.optional(),
   checklist: z.array(ChecklistItemSchema).optional(),
   draftContent: z.string().optional(),
   externalUrl: z.string().optional(),
@@ -116,6 +140,10 @@ export const GrantSchema = z.object({
   humanOverrides: z.array(HumanOverrideSchema).optional(),
   attachments: z.array(GrantAttachmentSchema).optional(),
   lessonsLearned: z.string().optional(),
+  customFields: z.record(z.string()).optional(),
+  lastSeenAt: z.string().optional(),
+  lastUpdatedAt: z.string().optional(),
+  archivedAt: z.string().optional(),
 });
 
 const ContactInfoSchema = z.object({
@@ -372,7 +400,7 @@ const ResearchEvidenceSchema = z.object({
   capturedAt: z.string(),
 });
 
-const ResearchGrantSchema = z.object({
+export const ResearchGrantSchema = z.object({
   id: z.string().optional(),
   title: z.string(),
   funder: z.string(),
@@ -397,6 +425,21 @@ const ResearchGrantSchema = z.object({
       source: z.string().optional(),
     })
     .optional(),
+  fitRubric: FitRubricSchema.optional(),
+  changeClass: z.enum(['new', 'updated', 'unchanged']).optional(),
+  evidence: ResearchEvidenceContentSchema.optional(),
+  lastSeenConfirmed: z.boolean().optional(),
+});
+
+// Strict per-grant schema for new ingest: requires the rubric and classification
+// fields. The whole-response ResearchResponseSchema stays lenient so the
+// existing research-service fixtures (without these fields) still parse; this
+// strict schema is invoked per-grant in a try/catch so one bad grant is dropped
+// instead of losing the whole batch.
+export const ResearchGrantSchemaStrict = ResearchGrantSchema.extend({
+  fitRubric: FitRubricSchema,
+  changeClass: z.enum(['new', 'updated', 'unchanged']),
+  lastSeenConfirmed: z.boolean(),
 });
 
 export const ResearchResponseSchema = z.object({
@@ -708,6 +751,10 @@ export type {
   FundingHistoryEntry,
   ActivityEvent,
   FitScoreBreakdown,
+  FitRubric,
+  FitRubricDimension,
+  ResearchEvidenceContent,
+  ResearchChangeClass,
   ChecklistItem,
   CrawlStatus,
   Notification,

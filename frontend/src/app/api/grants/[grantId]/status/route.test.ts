@@ -224,4 +224,59 @@ describe('/api/grants/[grantId]/status', () => {
     expect(postResponse.status).toBe(400);
     expect(patchResponse.status).toBe(400);
   });
+
+  // ===== Archive / unarchive archivedAt contract =====
+
+  it('PATCH status=archived sets archivedAt and writes an audit metadata entry', async () => {
+    const before = (await repository.getGrant(grant.id))?.archivedAt;
+    expect(before).toBeUndefined();
+
+    const response = await PATCH(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'archived', statusLabel: 'Archived' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    expect(response.status).toBe(200);
+
+    const after = await repository.getGrant(grant.id);
+    expect(after?.status).toBe('archived');
+    expect(after?.archivedAt).toBeDefined();
+    expect(typeof after?.archivedAt).toBe('string');
+
+    const events = await repository.getAuditEvents();
+    const statusEvent = events.find((e) => e.eventType === 'grant_status_changed');
+    expect(statusEvent?.metadata?.archivedAt).toBe(after?.archivedAt);
+  });
+
+  it('PATCH status=matched from archived clears archivedAt', async () => {
+    // Archive first
+    await PATCH(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'archived', statusLabel: 'Archived' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    const archived = await repository.getGrant(grant.id);
+    expect(archived?.archivedAt).toBeDefined();
+
+    // Unarchive via the matched status. matched->archived and archived->matched are
+    // both legal transitions for the test fixture (status='matched' initial state).
+    const response = await PATCH(
+      new Request(`http://localhost/api/grants/${grant.id}/status`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ status: 'matched', statusLabel: 'Matched' }),
+      }) as never,
+      { params: Promise.resolve({ grantId: grant.id }) },
+    );
+    expect(response.status).toBe(200);
+    const cleared = await repository.getGrant(grant.id);
+    expect(cleared?.status).toBe('matched');
+    expect(cleared?.archivedAt).toBeUndefined();
+  });
 });

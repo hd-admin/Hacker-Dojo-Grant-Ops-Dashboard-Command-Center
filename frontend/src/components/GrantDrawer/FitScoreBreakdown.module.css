@@ -3,3 +3,18 @@
 .fitRowBar {
   transform-origin: left;
 }
+
+.fitRowJustification {
+  grid-column: 1 / -1;
+  margin: 4px 0 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.overallRationale {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text);
+}

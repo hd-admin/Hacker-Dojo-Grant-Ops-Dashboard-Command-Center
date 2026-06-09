@@ -72,7 +72,11 @@ interface TestHarnessProps {
 }
 
 function TestHarness({ status, type, pollIntervalMs }: TestHarnessProps) {
-  const { jobs, isLoading, error, refresh } = useJobsFeed({ status, type, pollIntervalMs });
+  const opts: { status?: 'all' | JobQueueItem['status']; type?: 'all' | JobQueueItem['jobType']; pollIntervalMs?: number } = {};
+  if (status !== undefined) opts.status = status;
+  if (type !== undefined) opts.type = type;
+  if (pollIntervalMs !== undefined) opts.pollIntervalMs = pollIntervalMs;
+  const { jobs, isLoading, error, refresh } = useJobsFeed(opts);
   const jobsRef = useRef<JobQueueItem[]>([]);
   jobsRef.current = jobs;
   return React.createElement(
@@ -105,14 +109,11 @@ interface MultiHarnessProps {
 function MultiHarness({ count, pollIntervalMs, status, type }: MultiHarnessProps) {
   const items: React.ReactElement[] = [];
   for (let i = 0; i < count; i += 1) {
-    items.push(
-      React.createElement(TestHarness, {
-        key: `h-${i}`,
-        pollIntervalMs,
-        status,
-        type,
-      }),
-    );
+    const childProps: { key: string; pollIntervalMs?: number; status?: 'all' | JobQueueItem['status']; type?: 'all' | JobQueueItem['jobType'] } = { key: `h-${i}` };
+    if (pollIntervalMs !== undefined) childProps.pollIntervalMs = pollIntervalMs;
+    if (status !== undefined) childProps.status = status;
+    if (type !== undefined) childProps.type = type;
+    items.push(React.createElement(TestHarness, childProps));
   }
   return React.createElement('div', { 'data-testid': `multi-harness-count-${count}` }, ...items);
 }

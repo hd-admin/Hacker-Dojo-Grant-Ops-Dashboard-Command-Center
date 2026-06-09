@@ -4,12 +4,13 @@ import { logger } from '@/lib/logger';
 import { z } from 'zod';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import type {
+  FitRubric,
   Grant,
   GrantStatus,
   HumanOverride,
   TaskStatus,
 } from '../../../../../../../shared/types';
-import { GrantStatusSchema } from '../../../../../../../shared/schemas';
+import { FitRubricSchema, GrantStatusSchema } from '../../../../../../../shared/schemas';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +25,7 @@ const OVERRIDABLE_FIELDS = [
   'funder',
   'funderShort',
   'category',
+  'fitRubric',
 ] as const;
 type OverridableField = (typeof OVERRIDABLE_FIELDS)[number];
 
@@ -34,7 +36,7 @@ const bodySchema = z.object({
   field: z.union([z.enum(OVERRIDABLE_FIELDS), z.string().regex(TASK_OVERRIDE_FIELD_REGEX)]),
   newValue: z.unknown(),
   rationale: z.string().min(1),
-  overrideType: z.enum(['score', 'category', 'task', 'status']),
+  overrideType: z.enum(['score', 'category', 'task', 'status', 'rubric']),
 });
 
 const VALID_TASK_STATUSES: TaskStatus[] = [
@@ -48,7 +50,7 @@ const VALID_TASK_STATUSES: TaskStatus[] = [
 function validateNewValueForField(
   field: OverridableField,
   value: unknown,
-): { success: true; parsed: GrantStatus | string | number } | { success: false; error: string } {
+): { success: true; parsed: GrantStatus | string | number | FitRubric } | { success: false; error: string } {
   switch (field) {
     case 'status': {
       const result = GrantStatusSchema.safeParse(value);
@@ -66,6 +68,16 @@ function validateNewValueForField(
         return { success: false, error: 'Fit score must be a number between 0 and 100' };
       }
       return { success: true, parsed: num };
+    }
+    case 'fitRubric': {
+      const result = FitRubricSchema.safeParse(value);
+      if (!result.success) {
+        return {
+          success: false,
+          error: 'fitRubric must be a FitRubric object with 5 dimension scores, justifications, overallRationale, and rubricVersion',
+        };
+      }
+      return { success: true, parsed: result.data };
     }
     case 'statusLabel':
     case 'award':
@@ -186,10 +198,23 @@ export async function POST(
         return NextResponse.json({ error: valueValidation.error }, { status: 400 });
       }
 
+      // For fitRubric the audit metadata must be the stringified-and-truncated form
+      // (not the raw object), so the audit log row size stays bounded. The actual
+      // stored value on the grant is the full FitRubric object. The truncated string
+      // must end on a valid JSON boundary, so we close out the JSON object after slicing.
+      const truncateJson = (val: unknown): string => {
+        const s = JSON.stringify(val);
+        return s.length > 200 ? `${s.slice(0, 200 - 1)}…` : s;
+      };
+      const auditPrevious =
+        field === 'fitRubric' ? truncateJson(grant.fitRubric ?? null) : Reflect.get(grant, field);
+      const auditNew =
+        field === 'fitRubric' ? truncateJson(valueValidation.parsed) : valueValidation.parsed;
+
       override = {
         field: field,
-        previousValue: Reflect.get(grant, field),
-        newValue: valueValidation.parsed,
+        previousValue: auditPrevious,
+        newValue: auditNew,
         rationale: parsed.data.rationale,
         overriddenAt: new Date().toISOString(),
         overriddenBy: 'operator',
@@ -212,6 +237,9 @@ export async function POST(
           break;
         case 'fit':
           updates.fit = valueValidation.parsed as number;
+          break;
+        case 'fitRubric':
+          updates.fitRubric = valueValidation.parsed as FitRubric;
           break;
       }
     }

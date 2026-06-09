@@ -1,5 +1,40 @@
 import type { Grant, OrganizationProfile, Source } from './types';
 
+const SEED_TIMESTAMP = '2026-05-01T00:00:00.000Z';
+
+function buildFitRubric(score: number, dimensions: {
+  missionAlignment: number;
+  geographicFocus: number;
+  programTrackrecord: number;
+  budgetCapacity: number;
+  partnershipReadiness: number;
+}): NonNullable<Grant['fitRubric']> {
+  return {
+    missionAlignment: {
+      score: dimensions.missionAlignment,
+      justification: `Mission alignment: ${score} — supports Hacker Dojo's mission.`,
+    },
+    geographicFocus: {
+      score: dimensions.geographicFocus,
+      justification: `Geographic focus: ${score} — Bay Area / regional fit.`,
+    },
+    programTrackrecord: {
+      score: dimensions.programTrackrecord,
+      justification: `Program track record: ${score} — strong past delivery.`,
+    },
+    budgetCapacity: {
+      score: dimensions.budgetCapacity,
+      justification: `Budget capacity: ${score} — within Hacker Dojo's $25K-$250K band.`,
+    },
+    partnershipReadiness: {
+      score: dimensions.partnershipReadiness,
+      justification: `Partnership readiness: ${score} — leverages existing partnerships.`,
+    },
+    overallRationale: `Overall fit ${score} for Hacker Dojo.`,
+    rubricVersion: 1,
+  };
+}
+
 export const testFixtureGrants: Grant[] = [
   {
     id: 'nsf-techaccess',
@@ -15,7 +50,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Federal', 'STEM Education'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 90,
       geographicFocus: 85,
@@ -23,6 +58,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 92,
       partnershipReadiness: 85,
     },
+    fitRubric: buildFitRubric(88, {
+      missionAlignment: 90,
+      geographicFocus: 85,
+      programTrackrecord: 88,
+      budgetCapacity: 92,
+      partnershipReadiness: 85,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'NSF funds transformative STEM education and workforce initiatives.',
     sourceCount: 1,
   },
@@ -40,7 +84,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Federal', 'Community'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 88,
       geographicFocus: 84,
@@ -48,6 +92,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 90,
       partnershipReadiness: 83,
     },
+    fitRubric: buildFitRubric(86, {
+      missionAlignment: 88,
+      geographicFocus: 84,
+      programTrackrecord: 86,
+      budgetCapacity: 90,
+      partnershipReadiness: 83,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'FCC promotes digital equity and broadband access through education grants.',
     sourceCount: 1,
   },
@@ -65,7 +118,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Foundation', 'Education'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 86,
       geographicFocus: 82,
@@ -73,6 +126,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 80,
       partnershipReadiness: 87,
     },
+    fitRubric: buildFitRubric(84, {
+      missionAlignment: 86,
+      geographicFocus: 82,
+      programTrackrecord: 85,
+      budgetCapacity: 80,
+      partnershipReadiness: 87,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'Morrell Foundation supports educational equity and access programs.',
     sourceCount: 1,
   },
@@ -90,7 +152,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Foundation', 'Community'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 84,
       geographicFocus: 90,
@@ -98,6 +160,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 78,
       partnershipReadiness: 80,
     },
+    fitRubric: buildFitRubric(82, {
+      missionAlignment: 84,
+      geographicFocus: 90,
+      programTrackrecord: 82,
+      budgetCapacity: 78,
+      partnershipReadiness: 80,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'SVCF provides grants to strengthen communities across Silicon Valley.',
     sourceCount: 1,
   },
@@ -115,7 +186,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Foundation', 'Science & Tech'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 82,
       geographicFocus: 78,
@@ -123,6 +194,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 76,
       partnershipReadiness: 83,
     },
+    fitRubric: buildFitRubric(80, {
+      missionAlignment: 82,
+      geographicFocus: 78,
+      programTrackrecord: 81,
+      budgetCapacity: 76,
+      partnershipReadiness: 83,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'Horizon Grants funds innovation and technology education programs.',
     sourceCount: 1,
   },
@@ -140,7 +220,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['EdTech', 'STEM Education'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 81,
       geographicFocus: 77,
@@ -148,6 +228,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 75,
       partnershipReadiness: 82,
     },
+    fitRubric: buildFitRubric(79, {
+      missionAlignment: 81,
+      geographicFocus: 77,
+      programTrackrecord: 80,
+      budgetCapacity: 75,
+      partnershipReadiness: 82,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'Google.org supports computer science education and digital skills programs.',
     sourceCount: 1,
   },
@@ -165,7 +254,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Foundation', 'Community'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 80,
       geographicFocus: 76,
@@ -173,6 +262,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 74,
       partnershipReadiness: 81,
     },
+    fitRubric: buildFitRubric(78, {
+      missionAlignment: 80,
+      geographicFocus: 76,
+      programTrackrecord: 79,
+      budgetCapacity: 74,
+      partnershipReadiness: 81,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'United Way funds community-based education and health initiatives.',
     sourceCount: 1,
   },
@@ -190,7 +288,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Foundation', 'Education'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 79,
       geographicFocus: 88,
@@ -198,6 +296,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 73,
       partnershipReadiness: 78,
     },
+    fitRubric: buildFitRubric(77, {
+      missionAlignment: 79,
+      geographicFocus: 88,
+      programTrackrecord: 77,
+      budgetCapacity: 73,
+      partnershipReadiness: 78,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'Stanford provides education outreach and community partnership grants.',
     sourceCount: 1,
   },
@@ -215,7 +322,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Corporate'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 78,
       geographicFocus: 74,
@@ -223,6 +330,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 72,
       partnershipReadiness: 79,
     },
+    fitRubric: buildFitRubric(76, {
+      missionAlignment: 78,
+      geographicFocus: 74,
+      programTrackrecord: 77,
+      budgetCapacity: 72,
+      partnershipReadiness: 79,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'Dell Technologies Equality Fund supports digital inclusion and STEM equity.',
     sourceCount: 1,
   },
@@ -240,7 +356,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Foundation', 'EdTech'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 75,
       geographicFocus: 71,
@@ -248,6 +364,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 69,
       partnershipReadiness: 76,
     },
+    fitRubric: buildFitRubric(73, {
+      missionAlignment: 75,
+      geographicFocus: 71,
+      programTrackrecord: 74,
+      budgetCapacity: 69,
+      partnershipReadiness: 76,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'Mellon Foundation supports arts, humanities, and educational innovation.',
     sourceCount: 1,
   },
@@ -265,7 +390,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Foundation', 'Community'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 73,
       geographicFocus: 69,
@@ -273,6 +398,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 67,
       partnershipReadiness: 74,
     },
+    fitRubric: buildFitRubric(71, {
+      missionAlignment: 73,
+      geographicFocus: 69,
+      programTrackrecord: 72,
+      budgetCapacity: 67,
+      partnershipReadiness: 74,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'Kresge Foundation supports creative placemaking and community development.',
     sourceCount: 1,
   },
@@ -290,7 +424,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Science & Tech', 'EdTech'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 70,
       geographicFocus: 66,
@@ -298,6 +432,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 64,
       partnershipReadiness: 71,
     },
+    fitRubric: buildFitRubric(68, {
+      missionAlignment: 70,
+      geographicFocus: 66,
+      programTrackrecord: 69,
+      budgetCapacity: 64,
+      partnershipReadiness: 71,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'WWF supports environmental STEM education and conservation equity programs.',
     sourceCount: 1,
   },
@@ -315,7 +458,7 @@ export const testFixtureGrants: Grant[] = [
     tags: ['Federal', 'Community'],
     status: 'matched',
     statusLabel: 'Matched',
-    matchedAt: '2026-05-01T00:00:00.000Z',
+    matchedAt: SEED_TIMESTAMP,
     fitBreakdown: {
       missionAlignment: 67,
       geographicFocus: 63,
@@ -323,6 +466,15 @@ export const testFixtureGrants: Grant[] = [
       budgetCapacity: 61,
       partnershipReadiness: 68,
     },
+    fitRubric: buildFitRubric(65, {
+      missionAlignment: 67,
+      geographicFocus: 63,
+      programTrackrecord: 66,
+      budgetCapacity: 61,
+      partnershipReadiness: 68,
+    }),
+    lastSeenAt: SEED_TIMESTAMP,
+    lastUpdatedAt: SEED_TIMESTAMP,
     funderSummary: 'DEA provides youth education and prevention program grants.',
     sourceCount: 1,
   },
