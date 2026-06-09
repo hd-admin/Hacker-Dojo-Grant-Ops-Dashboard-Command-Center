@@ -28,7 +28,14 @@
     "verify": "./scripts/verify.sh",
     "smoke:propublica": "bash scripts/smoke-test-propublica.sh",
     "smoke:opencode": "bash scripts/smoke-test-opencode.sh",
-    "smoke:crawl": "bash scripts/smoke-test-crawl-e2e.sh"
+    "smoke:crawl": "bash scripts/smoke-test-crawl-e2e.sh",
+    "db:path": "tsx scripts/print-grant-ops-data-dir.ts",
+    "db:backup": "tsx scripts/backup-database.ts",
+    "db:clear": "tsx scripts/clear-database.ts",
+    "db:reset": "tsx scripts/backup-database.ts && tsx scripts/clear-database.ts",
+    "clean": "node -e \"const fs=require('fs');for(const p of ['frontend/.next','.next','frontend/tsconfig.tsbuildinfo']){fs.rmSync(p,{recursive:true,force:true})}console.log('Removed build artifacts')\"",
+    "clean:cache": "node -e \"const fs=require('fs');for(const p of ['test-results','playwright-report','frontend/coverage','coverage']){fs.rmSync(p,{recursive:true,force:true})}console.log('Removed test/coverage outputs')\"",
+    "clean:all": "npm run clean && npm run clean:cache && npm run db:clear"
   },
   "dependencies": {
     "adm-zip": "^0.5.17",

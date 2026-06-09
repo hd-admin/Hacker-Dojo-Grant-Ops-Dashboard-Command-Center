@@ -105,6 +105,22 @@ The app includes a built-in backup/restore system accessible from the Settings v
 | `pnpm typecheck` / `npm run typecheck` | Type-check the codebase                    |
 | `bash scripts/setup-check.sh`          | Verify your environment is ready           |
 
+### Housekeeping
+
+| Command                                  | Purpose                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------ |
+| `npm run db:path`                        | Print the local data directory and SQLite database path            |
+| `npm run db:backup`                      | Snapshot the SQLite database to a timestamped backup               |
+| `npm run db:clear`                       | Wipe the local database + documents (re-seeded on next `dev`)      |
+| `npm run db:reset`                       | Back up, then clear the database (fresh seed on next `dev`)        |
+| `npm run clean`                          | Remove build artifacts (`.next`, tsbuildinfo)                      |
+| `npm run clean:cache`                    | Remove test/coverage outputs (`test-results`, `coverage`, …)       |
+| `npm run clean:all`                      | Run `clean`, `clean:cache`, and `db:clear` together                |
+
+The local database lives under `.grant-ops-data/` (git-ignored). `db:clear` removes
+the SQLite files, sidecars, backups, and `documents/`, but leaves `logs/` intact.
+The app re-bootstraps a fresh, seeded database on the next `npm run dev` / `npm run start`.
+
 ## Configuring OpenCode
 
 OpenCode is the AI agent that powers research and drafting. To set it up:
