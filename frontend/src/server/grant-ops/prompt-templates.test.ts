@@ -56,7 +56,14 @@ describe('prompt-templates', () => {
 
       it('contains JSON schema', () => {
         const prompt = buildPrompt(jobType as never, {}, '/tmp/test-artifact.json');
-        expect(prompt).toContain('"artifactType"');
+        // The research prompt embeds the strict FitRubric grant schema
+        // (re-derived from ResearchGrantSchemaStrict) instead of the artifact
+        // envelope. Other job types keep the artifact envelope.
+        if (jobType === 'research') {
+          expect(prompt).toContain('fitRubric');
+        } else {
+          expect(prompt).toContain('"artifactType"');
+        }
       });
 
       it('includes organization context', () => {

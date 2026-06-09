@@ -104,7 +104,10 @@ describe('pipeline-logic', () => {
     });
 
     it('returns empty array for archived', () => {
-      expect(getNextStates('archived')).toEqual([]);
+      // Archived is a soft-archive state. The unarchive path lets the operator
+      // move an archived grant back to 'matched' so the lifecycle stays
+      // reversible per the product spec.
+      expect(getNextStates('archived')).toEqual(['matched']);
     });
   });
 

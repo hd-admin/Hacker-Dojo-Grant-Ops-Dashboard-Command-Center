@@ -16,7 +16,6 @@ import {
 } from '../../../../shared/schemas';
 import type {
   CrawlRun,
-  FitRubric,
   Grant,
   GrantContact,
   Notification,
@@ -30,27 +29,6 @@ import { type Clock, getDependencies, type IdGenerator } from './dependencies';
 import { ensureProPublicaSourceRegistered } from './propublica-service';
 import { scoreGrantByThemes } from './theme-service';
 import { checkUrlsLiveness } from './url-liveness';
-
-/**
- * Convert a per-dimension score list into a default FitRubric shell. When a
- * grant carries an LLM-authored rubric, the research service uses that
- * verbatim; this helper is the fallback for grants ingested without one.
- */
-function buildFitRubricFromScore(
-  fit: number,
-  rationale: string,
-): FitRubric {
-  const normalized = Math.min(100, Math.max(0, fit));
-  return {
-    missionAlignment: { score: normalized, justification: rationale },
-    geographicFocus: { score: normalized, justification: rationale },
-    programTrackrecord: { score: normalized, justification: rationale },
-    budgetCapacity: { score: normalized, justification: rationale },
-    partnershipReadiness: { score: normalized, justification: rationale },
-    overallRationale: rationale,
-    rubricVersion: 1,
-  };
-}
 
 export class NoSourcesConfiguredError extends Error {
   public readonly code = 'NO_SOURCES_CONFIGURED';

@@ -323,6 +323,19 @@ export async function removeGrant(grantId: string): Promise<{ success: boolean }
     );
   }
 
+  await addAuditEvent({
+    id: `${grantId}-delete-${Date.now()}`,
+    eventType: 'grant_deleted',
+    entityId: grantId,
+    entityType: 'grant',
+    actorLabel: 'operator',
+    timestamp: new Date().toISOString(),
+    metadata: {
+      previousTitle: previous.title,
+      previousFunder: previous.funder,
+    },
+  });
+
   return { success: true };
 }
 

@@ -94,7 +94,9 @@ describe('DiscoveryView', () => {
     mockGetAllGrants.mockResolvedValue({ items: [], total: 0, page: 1, pageSize: 25 });
     mockGetAllSources.mockResolvedValue([]);
     mockGetRuns.mockResolvedValue({ latestRun: null, allRuns: [] });
-    window.localStorage.clear();
+    if (typeof window.localStorage?.clear === 'function') {
+      window.localStorage.clear();
+    }
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({

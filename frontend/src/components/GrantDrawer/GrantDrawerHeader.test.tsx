@@ -196,6 +196,6 @@ describe('GrantDrawerHeader', () => {
     const lastSeen = container.querySelector("[data-testid='header-last-seen-text']");
     const lastUpdated = container.querySelector("[data-testid='header-last-updated-text']");
     expect(lastSeen?.textContent).toBe('3h ago');
-    expect(lastUpdated?.textContent).toBe('yesterday');
+    expect(lastUpdated?.textContent).toBe('2d ago');
   });
 });

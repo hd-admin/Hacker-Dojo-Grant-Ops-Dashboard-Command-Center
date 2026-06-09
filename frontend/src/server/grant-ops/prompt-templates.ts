@@ -8,15 +8,9 @@ import 'server-only';
  * Prompts are tested for no placeholder text (AC-15.7.1).
  */
 
-import { z } from 'zod';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 import type { AgentTaskType } from '../../../../shared/types';
-import {
-  FitRubricSchema,
-  ResearchEvidenceContentSchema,
-  ResearchGrantSchema,
-  ResearchGrantSchemaStrict,
-} from '../../../../shared/schemas';
+import { ResearchGrantSchemaStrict } from '../../../../shared/schemas';
 import { HARDCODED_PROFILE } from './hardcoded-profile';
 
 function getOrgContext(): string {

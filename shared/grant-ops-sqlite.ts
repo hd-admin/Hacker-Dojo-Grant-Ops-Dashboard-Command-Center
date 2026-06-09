@@ -1276,7 +1276,7 @@ export async function truncateDatabase(state: SqliteBootstrapState): Promise<voi
   initialized.delete(state.dataDir);
 }
 
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export function getCurrentSchemaVersion(state: SqliteBootstrapState): number {
   const db = openDatabase(state);
