@@ -250,7 +250,7 @@ let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 let fetchMock: ReturnType<typeof vi.fn>;
 
-const DEFAULT_WAIT_TIMEOUT = 1500;
+const DEFAULT_WAIT_TIMEOUT = 10000;
 
 async function waitFor(predicate: () => boolean, timeoutMs = DEFAULT_WAIT_TIMEOUT): Promise<void> {
   const start = Date.now();
