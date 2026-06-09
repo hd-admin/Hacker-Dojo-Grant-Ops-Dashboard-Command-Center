@@ -550,7 +550,10 @@ class CliOpencodeProvider implements OpencodeAdapter {
   private async runCommand(args: string[]): Promise<OpencodeResponse> {
     return new Promise((resolve) => {
       const binaryPath = this.settings.binaryPath || getCachedOpencodePath() || 'opencode';
-      const timeoutMs = this.settings.timeoutMs || 60000;
+      // Real agentic research (search + fetch the API/feed behind a SPA + verify
+      // deadlines across many pages) routinely runs 2-3 minutes. Default to 300s so
+      // genuine deep work is not killed mid-flight and reported as a false timeout.
+      const timeoutMs = this.settings.timeoutMs || 300000;
 
       // Always run non-interactively: the default agent will otherwise block on a
       // tool-permission prompt forever (stdin is ignored), which manifests as a
@@ -679,7 +682,52 @@ ${request.searchThemes.join(', ')}
 == Funding source to crawl ==
 ${request.sourceName ? `Name: ${request.sourceName}` : ''}
 ${request.sourceUrl ? `URL: ${request.sourceUrl}` : ''}
-Fetch and read this source thoroughly; base every grant on what it actually says.
+
+Treat this URL as your STARTING POINT, not your only source. Many funder sites are
+JavaScript single-page apps whose static HTML has NO grant data (e.g. empty
+"Posted (0)" shells). Do NOT give up when that happens. Work through hard sources in
+this order, and only stop when genuinely exhausted:
+1. Fetch the URL. If it renders real listings, use them.
+2. If the static HTML is a JS SPA / empty shell AND a headless browser tool is
+   available (e.g. the Playwright MCP: browser_navigate, browser_snapshot), use it to
+   render the page and read the rendered DOM. ALWAYS run the browser in HEADLESS mode.
+   The Playwright MCP may not be installed on every machine — if it is unavailable,
+   continue to the next step.
+3. Find and query the source's machine-readable data: its public REST/JSON API, search
+   endpoint, RSS/Atom feed, sitemap, or data export. Common patterns: api.<domain>,
+   <domain>/api/..., /search, /opportunities, *.json. For US federal grants use the
+   Grants.gov Search2 API (https://api.grants.gov/v1/api/search2) and agency APIs
+   (e.g. NSF) directly.
+4. Use WEB SEARCH to find this funder's currently-open grant programs, RFPs, and
+   deadlines, then fetch those pages to verify the details.
+5. Cross-check each grant's deadline and eligibility on the funder's own pages. Exclude
+   any program that is closed, expired, or not currently accepting applications.
+Return an empty grants array ONLY after you have tried the static page, a headless
+browser render (if available), the API/feed, AND web search, and confirmed nothing is
+currently open. Base every grant on a real page you actually loaded — never invent.
+
+== Maximize coverage (get as much real data as possible) ==
+- Enumerate EVERY distinct open opportunity, not just the first or most obvious. One
+  funder often runs many concurrent programs — capture all that plausibly fit.
+- Follow pagination and "load more"/next-page links until the listing is fully
+  exhausted; never stop at the first page of results.
+- Open individual opportunity/program detail pages to extract the real deadline, award
+  range, and eligibility — list/index pages usually omit these.
+- Include all relevant funding types: federal, state, and local government grants;
+  private and community foundation grants; corporate giving; fellowships; prizes and
+  awards; and challenge/competition funding.
+- Handle rolling, recurring, and LOI-first opportunities: if there is no single fixed
+  deadline, use the next cycle/inquiry date and say so in the evidence content.
+- Capture forecasted/upcoming opportunities (not yet open) and mark them in the
+  rationale — but exclude clearly closed or expired cycles.
+- Record at least one evidence item per grant with the exact URL you read it from;
+  prefer several (deadline, award_amount, eligibility, requirements) when available.
+- Edge cases: de-duplicate the same program appearing on multiple pages or via multiple
+  paths; if an award or deadline is genuinely unspecified, still include the grant and
+  simply omit those optional fields rather than guessing; normalize award text to a
+  numeric awardSort (use the upper bound of a range).
+- Favor thoroughness over speed: fetching more pages and returning more verified grants
+  is the goal. There is no upper limit on how many grants you may return.
 
 == Already-tracked grants (DO NOT return these again) ==
 ${existingBlock}

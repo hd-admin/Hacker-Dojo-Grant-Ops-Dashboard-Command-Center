@@ -153,7 +153,7 @@ export async function runResearch(
     const defaultSettings: OpencodeSettings = {
       binaryPath: '',
       workingDirectory: '',
-      timeoutMs: 60000,
+      timeoutMs: 300000,
       isConfigured: false,
     };
     const adapter = deps.createOpencodeAdapter(settings || defaultSettings, providerType);

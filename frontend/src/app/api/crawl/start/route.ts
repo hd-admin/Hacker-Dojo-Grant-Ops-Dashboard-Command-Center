@@ -50,11 +50,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // Self-heal the stored flag so the UI, scheduler, and other gates agree with
     // reality. Leave binaryPath empty when auto-detected so it keeps re-resolving
     // from PATH (robust across nvm/node version changes).
-    if (!settings?.isConfigured) {
+    // Also normalize a too-low timeout: 60s (the old unconfigured default) kills real
+    // agentic research mid-flight. Deep crawl research (API discovery + web search +
+    // verification) needs ~5 minutes.
+    const needsTimeoutBump = (settings?.timeoutMs ?? 0) < 240000;
+    if (!settings?.isConfigured || needsTimeoutBump) {
       await deps.repository.updateOpencodeSettings({
         binaryPath: settings?.binaryPath ?? '',
         workingDirectory: settings?.workingDirectory ?? '',
-        timeoutMs: settings?.timeoutMs ?? 60000,
+        timeoutMs: Math.max(settings?.timeoutMs ?? 0, 300000),
         isConfigured: true,
       });
     }

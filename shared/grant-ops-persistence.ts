@@ -183,26 +183,20 @@ function normalizeGrantDetailFields(grant: Grant): Grant {
 }
 
 export async function loadGrants(): Promise<Grant[]> {
-  const dataDir = getDATA_DIR();
-  if (grantsCache.has(dataDir)) {
-    const cachedGrants = grantsCache.get(dataDir);
-    if (!cachedGrants) {
-      throw new Error('Cached grants missing for current data dir');
-    }
-    return [...cachedGrants];
-  }
-
-  const grants = (await readGrantsFromSqlite(getSqliteState())).map((grant) =>
+  // No read cache: this is a single-process desktop app backed by local SQLite, and an
+  // in-memory cache is not coherent across Next.js route-handler bundles (a background
+  // crawl writing grants would not be visible to the /api/grants handler's cache). The
+  // DB is the single source of truth and reads are sub-millisecond, so always read it.
+  return (await readGrantsFromSqlite(getSqliteState())).map((grant) =>
     normalizeGrantDetailFields(grant),
   );
-  grantsCache.set(dataDir, grants);
-  return [...grants];
 }
 
 export async function saveGrants(grants: Grant[]): Promise<void> {
   const dataDir = getDATA_DIR();
   const normalizedGrants = grants.map((grant) => normalizeGrantDetailFields(grant));
-  grantsCache.set(dataDir, normalizedGrants);
+  // Keep any legacy cache entry from going stale, and invalidate the aggregate.
+  grantsCache.delete(dataDir);
   dataCache.delete(dataDir);
   await writeGrantsToSqlite(getSqliteState(), normalizedGrants);
 }
