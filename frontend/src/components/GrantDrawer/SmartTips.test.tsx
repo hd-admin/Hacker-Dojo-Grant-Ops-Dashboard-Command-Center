@@ -264,10 +264,10 @@ describe('SmartTips', () => {
     expect(container.textContent).not.toContain('Submission blocked');
   });
 
-  it('renders Open in editor and View on grants.gov buttons', async () => {
+  it('renders Open in editor and View source buttons', async () => {
     root.render(React.createElement(SmartTips, defaultProps()));
     await waitFor(() => container.textContent?.includes('Open in editor') === true);
-    expect(container.textContent).toContain('View on grants.gov');
+    expect(container.textContent).toContain('View source');
   });
 
   it('renders submission runbook for submission-ready grants', async () => {

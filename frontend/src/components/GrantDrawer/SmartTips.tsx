@@ -317,7 +317,7 @@ export function SmartTips({
             Open in editor
           </button>
           <button type="button" className="btn btn-ghost" onClick={handleViewOnGrantsGov}>
-            View on grants.gov
+            View source ↗
           </button>
         </div>
         {!detail.workflow.canSubmit && viewModel.submitDisabledReason && (

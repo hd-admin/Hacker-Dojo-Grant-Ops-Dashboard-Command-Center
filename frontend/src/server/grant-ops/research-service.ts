@@ -14,6 +14,7 @@ import { ResearchResponseSchema } from '../../../../shared/schemas';
 import type {
   CrawlRun,
   Grant,
+  GrantContact,
   Notification,
   OpencodeSettings,
   OrganizationProfile,
@@ -24,6 +25,7 @@ import { escapeForHtml } from '../../lib/sanitize-html';
 import { type Clock, getDependencies, type IdGenerator } from './dependencies';
 import { ensureProPublicaSourceRegistered } from './propublica-service';
 import { scoreGrantByThemes } from './theme-service';
+import { checkUrlsLiveness } from './url-liveness';
 
 export class NoSourcesConfiguredError extends Error {
   public readonly code = 'NO_SOURCES_CONFIGURED';
@@ -303,6 +305,7 @@ async function performResearch(
   let hadPartialOutput = false;
   let succeededSources = 0;
   let failedSources = 0;
+  let droppedNoFollowUp = 0;
   const failureDetails: string[] = [];
   const existingGrants = await deps.repository.getGrants();
   const orgProfileText = formatOrgProfileForPrompt(profile);
@@ -344,6 +347,17 @@ async function performResearch(
           const evidence = (researchData.evidence || []) as ResearchEvidence[];
           totalGrantsFound += grants.length;
 
+          // Visit every candidate source URL and classify liveness, so we never persist
+          // a 404. Done once per source, concurrently, before ingesting.
+          const candidateUrls: string[] = [];
+          for (const g of grants) {
+            if (g.url) candidateUrls.push(g.url);
+            for (const e of evidence) {
+              if (e.grantId === g.id && e.url) candidateUrls.push(e.url);
+            }
+          }
+          const urlLiveness = await checkUrlsLiveness(candidateUrls);
+
           // Add new grants
           for (const grantData of grants) {
             const title = grantData.title;
@@ -354,6 +368,33 @@ async function performResearch(
 
             const grantEvidence = evidence.filter((item) => item.grantId === grantData.id);
             const researchRationale = researchData.rationale;
+
+            // Pick the best WORKING full source URL: prefer a live one, then an unknown
+            // (bot-blocked/transient), and never a dead 404. Drop grants that have no
+            // usable url AND no contact info — they can't be acted on.
+            const urlChoices = [grantData.url, ...grantEvidence.map((e) => e.url)].filter(
+              (u): u is string => !!u,
+            );
+            const externalUrl =
+              urlChoices.find((u) => urlLiveness.get(u) === 'live') ??
+              urlChoices.find((u) => urlLiveness.get(u) === 'unknown');
+            const contact = grantData.contact as GrantContact | undefined;
+            const hasContact = !!(
+              contact &&
+              (contact.email ||
+                contact.phone ||
+                contact.applicationUrl ||
+                contact.programOfficer ||
+                contact.notes)
+            );
+            if (!externalUrl && !hasContact) {
+              droppedNoFollowUp++;
+              logger.warn(
+                { title, funder },
+                'Dropping grant: no working source URL and no contact info to follow up',
+              );
+              continue;
+            }
 
             // Check if grant already exists
             const existing = existingGrants.find((g) => g.title === title && g.funder === funder);
@@ -376,6 +417,8 @@ async function performResearch(
                   grantData.fit ??
                   (await scoreGrantByThemes(grantData.tags ?? profile.searchThemes.slice(0, 2))),
                 tags: grantData.tags || profile.searchThemes.slice(0, 2),
+                ...(externalUrl ? { externalUrl } : {}),
+                ...(hasContact ? { contact } : {}),
                 status: 'matched',
                 statusLabel: 'Matched',
                 matchedAt: clock.now().toISOString(),
@@ -428,6 +471,8 @@ async function performResearch(
                   }),
                 researchEvidence: mergedEvidence,
                 ...(mergedRationale ? { researchRationale: mergedRationale } : {}),
+                ...(!existing.externalUrl && externalUrl ? { externalUrl } : {}),
+                ...(!existing.contact && hasContact ? { contact } : {}),
               };
               await deps.repository.updateGrant(existing.id, updatedGrant);
               Object.assign(existing, updatedGrant);
@@ -450,6 +495,12 @@ async function performResearch(
     } else {
       succeededSources++;
     }
+  }
+
+  if (droppedNoFollowUp > 0) {
+    logger.info(
+      `Dropped ${droppedNoFollowUp} crawled grant(s) with a dead/missing source URL and no contact info`,
+    );
   }
 
   // Determine the run's status honestly. Zero grants is NOT a failure — only an

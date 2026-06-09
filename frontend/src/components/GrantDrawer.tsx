@@ -512,11 +512,14 @@ export function GrantDrawer({
   };
 
   const handleViewOnGrantsGov = () => {
-    if (detail) {
-      window.open(
-        `https://www.grants.gov/search?keyword=${encodeURIComponent(detail.grant.title)}`,
-      );
-    }
+    if (!detail) return;
+    // Prefer the real source/application URL captured during the crawl. Only fall back
+    // to a generic Grants.gov keyword search when no source URL was recorded.
+    const url =
+      detail.grant.externalUrl ??
+      detail.grant.researchEvidence?.find((e) => e.url)?.url ??
+      `https://www.grants.gov/search?keyword=${encodeURIComponent(detail.grant.title)}`;
+    window.open(url);
   };
 
   const handleCreateFollowUp = async () => {
@@ -700,6 +703,63 @@ export function GrantDrawer({
               handleSaveRunbook={handleSaveRunbook}
               runbookSaving={runbookSaving}
             />
+
+            <div className="drawer-section" data-testid="source-contact-section">
+              <h3>Source &amp; Contact</h3>
+              {detail.grant.externalUrl ? (
+                <p>
+                  Source:{' '}
+                  <a
+                    href={detail.grant.externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="grant-source-link"
+                  >
+                    {detail.grant.externalUrl}
+                  </a>
+                </p>
+              ) : (
+                <p className="muted">No direct source URL was captured for this grant.</p>
+              )}
+              {detail.grant.contact &&
+              (detail.grant.contact.email ||
+                detail.grant.contact.phone ||
+                detail.grant.contact.programOfficer ||
+                detail.grant.contact.applicationUrl ||
+                detail.grant.contact.notes) ? (
+                <ul className="contact-list" data-testid="grant-contact-list">
+                  {detail.grant.contact.email && (
+                    <li>
+                      Email:{' '}
+                      <a href={`mailto:${detail.grant.contact.email}`}>
+                        {detail.grant.contact.email}
+                      </a>
+                    </li>
+                  )}
+                  {detail.grant.contact.phone && <li>Phone: {detail.grant.contact.phone}</li>}
+                  {detail.grant.contact.programOfficer && (
+                    <li>Program officer: {detail.grant.contact.programOfficer}</li>
+                  )}
+                  {detail.grant.contact.applicationUrl && (
+                    <li>
+                      Apply:{' '}
+                      <a
+                        href={detail.grant.contact.applicationUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {detail.grant.contact.applicationUrl}
+                      </a>
+                    </li>
+                  )}
+                  {detail.grant.contact.notes && <li>{detail.grant.contact.notes}</li>}
+                </ul>
+              ) : (
+                !detail.grant.externalUrl && (
+                  <p className="muted">No contact info was captured — re-crawl to populate it.</p>
+                )
+              )}
+            </div>
 
             {showRevision && (
               <div className="drawer-section">

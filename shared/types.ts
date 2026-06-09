@@ -380,6 +380,17 @@ export interface CustomTrackerField {
   visible: boolean;
 }
 
+export interface GrantContact {
+  email?: string;
+  phone?: string;
+  /** Direct application/portal link if different from the source URL. */
+  applicationUrl?: string;
+  /** Named program officer / contact person, if listed. */
+  programOfficer?: string;
+  /** Any other follow-up note (office hours, mailing address, etc.). */
+  notes?: string;
+}
+
 export interface Grant {
   id: string;
   title: string;
@@ -400,6 +411,9 @@ export interface Grant {
   draftContent?: string;
   externalUrl?: string;
   funderSummary?: string;
+  /** How to follow up on this grant — captured during the crawl, especially when there
+   * is no direct application URL. */
+  contact?: GrantContact;
   latestDraftVersion?: number;
   groundedDocumentCount?: number;
   sourceCount?: number;

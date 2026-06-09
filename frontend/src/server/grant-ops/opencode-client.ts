@@ -729,6 +729,18 @@ currently open. Base every grant on a real page you actually loaded — never in
 - Favor thoroughness over speed: fetching more pages and returning more verified grants
   is the goal. There is no upper limit on how many grants you may return.
 
+== Source link & follow-up (CRITICAL) ==
+- "url" MUST be the ACTUAL, full, absolute https:// link to THIS specific opportunity
+  that you really loaded — the exact page the deadline/award came from. NEVER guess or
+  construct a URL from a pattern, and NEVER use the funder homepage as a substitute. If
+  you did not actually open a page for this grant, do not fabricate its url.
+- Every grant needs a way to follow up after discovery. ALWAYS populate "contact" with
+  whatever the source provides (grants/program email, phone, application portal, named
+  program officer, mailing address in notes).
+- If you cannot find a working direct opportunity URL, you MUST still provide "contact"
+  info so the operator can follow up. A grant with neither a real url nor any contact
+  info is not usable — omit it rather than guessing a link.
+
 == Already-tracked grants (DO NOT return these again) ==
 ${existingBlock}
 Skip any grant that duplicates one of the above (same program/funder) unless you have materially new information (e.g. a changed deadline or award).
@@ -741,13 +753,21 @@ Return ONLY a single minified JSON object. No markdown, no code fences, no prose
       "id": string,            // stable slug you assign, referenced by evidence.grantId
       "title": string,         // REQUIRED
       "funder": string,        // REQUIRED
+      "url": string,           // REQUIRED — direct URL to THIS grant's application/opportunity page (the exact page you read it from, not the funder homepage)
       "funderShort": string,   // short funder name
       "award": string,         // human-readable, e.g. "$50,000"
       "awardSort": number,     // numeric USD value, e.g. 50000
       "deadline": string,      // ISO date "YYYY-MM-DD"
       "daysOut": number,       // integer days until the deadline
       "fit": number,           // 0-100 fit vs the org's mission, themes, and eligibility
-      "tags": string[]         // topic tags
+      "tags": string[],        // topic tags
+      "contact": {             // how to follow up — REQUIRED if no working "url"
+        "email": string,       // program/grants contact email
+        "phone": string,       // contact phone
+        "applicationUrl": string, // apply/portal link if different from "url"
+        "programOfficer": string, // named contact person if listed
+        "notes": string        // office hours, mailing address, or other follow-up notes
+      }
     }
   ],
   "evidence": [

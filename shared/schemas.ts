@@ -92,6 +92,15 @@ export const GrantSchema = z.object({
   externalUrl: z.string().optional(),
   deadlineConfidence: z.enum(['exact', 'estimated', 'rolling', 'unknown']).optional(),
   funderSummary: z.string().optional(),
+  contact: z
+    .object({
+      email: z.string().optional(),
+      phone: z.string().optional(),
+      applicationUrl: z.string().optional(),
+      programOfficer: z.string().optional(),
+      notes: z.string().optional(),
+    })
+    .optional(),
   latestDraftVersion: z.number().optional(),
   groundedDocumentCount: z.number().optional(),
   sourceCount: z.number().optional(),
@@ -373,6 +382,19 @@ const ResearchGrantSchema = z.object({
   daysOut: z.number().optional(),
   fit: z.number().optional(),
   tags: z.array(z.string()).optional(),
+  // Direct URL to the grant's application / opportunity-details page. This is the
+  // original source link the operator clicks through to apply.
+  url: z.string().optional(),
+  // How to follow up — required when there is no direct application URL.
+  contact: z
+    .object({
+      email: z.string().optional(),
+      phone: z.string().optional(),
+      applicationUrl: z.string().optional(),
+      programOfficer: z.string().optional(),
+      notes: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const ResearchResponseSchema = z.object({
