@@ -329,4 +329,118 @@ describe('Grants API Route', () => {
       expect(data.items.length).toBe(1);
     });
   });
+
+  describe('GET /api/grants?showArchived', () => {
+    const archivedMockGrants = [
+      {
+        id: 'g-matched-1',
+        title: 'Matched Grant 1',
+        funder: 'NSF',
+        funderShort: 'NSF',
+        award: '$100,000',
+        awardSort: 100000,
+        deadline: '2026-12-31',
+        daysOut: 100,
+        fit: 80,
+        tags: ['Federal'],
+        status: 'matched',
+        statusLabel: 'Matched',
+        matchedAt: '2026-05-01',
+      },
+      {
+        id: 'g-archived-1',
+        title: 'Archived Grant',
+        funder: 'Old',
+        funderShort: 'Old',
+        award: '$50,000',
+        awardSort: 50000,
+        deadline: '2025-01-01',
+        daysOut: -300,
+        fit: 60,
+        tags: ['Foundation'],
+        status: 'archived',
+        statusLabel: 'Archived',
+        matchedAt: '2025-01-01',
+        archivedAt: '2025-02-01T00:00:00.000Z',
+      },
+    ];
+
+    beforeEach(() => {
+      const mockRepo = {
+        getGrants: vi.fn().mockResolvedValue(archivedMockGrants),
+        getGrant: vi.fn(),
+        addGrant: vi.fn(),
+        updateGrant: vi.fn(),
+        deleteGrant: vi.fn(),
+        getDraftArtifacts: vi.fn(),
+        addDraftArtifact: vi.fn(),
+        getRevisionRequests: vi.fn(),
+        addRevisionRequest: vi.fn(),
+        getApprovalRecord: vi.fn(),
+        addApprovalRecord: vi.fn(),
+        getSubmissionRecord: vi.fn(),
+        addSubmissionRecord: vi.fn(),
+        getFollowUps: vi.fn(),
+        addFollowUp: vi.fn(),
+      };
+      (getDependencies as ReturnType<typeof vi.fn>).mockReturnValue({
+        repository: mockRepo,
+        sourceService: {
+          getAllSources: vi.fn(),
+          getSource: vi.fn(),
+          addSource: vi.fn(),
+          updateSource: vi.fn(),
+          deleteSource: vi.fn(),
+        },
+        createOpencodeAdapter: vi.fn(),
+        clock: { now: () => new Date() },
+        idGenerator: { generateId: (prefix: string) => `${prefix}-${Date.now()}-test` },
+        persistenceRoot: { getBaseDir: () => '/tmp/test' },
+      });
+    });
+
+    it('hides archived grants by default (showArchived=0)', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants');
+      const response = await GET(mockRequest);
+      const data = await (response as NextResponse).json();
+      const ids = data.items.map((g: { id: string }) => g.id);
+      expect(ids).toContain('g-matched-1');
+      expect(ids).not.toContain('g-archived-1');
+      expect(data.total).toBe(1);
+    });
+
+    it('includes archived grants when showArchived=1', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants?showArchived=1');
+      const response = await GET(mockRequest);
+      const data = await (response as NextResponse).json();
+      const ids = data.items.map((g: { id: string }) => g.id);
+      expect(ids).toContain('g-matched-1');
+      expect(ids).toContain('g-archived-1');
+      expect(data.total).toBe(2);
+      const archived = data.items.find((g: { id: string }) => g.id === 'g-archived-1');
+      expect(archived.status).toBe('archived');
+      expect(archived.archivedAt).toBe('2025-02-01T00:00:00.000Z');
+    });
+
+    it('still hides archived grants when showArchived=0 is explicit', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants?showArchived=0');
+      const response = await GET(mockRequest);
+      const data = await (response as NextResponse).json();
+      const ids = data.items.map((g: { id: string }) => g.id);
+      expect(ids).toContain('g-matched-1');
+      expect(ids).not.toContain('g-archived-1');
+    });
+
+    it('returns 400 VALIDATION_ERROR for showArchived=foo', async () => {
+      const { NextRequest } = require('next/server');
+      const mockRequest = new NextRequest('http://localhost:3000/api/grants?showArchived=foo');
+      const response = await GET(mockRequest);
+      expect(response.status).toBe(400);
+      const data = await (response as NextResponse).json();
+      expect(data.code).toBe('VALIDATION_ERROR');
+    });
+  });
 });

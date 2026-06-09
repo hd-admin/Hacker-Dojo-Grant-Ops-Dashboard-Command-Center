@@ -557,6 +557,343 @@ describe('ResearchService', () => {
   });
 });
 
+describe('rubric + last-seen + last-updated + archive invariants', () => {
+  let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
+  let state: ReturnType<typeof getSqliteState>;
+  beforeAll(async () => {
+    tempDataDir = await withTempDataDir();
+    state = getSqliteState();
+  });
+  afterAll(async () => {
+    await tempDataDir.cleanup();
+    resetDependencies();
+  });
+  beforeEach(async () => {
+    await truncateDatabase(state);
+    invalidateCache();
+    resetDependencies();
+  });
+
+  it('persisted grant carries the full fitRubric and lastSeenAt === lastUpdatedAt === matchedAt', async () => {
+    const fixture = buildStrictFixture({
+      id: 'rubric-001',
+      title: 'Rubric Test Grant',
+      url: 'https://example.com/rubric-001',
+      funder: 'Rubric Foundation',
+      funderShort: 'RF',
+      award: '$25,000',
+      awardSort: 25000,
+      deadline: '2026-09-30',
+      daysOut: 127,
+      fit: 80,
+      tags: ['STEM'],
+    });
+    const fixedClock = new Date('2026-06-01T10:00:00.000Z');
+    setDependencies(
+      createDependencies({
+        clock: { now: () => fixedClock },
+        createOpencodeAdapter: () => ({
+          executeResearch: async () => ({
+            success: true,
+            content: JSON.stringify({ grants: [fixture], evidence: [], rationale: 'ok' }),
+          }),
+          generateDraft: async () => ({ success: true, content: '' }),
+          executePeerDiscovery: async () => ({ success: true, content: '{}' }),
+          executeFunderInsights: async () => ({ success: true, content: '{}' }),
+          executeEligibilityVetting: async () => ({ success: true, content: '{}' }),
+          isConfigured: () => true,
+        }),
+      }),
+    );
+    await sourceService.addSource({
+      name: 'Rubric Source',
+      url: 'https://example.com/rubric-source',
+      type: 'website',
+      reviewStatus: 'approved',
+    });
+    await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+    const grants = await repository.getGrants();
+    const persisted = grants.find((g) => g.id === 'rubric-001');
+    expect(persisted).toBeDefined();
+    expect(persisted?.fitRubric?.overallRationale).toBe('good fit overall');
+    expect(persisted?.fitRubric?.missionAlignment.score).toBe(80);
+    expect(persisted?.lastSeenAt).toBeDefined();
+    expect(persisted?.lastUpdatedAt).toBeDefined();
+    expect(persisted?.lastSeenAt).toBe(persisted?.lastUpdatedAt);
+    expect(persisted?.lastSeenAt).toBe(persisted?.matchedAt);
+  });
+
+  it('second run with identical data bumps only lastSeenAt and emits grant_unchanged', async () => {
+    const fixture = buildStrictFixture({
+      id: 'rubric-unchanged-001',
+      title: 'Unchanged Grant',
+      url: 'https://example.com/unchanged-001',
+      funder: 'Unchanged Foundation',
+      funderShort: 'UF',
+      award: '$10,000',
+      awardSort: 10000,
+      deadline: '2026-09-30',
+      daysOut: 127,
+      fit: 80,
+      tags: ['STEM'],
+    });
+    let firstSeenAt: string | undefined;
+    let firstUpdatedAt: string | undefined;
+    let clockValue = new Date('2026-06-01T10:00:00.000Z');
+
+    setDependencies(
+      createDependencies({
+        clock: { now: () => clockValue },
+        createOpencodeAdapter: () => ({
+          executeResearch: async () => ({
+            success: true,
+            content: JSON.stringify({ grants: [fixture], evidence: [], rationale: 'ok' }),
+          }),
+          generateDraft: async () => ({ success: true, content: '' }),
+          executePeerDiscovery: async () => ({ success: true, content: '{}' }),
+          executeFunderInsights: async () => ({ success: true, content: '{}' }),
+          executeEligibilityVetting: async () => ({ success: true, content: '{}' }),
+          isConfigured: () => true,
+        }),
+      }),
+    );
+
+    await sourceService.addSource({
+      name: 'Unchanged Source',
+      url: 'https://example.com/unchanged-source',
+      type: 'website',
+      reviewStatus: 'approved',
+    });
+
+    await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+    const firstGrant = (await repository.getGrants()).find((g) => g.id === 'rubric-unchanged-001');
+    firstSeenAt = firstGrant?.lastSeenAt;
+    firstUpdatedAt = firstGrant?.lastUpdatedAt;
+    expect(firstSeenAt).toBeDefined();
+    expect(firstUpdatedAt).toBe(firstSeenAt);
+
+    // Advance the clock so the second run produces a different timestamp.
+    clockValue = new Date('2026-06-01T10:00:30.000Z');
+    await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+    const secondGrant = (await repository.getGrants()).find((g) => g.id === 'rubric-unchanged-001');
+    expect(secondGrant?.lastSeenAt).not.toBe(firstSeenAt);
+    expect(secondGrant?.lastUpdatedAt).toBe(firstUpdatedAt);
+
+    const events = await repository.getAuditEvents();
+    const unchanged = events
+      .filter((e) => e.entityId === 'rubric-unchanged-001')
+      .filter((e) => e.eventType === 'grant_unchanged');
+    expect(unchanged.length).toBeGreaterThan(0);
+  });
+
+  it('second run with a changed deadline bumps lastUpdatedAt and emits grant_updated', async () => {
+    const fixture1 = buildStrictFixture({
+      id: 'rubric-updated-001',
+      title: 'Updated Grant',
+      url: 'https://example.com/updated-001',
+      funder: 'Updated Foundation',
+      funderShort: 'UPD',
+      award: '$15,000',
+      awardSort: 15000,
+      deadline: '2026-09-30',
+      daysOut: 127,
+      fit: 80,
+      tags: ['STEM'],
+    });
+    const fixture2 = {
+      ...fixture1,
+      deadline: '2026-10-30',
+      daysOut: 157,
+    };
+
+    let runIndex = 0;
+    let clockValue = new Date('2026-06-01T10:00:00.000Z');
+    setDependencies(
+      createDependencies({
+        clock: { now: () => clockValue },
+        createOpencodeAdapter: () => ({
+          executeResearch: async () => {
+            // Use a closure variable that increments once per runResearch call.
+            // Each source within a run consumes the same fixture (ProPublica is the only other source).
+            const fixtures = runIndex === 0 ? [fixture1] : [fixture2];
+            const json = JSON.stringify({ grants: fixtures, evidence: [], rationale: 'ok' });
+            return { success: true, content: json };
+          },
+          generateDraft: async () => ({ success: true, content: '' }),
+          executePeerDiscovery: async () => ({ success: true, content: '{}' }),
+          executeFunderInsights: async () => ({ success: true, content: '{}' }),
+          executeEligibilityVetting: async () => ({ success: true, content: '{}' }),
+          isConfigured: () => true,
+        }),
+      }),
+    );
+
+    await sourceService.addSource({
+      name: 'Updated Source',
+      url: 'https://example.com/updated-source',
+      type: 'website',
+      reviewStatus: 'approved',
+    });
+
+    runIndex = 0;
+    await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+    const firstGrant = (await repository.getGrants()).find((g) => g.id === 'rubric-updated-001');
+    const firstUpdatedAt = firstGrant?.lastUpdatedAt;
+    expect(firstUpdatedAt).toBeDefined();
+    expect(firstGrant?.deadline).toBe('2026-09-30');
+
+    runIndex = 1;
+    clockValue = new Date('2026-06-01T10:00:30.000Z');
+    await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+    const secondGrant = (await repository.getGrants()).find((g) => g.id === 'rubric-updated-001');
+    expect(secondGrant?.lastUpdatedAt).not.toBe(firstUpdatedAt);
+    expect(secondGrant?.deadline).toBe('2026-10-30');
+
+    const events = await repository.getAuditEvents();
+    const updated = events
+      .filter((e) => e.entityId === 'rubric-updated-001')
+      .filter((e) => e.eventType === 'grant_updated');
+    expect(updated.length).toBeGreaterThan(0);
+  });
+
+  it('archived grant is skipped byte-for-byte on the next run (no audit events for entityId)', async () => {
+    const fixture = buildStrictFixture({
+      id: 'rubric-archived-001',
+      title: 'Archived Grant',
+      url: 'https://example.com/archived-001',
+      funder: 'Archived Foundation',
+      funderShort: 'AF',
+      award: '$5,000',
+      awardSort: 5000,
+      deadline: '2026-09-30',
+      daysOut: 127,
+      fit: 80,
+      tags: ['STEM'],
+    });
+    let clockValue = new Date('2026-06-01T10:00:00.000Z');
+    setDependencies(
+      createDependencies({
+        clock: { now: () => clockValue },
+        createOpencodeAdapter: () => ({
+          executeResearch: async () => ({
+            success: true,
+            content: JSON.stringify({ grants: [fixture], evidence: [], rationale: 'ok' }),
+          }),
+          generateDraft: async () => ({ success: true, content: '' }),
+          executePeerDiscovery: async () => ({ success: true, content: '{}' }),
+          executeFunderInsights: async () => ({ success: true, content: '{}' }),
+          executeEligibilityVetting: async () => ({ success: true, content: '{}' }),
+          isConfigured: () => true,
+        }),
+      }),
+    );
+
+    await sourceService.addSource({
+      name: 'Archived Source',
+      url: 'https://example.com/archived-source',
+      type: 'website',
+      reviewStatus: 'approved',
+    });
+
+    // First run: grant is created
+    await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+    const firstGrant = (await repository.getGrants()).find((g) => g.id === 'rubric-archived-001');
+    expect(firstGrant).toBeDefined();
+
+    // Archive it
+    await repository.updateGrant('rubric-archived-001', {
+      status: 'archived',
+      statusLabel: 'Archived',
+      archivedAt: '2026-06-01T00:00:00.000Z',
+    });
+    const snapshot = JSON.parse(JSON.stringify(await repository.getGrant('rubric-archived-001')));
+
+    // Second run: identical data, later clock. Grant must be untouched.
+    clockValue = new Date('2026-06-01T10:00:30.000Z');
+    await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+    const after = await repository.getGrant('rubric-archived-001');
+    expect(after).toEqual(snapshot);
+    expect(after?.lastSeenAt).toBe(snapshot?.lastSeenAt);
+
+    // No audit events for the archived grant entityId from the second run onward.
+    const allEvents = await repository.getAuditEvents();
+    const archivedEvents = allEvents.filter((e) => e.entityId === 'rubric-archived-001');
+    // The first run emitted exactly one grant_created event; nothing more.
+    expect(archivedEvents.filter((e) => e.eventType === 'grant_created').length).toBe(1);
+    expect(archivedEvents.filter((e) => e.eventType === 'grant_updated').length).toBe(0);
+    // The skip-archived guard ensures the second run emits zero additional
+    // grant_unchanged events beyond what the first run emitted. ProPublica
+    // is auto-registered and other seed sources each take a turn on the
+    // first run (N sources = N unchanged events on the first run); the
+    // archive is set BETWEEN the two runs, so the second run must add 0.
+    const unchangedTotal = archivedEvents.filter((e) => e.eventType === 'grant_unchanged').length;
+    const createdAfterArchive = allEvents
+      .filter((e) => e.eventType === 'grant_unchanged')
+      .filter((e) => Date.parse(e.timestamp) >= Date.parse('2026-06-01T10:00:30.000Z'))
+      .filter((e) => e.entityId === 'rubric-archived-001');
+    expect(createdAfterArchive.length).toBe(0);
+    expect(unchangedTotal).toBeGreaterThan(0); // the first run still emitted some
+  });
+
+  it('a grant without a fitRubric is dropped with a warn log; well-formed grant is persisted', async () => {
+    const validGrant = buildStrictFixture({
+      id: 'rubric-valid-001',
+      title: 'Valid Grant',
+      url: 'https://example.com/valid-001',
+      funder: 'Valid Foundation',
+      funderShort: 'VF',
+      award: '$10,000',
+      awardSort: 10000,
+      deadline: '2026-09-30',
+      daysOut: 127,
+      fit: 80,
+      tags: ['STEM'],
+    });
+    const invalidGrant = {
+      id: 'rubric-invalid-001',
+      title: 'Invalid Grant',
+      url: 'https://example.com/invalid-001',
+      funder: 'Invalid Foundation',
+      award: '$1,000',
+      awardSort: 1000,
+      deadline: '2026-09-30',
+      daysOut: 127,
+      fit: 50,
+      tags: [],
+      // missing fitRubric
+    };
+    setDependencies(
+      createDependencies({
+        createOpencodeAdapter: () => ({
+          executeResearch: async () => ({
+            success: true,
+            content: JSON.stringify({
+              grants: [validGrant, invalidGrant],
+              evidence: [],
+              rationale: 'mix',
+            }),
+          }),
+          generateDraft: async () => ({ success: true, content: '' }),
+          executePeerDiscovery: async () => ({ success: true, content: '{}' }),
+          executeFunderInsights: async () => ({ success: true, content: '{}' }),
+          executeEligibilityVetting: async () => ({ success: true, content: '{}' }),
+          isConfigured: () => true,
+        }),
+      }),
+    );
+    await sourceService.addSource({
+      name: 'Mix Source',
+      url: 'https://example.com/mix-source',
+      type: 'website',
+      reviewStatus: 'approved',
+    });
+    await researchService.runResearch(mockProfile, { _providerType: 'fake' });
+    const grants = await repository.getGrants();
+    expect(grants.find((g) => g.id === 'rubric-valid-001')).toBeDefined();
+    expect(grants.find((g) => g.id === 'rubric-invalid-001')).toBeUndefined();
+  });
+});
+
 describe('auto-draft triggering', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
   let state: ReturnType<typeof getSqliteState>;

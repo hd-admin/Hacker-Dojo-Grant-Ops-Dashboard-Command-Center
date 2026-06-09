@@ -39,6 +39,8 @@ describe('grant-ops-client', () => {
       expect(typeof client.grants.update).toBe('function');
       expect(typeof client.grants.updateStatus).toBe('function');
       expect(typeof client.grants.override).toBe('function');
+      expect(typeof client.grants.archive).toBe('function');
+      expect(typeof client.grants.delete).toBe('function');
     });
 
     it('has callable methods on the jobs group', () => {
@@ -252,6 +254,44 @@ describe('grant-ops-client', () => {
       const options = mockFetch.mock.calls[0]?.[1] as RequestInit | undefined;
       expect(options?.method).toBe('PUT');
       expect(JSON.parse(options?.body as string)).toEqual({ operatorName: 'Alice' });
+    });
+
+    it('client.grants.archive issues a PATCH to /api/grants/{id}/status with archived payload', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: true }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await client.grants.archive('g-archive-1', 'Archived');
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const fetchUrl = mockFetch.mock.calls[0]?.[0] as string;
+      const options = mockFetch.mock.calls[0]?.[1] as RequestInit | undefined;
+      expect(fetchUrl).toBe('/api/grants/g-archive-1/status');
+      expect(options?.method).toBe('PATCH');
+      expect(JSON.parse(options?.body as string)).toEqual({
+        status: 'archived',
+        statusLabel: 'Archived',
+      });
+    });
+
+    it('client.grants.delete issues a DELETE to /api/grants/{id}', async () => {
+      mockFetch.mockResolvedValueOnce(
+        new Response(JSON.stringify({ success: true, id: 'g-del-1' }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        }),
+      );
+
+      await client.grants.delete('g-del-1');
+
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      const fetchUrl = mockFetch.mock.calls[0]?.[0] as string;
+      const options = mockFetch.mock.calls[0]?.[1] as RequestInit | undefined;
+      expect(fetchUrl).toBe('/api/grants/g-del-1');
+      expect(options?.method).toBe('DELETE');
     });
   });
 

@@ -128,10 +128,19 @@ async function updateStatus(
       status: targetStatus,
       statusLabel: parsed.data.statusLabel,
     };
+    let auditArchivedAt: string | null;
     if (targetStatus === 'archived') {
       statusUpdates.archivedAt = archivedAt;
+      auditArchivedAt = archivedAt;
     } else if (previousStatus === 'archived') {
       statusUpdates.archivedAt = undefined;
+      auditArchivedAt = null;
+    } else {
+      // Non-archive transition on a non-archived grant: preserve the
+      // existing archivedAt value in the audit metadata for observability
+      // (it should be undefined here, but we record the truth instead of
+      // pretending it is null).
+      auditArchivedAt = existingGrant.archivedAt ?? null;
     }
     await deps.repository.updateGrant(grantId, statusUpdates);
 
@@ -156,7 +165,7 @@ async function updateStatus(
       metadata: {
         from: previousStatus,
         to: parsed.data.status,
-        archivedAt: targetStatus === 'archived' ? archivedAt : null,
+        archivedAt: auditArchivedAt,
       },
     });
 

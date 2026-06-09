@@ -40,3 +40,19 @@ export const emptyFitRubric: FitRubric = {
   rubricVersion: 1,
 };
 
+/**
+ * Sample non-empty fit-rubric used by manual smoke tests and the e2e
+ * grant-rubric-and-archive spec to seed a grant with a real rubric.
+ * NOT written to the database by seed-bootstrap (GAP-05); only used when
+ * the test-only seed-rubric endpoint or a fixture builder copies it in.
+ */
+export const sampleFitRubric: FitRubric = {
+  missionAlignment: { score: 0.9, justification: 'Strong mission alignment with maker education.' },
+  geographicFocus: { score: 0.8, justification: 'Bay Area presence matches funder scope.' },
+  programTrackrecord: { score: 0.85, justification: 'Five years of program outcomes on file.' },
+  budgetCapacity: { score: 0.7, justification: 'Match request is 5% of org annual budget.' },
+  partnershipReadiness: { score: 0.75, justification: 'Active partner pipeline with two co-applicants.' },
+  overallRationale: 'A strong match: high mission alignment, geographic fit, and proven track record.',
+  rubricVersion: 1,
+};
+

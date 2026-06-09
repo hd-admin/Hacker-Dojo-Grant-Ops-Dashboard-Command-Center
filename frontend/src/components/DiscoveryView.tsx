@@ -4,6 +4,7 @@ import React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import type { Grant, Source } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
+import { formatRelativeTime } from '../lib/relative-time';
 import { FunderDetail } from './FunderDetail';
 import { SavedSearchesPanel } from './SavedSearchesPanel';
 import type { FunderProfile } from '../../../shared/types';
@@ -176,6 +177,24 @@ export function DiscoveryView({
   const [exactDeadlinesOnly, setExactDeadlinesOnly] = useState(false);
   const [selectedFunder, setSelectedFunder] = useState<FunderProfile | null>(null);
   const [_error, setError] = useState<string | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    setShowArchived(params.get('showArchived') === '1');
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const url = new URL(window.location.href);
+    if (showArchived) {
+      url.searchParams.set('showArchived', '1');
+    } else {
+      url.searchParams.delete('showArchived');
+    }
+    window.history.replaceState({}, '', url.toString());
+  }, [showArchived]);
 
   useEffect(() => {
     const context = readWorkingContext();
@@ -202,7 +221,15 @@ export function DiscoveryView({
           client.sources.getAll(),
           client.research.getRuns(),
         ]);
-        setGrants(grantsData.items);
+        let items: Grant[] = grantsData.items;
+        if (showArchived) {
+          const response = await fetch('/api/grants?showArchived=1');
+          if (response.ok) {
+            const json = (await response.json()) as { items: Grant[] };
+            items = json.items ?? items;
+          }
+        }
+        setGrants(items);
         setSources(sourcesData);
         setSourcesCrawled(runsData.latestRun?.sourcesCrawled ?? 0);
       } catch (_error) {
@@ -212,7 +239,7 @@ export function DiscoveryView({
       }
     }
     load();
-  }, []);
+  }, [showArchived]);
 
   const pendingReviewCount = sources.filter(
     (source) => source.reviewStatus === 'pending-review',
@@ -782,6 +809,15 @@ export function DiscoveryView({
         >
           Only exact deadlines
         </button>
+        <label className="filter-pill" data-testid="show-archived-toggle-wrapper">
+          <input
+            type="checkbox"
+            data-testid="show-archived-toggle"
+            checked={showArchived}
+            onChange={(e) => setShowArchived(e.target.checked)}
+          />
+          {' '}Show archived
+        </label>
         {['All', 'EdTech', 'Community', 'Science & Tech', 'Federal', 'Foundation', 'Corporate'].map(
           (cat) => (
             <button
@@ -823,6 +859,8 @@ export function DiscoveryView({
             type="button"
             className="grants-row"
             onClick={() => onGrantSelect(grant.id)}
+            data-testid={`discovery-grant-row-${grant.id}`}
+            data-archived={grant.status === 'archived' ? 'true' : 'false'}
           >
             <div>
               {grant.title}
@@ -838,6 +876,23 @@ export function DiscoveryView({
                   Human-confirmed
                 </span>
               )}
+              {grant.status === 'archived' && (
+                <span data-testid="archived-badge" className="archived-badge">
+                  Archived
+                </span>
+              )}
+              <div
+                className="grant-meta-line"
+                style={{ fontSize: '0.75em', opacity: 0.7, marginTop: 4 }}
+              >
+                <span data-testid="last-seen-text">
+                  Last seen {grant.lastSeenAt ? formatRelativeTime(grant.lastSeenAt) : '\u2014'}
+                </span>
+                {' \u00b7 '}
+                <span data-testid="last-updated-text">
+                  Updated {grant.lastUpdatedAt ? formatRelativeTime(grant.lastUpdatedAt) : '\u2014'}
+                </span>
+              </div>
             </div>
             <div className="grant-funder">
               <span

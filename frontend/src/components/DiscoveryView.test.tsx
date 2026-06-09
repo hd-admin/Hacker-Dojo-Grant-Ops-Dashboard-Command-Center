@@ -37,6 +37,8 @@ const mockGrants: Grant[] = [
     statusLabel: 'Matched',
     matchedAt: '2026-05-20',
     deadlineConfidence: 'exact',
+    lastSeenAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+    lastUpdatedAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'grant-2',
@@ -53,6 +55,8 @@ const mockGrants: Grant[] = [
     statusLabel: 'Matched',
     matchedAt: '2026-05-21',
     deadlineConfidence: 'rolling',
+    lastSeenAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
+    lastUpdatedAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString(),
   },
   {
     id: 'grant-3',
@@ -69,6 +73,27 @@ const mockGrants: Grant[] = [
     statusLabel: 'Matched',
     matchedAt: '2026-05-22',
     deadlineConfidence: 'exact',
+    lastSeenAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+    lastUpdatedAt: new Date(Date.now() - 60 * 60 * 1000).toISOString(),
+  },
+  {
+    id: 'grant-archived',
+    title: 'Archived Grant',
+    funder: 'Old Foundation',
+    funderShort: 'Old',
+    award: '$10,000',
+    awardSort: 10000,
+    deadline: '2025-01-01',
+    daysOut: -200,
+    fit: 50,
+    tags: ['Foundation'],
+    status: 'archived',
+    statusLabel: 'Archived',
+    matchedAt: '2025-01-01',
+    deadlineConfidence: 'exact',
+    archivedAt: '2025-02-01T00:00:00.000Z',
+    lastSeenAt: '2025-02-01T00:00:00.000Z',
+    lastUpdatedAt: '2025-01-15T00:00:00.000Z',
   },
 ];
 
@@ -151,7 +176,7 @@ describe('DiscoveryView', () => {
     container.remove();
   });
 
-  it('filters grants by search query', { timeout: 10000 }, async () => {
+  it('renders last-seen-text and last-updated-text for each non-archived grant row', async () => {
     mockGetAllGrants.mockResolvedValue({ items: mockGrants, total: mockGrants.length, page: 1, pageSize: 25 });
     mockGetAllSources.mockResolvedValue(mockSources);
     const container = document.createElement('div');
@@ -161,6 +186,109 @@ describe('DiscoveryView', () => {
       React.createElement(DiscoveryView, {
         onGrantSelect: () => {},
         grants: mockGrants,
+        sources: mockSources,
+      }),
+    );
+    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), {
+      timeout: 5000,
+    });
+    const lastSeenElements = container.querySelectorAll('[data-testid="last-seen-text"]');
+    const lastUpdatedElements = container.querySelectorAll('[data-testid="last-updated-text"]');
+    expect(lastSeenElements.length).toBeGreaterThan(0);
+    expect(lastUpdatedElements.length).toBe(lastSeenElements.length);
+    for (const el of Array.from(lastSeenElements)) {
+      expect(el.textContent).toBeTruthy();
+      expect(el.textContent).toMatch(/Last seen/);
+    }
+    for (const el of Array.from(lastUpdatedElements)) {
+      expect(el.textContent).toBeTruthy();
+      expect(el.textContent).toMatch(/Updated/);
+    }
+    root.unmount();
+    container.remove();
+  });
+
+  it('renders an archived badge for archived grants when showArchived is on', async () => {
+    // Mock fetch to return all grants when showArchived=1 is requested
+    (fetch as ReturnType<typeof vi.fn>).mockImplementation(async (url: string) => {
+      if (url.includes('/api/grants?showArchived=1')) {
+        return { ok: true, json: async () => ({ items: mockGrants }) } as Response;
+      }
+      return { ok: true, json: async () => [] } as Response;
+    });
+    mockGetAllGrants.mockResolvedValue({ items: mockGrants, total: mockGrants.length, page: 1, pageSize: 25 });
+    mockGetAllSources.mockResolvedValue(mockSources);
+    // Mount with ?showArchived=1 in the URL so the toggle initializes as ON
+    window.history.replaceState({}, '', '?showArchived=1');
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    root.render(
+      React.createElement(DiscoveryView, {
+        onGrantSelect: () => {},
+        sources: mockSources,
+      }),
+    );
+    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), {
+      timeout: 5000,
+    });
+    const badges = container.querySelectorAll('[data-testid="archived-badge"]');
+    expect(badges.length).toBeGreaterThan(0);
+    expect(badges[0]?.textContent).toContain('Archived');
+    window.history.replaceState({}, '', '/');
+    root.unmount();
+    container.remove();
+  });
+
+  it('exposes a show-archived toggle in the filter row', async () => {
+    mockGetAllGrants.mockResolvedValue({ items: mockGrants, total: mockGrants.length, page: 1, pageSize: 25 });
+    mockGetAllSources.mockResolvedValue(mockSources);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    root.render(
+      React.createElement(DiscoveryView, {
+        onGrantSelect: () => {},
+        grants: mockGrants,
+        sources: mockSources,
+      }),
+    );
+    await vi.waitFor(() => expect(container.textContent).toContain('NSF STEM Education Grant'), {
+      timeout: 5000,
+    });
+    const toggle = container.querySelector(
+      '[data-testid="show-archived-toggle"]',
+    ) as HTMLInputElement;
+    expect(toggle).not.toBeNull();
+    expect(toggle.type).toBe('checkbox');
+    expect(toggle.checked).toBe(false);
+
+    // Flip the toggle and confirm it issues a fetch with ?showArchived=1
+    let fetchedWithArchived = false;
+    const originalFetch = global.fetch;
+    (global.fetch as ReturnType<typeof vi.fn>) = vi.fn(async (url: string) => {
+      if (String(url).includes('showArchived=1')) fetchedWithArchived = true;
+      return { ok: true, json: async () => ({ items: mockGrants }) } as Response;
+    });
+    toggle.click();
+    await vi.waitFor(() => expect(fetchedWithArchived).toBe(true), { timeout: 5000 });
+    global.fetch = originalFetch;
+    root.unmount();
+    container.remove();
+  });
+
+  it('filters grants by search query', { timeout: 10000 }, async () => {
+    // Pass only the 3 non-archived grants (search test doesn't care about archived)
+    const nonArchived = mockGrants.filter((g) => g.status !== 'archived');
+    mockGetAllGrants.mockResolvedValue({ items: nonArchived, total: nonArchived.length, page: 1, pageSize: 25 });
+    mockGetAllSources.mockResolvedValue(mockSources);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    root.render(
+      React.createElement(DiscoveryView, {
+        onGrantSelect: () => {},
+        grants: nonArchived,
         sources: mockSources,
       }),
     );
@@ -186,7 +314,8 @@ describe('DiscoveryView', () => {
   });
 
   it('shows filter empty state when no grants match', { timeout: 10000 }, async () => {
-    mockGetAllGrants.mockResolvedValue({ items: mockGrants, total: mockGrants.length, page: 1, pageSize: 25 });
+    const nonArchived = mockGrants.filter((g) => g.status !== 'archived');
+    mockGetAllGrants.mockResolvedValue({ items: nonArchived, total: nonArchived.length, page: 1, pageSize: 25 });
     mockGetAllSources.mockResolvedValue(mockSources);
     const container = document.createElement('div');
     document.body.appendChild(container);
@@ -194,7 +323,7 @@ describe('DiscoveryView', () => {
     root.render(
       React.createElement(DiscoveryView, {
         onGrantSelect: () => {},
-        grants: mockGrants,
+        grants: nonArchived,
         sources: mockSources,
       }),
     );

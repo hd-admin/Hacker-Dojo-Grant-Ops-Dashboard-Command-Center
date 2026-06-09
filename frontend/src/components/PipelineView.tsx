@@ -10,6 +10,7 @@ import type {
 } from '../../../shared/types';
 import { classifyGrantDeadline, type UrgencyBucket } from '../../../shared/deadline-classifier';
 import { client } from '../lib/grant-ops-client';
+import { formatRelativeTime } from '../lib/relative-time';
 import styles from './PipelineView.module.css';
 
 type ViewType =
@@ -346,6 +347,10 @@ export function PipelineView({
 
   const filteredGrants = useMemo(() => {
     return grants.filter((grant) => {
+      // Hide archived grants by default unless the operator explicitly filters for them.
+      if (grant.status === 'archived' && statusFilter !== 'Archived') {
+        return false;
+      }
       const statusMatches = statusFilter === 'All' || statusToLabel(grant.status) === statusFilter;
       const responsibilityMatches =
         responsibilityFilter === 'all' || grant.responsibilityTag === responsibilityFilter;
@@ -491,6 +496,12 @@ export function PipelineView({
         </div>
       )}
 
+      <div style={{ marginTop: 8 }}>
+        <a href="/discovery?showArchived=1" data-testid="view-archived-link">
+          View archived
+        </a>
+      </div>
+
       {viewMode === 'list' ? (
         <div data-testid="pipeline-list-view" className="pipeline-list-view">
           <div className="pipeline-list-header">
@@ -514,7 +525,18 @@ export function PipelineView({
               <div>{grant.title}</div>
               <div>{grant.funder}</div>
               <div>{statusToLabel(grant.status)}</div>
-              <div>{renderDeadlineCell(grant)}</div>
+              <div>
+                {renderDeadlineCell(grant)}
+                <div style={{ fontSize: '0.75em', opacity: 0.7, marginTop: 2 }}>
+                  <span data-testid="last-seen-badge">
+                    Last seen {grant.lastSeenAt ? formatRelativeTime(grant.lastSeenAt) : '\u2014'}
+                  </span>
+                  {' \u00b7 '}
+                  <span data-testid="last-updated-badge">
+                    Updated {grant.lastUpdatedAt ? formatRelativeTime(grant.lastUpdatedAt) : '\u2014'}
+                  </span>
+                </div>
+              </div>
               <div>{grant.award}</div>
               <div>{grant.responsibilityTag ?? '—'}</div>
               {customFields.map((field) => (
@@ -557,6 +579,18 @@ export function PipelineView({
                         <div className="board-card-foot">
                           <span>{renderDeadlineCell(grant)}</span>
                           <span className="amount">{grant.award}</span>
+                        </div>
+                        <div
+                          className="board-card-meta"
+                          style={{ fontSize: '0.7em', opacity: 0.7, marginTop: 4 }}
+                        >
+                          <span data-testid="last-seen-badge">
+                            Last seen {grant.lastSeenAt ? formatRelativeTime(grant.lastSeenAt) : '\u2014'}
+                          </span>
+                          {' \u00b7 '}
+                          <span data-testid="last-updated-badge">
+                            Updated {grant.lastUpdatedAt ? formatRelativeTime(grant.lastUpdatedAt) : '\u2014'}
+                          </span>
                         </div>
                         {customFields.length > 0 && (
                           <div className={styles.customFieldsRow}>

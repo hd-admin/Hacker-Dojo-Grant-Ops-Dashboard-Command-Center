@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { Grant, GrantStatus } from '../../../shared/types';
+import { formatRelativeTime } from '../lib/relative-time';
 import styles from './PipelineBoard.module.css';
 
 const PIPELINE_COLUMNS: { status: GrantStatus; label: string }[] = [
@@ -144,6 +145,18 @@ export function PipelineBoard({
                       {grant.deadline && (
                         <span className="pipeline-card-deadline">{grant.deadline}</span>
                       )}
+                    </div>
+                    <div
+                      className="pipeline-card-freshness"
+                      style={{ fontSize: '0.7em', opacity: 0.7, marginTop: 2 }}
+                    >
+                      <span data-testid="last-seen-badge">
+                        Last seen {grant.lastSeenAt ? formatRelativeTime(grant.lastSeenAt) : '\u2014'}
+                      </span>
+                      {' \u00b7 '}
+                      <span data-testid="last-updated-badge">
+                        Updated {grant.lastUpdatedAt ? formatRelativeTime(grant.lastUpdatedAt) : '\u2014'}
+                      </span>
                     </div>
                     {grant.fit > 0 && (
                       <div className="pipeline-card-fit" title={`Fit: ${grant.fit}%`}>
