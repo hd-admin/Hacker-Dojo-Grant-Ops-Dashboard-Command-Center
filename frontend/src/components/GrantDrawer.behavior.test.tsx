@@ -4,19 +4,33 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot } from 'next/dist/compiled/react-dom/client';
 import type { GrantDetailResponse } from '../../../shared/types';
 
-const { getGrantById, getManifest, createDraft, createApproval, createSubmission, createRevision } =
-  vi.hoisted(() => ({
-    getGrantById: vi.fn(),
-    getManifest: vi.fn(),
-    createDraft: vi.fn(),
-    createApproval: vi.fn(),
-    createSubmission: vi.fn(),
-    createRevision: vi.fn(),
-  }));
+const {
+  getGrantById,
+  getManifest,
+  createDraft,
+  createApproval,
+  createSubmission,
+  createRevision,
+  grantsArchive,
+  grantsDelete,
+} = vi.hoisted(() => ({
+  getGrantById: vi.fn(),
+  getManifest: vi.fn(),
+  createDraft: vi.fn(),
+  createApproval: vi.fn(),
+  createSubmission: vi.fn(),
+  createRevision: vi.fn(),
+  grantsArchive: vi.fn(),
+  grantsDelete: vi.fn(),
+}));
 
 vi.mock('../lib/grant-ops-client', () => ({
   client: {
-    grants: { getById: getGrantById },
+    grants: {
+      getById: getGrantById,
+      archive: grantsArchive,
+      delete: grantsDelete,
+    },
     manifest: { get: getManifest, create: vi.fn() },
     drafts: { create: createDraft },
     approvals: { create: createApproval },
@@ -86,6 +100,16 @@ async function waitFor(predicate: () => boolean, timeoutMs = 3000): Promise<void
   }
 }
 
+async function waitForElement<T>(predicate: () => T | null, timeoutMs = 3000): Promise<T> {
+  const start = Date.now();
+  while (true) {
+    const result = predicate();
+    if (result !== null && result !== undefined) return result;
+    if (Date.now() - start > timeoutMs) throw new Error('Timed out waiting for element');
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+  }
+}
+
 function setTextareaValue(textarea: HTMLTextAreaElement, value: string): void {
   const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set;
   setter?.call(textarea, value);
@@ -101,6 +125,10 @@ beforeEach(() => {
   createApproval.mockResolvedValue(null);
   createSubmission.mockResolvedValue(null);
   createRevision.mockResolvedValue(null);
+  grantsArchive.mockReset();
+  grantsDelete.mockReset();
+  grantsArchive.mockResolvedValue({ success: true });
+  grantsDelete.mockResolvedValue({ success: true, id: grantId });
 
   vi.stubGlobal(
     'fetch',
@@ -183,6 +211,66 @@ describe('GrantDrawer behavior', () => {
     );
     discardBtn?.click();
     await waitFor(() => onClose.mock.calls.length === 1);
+  });
+
+  it('Archive button opens the confirm dialog and confirming calls client.grants.archive', async () => {
+    const onClose = vi.fn();
+    const onRefreshAppState = vi.fn();
+    root.render(
+      React.createElement(GrantDrawer, { grantId, onClose, onRefreshAppState }),
+    );
+
+    await waitFor(() => queryByRole(container, 'dialog', { name: 'Grant details' }) !== null);
+    const archiveBtn = await waitForElement<HTMLButtonElement>(
+      () => container.querySelector('[data-testid="grant-archive-btn"]') as HTMLButtonElement | null,
+    );
+
+    expect(queryByRole(container, 'dialog', { name: 'Archive grant?' })).toBeNull();
+
+    archiveBtn.click();
+
+    await waitFor(() => queryByRole(container, 'dialog', { name: 'Archive grant?' }) !== null);
+    expect(queryByRole(container, 'dialog', { name: 'Archive grant?' })).not.toBeNull();
+    expect(queryByRole(container, 'dialog', { name: 'Delete grant?' })).toBeNull();
+
+    const confirmBtn = await waitForElement<HTMLButtonElement>(
+      () =>
+        container.querySelector(
+          '[data-testid="grant-archive-delete-confirm"]',
+        ) as HTMLButtonElement | null,
+    );
+    confirmBtn.click();
+
+    await waitFor(() => grantsArchive.mock.calls.length === 1);
+    expect(grantsArchive).toHaveBeenCalledWith(grantId, 'Archived');
+    expect(grantsDelete).not.toHaveBeenCalled();
+    await waitFor(() => onRefreshAppState.mock.calls.length === 1);
+    expect(onRefreshAppState).toHaveBeenCalledTimes(1);
+    await waitFor(() => onClose.mock.calls.length === 1);
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('Escape key closes the archive/delete confirm dialog without firing the action', async () => {
+    const onClose = vi.fn();
+    root.render(
+      React.createElement(GrantDrawer, { grantId, onClose, onRefreshAppState: vi.fn() }),
+    );
+
+    await waitFor(() => queryByRole(container, 'dialog', { name: 'Grant details' }) !== null);
+    const archiveBtn = await waitForElement<HTMLButtonElement>(
+      () => container.querySelector('[data-testid="grant-archive-btn"]') as HTMLButtonElement | null,
+    );
+
+    archiveBtn.click();
+    await waitFor(() => queryByRole(container, 'dialog', { name: 'Archive grant?' }) !== null);
+    expect(queryByRole(container, 'dialog', { name: 'Archive grant?' })).not.toBeNull();
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    await waitFor(() => queryByRole(container, 'dialog', { name: 'Archive grant?' }) === null);
+    expect(grantsArchive).not.toHaveBeenCalled();
+    expect(grantsDelete).not.toHaveBeenCalled();
+    expect(onClose).not.toHaveBeenCalled();
   });
 
   it('applies a fit override and shows the human-confirmed badge', async () => {

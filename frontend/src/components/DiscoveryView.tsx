@@ -4,7 +4,7 @@ import React from 'react';
 import { useEffect, useMemo, useState } from 'react';
 import type { Grant, Source } from '../../../shared/types';
 import { client } from '../lib/grant-ops-client';
-import { formatRelativeTime } from '../lib/relative-time';
+import { formatRelativeTime } from '../lib/job-meta';
 import { FunderDetail } from './FunderDetail';
 import { SavedSearchesPanel } from './SavedSearchesPanel';
 import type { FunderProfile } from '../../../shared/types';

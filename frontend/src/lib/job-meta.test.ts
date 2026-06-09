@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatRelativeTime } from './relative-time';
+import { formatRelativeTime } from './job-meta';
 
 const NOW = new Date('2026-06-15T12:00:00.000Z');
 
@@ -30,12 +30,12 @@ describe('formatRelativeTime', () => {
     expect(formatRelativeTime(threeHoursAgo, NOW)).toBe('3h ago');
   });
 
-  it('returns "yesterday" for a 24–48h diff', () => {
+  it('returns "yesterday" for a 24\u201348h diff', () => {
     const yesterday = new Date(NOW.getTime() - 30 * 60 * 60 * 1000).toISOString();
     expect(formatRelativeTime(yesterday, NOW)).toBe('yesterday');
   });
 
-  it('returns "<N>d ago" for 2–6 day diffs', () => {
+  it('returns "<N>d ago" for 2\u20136 day diffs', () => {
     const threeDaysAgo = new Date(NOW.getTime() - 3 * 24 * 60 * 60 * 1000).toISOString();
     expect(formatRelativeTime(threeDaysAgo, NOW)).toBe('3d ago');
   });

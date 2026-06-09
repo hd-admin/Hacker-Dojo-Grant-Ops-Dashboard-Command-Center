@@ -4,7 +4,7 @@ import type { JSX } from 'react';
 
 import React from 'react';
 import type { GrantDetailResponse } from '../../../../shared/types';
-import { formatRelativeTime } from '../../lib/relative-time';
+import { formatRelativeTime } from '../../lib/job-meta';
 import { formatDate } from './utilities';
 import styles from './GrantDrawerHeader.module.css';
 

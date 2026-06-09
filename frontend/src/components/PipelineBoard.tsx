@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import type { Grant, GrantStatus } from '../../../shared/types';
-import { formatRelativeTime } from '../lib/relative-time';
+import { formatRelativeTime } from '../lib/job-meta';
 import styles from './PipelineBoard.module.css';
 
 const PIPELINE_COLUMNS: { status: GrantStatus; label: string }[] = [

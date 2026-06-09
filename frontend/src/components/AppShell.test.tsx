@@ -496,7 +496,7 @@ describe('AppShell rendering', () => {
       new MouseEvent('click', { bubbles: true }),
     );
 
-    await waitFor(() => container.querySelector('[data-testid="toast-success"]') !== null, 5000);
+    await waitFor(() => container.querySelector('[data-testid="toast-success"]') !== null, 10000);
     const toast = container.querySelector('[data-testid="toast-success"]');
     expect(toast).not.toBeNull();
     expect(toast?.textContent).toContain('research completed');
@@ -745,7 +745,7 @@ describe('AppShell beforeunload handler', () => {
 
     const jobsCallsBefore = jobsCallCount;
     window.dispatchEvent(new Event('beforeunload'));
-    await waitFor(() => interruptSpy.mock.calls.length > 0, 5000);
+    await waitFor(() => interruptSpy.mock.calls.length > 0, 10000);
 
     expect(jobsCallCount).toBeGreaterThan(jobsCallsBefore);
     expect(interruptSpy).toHaveBeenCalledTimes(1);

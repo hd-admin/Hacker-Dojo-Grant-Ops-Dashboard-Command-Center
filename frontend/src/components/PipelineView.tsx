@@ -10,7 +10,7 @@ import type {
 } from '../../../shared/types';
 import { classifyGrantDeadline, type UrgencyBucket } from '../../../shared/deadline-classifier';
 import { client } from '../lib/grant-ops-client';
-import { formatRelativeTime } from '../lib/relative-time';
+import { formatRelativeTime } from '../lib/job-meta';
 import styles from './PipelineView.module.css';
 
 type ViewType =

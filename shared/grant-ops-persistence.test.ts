@@ -53,7 +53,7 @@ describe('grant-ops-persistence', () => {
     expect(loaded[0].title).toContain('-test');
   });
 
-  it('round-trips fitRubric + lastSeenAt + lastUpdatedAt on a grant', async () => {
+  it('round-trips fitRubric + lastSeenAt + lastUpdatedAt + archivedAt', async () => {
     const original = await loadGrants();
     const target = original[0];
     if (!target) throw new Error('expected at least one seed grant');
