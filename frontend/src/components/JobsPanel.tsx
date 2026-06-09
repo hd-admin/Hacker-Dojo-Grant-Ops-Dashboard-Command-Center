@@ -1,89 +1,26 @@
 import type { JSX } from 'react';
-'use client';
+('use client');
 
 import React, { useCallback, useMemo, useState } from 'react';
-import type { JobQueueItem } from '../../../shared/types';
-import { jobFailureMessages } from '../lib/failure-messages';
+import { ClipboardList, RefreshCw } from 'lucide-react';
 import { useJobsFeed } from '../hooks/useJobsFeed';
+import {
+  JOB_STATUS_FILTERS,
+  JOB_TYPE_FILTERS,
+  type JobStatusFilter,
+  type JobTypeFilter,
+  jobStatusLabel,
+  jobTypeLabel,
+} from '../lib/job-meta';
+import { JobCard } from './JobCard';
 import styles from './JobsPanel.module.css';
-
-type JobStatus = JobQueueItem['status'] | 'all';
-type JobTypeFilter = JobQueueItem['jobType'] | 'all';
 
 interface JobsPanelProps {
   onRefreshAppState?: () => Promise<void> | void;
 }
 
-/** Client-side progress mapping matching the server-side JobProgressStage values. */
-const stageProgress: Record<string, number> = {
-  queued: 0,
-  retrying: 5,
-  preparing: 10,
-  fetching: 30,
-  analyzing: 60,
-  drafting: 80,
-  completed: 100,
-  failed: 100,
-  cancelled: 100,
-};
-
-function getProgress(stage: string | undefined): number {
-  return stage ? (stageProgress[stage] ?? 0) : 0;
-}
-
-function formatTime(isoString: string): string {
-  try {
-    const date = new Date(isoString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMins / 60);
-
-    if (diffMins < 1) return 'just now';
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
-    return date.toLocaleDateString();
-  } catch {
-    return isoString;
-  }
-}
-
-function statusIcon(status: JobQueueItem['status']): string {
-  switch (status) {
-    case 'queued':
-      return '◷';
-    case 'running':
-      return '◉';
-    case 'verifying':
-      return '✓';
-    case 'retrying':
-      return '⟳';
-    case 'completed':
-      return '✔';
-    case 'failed':
-      return '✖';
-    case 'cancelled':
-      return '⊘';
-    default:
-      return '○';
-  }
-}
-
-function stageDescription(stage: string | undefined): string {
-  if (!stage || stage === 'queued') return 'Waiting to start';
-  if (stage === 'retrying') return 'Retrying after previous attempt';
-  if (stage === 'preparing') return 'Preparing resources';
-  if (stage === 'fetching') return 'Fetching data';
-  if (stage === 'analyzing') return 'Analyzing results';
-  if (stage === 'drafting') return 'Generating draft';
-  if (stage === 'completed') return 'Completed successfully';
-  if (stage === 'failed') return 'Failed';
-  if (stage === 'cancelled') return 'Cancelled';
-  return stage;
-}
-
 export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
-  const [statusFilter, setStatusFilter] = useState<JobStatus>('all');
+  const [statusFilter, setStatusFilter] = useState<JobStatusFilter>('all');
   const [typeFilter, setTypeFilter] = useState<JobTypeFilter>('all');
   const [selectedJobId, setSelectedJobId] = useState<string | null>(null);
   const [cancelConfirmJobId, setCancelConfirmJobId] = useState<string | null>(null);
@@ -92,7 +29,12 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
   // useJobsFeed, so action failures need their own local state.
   const [actionError, setActionError] = useState<string | null>(null);
 
-  const { jobs, isLoading: loading, error: feedError, refresh } = useJobsFeed({
+  const {
+    jobs,
+    isLoading: loading,
+    error: feedError,
+    refresh,
+  } = useJobsFeed({
     pollIntervalMs: 5000,
     status: statusFilter,
     type: typeFilter,
@@ -100,9 +42,9 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
 
   const error = actionError ?? feedError;
 
-  const setJobActionLoading = useCallback((jobId: string, loading: boolean) => {
+  const setJobActionLoading = useCallback((jobId: string, isLoading: boolean) => {
     setActionLoading((prev) => {
-      if (loading) return { ...prev, [jobId]: true };
+      if (isLoading) return { ...prev, [jobId]: true };
       const next = { ...prev };
       delete next[jobId];
       return next;
@@ -165,6 +107,17 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
     setCancelConfirmJobId(null);
   }, []);
 
+  const toggleDetails = useCallback((jobId: string) => {
+    setSelectedJobId((current) => (current === jobId ? null : jobId));
+  }, []);
+
+  const handleRetryClick = useCallback(
+    (jobId: string) => {
+      void handleRetry(jobId);
+    },
+    [handleRetry],
+  );
+
   const filteredJobs = useMemo(() => {
     return jobs.filter((job) => {
       const statusMatch = statusFilter === 'all' || job.status === statusFilter;
@@ -174,16 +127,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
   }, [jobs, statusFilter, typeFilter]);
 
   const statusCounts = useMemo(() => {
-    const counts: Record<JobStatus, number> = {
-      all: jobs.length,
-      queued: 0,
-      running: 0,
-      verifying: 0,
-      retrying: 0,
-      completed: 0,
-      failed: 0,
-      cancelled: 0,
-    };
+    const counts: Record<string, number> = { all: jobs.length };
     for (const job of jobs) {
       counts[job.status] = (counts[job.status] ?? 0) + 1;
     }
@@ -191,25 +135,14 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
   }, [jobs]);
 
   const typeCounts = useMemo(() => {
-    const counts: Record<JobTypeFilter, number> = {
-      all: jobs.length,
-      research: 0,
-      draft: 0,
-      crawl: 0,
-      match: 0,
-      extract: 0,
-      'peer-discovery': 0,
-      'funder-insights': 0,
-      'eligibility-vetting': 0,
-      'budget-import': 0,
-    };
+    const counts: Record<string, number> = { all: jobs.length };
     for (const job of jobs) {
       counts[job.jobType] = (counts[job.jobType] ?? 0) + 1;
     }
     return counts;
   }, [jobs]);
 
-  const activeCount = statusCounts.queued + statusCounts.running;
+  const activeCount = (statusCounts.queued ?? 0) + (statusCounts.running ?? 0);
 
   if (loading) {
     return (
@@ -248,7 +181,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
               void refresh();
             }}
           >
-            {'↻'} Refresh
+            <RefreshCw size={14} aria-hidden="true" /> Refresh
           </button>
         </div>
       </div>
@@ -267,25 +200,23 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
           role="tablist"
           aria-label="Filter by job status"
         >
-          {(['all', 'queued', 'running', 'completed', 'failed', 'cancelled'] as JobStatus[]).map(
-            (status) => (
-              <button
-                key={status}
-                type="button"
-                role="tab"
-                aria-selected={statusFilter === status}
-                className={`btn btn-ghost btn-sm ${statusFilter === status ? 'active' : ''}`}
-                data-status={status}
-                data-testid={`jobs-status-btn-${status}`}
-                onClick={() => setStatusFilter(status)}
-              >
-                {status === 'all' ? 'All' : status.charAt(0).toUpperCase() + status.slice(1)}
-                {statusCounts[status] > 0 && (
-                  <span className={`nav-count ${styles.countBadge}`}>{statusCounts[status]}</span>
-                )}
-              </button>
-            ),
-          )}
+          {JOB_STATUS_FILTERS.map((status) => (
+            <button
+              key={status}
+              type="button"
+              role="tab"
+              aria-selected={statusFilter === status}
+              className={`btn btn-ghost btn-sm ${statusFilter === status ? 'active' : ''}`}
+              data-status={status}
+              data-testid={`jobs-status-btn-${status}`}
+              onClick={() => setStatusFilter(status)}
+            >
+              {jobStatusLabel(status)}
+              {(statusCounts[status] ?? 0) > 0 && (
+                <span className={`nav-count ${styles.countBadge}`}>{statusCounts[status]}</span>
+              )}
+            </button>
+          ))}
         </div>
         <div
           className={`filter-row ${styles.typeFilterRow}`}
@@ -293,20 +224,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
           role="tablist"
           aria-label="Filter by job type"
         >
-          {(
-            [
-              'all',
-              'research',
-              'draft',
-              'crawl',
-              'match',
-              'extract',
-              'peer-discovery',
-              'funder-insights',
-              'eligibility-vetting',
-              'budget-import',
-            ] as JobTypeFilter[]
-          ).map((type) => (
+          {JOB_TYPE_FILTERS.map((type) => (
             <button
               key={type}
               type="button"
@@ -317,8 +235,8 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
               data-testid={`jobs-type-btn-${type}`}
               onClick={() => setTypeFilter(type)}
             >
-              {type === 'all' ? 'All' : type.charAt(0).toUpperCase() + type.slice(1)}
-              {typeCounts[type] > 0 && (
+              {jobTypeLabel(type)}
+              {(typeCounts[type] ?? 0) > 0 && (
                 <span className={`nav-count ${styles.countBadge}`}>{typeCounts[type]}</span>
               )}
             </button>
@@ -337,7 +255,7 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
       {filteredJobs.length === 0 ? (
         <div className="empty-state-guide" data-testid="jobs-empty-state">
           <div className="empty-state-icon" aria-hidden="true">
-            {'📋'}
+            <ClipboardList size={40} strokeWidth={1.5} />
           </div>
           <div className="empty-state-title">No jobs found</div>
           <div className="empty-state-description">
@@ -345,170 +263,18 @@ export function JobsPanel({ onRefreshAppState }: JobsPanelProps): JSX.Element {
           </div>
         </div>
       ) : (
-        <div className="panel" data-testid="jobs-list">
-          {filteredJobs.map((job) => {
-            const progress = getProgress(job.stage);
-            const isRunning = job.status === 'running';
-            const failureMsg =
-              job.failureCategory && job.status === 'failed'
-                ? jobFailureMessages[job.failureCategory]
-                : null;
-
-            return (
-              <div
-                key={job.id}
-                className={`job-card ${job.status} ${selectedJobId === job.id ? 'expanded' : ''}`}
-                data-testid={`job-item-${job.status}-${job.id}`}
-              >
-                <div className="job-card-header">
-                  <span className="job-status-icon" aria-hidden="true">
-                    {statusIcon(job.status)}
-                  </span>
-                  <span className={`job-badge job-badge-type job-badge-${job.jobType}`}>
-                    {job.jobType}
-                  </span>
-                  <span className={`job-badge job-badge-status job-badge-${job.status}`}>
-                    {job.status}
-                  </span>
-                  {job.entityId && (
-                    <button
-                      type="button"
-                      className="job-entity-link"
-                      data-testid={`job-entity-link-${job.id}`}
-                      title={`Linked entity: ${job.entityId}`}
-                    >
-                      {job.entityId.length > 12
-                        ? `${job.entityId.substring(0, 12)}...`
-                        : job.entityId}
-                    </button>
-                  )}
-                  {job.retryCount !== undefined && job.retryCount > 0 && (
-                    <span className="job-retry-count" data-testid={`job-retry-${job.id}`}>
-                      Retry #{job.retryCount}
-                    </span>
-                  )}
-                  <div className="job-actions">
-                    {(job.status === 'queued' || job.status === 'running') && (
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm job-action-btn job-action-cancel"
-                        data-testid={`job-cancel-btn-${job.id}`}
-                        disabled={actionLoading[job.id] === true}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleCancelRequest(job.id);
-                        }}
-                        title="Cancel this job"
-                      >
-                        {actionLoading[job.id] === true ? '...' : '✕ Cancel'}
-                      </button>
-                    )}
-                    {job.status === 'failed' && (
-                      <button
-                        type="button"
-                        className="btn btn-ghost btn-sm job-action-btn job-action-retry"
-                        data-testid={`job-retry-btn-${job.id}`}
-                        disabled={actionLoading[job.id] === true}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          void handleRetry(job.id);
-                        }}
-                        title="Retry this job"
-                      >
-                        {actionLoading[job.id] === true ? '...' : '↻ Retry'}
-                      </button>
-                    )}
-                  </div>
-                  <button
-                    type="button"
-                    className="btn btn-ghost btn-sm"
-                    data-testid={`job-toggle-details-${job.id}`}
-                    onClick={() =>
-                      setSelectedJobId((current) => (current === job.id ? null : job.id))
-                    }
-                    aria-expanded={selectedJobId === job.id}
-                    aria-label={`Toggle details for ${job.jobType} job ${job.id}`}
-                  >
-                    {selectedJobId === job.id ? '▲' : '▼'}
-                  </button>
-                </div>
-
-                {/* Progress bar */}
-                <div className="job-progress-container" data-testid={`job-progress-${job.id}`}>
-                  <div
-                    className={`job-progress-bar ${isRunning ? 'indeterminate' : ''}`}
-                    role="progressbar"
-                    aria-valuenow={isRunning ? undefined : progress}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={`Job progress: ${job.stage ?? 'unknown'}`}
-                    style={isRunning ? undefined : { width: `${progress}%` }}
-                  />
-                </div>
-
-                {/* Stage description */}
-                <div className="job-stage-description" data-testid={`job-stage-${job.id}`}>
-                  {stageDescription(job.stage)}
-                </div>
-
-                {/* Timestamps */}
-                <div className="job-timestamps" data-testid={`job-timestamps-${job.id}`}>
-                  <span className="job-timestamp">Created: {formatTime(job.createdAt)}</span>
-                  {job.startedAt && (
-                    <span className="job-timestamp">Started: {formatTime(job.startedAt)}</span>
-                  )}
-                  {job.lastUpdate && (
-                    <span className="job-timestamp">Updated: {formatTime(job.lastUpdate)}</span>
-                  )}
-                  {job.completedAt && (
-                    <span className="job-timestamp">Completed: {formatTime(job.completedAt)}</span>
-                  )}
-                </div>
-
-                {/* Expanded details */}
-                {selectedJobId === job.id && (
-                  <div className="job-details" data-testid={`job-details-${job.id}`}>
-                    {job.errorMessage && (
-                      <div className="drawer-note" data-testid={`job-error-${job.id}`}>
-                        Error: {job.errorMessage}
-                      </div>
-                    )}
-                    {failureMsg && (
-                      <div
-                        className={`failure-guidance failure-${job.failureCategory}`}
-                        data-testid={`job-failure-guidance-${job.id}`}
-                      >
-                        <div className="failure-guidance-title">{failureMsg.title}</div>
-                        <div className="failure-guidance-description">{failureMsg.description}</div>
-                        <div className="failure-guidance-action">{failureMsg.action}</div>
-                      </div>
-                    )}
-                    {job.partialOutput && (
-                      <div
-                        className={`drawer-note ${styles.partialOutput}`}
-                        data-testid={`job-partial-output-${job.id}`}
-                      >
-                        <strong>Partial output:</strong>{' '}
-                        {job.partialOutput.length > 500
-                          ? `${job.partialOutput.substring(0, 500)}...`
-                          : job.partialOutput}
-                      </div>
-                    )}
-                    {job.resultSummary && (
-                      <div className="drawer-note" data-testid={`job-result-${job.id}`}>
-                        Result: {job.resultSummary}
-                      </div>
-                    )}
-                    {job.entityId && (
-                      <div className="drawer-note" data-testid={`job-entity-detail-${job.id}`}>
-                        Linked Entity: {job.entityId}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div className="panel job-list" data-testid="jobs-list">
+          {filteredJobs.map((job) => (
+            <JobCard
+              key={job.id}
+              job={job}
+              expanded={selectedJobId === job.id}
+              actionPending={actionLoading[job.id] === true}
+              onToggle={toggleDetails}
+              onCancelRequest={handleCancelRequest}
+              onRetry={handleRetryClick}
+            />
+          ))}
         </div>
       )}
 

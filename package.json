@@ -4,10 +4,10 @@
   "private": true,
   "description": "Hacker Dojo Grant Operations Center - Web App",
   "scripts": {
-    "dev": "cd frontend && unset NODE_ENV && ../node_modules/.bin/next dev -H 127.0.0.1 -p 3000",
+    "dev": "PORT=${PORT:-$(node -p \"require('./config/app.json').port\")} && cd frontend && unset NODE_ENV && PORT=$PORT ../node_modules/.bin/next dev -H 127.0.0.1",
     "build": "cd frontend && node -e \"require('fs').rmSync('.next', { recursive: true, force: true })\" && ../node_modules/.bin/next build && node -e \"const fs=require('fs'),path=require('path');const src=path.join('.next','static');const standaloneRoot=path.join('.next','standalone');if(!fs.existsSync(standaloneRoot)){process.exit(0);}const entries=fs.readdirSync(standaloneRoot);const skipDirs=new Set(['node_modules','.nvm']);const projectDir=entries.find(e=>fs.statSync(path.join(standaloneRoot,e)).isDirectory()&&!skipDirs.has(e));const dst=projectDir?path.join(standaloneRoot,projectDir,'.next','static'):path.join('.next','standalone','frontend','.next','static');if(fs.existsSync(src)&&!fs.existsSync(dst)){fs.mkdirSync(path.dirname(dst),{recursive:true});fs.cpSync(src,dst,{recursive:true});}\"",
-    "start": "cd frontend && PORT=3000 HOSTNAME=127.0.0.1 ../node_modules/.bin/next start",
-    "start:verified": "bash scripts/setup-check.sh && cd frontend && PORT=3000 HOSTNAME=127.0.0.1 ../node_modules/.bin/next start",
+    "start": "PORT=${PORT:-$(node -p \"require('./config/app.json').port\")} && cd frontend && PORT=$PORT HOSTNAME=127.0.0.1 ../node_modules/.bin/next start",
+    "start:verified": "bash scripts/setup-check.sh && PORT=${PORT:-$(node -p \"require('./config/app.json').port\")} && cd frontend && PORT=$PORT HOSTNAME=127.0.0.1 ../node_modules/.bin/next start",
     "lint": "eslint . --ext .ts,.tsx",
     "test": "bash run-test-batches.sh",
     "test:raw": "vitest run",

@@ -10,9 +10,8 @@
  */
 
 import { test, expect, type APIRequestContext } from '@playwright/test';
-import { resetAppState, configureOpencodeThroughSettingsView } from './test-utils';
+import { BASE_URL, resetAppState, configureOpencodeThroughSettingsView } from './test-utils';
 
-const BASE_URL = 'http://127.0.0.1:3000';
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

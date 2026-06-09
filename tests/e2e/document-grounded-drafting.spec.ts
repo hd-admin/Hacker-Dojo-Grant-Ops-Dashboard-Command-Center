@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test';
-import {
+import { BASE_URL,
   configureOpencodeThroughSettingsView,
   resetAppState,
   saveProfileThroughSettingsView,
@@ -23,7 +23,7 @@ async function ensureOpencodeStub(): Promise<string> {
 }
 
 async function openMatchedGrantWithoutDraft(page: Page, request: APIRequestContext) {
-  const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
+  const grantsResponse = await request.get(`/api/grants`);
   expect(grantsResponse.ok()).toBeTruthy();
   const grantsData = await grantsResponse.json();
   const grants: Array<{
@@ -58,7 +58,7 @@ test('document-grounded-drafting: generate, revise, approve, and submit through 
   const stubPath = await ensureOpencodeStub();
 
   await resetAppState(request);
-  await page.goto('http://127.0.0.1:3000');
+  await page.goto(BASE_URL);
   await page.waitForSelector('.app', { timeout: 60000 });
 
   await saveProfileThroughSettingsView(

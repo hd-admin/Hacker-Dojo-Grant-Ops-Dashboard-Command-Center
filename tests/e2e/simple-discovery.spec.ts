@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
-import {
+import { BASE_URL,
   configureOpencodeThroughSettingsView,
   resetAppState,
   saveProfileThroughSettingsView,
@@ -25,7 +25,7 @@ async function ensureOpencodeStub(): Promise<string> {
 test('simple-discovery: add source and refresh crawl state', async ({ request, page }) => {
   const stubPath = await ensureOpencodeStub();
   await resetAppState(request);
-  await page.goto('http://127.0.0.1:3000');
+  await page.goto(BASE_URL);
   await page.waitForSelector('.app', { timeout: 60000 });
 
   await saveProfileThroughSettingsView(
@@ -39,7 +39,7 @@ test('simple-discovery: add source and refresh crawl state', async ({ request, p
   );
 
   // Verify opencode is configured via health check
-  const healthResponse = await request.get('http://127.0.0.1:3000/api/health');
+  const healthResponse = await request.get(`/api/health`);
   expect(healthResponse.ok()).toBeTruthy();
   const healthData = (await healthResponse.json()) as { opencode: string };
   expect(healthData.opencode).toBe('ok');
@@ -65,7 +65,7 @@ test('simple-discovery: add source and refresh crawl state', async ({ request, p
   expect(sourceResponse.ok()).toBeTruthy();
 
   // Manually trigger research since adding a source no longer auto-triggers it
-  const researchResponse = await request.post('http://127.0.0.1:3000/api/research', {
+  const researchResponse = await request.post(`/api/research`, {
     data: { query: 'Candid' },
   });
   expect(researchResponse.ok()).toBeTruthy();
@@ -73,7 +73,7 @@ test('simple-discovery: add source and refresh crawl state', async ({ request, p
   await expect(page.locator('.source-item')).toHaveCount(1);
   await expect(page.locator('.source-item .source-name')).toContainText('Candid');
 
-  const sourcesResponse = await request.get('http://127.0.0.1:3000/api/sources');
+  const sourcesResponse = await request.get(`/api/sources`);
   expect(sourcesResponse.ok()).toBeTruthy();
   const sources = (await sourcesResponse.json()) as Array<{
     name: string;
@@ -87,7 +87,7 @@ test('simple-discovery: add source and refresh crawl state', async ({ request, p
     latestRun: { status: string; sourcesCrawled: number } | null;
   } | null;
   for (let attempt = 0; attempt < 30; attempt += 1) {
-    const researchResponse = await request.get('http://127.0.0.1:3000/api/research');
+    const researchResponse = await request.get(`/api/research`);
     expect(researchResponse.ok()).toBeTruthy();
     research = (await researchResponse.json()) as typeof research;
     if (research.latestRun?.status === 'completed' && research.latestRun.sourcesCrawled > 0) {

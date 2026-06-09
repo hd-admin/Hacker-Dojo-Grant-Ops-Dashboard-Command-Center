@@ -9,7 +9,7 @@ get the app running on a clean clone".
 
 ```bash
 pnpm install        # rebuilds better-sqlite3 against the current Node ABI
-pnpm dev            # starts the app on 127.0.0.1:3000
+pnpm dev            # starts the app on 127.0.0.1:855
 ```
 
 `npm install && npm run dev` is the documented alternative. There are

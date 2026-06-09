@@ -4,6 +4,9 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
+# Canonical app port/host (single source of truth: config/app.json)
+source "$ROOT_DIR/scripts/lib/app-config.sh"
+
 if ! node -e "require('better-sqlite3')" >/dev/null 2>&1; then
   bash scripts/check-better-sqlite3.sh
 fi
@@ -24,21 +27,21 @@ export DATA_DIR="$REQUEST_DIR/data"
 PID_FILE="$DATA_DIR/playwright-start.pid"
 SERVER_PID=""
 
-kill_port_3000() {
+kill_app_port() {
   local port_pids
-  port_pids="$(lsof -t -iTCP:3000 -sTCP:LISTEN 2>/dev/null || true)"
+  port_pids="$(lsof -t -iTCP:${APP_PORT} -sTCP:LISTEN 2>/dev/null || true)"
   if [ -n "$port_pids" ]; then
     kill $port_pids 2>/dev/null || true
     sleep 1
-    port_pids="$(lsof -t -iTCP:3000 -sTCP:LISTEN 2>/dev/null || true)"
+    port_pids="$(lsof -t -iTCP:${APP_PORT} -sTCP:LISTEN 2>/dev/null || true)"
     if [ -n "$port_pids" ]; then
       kill -9 $port_pids 2>/dev/null || true
     fi
   fi
 }
 
-# Kill any process already occupying port 3000 before starting
-kill_port_3000
+# Kill any process already occupying port $APP_PORT before starting
+kill_app_port
 sleep 1
 
 cleanup() {
@@ -51,11 +54,11 @@ cleanup() {
   # Kill any remaining next-server / next start processes aggressively
   pkill -9 -f "next-server" 2>/dev/null || true
   pkill -9 -f "next start" 2>/dev/null || true
-  # Clear port 3000
-  kill_port_3000
-  # Wait for port 3000 to actually be free before returning
+  # Clear port $APP_PORT
+  kill_app_port
+  # Wait for port $APP_PORT to actually be free before returning
   for _ in $(seq 1 15); do
-    if ! lsof -nP -iTCP:3000 -sTCP:LISTEN >/dev/null 2>&1; then
+    if ! lsof -nP -iTCP:${APP_PORT} -sTCP:LISTEN >/dev/null 2>&1; then
       break
     fi
     sleep 1
@@ -70,7 +73,7 @@ SERVER_PID="$SERVER_LAUNCH_PID"
 
 READY=0
 for _ in $(seq 1 90); do
-  if curl -fsS --max-time 10 http://127.0.0.1:3000/api/grants >/dev/null 2>&1; then
+  if curl -fsS --max-time 10 ${APP_BASE_URL}/api/grants >/dev/null 2>&1; then
     READY=1
     break
   fi
@@ -113,47 +116,47 @@ node -e "const fs=require('node:fs');const p=process.argv[1];const o={binaryPath
 
 reset_body="$REQUEST_DIR/reset.body"
 reset_status="$REQUEST_DIR/reset.status"
-request POST http://127.0.0.1:3000/api/testing/reset "$reset_body" "$reset_status"
+request POST ${APP_BASE_URL}/api/testing/reset "$reset_body" "$reset_status"
 
 profile_body="$REQUEST_DIR/profile.body"
 profile_status="$REQUEST_DIR/profile.status"
-request PUT http://127.0.0.1:3000/api/profile "$profile_body" "$profile_status" -H 'content-type: application/json' --data-binary "@$profile_payload"
+request PUT ${APP_BASE_URL}/api/profile "$profile_body" "$profile_status" -H 'content-type: application/json' --data-binary "@$profile_payload"
 
 settings_body="$REQUEST_DIR/settings.body"
 settings_status="$REQUEST_DIR/settings.status"
-request PUT http://127.0.0.1:3000/api/opencode-settings "$settings_body" "$settings_status" -H 'content-type: application/json' --data-binary "@$settings_payload"
+request PUT ${APP_BASE_URL}/api/opencode-settings "$settings_body" "$settings_status" -H 'content-type: application/json' --data-binary "@$settings_payload"
 
 upload_body="$REQUEST_DIR/upload.body"
 upload_status="$REQUEST_DIR/upload.status"
-request POST http://127.0.0.1:3000/api/documents "$upload_body" "$upload_status" -F name='Hacker Dojo Program Summary' -F type=PDF -F file=@"$document_path"
+request POST ${APP_BASE_URL}/api/documents "$upload_body" "$upload_status" -F name='Hacker Dojo Program Summary' -F type=PDF -F file=@"$document_path"
 
 pre_runs_body="$REQUEST_DIR/pre-runs.body"
 pre_runs_status="$REQUEST_DIR/pre-runs.status"
-request GET http://127.0.0.1:3000/api/research "$pre_runs_body" "$pre_runs_status"
+request GET ${APP_BASE_URL}/api/research "$pre_runs_body" "$pre_runs_status"
 
 pre_grants_body="$REQUEST_DIR/pre-grants.body"
 pre_grants_status="$REQUEST_DIR/pre-grants.status"
-request GET 'http://127.0.0.1:3000/api/grants?sortBy=fit' "$pre_grants_body" "$pre_grants_status"
+request GET '${APP_BASE_URL}/api/grants?sortBy=fit' "$pre_grants_body" "$pre_grants_status"
 
 pre_sources_body="$REQUEST_DIR/pre-sources.body"
 pre_sources_status="$REQUEST_DIR/pre-sources.status"
-request GET http://127.0.0.1:3000/api/sources "$pre_sources_body" "$pre_sources_status"
+request GET ${APP_BASE_URL}/api/sources "$pre_sources_body" "$pre_sources_status"
 
 research_body="$REQUEST_DIR/research.body"
 research_status="$REQUEST_DIR/research.status"
-request POST http://127.0.0.1:3000/api/research "$research_body" "$research_status"
+request POST ${APP_BASE_URL}/api/research "$research_body" "$research_status"
 
 post_runs_body="$REQUEST_DIR/post-runs.body"
 post_runs_status="$REQUEST_DIR/post-runs.status"
-request GET http://127.0.0.1:3000/api/research "$post_runs_body" "$post_runs_status"
+request GET ${APP_BASE_URL}/api/research "$post_runs_body" "$post_runs_status"
 
 post_grants_body="$REQUEST_DIR/post-grants.body"
 post_grants_status="$REQUEST_DIR/post-grants.status"
-request GET 'http://127.0.0.1:3000/api/grants?sortBy=fit' "$post_grants_body" "$post_grants_status"
+request GET '${APP_BASE_URL}/api/grants?sortBy=fit' "$post_grants_body" "$post_grants_status"
 
 post_sources_body="$REQUEST_DIR/post-sources.body"
 post_sources_status="$REQUEST_DIR/post-sources.status"
-request GET http://127.0.0.1:3000/api/sources "$post_sources_body" "$post_sources_status"
+request GET ${APP_BASE_URL}/api/sources "$post_sources_body" "$post_sources_status"
 
 GRANT_ID="$(node - "$pre_runs_body" "$post_runs_body" "$pre_grants_body" "$post_grants_body" "$pre_sources_body" "$post_sources_body" "$research_body" <<'NODE'
 const fs = require('node:fs');
@@ -238,7 +241,7 @@ NODE
 
 draft_body="$REQUEST_DIR/draft.body"
 draft_status="$REQUEST_DIR/draft.status"
-request POST "http://127.0.0.1:3000/api/grants/$GRANT_ID/draft" "$draft_body" "$draft_status"
+request POST "${APP_BASE_URL}/api/grants/$GRANT_ID/draft" "$draft_body" "$draft_status"
 
 echo "--- Step 9 proof ---"
 echo "POST /api/testing/reset -> $(cat "$reset_status")"

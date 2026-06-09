@@ -7,6 +7,10 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+
+# Canonical app port/host (single source of truth: config/app.json)
+source "$SCRIPT_DIR/lib/app-config.sh"
+BASE_URL="$APP_BASE_URL"
 DATA_DIR="${PROJECT_DIR}/.grant-ops-data"
 RESULTS_DIR="${DATA_DIR}/smoke-test-results"
 VERSION="$(date +%Y%m%d-%H%M%S)"
@@ -20,11 +24,11 @@ echo "Results: ${RESULTS_FILE}"
 echo ""
 
 # Seed test data for endpoints that require existing grants/awards
-TEST_GRANT_RESPONSE=$(curl -s -X POST http://localhost:3000/api/grants \
+TEST_GRANT_RESPONSE=$(curl -s -X POST ${BASE_URL}/api/grants \
   -H 'Content-Type: application/json' \
   -d '{"title":"Smoke Test Grant","funder":"Smoke Funder","status":"matched"}' 2>/dev/null || true)
 TEST_GRANT_ID=$(echo "${TEST_GRANT_RESPONSE}" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4 || echo "test-grant")
-TEST_AWARD_RESPONSE=$(curl -s -X POST http://localhost:3000/api/awards \
+TEST_AWARD_RESPONSE=$(curl -s -X POST ${BASE_URL}/api/awards \
   -H 'Content-Type: application/json' \
   -d "{\"grantId\":\"${TEST_GRANT_ID}\",\"title\":\"Smoke Award\",\"funder\":\"Smoke Funder\",\"amount\":100000,\"startDate\":\"2026-01-01\",\"endDate\":\"2026-12-31\"}" 2>/dev/null || true)
 TEST_AWARD_ID=$(echo "${TEST_AWARD_RESPONSE}" | grep -o '"id":"[^"]*"' | head -1 | cut -d'"' -f4 || echo "test-award")
@@ -42,49 +46,49 @@ for job_type in "${JOB_TYPES[@]}"; do
 
   case "${job_type}" in
     research)
-      RESPONSE=$(curl -s -X POST http://localhost:3000/api/research \
+      RESPONSE=$(curl -s -X POST ${BASE_URL}/api/research \
         -H 'Content-Type: application/json' \
         -d '{"query":"AI literacy grants for Bay Area makerspaces"}' 2>&1) || true
       ;;
     draft)
-      RESPONSE=$(curl -s -X POST "http://localhost:3000/api/grants/${TEST_GRANT_ID}/draft" \
+      RESPONSE=$(curl -s -X POST "${BASE_URL}/api/grants/${TEST_GRANT_ID}/draft" \
         -H 'Content-Type: application/json' \
         -d '{"requirements":["Explain organization mission","Detail program approach"]}' 2>&1) || true
       ;;
     crawl)
-      RESPONSE=$(curl -s -X POST http://localhost:3000/api/crawl/start \
+      RESPONSE=$(curl -s -X POST ${BASE_URL}/api/crawl/start \
         -H 'Content-Type: application/json' \
         -d '{"sourceId":"source-grants-gov"}' 2>&1) || true
       ;;
     match)
-      RESPONSE=$(curl -s -X POST http://localhost:3000/api/match/start \
+      RESPONSE=$(curl -s -X POST ${BASE_URL}/api/match/start \
         -H 'Content-Type: application/json' \
         -d '{"grantIds":["test-grant-1"]}' 2>&1) || true
       ;;
     extract)
-      RESPONSE=$(curl -s -X POST http://localhost:3000/api/extract/start \
+      RESPONSE=$(curl -s -X POST ${BASE_URL}/api/extract/start \
         -H 'Content-Type: application/json' \
         -d "{\"documentRef\":\"test-doc\",\"grantId\":\"${TEST_GRANT_ID}\"}" 2>&1) || true
       ;;
     "peer-discovery")
-      RESPONSE=$(curl -s -X POST http://localhost:3000/api/peer-discovery \
+      RESPONSE=$(curl -s -X POST ${BASE_URL}/api/peer-discovery \
         -H 'Content-Type: application/json' \
         -d '{}' 2>&1) || true
       ;;
     "funder-insights")
-      RESPONSE=$(curl -s -X POST http://localhost:3000/api/funder-insights \
+      RESPONSE=$(curl -s -X POST ${BASE_URL}/api/funder-insights \
         -H 'Content-Type: application/json' \
         -d '{"funderId":"funder-nsf","funderName":"National Science Foundation"}' 2>&1) || true
       ;;
     "eligibility-vetting")
-      RESPONSE=$(curl -s -X POST http://localhost:3000/api/eligibility-vetting \
+      RESPONSE=$(curl -s -X POST ${BASE_URL}/api/eligibility-vetting \
         -H 'Content-Type: application/json' \
         -d '{"grantId":"test-grant","requirements":"501(c)(3), Bay Area, STEM education"}' 2>&1) || true
       ;;
     "budget-import")
       BUDGET_CSV="/tmp/smoke-budget-${VERSION}.csv"
       printf 'category,amount\n"Personnel",50000\n"Supplies",15000\n' > "${BUDGET_CSV}"
-      RESPONSE=$(curl -s -X POST http://localhost:3000/api/budget-import \
+      RESPONSE=$(curl -s -X POST ${BASE_URL}/api/budget-import \
         -F "file=@${BUDGET_CSV};type=text/csv" \
         -F "awardId=${TEST_AWARD_ID}" 2>&1) || true
       rm -f "${BUDGET_CSV}"

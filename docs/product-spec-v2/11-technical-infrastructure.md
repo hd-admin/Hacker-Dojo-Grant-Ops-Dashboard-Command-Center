@@ -123,9 +123,9 @@ export default nextConfig;
 ```json
 {
   "scripts": {
-    "dev": "next dev -H 127.0.0.1 -p 3000",
+    "dev": "next dev -H 127.0.0.1 -p 855",
     "build": "next build",
-    "start": "HOSTNAME=127.0.0.1 PORT=3000 node .next/standalone/server.js",
+    "start": "HOSTNAME=127.0.0.1 PORT=855 node .next/standalone/server.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",

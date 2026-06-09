@@ -26,7 +26,7 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open [http://localhost:855](http://localhost:855).
 
 That's it. Your data lives in `.grant-ops-data/` (SQLite database and uploaded documents). Nothing leaves your machine.
 

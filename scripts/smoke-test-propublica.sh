@@ -12,8 +12,10 @@ set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." ; pwd)"
 cd "$ROOT_DIR"
 
-APP_PORT="${PORT:-3000}"
-BASE_URL="http://127.0.0.1:${APP_PORT}"
+# Canonical app port/host (single source of truth: config/app.json)
+source "$ROOT_DIR/scripts/lib/app-config.sh"
+
+BASE_URL="$APP_BASE_URL"
 
 if ! command -v opencode >/dev/null 2>&1; then
   echo "ERROR: opencode not found on PATH. Install opencode before running this smoke test." >&2

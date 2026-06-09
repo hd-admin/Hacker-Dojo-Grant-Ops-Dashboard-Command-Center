@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
-import { configureOpencodeThroughSettingsView, resetAppState } from './test-utils';
+import { BASE_URL, configureOpencodeThroughSettingsView, resetAppState } from './test-utils';
 
 const opencodeStubPath = path.join(process.cwd(), 'tests/e2e/opencode-stub.sh');
 
@@ -15,7 +15,7 @@ test.describe('Grant Operations Center smoke', () => {
   test.beforeEach(async ({ request, page }) => {
     const stubPath = await ensureOpencodeStub();
     await resetAppState(request);
-    await page.goto('http://127.0.0.1:3000');
+    await page.goto(BASE_URL);
     await page.waitForSelector('.app', { timeout: 60000 });
     // Only click rerun-health-check if the app is in blocked state (storage error)
     const rerunBtn = page.locator('.shell-banner-row [data-testid="rerun-health-check-btn"]');
@@ -56,7 +56,7 @@ test.describe('Grant Operations Center smoke', () => {
     request,
   }) => {
     // Seed a matched grant without draft content
-    const seedRes = await request.post('http://127.0.0.1:3000/api/grants', {
+    const seedRes = await request.post(`/api/grants`, {
       data: {
         title: 'Test Matched Grant for Drawer',
         funder: 'Test Funder',
@@ -75,7 +75,7 @@ test.describe('Grant Operations Center smoke', () => {
     const seedBody = await seedRes.json();
     const targetGrantId = seedBody.id;
 
-    const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
+    const grantsResponse = await request.get(`/api/grants`);
     expect(grantsResponse.ok()).toBeTruthy();
     const grantsData = await grantsResponse.json();
     const grants: Array<{
@@ -134,7 +134,7 @@ test.describe('Grant Operations Center smoke', () => {
 
   test('AC-14.2.4: failed job can be retried from UI', async ({ page, request }) => {
     // Create a job that will fail
-    const startRes = await request.post('http://127.0.0.1:3000/api/research', {
+    const startRes = await request.post(`/api/research`, {
       data: { query: '__force_failure_test__' },
     });
     expect(startRes.ok()).toBeTruthy();
@@ -170,7 +170,7 @@ test.describe('Grant Operations Center smoke', () => {
 
   test('AC-14.3.4: sidebar badge shows correct active job count', async ({ page, request }) => {
     // Start a long-running job
-    const startRes = await request.post('http://127.0.0.1:3000/api/research', {
+    const startRes = await request.post(`/api/research`, {
       data: { query: 'test query for badge count' },
     });
     expect(startRes.ok()).toBeTruthy();
@@ -190,7 +190,7 @@ test.describe('Grant Operations Center smoke', () => {
 
   test('AC-14.10.3: frontend handles API error codes with specific messages', async ({ page }) => {
     // Test 400 validation error
-    const badRequestRes = await page.request.post('http://127.0.0.1:3000/api/grants', {
+    const badRequestRes = await page.request.post(`/api/grants`, {
       data: { invalidField: true },
     });
     expect(badRequestRes.status()).toBeGreaterThanOrEqual(400);
@@ -200,7 +200,7 @@ test.describe('Grant Operations Center smoke', () => {
 
     // Test 404 not found
     const notFoundRes = await page.request.get(
-      'http://127.0.0.1:3000/api/grants/nonexistent-grant-id-12345',
+      `/api/grants/nonexistent-grant-id-12345`,
     );
     expect(notFoundRes.status()).toBeGreaterThanOrEqual(404);
     expect(notFoundRes.status()).toBeLessThan(500);
@@ -209,7 +209,7 @@ test.describe('Grant Operations Center smoke', () => {
   });
 
   test('grant updates persist through the API', async ({ request }) => {
-    const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
+    const grantsResponse = await request.get(`/api/grants`);
     expect(grantsResponse.ok()).toBeTruthy();
     const grantsData = await grantsResponse.json();
     const grants: Array<{ id: string; status: string }> = grantsData.items || grantsData;
@@ -220,7 +220,7 @@ test.describe('Grant Operations Center smoke', () => {
     const nextStatus = originalStatus === 'matched' ? 'draft' : 'matched';
 
     const updateResponse = await request.patch(
-      `http://127.0.0.1:3000/api/grants/${firstGrant.id}/status`,
+      `/api/grants/${firstGrant.id}/status`,
       {
         headers: { 'Content-Type': 'application/json' },
         data: {
@@ -231,12 +231,12 @@ test.describe('Grant Operations Center smoke', () => {
     );
     expect(updateResponse.ok()).toBeTruthy();
 
-    const getResponse = await request.get(`http://127.0.0.1:3000/api/grants/${firstGrant.id}`);
+    const getResponse = await request.get(`/api/grants/${firstGrant.id}`);
     expect(getResponse.ok()).toBeTruthy();
     const updatedGrant = await getResponse.json();
     expect(updatedGrant.grant.status).toBe(nextStatus);
 
-    await request.patch(`http://127.0.0.1:3000/api/grants/${firstGrant.id}`, {
+    await request.patch(`/api/grants/${firstGrant.id}`, {
       headers: { 'Content-Type': 'application/json' },
       data: {
         status: originalStatus,

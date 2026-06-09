@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test';
-import {
+import { BASE_URL,
   configureOpencodeThroughSettingsView,
   resetAppState,
   saveProfileThroughSettingsView,
@@ -21,7 +21,7 @@ async function ensureOpencodeStub(): Promise<string> {
 }
 
 async function openMatchedGrantWithoutDraft(page: Page, request: APIRequestContext) {
-  const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
+  const grantsResponse = await request.get(`/api/grants`);
   expect(grantsResponse.ok()).toBeTruthy();
   const grantsData = await grantsResponse.json();
   const grants: Array<{
@@ -52,7 +52,7 @@ async function openMatchedGrantWithoutDraft(page: Page, request: APIRequestConte
 test.describe('Submission Notification', () => {
   test.beforeEach(async ({ page, request }) => {
     await resetAppState(request);
-    await page.goto('http://127.0.0.1:3000');
+    await page.goto(BASE_URL);
     await page.waitForSelector('.app', { timeout: 60000 });
   });
 
@@ -103,7 +103,7 @@ test.describe('Submission Notification', () => {
       .click();
 
     const grantDetailResponse = await request.get(
-      `http://127.0.0.1:3000/api/grants/${targetGrant.id}`,
+      `/api/grants/${targetGrant.id}`,
     );
     expect(grantDetailResponse.ok()).toBeTruthy();
     const grantDetail = await grantDetailResponse.json();
@@ -112,7 +112,7 @@ test.describe('Submission Notification', () => {
     expect(Array.isArray(grantDetail.followUps)).toBe(true);
     expect(grantDetail.followUps.length).toBeGreaterThan(0);
 
-    const followUpsResponse = await request.get('http://127.0.0.1:3000/api/follow-ups');
+    const followUpsResponse = await request.get(`/api/follow-ups`);
     expect(followUpsResponse.ok()).toBeTruthy();
     const followUps = (await followUpsResponse.json()) as Array<{
       grantId?: string;
@@ -121,14 +121,14 @@ test.describe('Submission Notification', () => {
     }>;
     expect(followUps.some((followUp) => followUp.grantId === targetGrant.id)).toBe(true);
 
-    const notificationsResponse = await request.get('http://127.0.0.1:3000/api/notifications');
+    const notificationsResponse = await request.get(`/api/notifications`);
     expect(notificationsResponse.ok()).toBeTruthy();
     const notifications = (await notificationsResponse.json()) as Array<{ text: string }>;
     expect(
       notifications.some((notification) => /Email submission sent to/i.test(notification.text)),
     ).toBe(true);
 
-    const tasksResponse = await request.get('http://127.0.0.1:3000/api/tasks');
+    const tasksResponse = await request.get(`/api/tasks`);
     expect(tasksResponse.ok()).toBeTruthy();
     const tasks = (await tasksResponse.json()) as Array<{ text: string; completed: boolean }>;
     expect(tasks.some((task) => /Follow up on email submission/i.test(task.text))).toBe(true);

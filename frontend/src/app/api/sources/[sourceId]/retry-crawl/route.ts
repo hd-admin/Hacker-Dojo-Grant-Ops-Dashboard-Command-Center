@@ -4,6 +4,7 @@ import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { revalidateAfterMutation } from '@/lib/revalidate';
 import { getDependencies } from '@/server/grant-ops/dependencies';
+import { APP_BASE_URL } from '../../../../../../../shared/app-config';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +57,7 @@ export async function POST(
     // Trigger background crawl (fire-and-forget)
     void (async () => {
       try {
-        const baseUrl = request.headers.get('origin') ?? 'http://127.0.0.1:3000';
+        const baseUrl = request.headers.get('origin') ?? APP_BASE_URL;
         await fetch(`${baseUrl}/api/crawl`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },

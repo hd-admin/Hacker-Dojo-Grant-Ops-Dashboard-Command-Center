@@ -2,8 +2,9 @@ import type { APIRequestContext, Page } from '@playwright/test';
 import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, rmSync } from 'node:fs';
 import path from 'node:path';
+import { APP_BASE_URL } from '../../shared/app-config';
 
-export const BASE_URL = 'http://127.0.0.1:3000';
+export const BASE_URL = APP_BASE_URL;
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));

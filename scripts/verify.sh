@@ -6,14 +6,17 @@ cd "$ROOT_DIR"
 export TMPDIR="$ROOT_DIR/.agent/tmp"
 mkdir -p "$TMPDIR"
 
+# Canonical app port/host (single source of truth: config/app.json)
+source "$ROOT_DIR/scripts/lib/app-config.sh"
+
 echo "Starting verification..."
 
 cleanup() {
   # Kill all playwright-start.sh processes
   pkill -9 -f "playwright-start.sh" 2>/dev/null || true
   sleep 1
-  # Kill any process still holding port 3000
-  for pid in $(lsof -t -iTCP:3000 -sTCP:LISTEN 2>/dev/null || true); do
+  # Kill any process still holding port $APP_PORT
+  for pid in $(lsof -t -iTCP:${APP_PORT} -sTCP:LISTEN 2>/dev/null || true); do
     parent="$(ps -o ppid= -p "$pid" 2>/dev/null | tr -d ' ' || true)"
     kill -9 "$pid" 2>/dev/null || true
     if [ -n "$parent" ] && [ "$parent" != "1" ]; then
@@ -28,9 +31,9 @@ cleanup() {
   pkill -9 -f "chromium" 2>/dev/null || true
 }
 
-wait_for_port_3000_clear() {
+wait_for_app_port_clear() {
   for _ in $(seq 1 30); do
-    if ! lsof -nP -iTCP:3000 -sTCP:LISTEN >/dev/null 2>&1; then
+    if ! lsof -nP -iTCP:${APP_PORT} -sTCP:LISTEN >/dev/null 2>&1; then
       return 0
     fi
     sleep 1
@@ -76,8 +79,8 @@ npx knip --production >/dev/null 2>&1
 echo "✓ dead code check passed"
 
 cleanup
-wait_for_port_3000_clear
-echo "✓ port 3000 cleared"
+wait_for_app_port_clear
+echo "✓ port $APP_PORT cleared"
 
 if bash ./scripts/verify-opencode-backend.sh >/dev/null 2>&1; then
   echo "✓ real backend proof passed"

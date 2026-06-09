@@ -5,9 +5,8 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { resetAppState } from './test-utils';
+import { BASE_URL, resetAppState } from './test-utils';
 
-const BASE_URL = 'http://127.0.0.1:3000';
 
 test.describe('Accessibility', () => {
   test.beforeEach(async ({ request }) => {

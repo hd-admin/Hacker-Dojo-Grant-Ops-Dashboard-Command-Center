@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { resetAppState } from './test-utils';
+import { BASE_URL, resetAppState } from './test-utils';
 
 test.describe('Security', () => {
   test.beforeEach(async ({ request }) => {
@@ -7,15 +7,15 @@ test.describe('Security', () => {
   });
 
   test('AC-12.1.1: application binds to localhost only', async ({ request }) => {
-    // The test is running against 127.0.0.1:3000 via Playwright
+    // The test is running against 127.0.0.1:855 via Playwright
     // If the server were bound to 0.0.0.0, external access would be possible
     // This test verifies the server responds on localhost
-    const response = await request.get('http://127.0.0.1:3000/api/health');
+    const response = await request.get(`/api/health`);
     expect(response.status()).toBe(200);
   });
 
   test('AC-12.1.2: no application-level passcode or lock screen', async ({ page }) => {
-    await page.goto('http://127.0.0.1:3000', { waitUntil: 'domcontentloaded' });
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.app', { timeout: 30000 });
 
     // Verify no passcode prompt is shown
@@ -32,7 +32,7 @@ test.describe('Security', () => {
     const blob = new Blob(['test content'], { type: 'text/plain' });
     formData.append('file', blob, '../../../etc/passwd');
 
-    const response = await request.post('http://127.0.0.1:3000/api/documents', {
+    const response = await request.post(`/api/documents`, {
       multipart: {
         file: {
           name: '../../../etc/passwd',
@@ -47,7 +47,7 @@ test.describe('Security', () => {
   });
 
   test('AC-16.7.1: no authentication required for local access', async ({ page }) => {
-    await page.goto('http://127.0.0.1:3000', { waitUntil: 'domcontentloaded' });
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.app', { timeout: 30000 });
 
     // Main navigation should be immediately accessible
@@ -58,7 +58,7 @@ test.describe('Security', () => {
 
   test('AC-16.7.2: localhost-only binding prevents external access', async ({ request }) => {
     // Verify health endpoint is accessible on localhost
-    const response = await request.get('http://127.0.0.1:3000/api/health');
+    const response = await request.get(`/api/health`);
     expect(response.status()).toBe(200);
 
     // The server should NOT be accessible on 0.0.0.0

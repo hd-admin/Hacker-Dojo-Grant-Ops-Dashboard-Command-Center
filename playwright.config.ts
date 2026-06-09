@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test';
+import { APP_BASE_URL } from './shared/app-config';
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -9,14 +10,14 @@ export default defineConfig({
   workers: 1,
   reporter: 'list',
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: APP_BASE_URL,
     headless: true,
     timeout: 60000,
     trace: 'on-first-retry',
   },
   webServer: {
     command: 'bash ./playwright-start.sh',
-    url: 'http://127.0.0.1:3000',
+    url: APP_BASE_URL,
     reuseExistingServer: false,
     timeout: 300000,
     stdout: 'pipe',
@@ -31,7 +32,7 @@ export default defineConfig({
           cookies: [],
           origins: [
             {
-              origin: 'http://127.0.0.1:3000',
+              origin: APP_BASE_URL,
               localStorage: [{ name: 'grantops.operatorName', value: 'E2E Test Operator' }],
             },
           ],

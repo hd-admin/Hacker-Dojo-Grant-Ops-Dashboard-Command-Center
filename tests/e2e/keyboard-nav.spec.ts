@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
-import { configureOpencodeThroughSettingsView, resetAppState } from './test-utils';
+import { BASE_URL, configureOpencodeThroughSettingsView, resetAppState } from './test-utils';
 
 const opencodeStubPath = path.join(process.cwd(), 'tests/e2e/opencode-stub.sh');
 
@@ -8,7 +8,7 @@ test.describe('Keyboard navigation', () => {
   test.beforeEach(async ({ request, page }) => {
     const stubPath = opencodeStubPath;
     await resetAppState(request);
-    await page.goto('http://127.0.0.1:3000', { waitUntil: 'domcontentloaded' });
+    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('.app', { timeout: 30000 });
     await page.waitForTimeout(1000);
     await configureOpencodeThroughSettingsView(page, stubPath, process.cwd());
@@ -43,7 +43,7 @@ test.describe('Keyboard navigation', () => {
     await page.click('[data-view="discovery"]');
     await page.waitForSelector('#view-discovery.active', { timeout: 5000 });
 
-    const grantsResponse = await request.get('http://127.0.0.1:3000/api/grants');
+    const grantsResponse = await request.get(`/api/grants`);
     const grantsData = await grantsResponse.json();
     const grants: Array<{ id: string }> = grantsData.items || grantsData;
     if (grants.length > 0) {

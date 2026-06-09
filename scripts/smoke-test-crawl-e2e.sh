@@ -16,7 +16,10 @@
 # reported but a legitimately-empty source still passes as long as it completed cleanly).
 set -euo pipefail
 
-BASE_URL="${BASE_URL:-http://127.0.0.1:3000}"
+# Canonical app port/host (single source of truth: config/app.json)
+source "$(dirname "${BASH_SOURCE[0]}")/lib/app-config.sh"
+
+BASE_URL="${BASE_URL:-$APP_BASE_URL}"
 SOURCE_ID="${SOURCE_ID:-source-grants-gov}"
 POLL_BUDGET="${POLL_BUDGET:-420}"
 
