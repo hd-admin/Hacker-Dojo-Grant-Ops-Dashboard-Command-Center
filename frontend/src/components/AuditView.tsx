@@ -1,6 +1,6 @@
-import type { JSX } from 'react';
 'use client';
 
+import type { JSX } from 'react';
 import React, { useEffect, useState } from 'react';
 import styles from './AuditView.module.css';
 import type { AuditEvent } from '../../../shared/types';
@@ -45,9 +45,15 @@ export function AuditView({ entityId, entityType }: AuditViewProps): JSX.Element
         <div className="panel-title">Audit Trail</div>
       </div>
       {events.length === 0 ? (
-        <div className="empty-state">
-          No audit events yet. Audit events are recorded automatically as you work — run discovery,
-          approve drafts, or manage sources to generate activity.
+        <div className="empty-state-guide">
+          <div className="empty-state-icon" aria-hidden="true">
+            🗒️
+          </div>
+          <div className="empty-state-title">No audit events yet</div>
+          <div className="empty-state-description">
+            Audit events are recorded automatically as you work — run discovery, approve drafts, or
+            manage sources to generate activity.
+          </div>
         </div>
       ) : (
         <div className="activity-list">

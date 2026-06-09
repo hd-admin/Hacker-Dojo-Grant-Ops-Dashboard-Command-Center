@@ -302,10 +302,12 @@ export function PostAwardView({
       )}
 
       {activeTab === 'awards' && awards.length === 0 ? (
-        <div className="empty-state" data-testid="post-award-empty">
-          <div className="empty-state-icon">📋</div>
+        <div className="empty-state-guide" data-testid="post-award-empty">
+          <div className="empty-state-icon" aria-hidden="true">
+            📋
+          </div>
           <div className="empty-state-title">No active awards</div>
-          <div className="empty-state-desc">
+          <div className="empty-state-description">
             Awarded grants will appear here for spend-down tracking, budget management, and
             compliance monitoring.
           </div>

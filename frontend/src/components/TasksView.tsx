@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React from 'react';
 import { useEffect, useState } from 'react';
@@ -22,7 +23,11 @@ interface TasksViewProps {
   onNavigate?: (view: ViewType) => void;
 }
 
-export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: TasksViewProps): JSX.Element {
+export function TasksView({
+  onRefreshAppState,
+  tasks: tasksProp,
+  onNavigate,
+}: TasksViewProps): JSX.Element {
   const [tasks, setTasks] = useState<Task[]>(tasksProp ?? []);
   const [followUps, setFollowUps] = useState<FollowUp[]>([]);
   const [loading, setLoading] = useState(false);
@@ -210,6 +215,9 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
           </div>
         </div>
         <div className="empty-state-guide" data-testid="tasks-empty-state">
+          <div className="empty-state-icon" aria-hidden="true">
+            ✅
+          </div>
           <div className="empty-state-title">No tasks yet</div>
           <div className="empty-state-description">
             Tasks appear here when you add grants to your pipeline.
@@ -347,6 +355,7 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
               )}
               <button
                 type="button"
+                className="btn btn-sm"
                 data-testid="task-override-btn"
                 onClick={() => handleStartTaskOverride(task)}
               >
@@ -374,12 +383,17 @@ export function TasksView({ onRefreshAppState, tasks: tasksProp, onNavigate }: T
                   <div>
                     <button
                       type="button"
+                      className="btn btn-primary btn-sm"
                       onClick={() => void handleSaveTaskOverride(task.id, task.grantId)}
                       disabled={!overrideTaskRationale.trim()}
                     >
                       Save override
                     </button>
-                    <button type="button" onClick={handleCancelTaskOverride}>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={handleCancelTaskOverride}
+                    >
                       Cancel
                     </button>
                   </div>

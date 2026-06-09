@@ -14,6 +14,7 @@ import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-p
 import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
 import type { OrganizationProfile } from '../../../../shared/types';
 import { createDependencies, resetDependencies, setDependencies } from './dependencies';
+import type { OpencodeAdapter } from './opencode-client';
 import * as repository from './repository';
 import * as researchService from './research-service';
 import { NoSourcesConfiguredError } from './research-service';
@@ -846,5 +847,119 @@ describe('PATH-fallback: no early isConfigured throw', () => {
     });
     expect(result).toBeDefined();
     expect(result.crawlRun.status).toBe('completed');
+  });
+
+  describe('honest crawl status and validation reprompt', () => {
+    const setAdapter = (executeResearch: OpencodeAdapter['executeResearch']): void => {
+      const adapter = {
+        executeResearch,
+        generateDraft: async () => ({ success: true, content: '' }),
+        executePeerDiscovery: async () => ({ success: true, content: '{}' }),
+        executeFunderInsights: async () => ({ success: true, content: '{}' }),
+        executeEligibilityVetting: async () => ({ success: true, content: '{}' }),
+        isConfigured: () => true,
+      } as unknown as OpencodeAdapter;
+      setDependencies(createDependencies({ createOpencodeAdapter: () => adapter }));
+    };
+
+    const addApprovedSource = async (name: string): Promise<void> => {
+      await sourceService.addSource({
+        name,
+        url: `https://example.com/${encodeURIComponent(name)}`,
+        type: 'website',
+        reviewStatus: 'approved',
+      });
+    };
+
+    it('marks the run failed (with errorMessage) when the only source times out', async () => {
+      setAdapter(async () => ({
+        success: false,
+        failureMode: 'timeout',
+        error: 'Opencode timed out after 60000ms',
+      }));
+      await addApprovedSource('Timeout Source');
+
+      const result = await researchService.runResearch(mockProfile);
+
+      expect(result.crawlRun.status).toBe('failed');
+      expect(result.crawlRun.errorMessage).toBeTruthy();
+      expect(result.error).toContain('timeout');
+    });
+
+    it('reports partial-results when some sources fail and some succeed', async () => {
+      let call = 0;
+      setAdapter(async () => {
+        call += 1;
+        if (call === 1) {
+          return { success: false, failureMode: 'timeout', error: 'timed out' };
+        }
+        return {
+          success: true,
+          content: JSON.stringify({
+            grants: [{ title: 'Good Grant', funder: 'Good Funder' }],
+            evidence: [],
+            rationale: 'ok',
+          }),
+        };
+      });
+      await addApprovedSource('Failing Source');
+      await addApprovedSource('Working Source');
+
+      const result = await researchService.runResearch(mockProfile);
+
+      expect(result.crawlRun.status).toBe('partial-results');
+      expect(result.crawlRun.errorMessage).toContain('1 of');
+    });
+
+    it('treats valid output with zero grants as success, not failure', async () => {
+      setAdapter(async () => ({
+        success: true,
+        content: JSON.stringify({ grants: [], evidence: [], rationale: 'no matches' }),
+      }));
+      await addApprovedSource('Empty Source');
+
+      const result = await researchService.runResearch(mockProfile);
+
+      expect(result.crawlRun.status).toBe('completed');
+      expect(result.grantsMatched).toBe(0);
+    });
+
+    it('reprompts once and succeeds when the first output is not valid JSON', async () => {
+      let call = 0;
+      setAdapter(async () => {
+        call += 1;
+        if (call === 1) {
+          return { success: true, content: 'this is not json at all' };
+        }
+        return {
+          success: true,
+          content: JSON.stringify({
+            grants: [{ title: 'Recovered Grant', funder: 'Recovered Funder' }],
+            evidence: [],
+            rationale: 'fixed',
+          }),
+        };
+      });
+      await addApprovedSource('Flaky Source');
+
+      const result = await researchService.runResearch(mockProfile);
+
+      // First source's invalid output triggers a reprompt (>=2 calls). ProPublica is
+      // auto-registered as an extra source, so the exact count is >= 2, not exactly 2.
+      expect(call).toBeGreaterThanOrEqual(2); // proved the reprompt happened
+      expect(result.crawlRun.status).toBe('completed');
+      expect(result.grantsMatched).toBe(1);
+    });
+
+    it('fails the source (parse-error) when output never becomes valid JSON', async () => {
+      setAdapter(async () => ({ success: true, content: 'still not json' }));
+      await addApprovedSource('Broken Source');
+
+      const result = await researchService.runResearch(mockProfile);
+
+      expect(result.crawlRun.status).toBe('failed');
+      expect(result.crawlRun.errorMessage).toContain('parse-error');
+      expect(result.grantsMatched).toBe(0);
+    });
   });
 });

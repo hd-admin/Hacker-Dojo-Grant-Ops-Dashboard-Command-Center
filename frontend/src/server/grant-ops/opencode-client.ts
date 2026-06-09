@@ -111,6 +111,10 @@ interface GrantResearchRequest {
   searchThemes: string[];
   sourceName?: string;
   sourceUrl?: string;
+  /** Grants already tracked, so the agent does not return duplicates. */
+  existingGrants?: Array<{ title: string; funder: string; deadline?: string }>;
+  /** Appended on a retry when the previous output failed schema validation. */
+  correctionHint?: string;
 }
 
 interface DraftGenerationRequest {
@@ -548,7 +552,15 @@ class CliOpencodeProvider implements OpencodeAdapter {
       const binaryPath = this.settings.binaryPath || getCachedOpencodePath() || 'opencode';
       const timeoutMs = this.settings.timeoutMs || 60000;
 
-      const proc = spawn(binaryPath, args, {
+      // Always run non-interactively: the default agent will otherwise block on a
+      // tool-permission prompt forever (stdin is ignored), which manifests as a
+      // silent timeout. Skipping permissions is required for headless `run`.
+      const effectiveArgs =
+        args[0] === 'run' && !args.includes('--dangerously-skip-permissions')
+          ? ['run', '--dangerously-skip-permissions', ...args.slice(1)]
+          : args;
+
+      const proc = spawn(binaryPath, effectiveArgs, {
         cwd: this.settings.workingDirectory || process.cwd(),
         stdio: ['ignore', 'pipe', 'pipe'],
       });
@@ -646,29 +658,74 @@ class CliOpencodeProvider implements OpencodeAdapter {
       };
     }
 
-    const prompt = `Return only JSON.
-Find 1-3 real grant opportunities for Hacker Dojo using the request context below.
-Use the current source URL and the listed themes to return source-backed grants that fit educational technology nonprofits, community innovation, or science/technology funding.
-Do not invent placeholder or "plausible" grants.
-Return a JSON object with grants, evidence, and rationale.
+    const existingBlock =
+      request.existingGrants && request.existingGrants.length > 0
+        ? request.existingGrants
+            .map(
+              (g) =>
+                `- "${g.title}" — ${g.funder}${g.deadline ? ` (deadline ${g.deadline})` : ''}`,
+            )
+            .join('\n')
+        : '(none yet)';
 
-Organization profile:
+    const prompt = `You are an expert grant researcher. Inspect the funding source below and find EVERY real, currently-open grant opportunity the applicant organization could plausibly apply for. Be exhaustive: do NOT cap the number of grants — return all you can substantiate directly from the source. Never invent, pad, or return placeholder/"plausible" grants; every grant must be backed by something you actually found at the source.
+
+== Applicant organization ==
 ${request.organizationProfile}
 
-Search themes:
+== Search themes (use these as your search terms) ==
 ${request.searchThemes.join(', ')}
-${
-  request.sourceName
-    ? `
-Source name: ${request.sourceName}`
-    : ''
+
+== Funding source to crawl ==
+${request.sourceName ? `Name: ${request.sourceName}` : ''}
+${request.sourceUrl ? `URL: ${request.sourceUrl}` : ''}
+Fetch and read this source thoroughly; base every grant on what it actually says.
+
+== Already-tracked grants (DO NOT return these again) ==
+${existingBlock}
+Skip any grant that duplicates one of the above (same program/funder) unless you have materially new information (e.g. a changed deadline or award).
+
+== OUTPUT CONTRACT — STRICT ==
+Return ONLY a single minified JSON object. No markdown, no code fences, no prose before or after. It MUST conform EXACTLY to this schema (omit a field only if optional and unknown):
+{
+  "grants": [
+    {
+      "id": string,            // stable slug you assign, referenced by evidence.grantId
+      "title": string,         // REQUIRED
+      "funder": string,        // REQUIRED
+      "funderShort": string,   // short funder name
+      "award": string,         // human-readable, e.g. "$50,000"
+      "awardSort": number,     // numeric USD value, e.g. 50000
+      "deadline": string,      // ISO date "YYYY-MM-DD"
+      "daysOut": number,       // integer days until the deadline
+      "fit": number,           // 0-100 fit vs the org's mission, themes, and eligibility
+      "tags": string[]         // topic tags
+    }
+  ],
+  "evidence": [
+    {
+      "id": string,
+      "grantId": string,       // MUST equal the related grant's "id"
+      "sourceId": string,
+      "sourceName": string,    // "${request.sourceName ?? ''}"
+      "evidenceType": "fit_score" | "deadline" | "award_amount" | "eligibility" | "requirements",
+      "content": string,       // the supporting fact, quoted or paraphrased from the source
+      "url": string,           // direct URL to the evidence
+      "capturedAt": string     // ISO timestamp
+    }
+  ],
+  "rationale": string          // brief explanation of what you selected and why
 }
-${
-  request.sourceUrl
-    ? `
-Source URL: ${request.sourceUrl}`
-    : ''
-}`;
+If you find no qualifying grants, return exactly {"grants":[],"evidence":[],"rationale":"<why none qualified>"}.
+Escape all quotes so the result is valid JSON. Output NOTHING except the JSON object.${
+      request.correctionHint
+        ? `
+
+== IMPORTANT: your previous reply was rejected ==
+${request.correctionHint}
+Return corrected output that parses as JSON and matches the schema above EXACTLY.`
+        : ''
+    }`;
 
     const args = ['run', '--format', 'json', prompt];
 

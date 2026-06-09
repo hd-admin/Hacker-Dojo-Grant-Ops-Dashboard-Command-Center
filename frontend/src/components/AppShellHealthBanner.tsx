@@ -105,6 +105,7 @@ export function AppShellHealthBanner({
         )}
         <button
           type="button"
+          className="btn btn-ghost btn-sm"
           data-testid="rerun-health-check-btn"
           onClick={() => {
             onRefreshHealth();

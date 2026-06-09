@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import type {
@@ -41,7 +42,11 @@ interface GrantDrawerProps {
   onRefreshAppState?: () => Promise<void> | void;
 }
 
-export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawerProps): JSX.Element {
+export function GrantDrawer({
+  grantId,
+  onClose,
+  onRefreshAppState,
+}: GrantDrawerProps): JSX.Element {
   const [detail, setDetail] = useState<GrantDetailResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [showRevision, setShowRevision] = useState(false);
@@ -283,9 +288,7 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
       }
       setOutreachLoading(true);
       try {
-        const response = await fetch(
-          `/api/outreach?grantId=${encodeURIComponent(grantId)}`,
-        );
+        const response = await fetch(`/api/outreach?grantId=${encodeURIComponent(grantId)}`);
         if (!response.ok) {
           setOutreach([]);
           return;
@@ -828,11 +831,19 @@ export function GrantDrawer({ grantId, onClose, onRefreshAppState }: GrantDrawer
                 <p>
                   Your revision note or submission notes will be lost if you close the drawer now.
                 </p>
-                <div>
-                  <button type="button" onClick={handleDiscardUnsavedNotes}>
+                <div className="drawer-actions">
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn-sm"
+                    onClick={handleDiscardUnsavedNotes}
+                  >
                     Discard
                   </button>
-                  <button type="button" onClick={() => setCloseWarningOpen(false)}>
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={() => setCloseWarningOpen(false)}
+                  >
                     Keep editing
                   </button>
                 </div>

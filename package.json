@@ -26,7 +26,8 @@
     "format:check": "prettier --check .",
     "format:write": "prettier --write .",
     "verify": "./scripts/verify.sh",
-    "smoke:propublica": "bash scripts/smoke-test-propublica.sh"
+    "smoke:propublica": "bash scripts/smoke-test-propublica.sh",
+    "smoke:opencode": "bash scripts/smoke-test-opencode.sh"
   },
   "dependencies": {
     "adm-zip": "^0.5.17",

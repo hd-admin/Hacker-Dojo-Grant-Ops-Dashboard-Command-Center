@@ -98,7 +98,7 @@ describe('AuditView', () => {
     expect(container.textContent).toContain('Loading audit trail...');
   });
 
-  it('shows empty state ("No audit events yet.") when no events returned', async () => {
+  it('shows empty state ("No audit events yet") when no events returned', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => {
@@ -109,8 +109,8 @@ describe('AuditView', () => {
     );
 
     root.render(React.createElement(AuditView));
-    await waitFor(() => container.textContent?.includes('No audit events yet.') === true);
-    expect(container.textContent).toContain('No audit events yet.');
+    await waitFor(() => container.textContent?.includes('No audit events yet') === true);
+    expect(container.textContent).toContain('No audit events yet');
   });
 
   it('shows audit events when API returns data', async () => {

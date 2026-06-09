@@ -10,6 +10,17 @@ import * as repository from '@/server/grant-ops/repository';
 import * as _researchService from '@/server/grant-ops/research-service';
 import { POST } from './route';
 
+// Make OpenCode detection deterministic: resolve to the configured path when set,
+// otherwise behave as "not on PATH" (null). This lets us exercise both the success
+// gate and the rejection gate without depending on the host having opencode installed.
+vi.mock('@/server/grant-ops/opencode-client', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/server/grant-ops/opencode-client')>();
+  return {
+    ...actual,
+    resolveOpencodePath: vi.fn(async (configuredPath: string) => configuredPath || null),
+  };
+});
+
 const profile: OrganizationProfile = {
   legalName: 'Hacker Dojo',
   ein: '94-3359594',
@@ -127,6 +138,50 @@ describe('/api/crawl/start', () => {
     expect(response.status).toBe(202);
     expect(body.queued).toBe(true);
     expect(body.job.id).toMatch(/^job-/);
+  });
+
+  it('returns 400 OPENCODE_NOT_CONFIGURED when OpenCode is neither configured nor on PATH', async () => {
+    await repository.updateOpencodeSettings({
+      binaryPath: '',
+      workingDirectory: '',
+      timeoutMs: 60000,
+      isConfigured: false,
+    });
+    invalidateCache();
+
+    const request = new Request('http://localhost:3000/api/crawl/start', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    const response = await POST(request as unknown as import('next/server').NextRequest);
+    const body = await response.json();
+
+    expect(response.status).toBe(400);
+    expect(body.error?.code ?? body.code).toBe('OPENCODE_NOT_CONFIGURED');
+  });
+
+  it('self-heals the isConfigured flag when OpenCode is detected', async () => {
+    await repository.updateOpencodeSettings({
+      binaryPath: '/usr/local/bin/opencode',
+      workingDirectory: '',
+      timeoutMs: 60000,
+      isConfigured: false,
+    });
+    invalidateCache();
+
+    const request = new Request('http://localhost:3000/api/crawl/start', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+
+    const response = await POST(request as unknown as import('next/server').NextRequest);
+    expect(response.status).toBe(202);
+
+    const healed = await repository.getOpencodeSettings();
+    expect(healed?.isConfigured).toBe(true);
   });
 
   it('returns 202 for invalid request body by falling back to empty object', async () => {

@@ -342,7 +342,7 @@ export function DashboardView({
               {greeting}, <span className="accent">Welcome</span>.
             </h1>
             <div className="header-sub">
-              {dayName} \u00b7 {dateStr}
+              {dayName} · {dateStr}
             </div>
           </div>
         </div>
@@ -384,7 +384,7 @@ export function DashboardView({
               .
             </h1>
             <div className="header-sub">
-              {dayName} \u00b7 {dateStr} \u00b7 Ready to discover grants
+              {dayName} · {dateStr} · Ready to discover grants
             </div>
           </div>
           <div className="header-actions">
@@ -444,7 +444,7 @@ export function DashboardView({
             .
           </h1>
           <div className="header-sub">
-            {dayName} \u00b7 {dateStr} \u00b7 {activeGrants.length} grants in pipeline
+            {dayName} · {dateStr} · {activeGrants.length} grants in pipeline
           </div>
         </div>
         <div className="header-actions">
@@ -466,7 +466,7 @@ export function DashboardView({
           <div className="kpi-label">Active Pipeline</div>
           <div className="kpi-value">{formatCurrency(activePipeline)}</div>
           <div className="kpi-meta">
-            {activeGrants.length} applications \u00b7{' '}
+            {activeGrants.length} applications ·{' '}
             <span className="delta-up">+{grantsThisMonth} this month</span>
           </div>
         </div>
@@ -532,7 +532,7 @@ export function DashboardView({
           </div>
           <div className="kpi-meta">
             {crawlLatestRun?.sourcesCrawled !== undefined
-              ? `${crawlLatestRun.sourcesCrawled} sources \u00b7 ${crawlLatestRun.grantsFound ?? 0} found`
+              ? `${crawlLatestRun.sourcesCrawled} sources · ${crawlLatestRun.grantsFound ?? 0} found`
               : 'No data'}
           </div>
         </div>
@@ -636,7 +636,7 @@ export function DashboardView({
                   <div>
                     <div className="deadline-info-title">{grant.title}</div>
                     <div className="deadline-info-meta">
-                      {grant.funder} \u00b7 {grant.award}
+                      {grant.funder} · {grant.award}
                     </div>
                   </div>
                   <div className={`deadline-status ${urgency}`}>{grant.statusLabel}</div>
@@ -699,7 +699,7 @@ export function DashboardView({
                   <div>
                     <div className="deadline-info-title">{grant.title}</div>
                     <div className="deadline-info-meta">
-                      {grant.funder} \u00b7 {grant.statusLabel}
+                      {grant.funder} · {grant.statusLabel}
                     </div>
                   </div>
                 </button>
@@ -735,8 +735,8 @@ export function DashboardView({
                 <div key={job.id} className="activity-item">
                   <div>
                     <div className="activity-text">
-                      <strong>{job.jobType}</strong> \u00b7 {job.status}
-                      {job.failureCategory ? ` \u00b7 ${job.failureCategory}` : ''}
+                      <strong>{job.jobType}</strong> · {job.status}
+                      {job.failureCategory ? ` · ${job.failureCategory}` : ''}
                     </div>
                     <div className="activity-time">{stageDescription(job.stage)}</div>
                     <div

@@ -239,6 +239,7 @@ export function AppShell(): JSX.Element {
           </div>
           <button
             type="button"
+            className="btn btn-sm"
             data-testid="rerun-health-check-btn"
             onClick={() => {
               void refreshHealth();

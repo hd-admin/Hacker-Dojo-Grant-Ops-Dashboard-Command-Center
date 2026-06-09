@@ -91,6 +91,56 @@
   padding: 0;
 }
 
+/* === Button normalize ===
+ * Strip native UA chrome so bare <button> elements inherit the warm-dark theme
+ * instead of rendering as light-gray ButtonFace boxes. Component classes
+ * (.btn*, .nav-item, .tab, etc.) set their own background/border and win on
+ * specificity, so they are unaffected. */
+button {
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  line-height: inherit;
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+/* === Select normalize ===
+ * Native <select> dropdowns render as white UA controls against the dark theme.
+ * Strip the native appearance and supply a dark surface + custom chevron. Class
+ * rules below must use `background-color` (not the `background` shorthand) so the
+ * chevron image is preserved. */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-color: var(--surface);
+  background-image: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='12'%20height='12'%20viewBox='0%200%2012%2012'%20fill='none'%20stroke='%23807a6d'%20stroke-width='1.5'%3E%3Cpath%20d='M3%204.5L6%207.5L9%204.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 13px;
+  padding: 8px 30px 8px 12px;
+  cursor: pointer;
+}
+
+select:hover {
+  border-color: var(--accent-dim);
+}
+
+select option {
+  background: var(--surface);
+  color: var(--text);
+}
+
 /* Utility classes for text colors */
 .text-dim {
   color: var(--text-dim);
@@ -120,7 +170,12 @@ body {
   text-wrap: pretty;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   text-wrap: balance;
 }
 
@@ -778,13 +833,17 @@ textarea:focus-visible {
 
 .filter-bar input,
 .filter-bar select {
-  background: var(--surface);
+  background-color: var(--surface);
   border: 1px solid var(--border);
   color: var(--text);
   padding: 8px 12px;
   border-radius: var(--radius);
   font-family: var(--sans);
   font-size: 13px;
+}
+
+.filter-bar select {
+  padding-right: 30px;
 }
 
 .filter-bar input:focus,
@@ -2202,8 +2261,8 @@ textarea:focus-visible {
 }
 
 .filter-select {
-  padding: 0.5rem;
-  background: var(--surface-2);
+  padding: 0.5rem 1.75rem 0.5rem 0.5rem;
+  background-color: var(--surface-2);
   border: 1px solid var(--border);
   border-radius: 0.375rem;
   color: var(--text);
@@ -2212,7 +2271,85 @@ textarea:focus-visible {
 }
 
 .filter-select:hover {
-  background: var(--surface);
+  background-color: var(--surface);
+}
+
+/* === Tab systems ===
+ * Underline tabs (.tabs/.tab) for section switchers (e.g. Post-Award);
+ * pill tabs (.filter-tabs/.filter-tab) for filter rows (e.g. Sources). Both
+ * rely on the gold accent only for the active item (Rule D9). */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.tab {
+  padding: 8px 14px;
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-dim);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+
+.tab:hover {
+  color: var(--text);
+}
+
+.tab.tab-active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  font-weight: 600;
+}
+
+.filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.filter-tab {
+  padding: 6px 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.filter-tab.active {
+  color: var(--accent);
+  background: var(--accent-bg);
+  border-color: var(--accent-dim);
+}
+
+/* Segmented / toggle buttons (.btn .btn-ghost + active) used by Jobs filters,
+ * Calendar month/week, etc. Subtle gold tint marks the active segment. */
+.btn.active,
+.btn-active {
+  background: var(--accent-bg);
+  border-color: var(--accent-dim);
+  color: var(--accent);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+/* Spacing utilities (used sparingly by a couple of views) */
+.mb-4 {
+  margin-bottom: 16px;
+}
+.ml-2 {
+  margin-left: 8px;
 }
 
 .app-loading {
@@ -2301,6 +2438,17 @@ textarea:focus-visible {
   cursor: pointer;
   white-space: nowrap;
   /* transition removed per motion compliance */
+}
+
+/* Row holding the "Re-run Health Check" control (+ any storage/opencode
+ * banners). Keeps the control unobtrusive at the end of the row. */
+.shell-banner-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-bottom: 8px;
 }
 
 .health-banner-action:hover {
@@ -4111,6 +4259,96 @@ button.pipeline-list-row:hover {
 .post-award-budget-meta {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+/* === CALENDAR MONTH VIEW + SHARED === */
+.calendar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.calendar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.calendar-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.calendar-month-label {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--text);
+  min-width: 180px;
+  text-align: center;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+
+.calendar-day-header {
+  font-family: var(--mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 6px 0;
+}
+
+.calendar-day {
+  min-height: 88px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.calendar-day-empty {
+  background: transparent;
+  border: 1px solid transparent;
+  min-height: 0;
+}
+
+.calendar-day-number {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.calendar-event {
+  font-size: 10px;
+  color: var(--bg);
+  padding: 2px 5px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* === CALENDAR WEEK VIEW === */

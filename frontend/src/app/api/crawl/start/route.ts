@@ -3,6 +3,7 @@ import { createErrorResponse } from '@/lib/api-error-handler';
 import { logger } from '@/lib/logger';
 import { getDependencies } from '@/server/grant-ops/dependencies';
 import { enqueueJob } from '@/server/grant-ops/job-queue-service';
+import { resolveOpencodePath } from '@/server/grant-ops/opencode-client';
 import * as researchService from '@/server/grant-ops/research-service';
 import { z } from 'zod';
 
@@ -31,12 +32,31 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         { status: 400 },
       );
     }
+    // Gate on REAL availability, not a stale stored flag: OpenCode is usable if a
+    // binary path is configured or it resolves on PATH. This prevents the case where
+    // OpenCode is installed but `isConfigured` was never persisted, silently blocking
+    // every crawl.
     const settings = await deps.repository.getOpencodeSettings();
-    if (!settings?.isConfigured) {
+    const resolvedBinary = await resolveOpencodePath(settings?.binaryPath ?? '');
+    if (!resolvedBinary) {
       return NextResponse.json(
-        createErrorResponse('OPENCODE_NOT_CONFIGURED', 'Opencode is not configured'),
+        createErrorResponse(
+          'OPENCODE_NOT_CONFIGURED',
+          'OpenCode binary not found. Install OpenCode or set its path in Settings.',
+        ),
         { status: 400 },
       );
+    }
+    // Self-heal the stored flag so the UI, scheduler, and other gates agree with
+    // reality. Leave binaryPath empty when auto-detected so it keeps re-resolving
+    // from PATH (robust across nvm/node version changes).
+    if (!settings?.isConfigured) {
+      await deps.repository.updateOpencodeSettings({
+        binaryPath: settings?.binaryPath ?? '',
+        workingDirectory: settings?.workingDirectory ?? '',
+        timeoutMs: settings?.timeoutMs ?? 60000,
+        isConfigured: true,
+      });
     }
     const job = await enqueueJob(
       { jobType: 'crawl', entityId: body.sourceId || 'all', retryCount: 0 },

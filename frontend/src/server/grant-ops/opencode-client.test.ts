@@ -123,15 +123,69 @@ EOF
         const args = fs.readFileSync(argsFile, 'utf8').trim();
         expect(args).toContain('run');
         expect(args).toContain('--format json');
-        expect(args).toContain('Find 1-3 real grant opportunities');
-        expect(args).toContain('Do not invent placeholder or "plausible" grants');
-        expect(args).toContain('Organization profile:\nTest Org');
-        expect(args).toContain('Search themes:\nEdTech, Community');
-        expect(args).toContain('Source name: Candid');
-        expect(args).toContain('Source URL: https://www.candid.org');
-        expect(args).not.toContain('Do not browse or research');
+        // Headless runs MUST skip permissions or the agent blocks on a prompt forever.
+        expect(args).toContain('--dangerously-skip-permissions');
+        // Exhaustive, source-backed, no fabrication.
+        expect(args).toContain('find EVERY real, currently-open grant opportunity');
+        expect(args).toContain('Be exhaustive');
+        expect(args).toContain('Never invent, pad, or return placeholder/"plausible" grants');
+        expect(args).toContain('== Applicant organization ==');
+        expect(args).toContain('Test Org');
+        expect(args).toContain('EdTech, Community');
+        expect(args).toContain('Name: Candid');
+        expect(args).toContain('URL: https://www.candid.org');
+        // Strict, type-checkable output contract.
+        expect(args).toContain('OUTPUT CONTRACT');
+        expect(args).toContain('Return ONLY a single minified JSON object');
         expect(args).not.toContain('--output-format json');
-        expect(args).not.toContain('--dangerously-skip-permissions');
+      } finally {
+        process.env.ARGS_FILE = previousArgsFile;
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      }
+    });
+
+    it('executeResearch prompt includes dedup list and correction hint', async () => {
+      const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'opencode-client-dedup-'));
+      const fakeOpencode = path.join(tempDir, 'opencode-fake.sh');
+      const argsFile = path.join(tempDir, 'args.txt');
+
+      fs.writeFileSync(
+        fakeOpencode,
+        `#!/bin/sh
+set -eu
+printf '%s\n' "$*" > "$ARGS_FILE"
+printf '%s' '{"grants":[],"evidence":[],"rationale":"ok"}'
+`,
+        'utf8',
+      );
+      fs.chmodSync(fakeOpencode, 0o755);
+
+      const previousArgsFile = process.env.ARGS_FILE;
+      process.env.ARGS_FILE = argsFile;
+
+      try {
+        const settings: OpencodeSettings = {
+          ...defaultSettings,
+          binaryPath: fakeOpencode,
+          workingDirectory: tempDir,
+          isConfigured: true,
+        };
+        const adapter = createOpencodeAdapter(settings, 'cli');
+        await adapter.executeResearch({
+          organizationProfile: 'Test Org',
+          searchThemes: ['EdTech'],
+          sourceName: 'Candid',
+          sourceUrl: 'https://www.candid.org',
+          existingGrants: [{ title: 'Existing Grant A', funder: 'Funder X', deadline: '2026-12-01' }],
+          correctionHint: 'previous output was not valid JSON',
+        });
+
+        const args = fs.readFileSync(argsFile, 'utf8').trim();
+        expect(args).toContain('DO NOT return these again');
+        expect(args).toContain('Existing Grant A');
+        expect(args).toContain('Funder X');
+        expect(args).toContain('your previous reply was rejected');
+        expect(args).toContain('previous output was not valid JSON');
       } finally {
         process.env.ARGS_FILE = previousArgsFile;
         fs.rmSync(tempDir, { recursive: true, force: true });

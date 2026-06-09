@@ -65,7 +65,11 @@ export function UngroundedClaimsWarning({
         >
           Approve Anyway
         </button>
-        <button type="button" onClick={() => setShowGroundingWarning(false)}>
+        <button
+          type="button"
+          className="btn btn-ghost"
+          onClick={() => setShowGroundingWarning(false)}
+        >
           Cancel
         </button>
       </div>

@@ -562,6 +562,7 @@ export function DiscoveryView({
               </div>
               <button
                 type="button"
+                className="btn btn-ghost btn-sm"
                 aria-label="Delete source"
                 onClick={() => void handleDeleteSource(source.id)}
               >
@@ -589,12 +590,14 @@ export function DiscoveryView({
           <button
             type="button"
             data-testid="add-manually-btn"
+            className="btn btn-sm"
             onClick={() => setShowManualIntake((value) => !value)}
           >
             + Add manually
           </button>
           <button
             type="button"
+            className="btn btn-sm"
             onClick={() => {
               void handleExportCsv();
             }}
@@ -616,6 +619,7 @@ export function DiscoveryView({
         <div>
           <button
             type="button"
+            className="btn btn-sm"
             onClick={() => window.dispatchEvent(new Event('grantops:navigate-sources'))}
           >
             {pendingReviewCount} sources awaiting review
@@ -876,6 +880,7 @@ export function DiscoveryView({
             </div>
             <button
               type="button"
+              className="btn btn-ghost btn-sm"
               aria-label="Delete source"
               onClick={() => void handleDeleteSource(source.id)}
             >

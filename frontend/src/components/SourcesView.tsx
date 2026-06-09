@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import styles from './SourcesView.module.css';
@@ -846,6 +847,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps): JSX.Elemen
             <div className="source-actions">
               <button
                 type="button"
+                className="btn btn-sm"
                 data-testid={`approve-source-btn-${source.id}`}
                 onClick={() => void approveSource(source.id)}
                 aria-label={`Approve ${source.name}`}
@@ -854,6 +856,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps): JSX.Elemen
               </button>
               <button
                 type="button"
+                className="btn btn-ghost btn-sm"
                 onClick={() => void rejectSource(source.id)}
                 aria-label={`Reject ${source.name}`}
               >
@@ -862,6 +865,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps): JSX.Elemen
               <div>
                 <button
                   type="button"
+                  className="btn btn-sm"
                   data-testid={`categorize-source-btn-${source.id}`}
                   aria-label={`Categorize ${source.name}`}
                 >
@@ -871,6 +875,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps): JSX.Elemen
                   <button
                     key={category}
                     type="button"
+                    className="btn btn-sm"
                     onClick={() => void categorizeSource(source.id, category)}
                     aria-label={`Set category to ${categoryLabel(category)} for ${source.name}`}
                   >
@@ -880,6 +885,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps): JSX.Elemen
               </div>
               <button
                 type="button"
+                className="btn btn-sm"
                 data-testid={`edit-source-btn-${source.id}`}
                 onClick={() => startEdit(source)}
                 aria-label={`Edit ${source.name}`}
@@ -953,7 +959,11 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps): JSX.Elemen
                   }
                   placeholder="Operator notes"
                 />
-                <button type="button" onClick={() => void saveEdit(source.id)}>
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  onClick={() => void saveEdit(source.id)}
+                >
                   Save
                 </button>
               </div>
@@ -984,6 +994,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps): JSX.Elemen
         <div className="header-actions">
           <button
             type="button"
+            className="btn btn-sm"
             data-testid="discover-sources-btn"
             aria-label="Discover sources"
             onClick={() => setShowDiscoverForm((value) => !value)}
@@ -1004,6 +1015,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps): JSX.Elemen
           />
           <button
             type="submit"
+            className="btn btn-primary btn-sm"
             data-testid="find-sources-submit-btn"
             aria-label="Find sources"
             disabled={loading}
@@ -1460,6 +1472,7 @@ export function SourcesView({ onRefreshAppState }: SourcesViewProps): JSX.Elemen
                   <div className="edit-panel-actions">
                     <button
                       type="button"
+                      className="btn btn-primary btn-sm"
                       data-testid={`save-edit-btn-${source.id}`}
                       onClick={() => void saveEdit(source.id)}
                     >

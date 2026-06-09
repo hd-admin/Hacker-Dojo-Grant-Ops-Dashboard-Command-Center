@@ -205,7 +205,9 @@ export function PipelineView({
   const [urgencyFilter, setUrgencyFilter] = useState<UrgencyFilter>('all');
   const [funderTypeFilter, setFunderTypeFilter] = useState<FunderTypeFilter>('all');
   const [_error, setError] = useState<string | null>(null);
-  const [customFields, setCustomFields] = useState<Array<{ key: string; label: string; type: string; options?: string[] }>>([]);
+  const [customFields, setCustomFields] = useState<
+    Array<{ key: string; label: string; type: string; options?: string[] }>
+  >([]);
   const [moveMenuOpen, setMoveMenuOpen] = useState<string | null>(null);
   const [declineModalOpen, setDeclineModalOpen] = useState(false);
   const [declineGrantId, setDeclineGrantId] = useState<string | null>(null);
@@ -378,6 +380,7 @@ export function PipelineView({
         <div className="header-actions">
           <button
             type="button"
+            className="btn"
             data-testid="pipeline-view-mode-toggle"
             onClick={() => setViewMode((current) => (current === 'board' ? 'list' : 'board'))}
           >

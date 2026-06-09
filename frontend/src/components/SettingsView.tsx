@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React, { useEffect, useRef, useState } from 'react';
 import type {
@@ -612,7 +613,12 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
       type: newFieldType,
       visible: true,
       ...(newFieldType === 'select' && newFieldOptions.trim()
-        ? { options: newFieldOptions.split(',').map((o) => o.trim()).filter(Boolean) }
+        ? {
+            options: newFieldOptions
+              .split(',')
+              .map((o) => o.trim())
+              .filter(Boolean),
+          }
         : {}),
     };
     setCustomFields((prev) => [...prev, newField]);
@@ -698,6 +704,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
             <div className="settings-diagnostics-actions">
               <button
                 type="button"
+                className="btn btn-sm"
                 data-testid="copy-diagnostics-btn"
                 onClick={() => {
                   void handleCopyDiagnostics();
@@ -707,6 +714,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
               </button>
               <button
                 type="button"
+                className="btn btn-sm"
                 data-testid="export-diagnostics-btn"
                 onClick={() => {
                   void handleExportDiagnostics();
@@ -1011,6 +1019,7 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
             </div>
             <button
               type="button"
+              className="btn btn-sm"
               onClick={async () => {
                 try {
                   const backup = await client.backup.exportBackup();
@@ -1048,13 +1057,18 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
                 </div>
                 <button
                   type="button"
+                  className="btn btn-primary btn-sm"
                   onClick={() => {
                     void handleConfirmRestore();
                   }}
                 >
                   Confirm restore
                 </button>
-                <button type="button" onClick={handleCancelRestore}>
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
+                  onClick={handleCancelRestore}
+                >
                   Cancel
                 </button>
               </div>
@@ -1288,7 +1302,11 @@ export function SettingsView({ onRefreshAppState }: SettingsViewProps): JSX.Elem
               <div className="empty-state">No custom fields defined yet.</div>
             )}
             {customFields.map((field) => (
-              <div key={field.key} className="setting-row" data-testid={`custom-field-${field.key}`}>
+              <div
+                key={field.key}
+                className="setting-row"
+                data-testid={`custom-field-${field.key}`}
+              >
                 <span className="setting-label">{field.label}</span>
                 <span className="setting-value">
                   {field.type}

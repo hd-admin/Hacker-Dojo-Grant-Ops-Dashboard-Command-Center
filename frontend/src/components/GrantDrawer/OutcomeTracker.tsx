@@ -34,6 +34,7 @@ export function OutcomeTracker({
         <div className="drawer-actions">
           <button
             type="button"
+            className="btn btn-sm"
             data-testid="override-fit-score-btn"
             onClick={() => {
               setOverrideField('fit');
@@ -45,6 +46,7 @@ export function OutcomeTracker({
           </button>
           <button
             type="button"
+            className="btn btn-sm"
             onClick={() => {
               setOverrideField('category');
               setOverrideValue(detail.grant.category ?? '');
@@ -55,6 +57,7 @@ export function OutcomeTracker({
           </button>
           <button
             type="button"
+            className="btn btn-sm"
             onClick={() => {
               setOverrideField('status');
               setOverrideValue(detail.grant.status);
@@ -114,11 +117,16 @@ export function OutcomeTracker({
               onChange={(e) => setOverrideRationale(e.target.value)}
             />
             <div className={styles.actionRowWithMargin}>
-              <button type="button" onClick={() => void handleSubmitOverride()}>
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                onClick={() => void handleSubmitOverride()}
+              >
                 Save override
               </button>
               <button
                 type="button"
+                className="btn btn-ghost btn-sm"
                 onClick={() => {
                   setOverrideField(null);
                   setOverrideValue('');
