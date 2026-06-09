@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React from 'react';
 import type { GrantDetailResponse } from '../../../../shared/types';

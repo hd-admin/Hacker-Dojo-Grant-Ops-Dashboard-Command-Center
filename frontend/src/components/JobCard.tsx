@@ -1,5 +1,6 @@
+'use client';
+
 import type { JSX } from 'react';
-('use client');
 
 import React from 'react';
 import { ChevronDown, ChevronUp, RotateCw, X } from 'lucide-react';

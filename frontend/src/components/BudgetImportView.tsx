@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React, { useState, useRef, useCallback } from 'react';
 import styles from './BudgetImportView.module.css';

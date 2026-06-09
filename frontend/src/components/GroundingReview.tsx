@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React, { useCallback, useState } from 'react';
 import type { DraftArtifact } from '../../../shared/types';

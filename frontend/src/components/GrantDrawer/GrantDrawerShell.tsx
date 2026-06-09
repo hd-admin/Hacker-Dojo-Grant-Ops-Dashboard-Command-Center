@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React, { useCallback, useEffect, useRef } from 'react';
 import styles from './GrantDrawerShell.module.css';

@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React, { useState } from 'react';
 import type { FunderProfile } from '../../../shared/types';

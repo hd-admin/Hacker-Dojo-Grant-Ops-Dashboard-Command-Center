@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React, { useCallback, useEffect, useState } from 'react';
 import styles from './OperatorNamePrompt.module.css';

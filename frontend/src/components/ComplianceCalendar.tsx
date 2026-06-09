@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 // This component must remain a Client Component because it uses:
 // - useState and useEffect (React hooks)

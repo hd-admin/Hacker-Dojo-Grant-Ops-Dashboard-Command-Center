@@ -1,5 +1,6 @@
-import type { JSX } from 'react';
 'use client';
+
+import type { JSX } from 'react';
 
 import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
