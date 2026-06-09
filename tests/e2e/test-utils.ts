@@ -22,10 +22,7 @@ function sleep(ms: number): Promise<void> {
 export function resolveRepoRoot(rootDir: string): string {
   let cursor = path.resolve(rootDir);
   for (let i = 0; i < 6; i += 1) {
-    if (
-      existsSync(path.join(cursor, 'package.json')) &&
-      existsSync(path.join(cursor, '.git'))
-    ) {
+    if (existsSync(path.join(cursor, 'package.json')) && existsSync(path.join(cursor, '.git'))) {
       return cursor;
     }
     const parent = path.dirname(cursor);

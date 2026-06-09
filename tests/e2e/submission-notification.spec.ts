@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { type APIRequestContext, expect, type Page, test } from '@playwright/test';
-import { BASE_URL,
+import {
+  BASE_URL,
   configureOpencodeThroughSettingsView,
   resetAppState,
   saveProfileThroughSettingsView,
@@ -102,9 +103,7 @@ test.describe('Submission Notification', () => {
       .getByRole('button', { name: 'Confirm submission' })
       .click();
 
-    const grantDetailResponse = await request.get(
-      `/api/grants/${targetGrant.id}`,
-    );
+    const grantDetailResponse = await request.get(`/api/grants/${targetGrant.id}`);
     expect(grantDetailResponse.ok()).toBeTruthy();
     const grantDetail = await grantDetailResponse.json();
     expect(grantDetail.grant.status).toBe('submitted');

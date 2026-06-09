@@ -4,7 +4,9 @@
  * server runtime, and shell scripts) derives from `config/app.json`, so the
  * port is changed in exactly one place.
  *
- * Default port 855 references Hacker Dojo's street address (855 Maude Ave).
+ * Default port 3885. (Hacker Dojo's street address, 855 Maude Ave, is a
+ * privileged port below 1024 and can't be bound without root, so the default
+ * keeps the "885" nod while staying in the unprivileged range.)
  * Override at runtime with the PORT (and APP_HOST) environment variables.
  */
 import appNetwork from '../config/app.json';

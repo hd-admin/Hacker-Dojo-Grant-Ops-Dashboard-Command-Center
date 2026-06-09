@@ -73,10 +73,10 @@ test.describe('Fresh user onboarding', () => {
         timeout: 480_000,
       });
 
-      // The shipped `dev` script hardcodes `-p 855`, so we cannot
-      // satisfy `playwright.config.ts`'s webServer (port 855) and the
-      // test target (port 3001) with a single `pnpm run dev` call.
-      // Invoking `next dev` directly with the test port keeps the
+      // The shipped `dev` script defaults the port from config/app.json
+      // (3885), so a plain `pnpm run dev` would collide with
+      // `playwright.config.ts`'s webServer instead of binding the test
+      // target (port 3001). Invoking `next dev` directly with the test port keeps the
       // install path (`pnpm install` on a fresh tree) authentic
       // while still booting an isolated dev server. We strip NODE_ENV
       // for the same reason the shipped script does — a parent shell's

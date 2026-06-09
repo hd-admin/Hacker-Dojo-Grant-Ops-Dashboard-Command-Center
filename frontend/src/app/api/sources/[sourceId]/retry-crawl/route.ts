@@ -20,10 +20,9 @@ export async function POST(
   try {
     const { sourceId } = await params;
     if (!paramsSchema.safeParse({ sourceId }).success) {
-      return NextResponse.json(
-        createErrorResponse('VALIDATION_ERROR', 'Invalid source ID'),
-        { status: 400 },
-      );
+      return NextResponse.json(createErrorResponse('VALIDATION_ERROR', 'Invalid source ID'), {
+        status: 400,
+      });
     }
     const deps = getDependencies();
 

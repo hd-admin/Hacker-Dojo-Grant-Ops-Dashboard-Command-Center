@@ -7,7 +7,7 @@ test.describe('Security', () => {
   });
 
   test('AC-12.1.1: application binds to localhost only', async ({ request }) => {
-    // The test is running against 127.0.0.1:855 via Playwright
+    // The test is running against 127.0.0.1:3885 via Playwright
     // If the server were bound to 0.0.0.0, external access would be possible
     // This test verifies the server responds on localhost
     const response = await request.get(`/api/health`);
@@ -19,7 +19,11 @@ test.describe('Security', () => {
     await page.waitForSelector('.app', { timeout: 30000 });
 
     // Verify no passcode prompt is shown
-    const passcodeInput = page.locator('input[type="password"], input[placeholder*="passcode"], input[placeholder*="password"]').first();
+    const passcodeInput = page
+      .locator(
+        'input[type="password"], input[placeholder*="passcode"], input[placeholder*="password"]',
+      )
+      .first();
     await expect(passcodeInput).not.toBeVisible();
 
     // Verify main app content is accessible without authentication

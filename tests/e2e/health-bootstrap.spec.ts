@@ -1,7 +1,8 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
-import { BASE_URL,
+import {
+  BASE_URL,
   configureOpencodeThroughSettingsView,
   resetAppState,
   uploadDocumentThroughSettingsView,

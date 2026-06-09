@@ -12,7 +12,6 @@
 import { test, expect, type APIRequestContext } from '@playwright/test';
 import { BASE_URL, resetAppState, configureOpencodeThroughSettingsView } from './test-utils';
 
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

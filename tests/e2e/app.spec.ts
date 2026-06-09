@@ -101,7 +101,9 @@ test.describe('Grant Operations Center smoke', () => {
     await page.click('[data-view="discovery"]');
     await page.waitForSelector('.grants-row:not(.header)', { timeout: 10000 });
     // Find the specific grant row by title instead of relying on sort order
-    const grantRow = page.locator('.grants-row:not(.header)').filter({ hasText: targetGrant.title });
+    const grantRow = page
+      .locator('.grants-row:not(.header)')
+      .filter({ hasText: targetGrant.title });
     await expect(grantRow).toBeVisible({ timeout: 5000 });
     // Click the title cell to avoid the nested "View funder details" button
     await grantRow.locator('div').first().click();
@@ -112,7 +114,9 @@ test.describe('Grant Operations Center smoke', () => {
     await expect(page.locator('.drawer')).toContainText('Drafted Letter of Intent — preview');
     await expect(page.locator('button:has-text("Generate draft")')).toBeVisible();
     await expect(page.locator('button:has-text("Open in editor")')).toBeVisible();
-    await expect(page.locator('.drawer-actions button:has-text("Approve and lock")')).toHaveCount(0);
+    await expect(page.locator('.drawer-actions button:has-text("Approve and lock")')).toHaveCount(
+      0,
+    );
     await expect(page.locator('.drawer-actions button:has-text("Submit")')).toHaveCount(0);
   });
 
@@ -161,7 +165,9 @@ test.describe('Grant Operations Center smoke', () => {
 
     // Verify the original failed job still shows as failed, and a new job appears (may complete instantly with stub)
     await expect(page.locator(`[data-testid="job-item-failed-${jobId}"]`)).toBeVisible();
-    const newJobItem = page.locator('[data-testid^="job-item-queued-"], [data-testid^="job-item-running-"], [data-testid^="job-item-completed-"]');
+    const newJobItem = page.locator(
+      '[data-testid^="job-item-queued-"], [data-testid^="job-item-running-"], [data-testid^="job-item-completed-"]',
+    );
     await expect(newJobItem.first()).toBeVisible({ timeout: 10000 });
 
     // Verify no error banner appears after retry
@@ -199,9 +205,7 @@ test.describe('Grant Operations Center smoke', () => {
     expect(badBody.error || badBody.message || badBody.details).toBeDefined();
 
     // Test 404 not found
-    const notFoundRes = await page.request.get(
-      `/api/grants/nonexistent-grant-id-12345`,
-    );
+    const notFoundRes = await page.request.get(`/api/grants/nonexistent-grant-id-12345`);
     expect(notFoundRes.status()).toBeGreaterThanOrEqual(404);
     expect(notFoundRes.status()).toBeLessThan(500);
     const notFoundBody = await notFoundRes.json();
@@ -219,16 +223,13 @@ test.describe('Grant Operations Center smoke', () => {
     const originalStatus = firstGrant.status;
     const nextStatus = originalStatus === 'matched' ? 'draft' : 'matched';
 
-    const updateResponse = await request.patch(
-      `/api/grants/${firstGrant.id}/status`,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        data: {
-          status: nextStatus,
-          statusLabel: nextStatus === 'draft' ? 'In Draft' : 'Matched',
-        },
+    const updateResponse = await request.patch(`/api/grants/${firstGrant.id}/status`, {
+      headers: { 'Content-Type': 'application/json' },
+      data: {
+        status: nextStatus,
+        statusLabel: nextStatus === 'draft' ? 'In Draft' : 'Matched',
       },
-    );
+    });
     expect(updateResponse.ok()).toBeTruthy();
 
     const getResponse = await request.get(`/api/grants/${firstGrant.id}`);

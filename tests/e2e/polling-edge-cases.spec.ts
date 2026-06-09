@@ -7,7 +7,6 @@
 import { test, expect } from '@playwright/test';
 import { BASE_URL, resetAppState, configureOpencodeThroughSettingsView } from './test-utils';
 
-
 test.describe('Polling Edge Cases', () => {
   test.beforeEach(async ({ page, request }) => {
     await resetAppState(request);

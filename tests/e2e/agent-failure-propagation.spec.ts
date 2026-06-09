@@ -7,7 +7,6 @@
 import { test, expect } from '@playwright/test';
 import { BASE_URL, resetAppState } from './test-utils';
 
-
 test.describe('Agent Failure Propagation', () => {
   test.beforeEach(async ({ request }) => {
     await resetAppState(request);
