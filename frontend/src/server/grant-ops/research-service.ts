@@ -459,9 +459,35 @@ async function performResearch(
                 grantEvidence,
               );
               const mergedRationale = existing.researchRationale ?? researchRationale;
+
+              // Refresh stale/missing fields from the latest crawl: a funder may have
+              // changed a deadline, award, or contact since we first matched this grant.
+              // New values win when present; we never blank a field we already have.
+              const refreshedAward =
+                grantData.award && grantData.award !== existing.award ? grantData.award : undefined;
+              const refreshedAwardSort =
+                typeof grantData.awardSort === 'number' && grantData.awardSort !== existing.awardSort
+                  ? grantData.awardSort
+                  : undefined;
+              const refreshedDeadline =
+                grantData.deadline && grantData.deadline !== existing.deadline
+                  ? grantData.deadline
+                  : undefined;
+              const refreshedFit =
+                typeof grantData.fit === 'number' && grantData.fit !== existing.fit
+                  ? grantData.fit
+                  : undefined;
+              // Merge contact: keep existing fields, let newly-found ones fill in or update.
+              const mergedContact: GrantContact | undefined =
+                hasContact || existing.contact
+                  ? { ...(existing.contact ?? {}), ...((contact ?? {}) as GrantContact) }
+                  : undefined;
+              const nextExternalUrl = externalUrl ?? existing.externalUrl;
+
               const updatedGrant: Partial<Grant> = {
                 sourceCount: updatedSourceCount,
-                fitBreakdown: existing.fitBreakdown ?? createDefaultFitBreakdown(existing.fit),
+                fitBreakdown:
+                  existing.fitBreakdown ?? createDefaultFitBreakdown(refreshedFit ?? existing.fit),
                 funderSummary: existing.funderSummary ?? createDefaultFunderSummary(existing),
                 checklist:
                   existing.checklist ??
@@ -471,8 +497,17 @@ async function performResearch(
                   }),
                 researchEvidence: mergedEvidence,
                 ...(mergedRationale ? { researchRationale: mergedRationale } : {}),
-                ...(!existing.externalUrl && externalUrl ? { externalUrl } : {}),
-                ...(!existing.contact && hasContact ? { contact } : {}),
+                ...(nextExternalUrl ? { externalUrl: nextExternalUrl } : {}),
+                ...(mergedContact ? { contact: mergedContact } : {}),
+                ...(refreshedAward ? { award: refreshedAward } : {}),
+                ...(refreshedAwardSort !== undefined ? { awardSort: refreshedAwardSort } : {}),
+                ...(refreshedDeadline
+                  ? {
+                      deadline: refreshedDeadline,
+                      daysOut: calculateDaysOut(refreshedDeadline, clock.now()),
+                    }
+                  : {}),
+                ...(refreshedFit !== undefined ? { fit: refreshedFit } : {}),
               };
               await deps.repository.updateGrant(existing.id, updatedGrant);
               Object.assign(existing, updatedGrant);

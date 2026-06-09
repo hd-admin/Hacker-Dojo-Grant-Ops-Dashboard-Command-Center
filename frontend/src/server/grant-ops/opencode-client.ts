@@ -314,6 +314,7 @@ class FakeOpencodeProvider implements OpencodeAdapter {
       grants: [
         {
           id: `mock-grant-001`,
+          url: 'https://example.com/mock-grant-001',
           title: `${request.searchThemes[0] || 'Technology'} Community Grant`,
           funder: 'Mock Foundation',
           funderShort: 'Mock',
@@ -329,6 +330,7 @@ class FakeOpencodeProvider implements OpencodeAdapter {
         },
         {
           id: `mock-grant-002`,
+          url: 'https://example.com/mock-grant-002',
           title: `${request.searchThemes[1] || request.searchThemes[0] || 'Education'} Innovation Grant`,
           funder: 'Alliance for Learning',
           funderShort: 'Alliance',
@@ -344,6 +346,7 @@ class FakeOpencodeProvider implements OpencodeAdapter {
         },
         {
           id: `mock-grant-003`,
+          url: 'https://example.com/mock-grant-003',
           title: `${request.searchThemes[2] || request.searchThemes[0] || 'Community'} Capacity Grant`,
           funder: 'Community Innovation Network',
           funderShort: 'CIN',
@@ -737,6 +740,10 @@ currently open. Base every grant on a real page you actually loaded — never in
 - Every grant needs a way to follow up after discovery. ALWAYS populate "contact" with
   whatever the source provides (grants/program email, phone, application portal, named
   program officer, mailing address in notes).
+- Whenever you include a contact "email" or "phone", you MUST also set contact "source"
+  citing where you found it — a URL, or a non-web reference such as "PDF: 2026-rfp.pdf
+  p.4", a book, or an annual report. Never provide an email/phone without its source.
+  (The "url" field is itself a source and does not need separate sourcing.)
 - If you cannot find a working direct opportunity URL, you MUST still provide "contact"
   info so the operator can follow up. A grant with neither a real url nor any contact
   info is not usable — omit it rather than guessing a link.
@@ -766,7 +773,8 @@ Return ONLY a single minified JSON object. No markdown, no code fences, no prose
         "phone": string,       // contact phone
         "applicationUrl": string, // apply/portal link if different from "url"
         "programOfficer": string, // named contact person if listed
-        "notes": string        // office hours, mailing address, or other follow-up notes
+        "notes": string,       // office hours, mailing address, or other follow-up notes
+        "source": string       // where you found the email/phone — a URL, or a reference like "PDF: 2026-rfp.pdf p.4" or "Annual report 2025"
       }
     }
   ],

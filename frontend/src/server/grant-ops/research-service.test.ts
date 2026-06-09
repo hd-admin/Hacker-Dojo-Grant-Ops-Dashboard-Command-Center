@@ -9,7 +9,7 @@
  * Uses isolated test data directory for proper test isolation.
  */
 
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { invalidateCache, withTempDataDir } from '../../../../shared/grant-ops-persistence';
 import { truncateDatabase, getSqliteState } from '../../../../shared/grant-ops-sqlite';
 import type { OrganizationProfile } from '../../../../shared/types';
@@ -44,6 +44,19 @@ const mockProfile: OrganizationProfile = {
     voiceAndTone: 'professional',
   },
 };
+
+// Crawl ingestion now visits each grant's source URL to drop dead 404 links. Stub fetch
+// file-wide so fixtures with a url are treated as live, with no real network calls.
+beforeEach(() => {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => ({ status: 200, body: { cancel: async () => {} } })),
+  );
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe('ResearchService', () => {
   let tempDataDir: Awaited<ReturnType<typeof withTempDataDir>>;
@@ -112,6 +125,7 @@ describe('ResearchService', () => {
                   {
                     id: 'mock-grant-001',
                     title: 'Mock Foundation Grant',
+                    url: 'https://example.com/mock-foundation-grant',
                     funder: 'Mock Foundation',
                     funderShort: 'MF',
                     award: '$10,000',
@@ -228,6 +242,7 @@ describe('ResearchService', () => {
                   {
                     id: 'mock-grant-001',
                     title: 'Mock Foundation Grant',
+                    url: 'https://example.com/mock-foundation-grant',
                     funder: 'Mock Foundation',
                     funderShort: 'MF',
                     award: '$10,000',
@@ -405,6 +420,7 @@ describe('ResearchService', () => {
                   {
                     id: 'mock-grant-001',
                     title: 'Mock Foundation Grant',
+                    url: 'https://example.com/mock-foundation-grant',
                     funder: 'Mock Foundation',
                     funderShort: 'MF',
                     award: '$10,000',
@@ -565,6 +581,7 @@ describe('auto-draft triggering', () => {
                 {
                   id: 'multi-grant-001',
                   title: 'Community Innovation Grant',
+                  url: 'https://example.com/community-innovation-grant',
                   funder: 'Mock Foundation',
                   funderShort: 'MF',
                   award: '$10,000',
@@ -577,6 +594,7 @@ describe('auto-draft triggering', () => {
                 {
                   id: 'multi-grant-002',
                   title: 'Education Innovation Grant',
+                  url: 'https://example.com/education-innovation-grant',
                   funder: 'Alliance for Learning',
                   funderShort: 'Alliance',
                   award: '$25,000',
@@ -629,6 +647,7 @@ describe('auto-draft triggering', () => {
                 {
                   id: 'grant-low-fit',
                   title: 'Low Fit Grant',
+                  url: 'https://example.com/low-fit-grant',
                   funder: 'Low Foundation',
                   funderShort: 'LF',
                   award: '$1,000',
@@ -810,6 +829,7 @@ describe('PATH-fallback: no early isConfigured throw', () => {
                 {
                   id: 'mock-grant-001',
                   title: 'Mock Foundation Grant',
+                  url: 'https://example.com/mock-foundation-grant',
                   funder: 'Mock Foundation',
                   award: '$10,000',
                   awardSort: 10000,
@@ -896,7 +916,9 @@ describe('PATH-fallback: no early isConfigured throw', () => {
         return {
           success: true,
           content: JSON.stringify({
-            grants: [{ title: 'Good Grant', funder: 'Good Funder' }],
+            grants: [
+              { title: 'Good Grant', funder: 'Good Funder', url: 'https://example.com/good-grant' },
+            ],
             evidence: [],
             rationale: 'ok',
           }),
@@ -934,7 +956,13 @@ describe('PATH-fallback: no early isConfigured throw', () => {
         return {
           success: true,
           content: JSON.stringify({
-            grants: [{ title: 'Recovered Grant', funder: 'Recovered Funder' }],
+            grants: [
+              {
+                title: 'Recovered Grant',
+                funder: 'Recovered Funder',
+                url: 'https://example.com/recovered-grant',
+              },
+            ],
             evidence: [],
             rationale: 'fixed',
           }),

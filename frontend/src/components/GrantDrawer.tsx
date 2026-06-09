@@ -753,6 +753,9 @@ export function GrantDrawer({
                     </li>
                   )}
                   {detail.grant.contact.notes && <li>{detail.grant.contact.notes}</li>}
+                  {detail.grant.contact.source && (
+                    <li className="muted">Contact source: {detail.grant.contact.source}</li>
+                  )}
                 </ul>
               ) : (
                 !detail.grant.externalUrl && (

@@ -389,6 +389,9 @@ export interface GrantContact {
   programOfficer?: string;
   /** Any other follow-up note (office hours, mailing address, etc.). */
   notes?: string;
+  /** Where the email/phone was found — a URL, or a reference like "PDF: 2026-rfp.pdf p.4".
+   * Required whenever email or phone is present, so contact info is always attributable. */
+  source?: string;
 }
 
 export interface Grant {

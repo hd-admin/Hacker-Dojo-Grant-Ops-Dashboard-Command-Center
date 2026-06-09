@@ -99,6 +99,7 @@ export const GrantSchema = z.object({
       applicationUrl: z.string().optional(),
       programOfficer: z.string().optional(),
       notes: z.string().optional(),
+      source: z.string().optional(),
     })
     .optional(),
   latestDraftVersion: z.number().optional(),
@@ -393,6 +394,7 @@ const ResearchGrantSchema = z.object({
       applicationUrl: z.string().optional(),
       programOfficer: z.string().optional(),
       notes: z.string().optional(),
+      source: z.string().optional(),
     })
     .optional(),
 });
